@@ -1,0 +1,90 @@
+import {
+  Database,
+  FileText,
+  Gauge,
+  Image,
+  Layers3,
+  Menu,
+  Settings,
+  Workflow,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+
+import { useHealth } from "../hooks/useHealth";
+import { api } from "../services/api";
+import { useAppStore } from "../stores/useAppStore";
+import { StatusBadge } from "./StatusBadge";
+
+type NavItem = {
+  label: string;
+  path: string;
+  icon: LucideIcon;
+};
+
+const navItems: NavItem[] = [
+  { label: "Dashboard", path: "/", icon: Gauge },
+  { label: "Content Types", path: "/content-types", icon: Layers3 },
+  { label: "Entries", path: "/entries", icon: FileText },
+  { label: "Media", path: "/media", icon: Image },
+  { label: "Pages", path: "/pages", icon: Workflow },
+  { label: "Settings", path: "/settings", icon: Settings },
+];
+
+const titles = new Map(navItems.map((item) => [item.path, item.label]));
+
+export function AppShell() {
+  const location = useLocation();
+  const { sidebarCollapsed, toggleSidebar } = useAppStore();
+  const { readiness, error } = useHealth();
+  const title = titles.get(location.pathname) ?? "Dashboard";
+  const ready = readiness?.status === "ready" && !error;
+
+  return (
+    <div className={`app-shell ${sidebarCollapsed ? "app-shell--collapsed" : ""}`}>
+      <aside className="sidebar">
+        <div className="brand-row">
+          <div className="brand-mark">Z</div>
+          <div className="brand-copy">
+            <strong>ZangarCMS</strong>
+            <span>Headless admin</span>
+          </div>
+        </div>
+
+        <nav className="side-nav" aria-label="Primary navigation">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === "/"}
+              className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
+            >
+              <item.icon aria-hidden="true" size={18} />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="workspace">
+        <header className="topbar">
+          <button className="icon-button" type="button" onClick={toggleSidebar} aria-label="Toggle navigation">
+            <Menu size={18} aria-hidden="true" />
+          </button>
+          <div>
+            <h1>{title}</h1>
+            <span className="topbar-subtitle">{api.baseUrl}</span>
+          </div>
+          <div className="topbar-status">
+            <Database size={16} aria-hidden="true" />
+            <StatusBadge label={ready ? "Ready" : "Checking"} tone={ready ? "success" : "warning"} />
+          </div>
+        </header>
+
+        <main className="content-area">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}

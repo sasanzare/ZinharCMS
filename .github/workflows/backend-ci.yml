@@ -1,0 +1,63 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cms_dev
+          POSTGRES_USER: cms_user
+          POSTGRES_PASSWORD: cms_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cms_user -d cms_dev"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://cms_user:cms_pass@localhost:5432/cms_dev
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: your-super-secret-jwt-key-min-32-chars
+      JWT_ACCESS_EXPIRY: "3600"
+      JWT_REFRESH_EXPIRY: "604800"
+      UPLOAD_DIR: ./uploads
+      MAX_UPLOAD_SIZE: "52428800"
+      CORS_ORIGIN: http://localhost:5173
+      RUST_LOG: info
+      PORT: "8080"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo test --all-features

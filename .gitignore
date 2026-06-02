@@ -1,0 +1,13 @@
+/.env
+/.env.*
+!/.env.example
+/target
+/backend/target
+/frontend/dist
+/frontend/node_modules
+/frontend/.vite
+/uploads
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

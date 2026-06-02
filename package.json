@@ -1,0 +1,15 @@
+{
+  "name": "zangarcms",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["frontend"],
+  "scripts": {
+    "dev:infra": "docker compose up -d postgres redis pgadmin",
+    "dev": "docker compose up --build",
+    "dev:backend": "cargo run --manifest-path backend/Cargo.toml",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "test:backend": "cargo test --manifest-path backend/Cargo.toml --all-features",
+    "test:frontend": "npm --prefix frontend test",
+    "build:frontend": "npm --prefix frontend run build"
+  }
+}
