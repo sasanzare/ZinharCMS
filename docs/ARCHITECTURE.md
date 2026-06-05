@@ -6,7 +6,7 @@ ZangarCMS follows the proposal's API-first headless CMS architecture.
 
 - Client layer: React admin panel and future visual page builder.
 - API gateway layer: Axum REST API with CORS, request tracing, timeout, compression, JWT-ready middleware, and OpenAPI JSON.
-- Core CMS services: content, page builder, media, and delivery modules.
+- Core CMS services: auth, RBAC, content types, entries, media, page builder, and delivery modules.
 - Data layer: PostgreSQL 16 for primary storage, Redis 7 for cache/session primitives, and local/S3-compatible file storage.
 
 ## Repository Layout
@@ -42,6 +42,9 @@ The initial schema implements the proposal ERD:
 - `content_types`, `content_entries`
 - `pages`, `page_versions`, `component_registry`
 - `media`, `media_variants`
+
+Phase one adds role normalization for `super_admin` and `author`, refresh-token
+rotation, and media captions.
 
 The schema uses `UUID` primary keys, `JSONB` for dynamic content/page structures,
 status enums, slug checks, foreign keys, and indexes for common lookups.

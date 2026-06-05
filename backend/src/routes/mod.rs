@@ -3,48 +3,108 @@ pub mod content;
 pub mod media;
 pub mod pages;
 
+use axum::extract::DefaultBodyLimit;
 use axum::extract::State;
+use axum::middleware;
 use axum::routing::get;
 use axum::{Json, Router};
 use redis::AsyncCommands;
 use serde::Serialize;
 use sqlx::Executor;
+use tower_http::services::ServeDir;
 use utoipa::{OpenApi, ToSchema};
 
 use crate::error::AppError;
+use crate::middleware::auth::auth_middleware;
 use crate::state::AppState;
 
 pub fn router(state: AppState) -> Router {
+    let upload_limit = state.config.max_upload_size.saturating_add(1_048_576) as usize;
+    let uploads = ServeDir::new(state.config.upload_dir.clone());
+    let protected = Router::new()
+        .merge(auth::protected_router())
+        .merge(content::router())
+        .merge(media::router())
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ))
+        .layer(DefaultBodyLimit::max(upload_limit));
+
     Router::new()
         .route("/", get(root))
         .route("/health", get(health))
         .route("/ready", get(readiness))
         .route("/openapi.json", get(openapi))
-        .nest("/api/auth", auth::router())
-        .nest("/api/content", content::router())
-        .nest("/api/media", media::router())
+        .merge(auth::public_router())
+        .merge(protected)
         .nest("/api/pages", pages::router())
+        .nest_service("/uploads", uploads)
         .with_state(state)
 }
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(root, health, readiness, auth::module_status, content::module_status, media::module_status, pages::module_status),
+    paths(
+        root,
+        health,
+        readiness,
+        auth::module_status,
+        auth::register,
+        auth::login,
+        auth::refresh,
+        auth::logout,
+        auth::me,
+        content::list_content_types,
+        content::create_content_type,
+        content::get_content_type,
+        content::update_content_type,
+        content::delete_content_type,
+        content::list_entries,
+        content::create_entry,
+        content::get_entry,
+        content::update_entry,
+        content::delete_entry,
+        content::publish_entry,
+        content::unpublish_entry,
+        media::list_media,
+        media::upload_media,
+        media::get_media,
+        media::update_media,
+        media::delete_media,
+        pages::module_status
+    ),
     components(schemas(
         ApiInfo,
         HealthResponse,
         ReadyResponse,
         DependencyCheck,
         auth::AuthModuleStatus,
-        content::ContentModuleStatus,
-        media::MediaModuleStatus,
+        auth::RegisterRequest,
+        auth::LoginRequest,
+        auth::RefreshRequest,
+        auth::LogoutRequest,
+        auth::LogoutResponse,
+        auth::AuthResponse,
+        auth::AuthUser,
+        content::ContentTypeRequest,
+        content::ContentTypeResponse,
+        content::EntryRequest,
+        content::ContentEntryResponse,
+        content::EntryListResponse,
+        media::MediaUpdateRequest,
+        media::MediaResponse,
+        media::MediaVariantResponse,
+        media::MediaDetailResponse,
+        media::MediaListResponse,
         pages::PagesModuleStatus
     )),
     tags(
         (name = "system", description = "Phase-zero system endpoints"),
-        (name = "auth", description = "Authentication module placeholder"),
-        (name = "content", description = "Content module placeholder"),
-        (name = "media", description = "Media module placeholder"),
+        (name = "auth", description = "Authentication and token management"),
+        (name = "content", description = "Content type management"),
+        (name = "entries", description = "Content entry management"),
+        (name = "media", description = "Media library"),
         (name = "pages", description = "Page builder module placeholder")
     )
 )]

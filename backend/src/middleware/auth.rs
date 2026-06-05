@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::services::jwt;
 use crate::state::AppState;
 
 #[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
@@ -17,18 +18,20 @@ pub struct Claims {
 }
 
 pub async fn auth_middleware(
-    State(_state): State<AppState>,
-    req: Request,
-    _next: Next,
+    State(state): State<AppState>,
+    mut req: Request,
+    next: Next,
 ) -> Result<Response, StatusCode> {
-    let _token = req
+    let token = req
         .headers()
         .get("Authorization")
         .and_then(|header| header.to_str().ok())
         .and_then(|value| value.strip_prefix("Bearer "))
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
-    // Phase zero only wires the auth boundary. JWT verification is implemented
-    // with the full auth service in phase one before any protected route uses it.
-    Err(StatusCode::UNAUTHORIZED)
+    let claims =
+        jwt::verify_access_token(token, &state.config).map_err(|_| StatusCode::UNAUTHORIZED)?;
+    req.extensions_mut().insert(claims);
+
+    Ok(next.run(req).await)
 }

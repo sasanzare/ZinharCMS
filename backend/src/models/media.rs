@@ -11,6 +11,7 @@ pub struct Media {
     pub mime_type: String,
     pub size: i64,
     pub alt_text: Option<String>,
+    pub caption: Option<String>,
     pub uploader_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
