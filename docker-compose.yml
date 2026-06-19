@@ -41,43 +41,6 @@ services:
       postgres:
         condition: service_healthy
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    environment:
-      DATABASE_URL: postgresql://cms_user:cms_pass@postgres:5432/cms_dev
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: your-super-secret-jwt-key-min-32-chars
-      JWT_ACCESS_EXPIRY: "3600"
-      JWT_REFRESH_EXPIRY: "604800"
-      UPLOAD_DIR: /app/uploads
-      MAX_UPLOAD_SIZE: "52428800"
-      CORS_ORIGIN: http://localhost:5173
-      RUST_LOG: info
-      PORT: "8080"
-    ports:
-      - "8080:8080"
-    volumes:
-      - uploads:/app/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    environment:
-      VITE_API_URL: http://localhost:8080
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-
 volumes:
   postgres_data:
   redis_data:
-  uploads:

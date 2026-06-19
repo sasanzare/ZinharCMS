@@ -1,8 +1,7 @@
 {
-  "name": "zangarcms",
+  "name": "ZinharCMS",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["frontend"],
   "scripts": {
     "dev:infra": "docker compose up -d postgres redis pgadmin",
     "dev": "docker compose up --build",
@@ -13,3 +12,4 @@
     "build:frontend": "npm --prefix frontend run build"
   }
 }
+

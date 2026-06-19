@@ -145,7 +145,7 @@ pub struct DependencyCheck {
 )]
 async fn root() -> Json<ApiInfo> {
     Json(ApiInfo {
-        name: "ZangarCMS API".to_owned(),
+        name: "ZinharCMS API".to_owned(),
         version: env!("CARGO_PKG_VERSION").to_owned(),
         docs: "/openapi.json".to_owned(),
         health: "/health".to_owned(),

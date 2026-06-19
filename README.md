@@ -1,6 +1,6 @@
-# ZangarCMS
+# ZinharCMS
 
-ZangarCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
+ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
 This repository currently implements phase zero and the phase-one backend core from
 the project proposal: a runnable monorepo foundation, local infrastructure, CI,
 environment configuration, the initial PostgreSQL schema, auth, RBAC, content type
@@ -11,7 +11,7 @@ CRUD, entry CRUD, and media library APIs.
 - `backend/`: Rust 2024 + Axum 0.8 API scaffold with health/readiness endpoints.
 - `backend/src/routes/`: phase-one auth, content, entry, and media APIs.
 - `frontend/`: React 19 + Vite 6 admin workspace scaffold.
-- `docker-compose.yml`: PostgreSQL 16, Redis 7, pgAdmin, backend, and frontend.
+- `docker-compose.yml`: PostgreSQL 16, Redis 7, and pgAdmin only.
 - `.github/workflows/`: initial backend and frontend CI.
 - `backend/migrations/`: database schema based on the proposal ERD.
 - `docs/`: architecture, API, and phase-zero notes.
@@ -31,25 +31,20 @@ Copy the environment template and start the local stack:
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up --build
+docker compose up -d postgres redis pgadmin
 ```
 
 Local services:
 
-- Admin UI: http://localhost:5173
-- API: http://localhost:8080
-- OpenAPI JSON: http://localhost:8080/openapi.json
 - pgAdmin: http://localhost:5050
 - PostgreSQL: localhost:5432
 - Redis: localhost:6379
+- API: http://localhost:8080
+- Admin UI: http://localhost:5173
 
 ## Local Development Without Docker
 
 Start the infrastructure:
-
-```powershell
-docker compose up -d postgres redis pgadmin
-```
 
 Run the backend:
 

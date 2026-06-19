@@ -58,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
         .await
         .with_context(|| format!("failed to bind {addr}"))?;
 
-    tracing::info!(%addr, "ZangarCMS API listening");
+    tracing::info!(%addr, "ZinharCMS API listening");
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await

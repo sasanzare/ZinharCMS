@@ -1,6 +1,6 @@
 # Architecture
 
-ZangarCMS follows the proposal's API-first headless CMS architecture.
+ZinharCMS follows the proposal's API-first headless CMS architecture.
 
 ## Layers
 
@@ -12,7 +12,7 @@ ZangarCMS follows the proposal's API-first headless CMS architecture.
 ## Repository Layout
 
 ```text
-ZangarCMS/
+ZinharCMS/
 ├── backend/               Rust/Axum API
 │   ├── migrations/        SQLx PostgreSQL migrations
 │   └── src/
