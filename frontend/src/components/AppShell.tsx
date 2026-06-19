@@ -4,6 +4,7 @@ import {
   Gauge,
   Image,
   Layers3,
+  LogOut,
   Menu,
   Settings,
   Workflow,
@@ -12,7 +13,7 @@ import type { LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useHealth } from "../hooks/useHealth";
-import { api } from "../services/api";
+import { api, getStoredRefreshToken } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import { StatusBadge } from "./StatusBadge";
 
@@ -35,10 +36,22 @@ const titles = new Map(navItems.map((item) => [item.path, item.label]));
 
 export function AppShell() {
   const location = useLocation();
-  const { sidebarCollapsed, toggleSidebar } = useAppStore();
+  const { sidebarCollapsed, toggleSidebar, user, clearSession } = useAppStore();
   const { readiness, error } = useHealth();
   const title = titles.get(location.pathname) ?? "Dashboard";
   const ready = readiness?.status === "ready" && !error;
+
+  async function handleLogout() {
+    const refreshToken = getStoredRefreshToken();
+    if (refreshToken) {
+      try {
+        await api.auth.logout(refreshToken);
+      } catch {
+        // Local logout should still complete if the token is already invalid.
+      }
+    }
+    clearSession();
+  }
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? "app-shell--collapsed" : ""}`}>
@@ -71,13 +84,17 @@ export function AppShell() {
           <button className="icon-button" type="button" onClick={toggleSidebar} aria-label="Toggle navigation">
             <Menu size={18} aria-hidden="true" />
           </button>
-          <div>
+          <div className="topbar-title">
             <h1>{title}</h1>
             <span className="topbar-subtitle">{api.baseUrl}</span>
           </div>
           <div className="topbar-status">
             <Database size={16} aria-hidden="true" />
             <StatusBadge label={ready ? "Ready" : "Checking"} tone={ready ? "success" : "warning"} />
+            {user && <span className="user-chip">{user.role}</span>}
+            <button className="icon-button" type="button" onClick={handleLogout} aria-label="Logout">
+              <LogOut size={18} aria-hidden="true" />
+            </button>
           </div>
         </header>
 

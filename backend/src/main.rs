@@ -6,6 +6,7 @@ use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::http::{HeaderValue, Method, StatusCode};
 use cms_backend::config::Config;
 use cms_backend::db;
+use cms_backend::services::{password, rbac};
 use cms_backend::state::AppState;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::CorsLayer;
@@ -27,7 +28,9 @@ async fn main() -> anyhow::Result<()> {
     db::run_migrations(&db)
         .await
         .context("failed to run database migrations")?;
-
+    seed_default_admin(&db)
+        .await
+        .context("failed to seed default admin user")?;
     let redis =
         redis::Client::open(config.redis_url.as_str()).context("failed to create Redis client")?;
     let state = AppState::new(config.clone(), db, redis);
@@ -69,6 +72,48 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+async fn seed_default_admin(db: &sqlx::PgPool) -> anyhow::Result<()> {
+    let user_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+        .fetch_one(db)
+        .await?;
+
+    if user_count > 0 {
+        return Ok(());
+    }
+
+    let password_hash = password::hash_password("password123")?;
+
+    let mut tx = db.begin().await?;
+    let user_id = sqlx::query_scalar::<_, uuid::Uuid>(
+        r#"
+        INSERT INTO users (email, password_hash, name)
+        VALUES ($1, $2, $3)
+        RETURNING id
+        "#,
+    )
+    .bind("admin@example.com")
+    .bind(&password_hash)
+    .bind("Admin")
+    .fetch_one(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO user_roles (user_id, role_id)
+        SELECT $1, id
+        FROM roles
+        WHERE name = $2
+        "#,
+    )
+    .bind(user_id)
+    .bind(rbac::SUPER_ADMIN)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+    tracing::info!("seeded default admin user admin@example.com");
+    Ok(())
+}
 async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c()

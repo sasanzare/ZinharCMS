@@ -1,6 +1,7 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 
-import { AppShell } from "./components/AppShell";
+import { RequireAuth } from "./components/RequireAuth";
+import { AuthPage } from "./pages/AuthPage";
 import { ContentTypesPage } from "./pages/ContentTypesPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EntriesPage } from "./pages/EntriesPage";
@@ -9,9 +10,10 @@ import { PagesPage } from "./pages/PagesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 
 export const router = createBrowserRouter([
+  { path: "/login", element: <AuthPage /> },
   {
     path: "/",
-    element: <AppShell />,
+    element: <RequireAuth />,
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "content-types", element: <ContentTypesPage /> },

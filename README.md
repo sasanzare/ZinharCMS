@@ -5,7 +5,7 @@ This repository currently implements phase zero, the phase-one backend core, and
 the phase-two backend page builder engine from the project proposal: a runnable
 monorepo foundation, local infrastructure, CI, environment configuration, auth,
 RBAC, content type CRUD, entry CRUD, media library APIs, page JSON storage,
-component registry, page versioning, and live preview streaming.
+component registry, page versioning, live preview streaming, and a React admin panel for those backend capabilities.
 
 ## Phase Zero Scope
 
@@ -33,6 +33,15 @@ component registry, page versioning, and live preview streaming.
 - Validation: page metadata, layout tree, registered component types, props/styles objects, and size/depth limits.
 - Versions: snapshots on create/update/restore, version history, and restore-to-draft.
 - Live Preview: authenticated WebSocket stream at `/api/preview/{page_id}`.
+
+## Phase Three Scope
+
+- Auth UI: login/register, stored session, protected admin routes, and logout.
+- Dashboard: backend health plus live CMS counts.
+- Content Types: schema list/create/edit/delete with a field builder.
+- Entries: dynamic forms generated from content type field schemas, CRUD, publish, and unpublish.
+- Media: upload, search, metadata editing, copy URL, and delete.
+- Pages: JSON editor for phase-two pages, publish/unpublish, versions, restore, and preview WebSocket URL copy.
 
 ## Quick Start
 

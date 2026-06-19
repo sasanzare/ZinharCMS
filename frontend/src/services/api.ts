@@ -1,17 +1,106 @@
-import type { ApiInfo, HealthResponse, ReadyResponse } from "../types/api";
+import type {
+  ApiInfo,
+  AuthResponse,
+  AuthUser,
+  ComponentRegistryResponse,
+  ContentEntryResponse,
+  ContentTypeResponse,
+  EntryListResponse,
+  FieldSchemaDocument,
+  HealthResponse,
+  JsonRecord,
+  MediaDetailResponse,
+  MediaListResponse,
+  PageJson,
+  PageListResponse,
+  PageResponse,
+  PageVersionResponse,
+  ReadyResponse,
+} from "../types/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+const ACCESS_TOKEN_KEY = "zinhar.access_token";
+const REFRESH_TOKEN_KEY = "zinhar.refresh_token";
 
-async function request<T>(path: string): Promise<T> {
+let accessToken = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+
+export function setApiAccessToken(token: string | null) {
+  accessToken = token;
+  if (token) {
+    window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  } else {
+    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
+}
+
+export function setApiRefreshToken(token: string | null) {
+  if (token) {
+    window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
+  } else {
+    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+}
+
+export function getStoredRefreshToken() {
+  return window.localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+type RequestOptions = Omit<RequestInit, "body"> & {
+  body?: unknown;
+  formData?: FormData;
+  auth?: boolean;
+};
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const headers = new Headers(options.headers);
+  const needsAuth = options.auth ?? false;
+
+  if (options.formData) {
+    // Let the browser set multipart boundaries.
+  } else if (options.body !== undefined) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (needsAuth && accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    ...options,
+    headers,
+    body: options.formData ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
   });
 
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    let message = `${response.status} ${response.statusText}`;
+    try {
+      const payload = (await response.json()) as { message?: string; error?: string };
+      message = payload.message ?? payload.error ?? message;
+    } catch {
+      // Preserve the status text when the backend returns an empty body.
+    }
+    throw new ApiError(response.status, message);
   }
 
   return response.json() as Promise<T>;
+}
+
+function query(params: Record<string, string | number | undefined>) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") search.set(key, String(value));
+  }
+  const value = search.toString();
+  return value ? `?${value}` : "";
 }
 
 export const api = {
@@ -19,4 +108,74 @@ export const api = {
   info: () => request<ApiInfo>("/"),
   health: () => request<HealthResponse>("/health"),
   readiness: () => request<ReadyResponse>("/ready"),
+
+  auth: {
+    login: (email: string, password: string) =>
+      request<AuthResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
+    register: (email: string, password: string, name: string) =>
+      request<AuthResponse>("/api/auth/register", { method: "POST", body: { email, password, name } }),
+    logout: (refresh_token: string) =>
+      request<{ revoked: boolean }>("/api/auth/logout", { method: "POST", auth: true, body: { refresh_token } }),
+    me: () => request<AuthUser>("/api/auth/me", { auth: true }),
+  },
+
+  contentTypes: {
+    list: () => request<ContentTypeResponse[]>("/api/content-types", { auth: true }),
+    create: (payload: { name: string; slug: string; fields: FieldSchemaDocument }) =>
+      request<ContentTypeResponse>("/api/content-types", { method: "POST", auth: true, body: payload }),
+    update: (id: string, payload: { name: string; slug: string; fields: FieldSchemaDocument }) =>
+      request<ContentTypeResponse>(`/api/content-types/${id}`, { method: "PUT", auth: true, body: payload }),
+    delete: (id: string) =>
+      request<ContentTypeResponse>(`/api/content-types/${id}?confirm=true`, { method: "DELETE", auth: true }),
+  },
+
+  entries: {
+    list: (typeSlug: string, params: { status?: string; page?: number; per_page?: number; sort?: string } = {}) =>
+      request<EntryListResponse>(`/api/entries/${typeSlug}${query(params)}`, { auth: true }),
+    create: (typeSlug: string, data: JsonRecord) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}`, { method: "POST", auth: true, body: { data } }),
+    update: (typeSlug: string, id: string, data: JsonRecord) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}`, { method: "PUT", auth: true, body: { data } }),
+    delete: (typeSlug: string, id: string) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}`, { method: "DELETE", auth: true }),
+    publish: (typeSlug: string, id: string) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/publish`, { method: "POST", auth: true }),
+    unpublish: (typeSlug: string, id: string) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/unpublish`, { method: "POST", auth: true }),
+  },
+
+  media: {
+    list: (params: { mime_type?: string; page?: number; per_page?: number } = {}) =>
+      request<MediaListResponse>(`/api/media${query(params)}`, { auth: true }),
+    upload: (file: File, metadata: { alt_text?: string; caption?: string }) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (metadata.alt_text) formData.append("alt_text", metadata.alt_text);
+      if (metadata.caption) formData.append("caption", metadata.caption);
+      return request<MediaDetailResponse>("/api/media/upload", { method: "POST", auth: true, formData });
+    },
+    update: (id: string, payload: { alt_text?: string; caption?: string }) =>
+      request<MediaDetailResponse>(`/api/media/${id}`, { method: "PUT", auth: true, body: payload }),
+    delete: (id: string) => request<MediaDetailResponse>(`/api/media/${id}`, { method: "DELETE", auth: true }),
+  },
+
+  pages: {
+    list: (params: { status?: string; page?: number; per_page?: number; sort?: string } = {}) =>
+      request<PageListResponse>(`/api/pages${query(params)}`, { auth: true }),
+    create: (payload: { title: string; slug: string; page_json: PageJson }) =>
+      request<PageResponse>("/api/pages", { method: "POST", auth: true, body: payload }),
+    update: (id: string, payload: { title: string; slug: string; page_json: PageJson }) =>
+      request<PageResponse>(`/api/pages/${id}`, { method: "PUT", auth: true, body: payload }),
+    delete: (id: string) => request<PageResponse>(`/api/pages/${id}?confirm=true`, { method: "DELETE", auth: true }),
+    publish: (id: string) => request<PageResponse>(`/api/pages/${id}/publish`, { method: "POST", auth: true }),
+    unpublish: (id: string) => request<PageResponse>(`/api/pages/${id}/unpublish`, { method: "POST", auth: true }),
+    versions: (id: string) => request<PageVersionResponse[]>(`/api/pages/${id}/versions`, { auth: true }),
+    restore: (id: string, version: number) =>
+      request<PageResponse>(`/api/pages/${id}/versions/${version}/restore`, { method: "POST", auth: true }),
+  },
+
+  components: {
+    list: (category?: string) =>
+      request<ComponentRegistryResponse[]>(`/api/component-registry${query({ category })}`, { auth: true }),
+  },
 };
