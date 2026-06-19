@@ -40,11 +40,13 @@ The initial schema implements the proposal ERD:
 
 - `users`, `roles`, `user_roles`, `refresh_tokens`
 - `content_types`, `content_entries`
-- `pages`, `page_versions`, `component_registry`
+- `pages`, `page_versions`, `component_registry` with stable builder keys
 - `media`, `media_variants`
 
 Phase one adds role normalization for `super_admin` and `author`, refresh-token
-rotation, and media captions.
+rotation, and media captions. Phase two adds stable `component_key` identifiers,
+seeded system components, page JSON validation, version snapshots, and live
+preview broadcast channels.
 
 The schema uses `UUID` primary keys, `JSONB` for dynamic content/page structures,
 status enums, slug checks, foreign keys, and indexes for common lookups.

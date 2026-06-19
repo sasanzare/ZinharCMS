@@ -25,6 +25,7 @@ pub fn router(state: AppState) -> Router {
         .merge(auth::protected_router())
         .merge(content::router())
         .merge(media::router())
+        .merge(pages::router())
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -38,7 +39,6 @@ pub fn router(state: AppState) -> Router {
         .route("/openapi.json", get(openapi))
         .merge(auth::public_router())
         .merge(protected)
-        .nest("/api/pages", pages::router())
         .nest_service("/uploads", uploads)
         .with_state(state)
 }
@@ -72,7 +72,22 @@ pub fn router(state: AppState) -> Router {
         media::get_media,
         media::update_media,
         media::delete_media,
-        pages::module_status
+        pages::list_pages,
+        pages::create_page,
+        pages::get_page,
+        pages::get_page_by_slug,
+        pages::update_page,
+        pages::delete_page,
+        pages::publish_page,
+        pages::unpublish_page,
+        pages::list_page_versions,
+        pages::restore_page_version,
+        pages::list_components,
+        pages::create_component,
+        pages::get_component,
+        pages::update_component,
+        pages::delete_component,
+        pages::preview_page
     ),
     components(schemas(
         ApiInfo,
@@ -97,7 +112,12 @@ pub fn router(state: AppState) -> Router {
         media::MediaVariantResponse,
         media::MediaDetailResponse,
         media::MediaListResponse,
-        pages::PagesModuleStatus
+        pages::PageRequest,
+        pages::PageResponse,
+        pages::PageListResponse,
+        pages::PageVersionResponse,
+        pages::ComponentRegistryRequest,
+        pages::ComponentRegistryResponse
     )),
     tags(
         (name = "system", description = "Phase-zero system endpoints"),
@@ -105,7 +125,9 @@ pub fn router(state: AppState) -> Router {
         (name = "content", description = "Content type management"),
         (name = "entries", description = "Content entry management"),
         (name = "media", description = "Media library"),
-        (name = "pages", description = "Page builder module placeholder")
+        (name = "pages", description = "Visual page builder pages"),
+        (name = "components", description = "Visual builder component registry"),
+        (name = "preview", description = "Live page preview WebSocket")
     )
 )]
 struct ApiDoc;

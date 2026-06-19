@@ -1,7 +1,8 @@
 # API
 
-Phase one exposes a functional backend API for authentication, RBAC-protected
-content management, entries, and the media library.
+The API exposes a functional backend for authentication, RBAC-protected content
+management, entries, the media library, and the phase-two visual page builder
+engine.
 
 ## System
 
@@ -62,3 +63,53 @@ Example: `sort=created_at:desc`.
 
 Image uploads for `image/jpeg`, `image/png`, and `image/webp` generate:
 `thumbnail`, `small`, `medium`, and `large` WebP variants.
+
+## Component Registry
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/component-registry` | List components with optional `category` filter |
+| `POST` | `/api/component-registry` | Create custom component; admin-only |
+| `GET` | `/api/component-registry/{component_key}` | Get component definition |
+| `PUT` | `/api/component-registry/{component_key}` | Update component definition; admin-only |
+| `DELETE` | `/api/component-registry/{component_key}?confirm=true` | Delete custom component; admin-only |
+
+System components are seeded for sections, content, layout, media, forms,
+navigation, and data categories. Page JSON node `type` values must match a
+registered `component_key` such as `hero-banner`.
+
+## Pages
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/pages` | List pages with `page`, `per_page`, `status`, `sort` |
+| `POST` | `/api/pages` | Create page and first version snapshot |
+| `GET` | `/api/pages/{id}` | Get page by UUID |
+| `GET` | `/api/pages/slug/{slug}` | Get page by slug |
+| `PUT` | `/api/pages/{id}` | Update page JSON and create a new version snapshot |
+| `DELETE` | `/api/pages/{id}?confirm=true` | Delete page; editor/admin |
+| `POST` | `/api/pages/{id}/publish` | Publish page; editor/admin |
+| `POST` | `/api/pages/{id}/unpublish` | Move page back to draft; editor/admin |
+| `GET` | `/api/pages/{id}/versions` | List page JSON snapshots |
+| `POST` | `/api/pages/{id}/versions/{version}/restore` | Restore snapshot as a new draft version |
+| `GET` | `/api/preview/{page_id}` | Authenticated WebSocket live preview stream; use `Authorization` header or `?access_token=` |
+
+Supported page sort fields: `created_at`, `updated_at`, `published_at`, `title`.
+Example: `sort=updated_at:desc`.
+
+Page JSON requires a root layout node:
+
+```json
+{
+  "version": "1.0",
+  "metadata": {
+    "title": "Home",
+    "description": "Landing page"
+  },
+  "layout": {
+    "id": "root",
+    "type": "root",
+    "children": []
+  }
+}
+```

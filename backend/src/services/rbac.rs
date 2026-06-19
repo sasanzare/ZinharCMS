@@ -34,6 +34,22 @@ pub fn require_media_writer(claims: &Claims) -> Result<(), AppError> {
     require_any(claims, &[ADMIN, EDITOR, AUTHOR])
 }
 
+pub fn require_page_writer(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN, EDITOR, AUTHOR])
+}
+
+pub fn require_page_publisher(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN, EDITOR])
+}
+
+pub fn require_page_manager(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN, EDITOR])
+}
+
+pub fn require_component_registry_manager(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN])
+}
+
 pub fn default_registration_role(existing_users: i64) -> &'static str {
     if existing_users == 0 {
         SUPER_ADMIN

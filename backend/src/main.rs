@@ -1,10 +1,9 @@
 use std::net::SocketAddr;
-use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::Context;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
-use axum::http::{HeaderValue, Method};
+use axum::http::{HeaderValue, Method, StatusCode};
 use cms_backend::config::Config;
 use cms_backend::db;
 use cms_backend::state::AppState;
@@ -35,7 +34,10 @@ async fn main() -> anyhow::Result<()> {
 
     let cors_origin = HeaderValue::from_str(&config.cors_origin).context("invalid CORS_ORIGIN")?;
     let app = cms_backend::app(state)
-        .layer(TimeoutLayer::new(Duration::from_secs(30)))
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(30),
+        ))
         .layer(CompressionLayer::new())
         .layer(
             CorsLayer::new()

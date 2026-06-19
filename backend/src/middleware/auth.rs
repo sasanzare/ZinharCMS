@@ -27,6 +27,7 @@ pub async fn auth_middleware(
         .get("Authorization")
         .and_then(|header| header.to_str().ok())
         .and_then(|value| value.strip_prefix("Bearer "))
+        .or_else(|| preview_query_token(&req))
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
     let claims =
@@ -34,4 +35,22 @@ pub async fn auth_middleware(
     req.extensions_mut().insert(claims);
 
     Ok(next.run(req).await)
+}
+
+fn preview_query_token(req: &Request) -> Option<&str> {
+    req.uri()
+        .path()
+        .starts_with("/api/preview/")
+        .then(|| req.uri().query().and_then(token_from_query))?
+}
+
+fn token_from_query(query: &str) -> Option<&str> {
+    query.split('&').find_map(|pair| {
+        let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
+        if matches!(key, "access_token" | "token") && !value.is_empty() {
+            Some(value)
+        } else {
+            None
+        }
+    })
 }

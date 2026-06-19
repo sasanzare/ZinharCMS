@@ -38,6 +38,7 @@ pub struct PageVersion {
 #[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
 pub struct ComponentRegistryItem {
     pub id: Uuid,
+    pub component_key: String,
     pub name: String,
     pub category: String,
     pub props_schema: Value,

@@ -109,22 +109,19 @@ fn validate_string(field: &FieldSchema, value: &Value) -> Result<(), AppError> {
         return Err(type_error(field, "string"));
     };
 
-    if let Some(min) = field.min_length {
-        if value.chars().count() < min {
-            return Err(AppError::Validation(format!(
-                "field '{}' must be at least {min} characters",
-                field.name
-            )));
-        }
+    let value_len = value.chars().count();
+    if let Some(min) = field.min_length.filter(|min| value_len < *min) {
+        return Err(AppError::Validation(format!(
+            "field '{}' must be at least {min} characters",
+            field.name
+        )));
     }
 
-    if let Some(max) = field.max_length {
-        if value.chars().count() > max {
-            return Err(AppError::Validation(format!(
-                "field '{}' must be at most {max} characters",
-                field.name
-            )));
-        }
+    if let Some(max) = field.max_length.filter(|max| value_len > *max) {
+        return Err(AppError::Validation(format!(
+            "field '{}' must be at most {max} characters",
+            field.name
+        )));
     }
 
     if field.field_type == "slug" && !is_valid_slug(value) {
@@ -142,22 +139,18 @@ fn validate_number(field: &FieldSchema, value: &Value) -> Result<(), AppError> {
         return Err(type_error(field, "number"));
     };
 
-    if let Some(min) = field.min {
-        if value < min {
-            return Err(AppError::Validation(format!(
-                "field '{}' must be greater than or equal to {min}",
-                field.name
-            )));
-        }
+    if let Some(min) = field.min.filter(|min| value < *min) {
+        return Err(AppError::Validation(format!(
+            "field '{}' must be greater than or equal to {min}",
+            field.name
+        )));
     }
 
-    if let Some(max) = field.max {
-        if value > max {
-            return Err(AppError::Validation(format!(
-                "field '{}' must be less than or equal to {max}",
-                field.name
-            )));
-        }
+    if let Some(max) = field.max.filter(|max| value > *max) {
+        return Err(AppError::Validation(format!(
+            "field '{}' must be less than or equal to {max}",
+            field.name
+        )));
     }
 
     Ok(())
