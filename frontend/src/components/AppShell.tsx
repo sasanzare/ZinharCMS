@@ -46,7 +46,7 @@ export function AppShell() {
         <div className="brand-row">
           <div className="brand-mark">Z</div>
           <div className="brand-copy">
-            <strong>ZangarCMS</strong>
+            <strong>ZinharCMS</strong>
             <span>Headless admin</span>
           </div>
         </div>
