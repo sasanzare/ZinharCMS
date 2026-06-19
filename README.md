@@ -43,6 +43,12 @@ component registry, page versioning, live preview streaming, and a React admin p
 - Media: upload, search, metadata editing, copy URL, and delete.
 - Pages: JSON editor for phase-two pages, publish/unpublish, versions, restore, and preview WebSocket URL copy.
 
+## Phase Four Scope
+
+- Page Builder: component palette, drag-and-drop canvas, sortable blocks, and generated props editor.
+- Preview: live local preview of the current page JSON plus WebSocket preview URL copy for saved pages.
+- Persistence: manual save for new pages and debounced autosave for existing page drafts.
+- Compatibility: uses the existing `page_json`, page versions, publish/unpublish, and component registry APIs.
 ## Quick Start
 
 Copy the environment template and start the local stack:
