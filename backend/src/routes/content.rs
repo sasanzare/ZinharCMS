@@ -13,7 +13,7 @@ use crate::middleware::auth::Claims;
 use crate::plugins;
 use crate::routes::delivery;
 use crate::services::entry_validation::{is_valid_slug, parse_fields, validate_entry_data};
-use crate::services::{rbac, webhooks, workflow};
+use crate::services::{rbac, security, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -351,6 +351,7 @@ pub async fn create_entry(
     let content_type = load_content_type_by_slug(&state, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
     let data = plugins::run_entry_before_save(&state, &type_slug, payload.data, claims.sub).await?;
+    let data = security::sanitize_entry_data(&fields, data);
     validate_entry_data(&fields, &data)?;
 
     let row = sqlx::query_as::<_, ContentEntryResponse>(
@@ -416,6 +417,7 @@ pub async fn update_entry(
     let content_type = load_content_type_by_slug(&state, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
     let data = plugins::run_entry_before_save(&state, &type_slug, payload.data, claims.sub).await?;
+    let data = security::sanitize_entry_data(&fields, data);
     validate_entry_data(&fields, &data)?;
 
     let row = sqlx::query_as::<_, ContentEntryResponse>(

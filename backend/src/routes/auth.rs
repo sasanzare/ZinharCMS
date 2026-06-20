@@ -1,4 +1,9 @@
-use axum::extract::{Extension, State};
+use std::net::SocketAddr;
+
+use axum::body::Bytes;
+use axum::extract::{ConnectInfo, Extension, State};
+use axum::http::header::{COOKIE, SET_COOKIE};
+use axum::http::{HeaderMap, HeaderValue};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{Duration, Utc};
@@ -9,8 +14,12 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
-use crate::services::{jwt, password, rbac};
+use crate::services::{jwt, password, rbac, security};
 use crate::state::AppState;
+
+const REFRESH_COOKIE_NAME: &str = "zinhar_refresh_token";
+
+type AuthResult = (HeaderMap, Json<AuthResponse>);
 
 pub fn public_router() -> Router<AppState> {
     Router::new()
@@ -63,7 +72,7 @@ pub struct LogoutResponse {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AuthResponse {
     pub access_token: String,
-    pub refresh_token: String,
+    pub refresh_token: Option<String>,
     pub token_type: String,
     pub expires_in: u64,
     pub user: AuthUser,
@@ -92,6 +101,11 @@ struct LoginUser {
 struct RefreshRecord {
     user_id: Uuid,
     role: String,
+}
+
+struct IssuedAuthResponse {
+    body: AuthResponse,
+    refresh_token: String,
 }
 
 #[utoipa::path(
@@ -126,7 +140,7 @@ pub async fn module_status() -> Json<AuthModuleStatus> {
 pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<Json<AuthResponse>, AppError> {
+) -> Result<AuthResult, AppError> {
     validate_register(&payload)?;
 
     let email = payload.email.trim().to_ascii_lowercase();
@@ -163,7 +177,8 @@ pub async fn register(
     .await?;
     tx.commit().await?;
 
-    issue_auth_response(&state, user).await.map(Json)
+    let issued = issue_auth_response(&state, user).await?;
+    auth_response_with_cookie(&state, issued)
 }
 
 #[utoipa::path(
@@ -174,10 +189,21 @@ pub async fn register(
     responses((status = 200, description = "Token pair", body = AuthResponse))
 )]
 pub async fn login(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
-) -> Result<Json<AuthResponse>, AppError> {
+) -> Result<AuthResult, AppError> {
     let email = payload.email.trim().to_ascii_lowercase();
+    let ip_address = security::client_ip(&headers, addr.ip());
+    security::require_login_allowed(
+        &state.db,
+        &ip_address,
+        state.config.login_rate_limit_max_failures,
+        state.config.login_rate_limit_window_seconds,
+    )
+    .await?;
+
     let user = sqlx::query_as::<_, LoginUser>(
         r#"
         SELECT u.id,
@@ -203,16 +229,24 @@ pub async fn login(
     )
     .bind(&email)
     .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::Unauthorized("invalid email or password".to_owned()))?;
+    .await?;
+
+    let Some(user) = user else {
+        security::record_login_attempt(&state.db, &email, &ip_address, false).await?;
+        return Err(AppError::Unauthorized(
+            "invalid email or password".to_owned(),
+        ));
+    };
 
     if !password::verify_password(&payload.password, &user.password_hash)? {
+        security::record_login_attempt(&state.db, &email, &ip_address, false).await?;
         return Err(AppError::Unauthorized(
             "invalid email or password".to_owned(),
         ));
     }
 
-    issue_auth_response(
+    security::record_login_attempt(&state.db, &email, &ip_address, true).await?;
+    let issued = issue_auth_response(
         &state,
         AuthUser {
             id: user.id,
@@ -222,8 +256,8 @@ pub async fn login(
             role: user.role,
         },
     )
-    .await
-    .map(Json)
+    .await?;
+    auth_response_with_cookie(&state, issued)
 }
 
 #[utoipa::path(
@@ -235,9 +269,12 @@ pub async fn login(
 )]
 pub async fn refresh(
     State(state): State<AppState>,
-    Json(payload): Json<RefreshRequest>,
-) -> Result<Json<AuthResponse>, AppError> {
-    let token_hash = jwt::hash_refresh_token(&payload.refresh_token);
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<AuthResult, AppError> {
+    let refresh_token = refresh_token_from_request(&headers, &body)?
+        .ok_or_else(|| AppError::Unauthorized("missing refresh token".to_owned()))?;
+    let token_hash = jwt::hash_refresh_token(&refresh_token);
     let record = sqlx::query_as::<_, RefreshRecord>(
         r#"
         SELECT rt.user_id, r.name as role
@@ -272,7 +309,8 @@ pub async fn refresh(
 
     let mut user = load_auth_user(&state, record.user_id).await?;
     user.role = record.role;
-    issue_auth_response(&state, user).await.map(Json)
+    let issued = issue_auth_response(&state, user).await?;
+    auth_response_with_cookie(&state, issued)
 }
 
 #[utoipa::path(
@@ -285,19 +323,26 @@ pub async fn refresh(
 pub async fn logout(
     State(state): State<AppState>,
     Extension(_claims): Extension<Claims>,
-    Json(payload): Json<LogoutRequest>,
-) -> Result<Json<LogoutResponse>, AppError> {
-    let token_hash = jwt::hash_refresh_token(&payload.refresh_token);
-    let result = sqlx::query(
-        "UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL",
-    )
-    .bind(token_hash)
-    .execute(&state.db)
-    .await?;
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<(HeaderMap, Json<LogoutResponse>), AppError> {
+    let refresh_token = refresh_token_from_request(&headers, &body)?;
+    let revoked = if let Some(refresh_token) = refresh_token {
+        let token_hash = jwt::hash_refresh_token(&refresh_token);
+        let result = sqlx::query(
+            "UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL",
+        )
+        .bind(token_hash)
+        .execute(&state.db)
+        .await?;
+        result.rows_affected() > 0
+    } else {
+        false
+    };
 
-    Ok(Json(LogoutResponse {
-        revoked: result.rows_affected() > 0,
-    }))
+    let mut headers = HeaderMap::new();
+    headers.insert(SET_COOKIE, clear_refresh_cookie(&state)?);
+    Ok((headers, Json(LogoutResponse { revoked })))
 }
 
 #[utoipa::path(
@@ -313,7 +358,10 @@ pub async fn me(
     load_auth_user(&state, claims.sub).await.map(Json)
 }
 
-async fn issue_auth_response(state: &AppState, user: AuthUser) -> Result<AuthResponse, AppError> {
+async fn issue_auth_response(
+    state: &AppState,
+    user: AuthUser,
+) -> Result<IssuedAuthResponse, AppError> {
     let access_token = jwt::sign_access_token(user.id, &user.role, &state.config)?;
     let refresh_token = jwt::generate_refresh_token();
     let token_hash = jwt::hash_refresh_token(&refresh_token);
@@ -331,13 +379,32 @@ async fn issue_auth_response(state: &AppState, user: AuthUser) -> Result<AuthRes
     .execute(&state.db)
     .await?;
 
-    Ok(AuthResponse {
-        access_token,
+    Ok(IssuedAuthResponse {
+        body: AuthResponse {
+            access_token,
+            refresh_token: None,
+            token_type: "Bearer".to_owned(),
+            expires_in: state.config.jwt_access_expiry,
+            user,
+        },
         refresh_token,
-        token_type: "Bearer".to_owned(),
-        expires_in: state.config.jwt_access_expiry,
-        user,
     })
+}
+
+fn auth_response_with_cookie(
+    state: &AppState,
+    issued: IssuedAuthResponse,
+) -> Result<AuthResult, AppError> {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        SET_COOKIE,
+        refresh_cookie(
+            &issued.refresh_token,
+            state.config.jwt_refresh_expiry,
+            state.config.cookie_secure,
+        )?,
+    );
+    Ok((headers, Json(issued.body)))
 }
 
 async fn load_auth_user(state: &AppState, user_id: Uuid) -> Result<AuthUser, AppError> {
@@ -367,6 +434,54 @@ async fn load_auth_user(state: &AppState, user_id: Uuid) -> Result<AuthUser, App
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
+}
+
+fn refresh_token_from_request(
+    headers: &HeaderMap,
+    body: &[u8],
+) -> Result<Option<String>, AppError> {
+    if !body.is_empty() {
+        let payload: RefreshRequest = serde_json::from_slice(body)
+            .map_err(|error| AppError::BadRequest(error.to_string()))?;
+        let token = payload.refresh_token.trim();
+        if !token.is_empty() {
+            return Ok(Some(token.to_owned()));
+        }
+    }
+
+    Ok(cookie_value(headers, REFRESH_COOKIE_NAME))
+}
+
+fn cookie_value(headers: &HeaderMap, name: &str) -> Option<String> {
+    headers
+        .get(COOKIE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|cookies| {
+            cookies.split(';').find_map(|cookie| {
+                let (cookie_name, cookie_value) = cookie.trim().split_once('=')?;
+                (cookie_name == name).then(|| cookie_value.to_owned())
+            })
+        })
+}
+
+fn refresh_cookie(token: &str, max_age: u64, secure: bool) -> Result<HeaderValue, AppError> {
+    let secure = if secure { "; Secure" } else { "" };
+    HeaderValue::from_str(&format!(
+        "{REFRESH_COOKIE_NAME}={token}; HttpOnly; SameSite=Lax; Path=/api/auth; Max-Age={max_age}{secure}"
+    ))
+    .map_err(|error| AppError::Internal(error.to_string()))
+}
+
+fn clear_refresh_cookie(state: &AppState) -> Result<HeaderValue, AppError> {
+    let secure = if state.config.cookie_secure {
+        "; Secure"
+    } else {
+        ""
+    };
+    HeaderValue::from_str(&format!(
+        "{REFRESH_COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/api/auth; Max-Age=0{secure}"
+    ))
+    .map_err(|error| AppError::Internal(error.to_string()))
 }
 
 fn validate_register(payload: &RegisterRequest) -> Result<(), AppError> {

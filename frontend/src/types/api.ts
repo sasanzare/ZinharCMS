@@ -35,7 +35,7 @@ export type AuthUser = {
 
 export type AuthResponse = {
   access_token: string;
-  refresh_token: string;
+  refresh_token: string | null;
   token_type: string;
   expires_in: number;
   user: AuthUser;

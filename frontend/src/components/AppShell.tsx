@@ -44,12 +44,10 @@ export function AppShell() {
 
   async function handleLogout() {
     const refreshToken = getStoredRefreshToken();
-    if (refreshToken) {
-      try {
-        await api.auth.logout(refreshToken);
-      } catch {
-        // Local logout should still complete if the token is already invalid.
-      }
+    try {
+      await api.auth.logout(refreshToken);
+    } catch {
+      // Local logout should still complete if the token is already invalid.
     }
     clearSession();
   }

@@ -6,6 +6,7 @@ use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::http::{HeaderValue, Method, StatusCode};
 use cms_backend::config::Config;
 use cms_backend::db;
+use cms_backend::middleware::security::security_headers;
 use cms_backend::services::{password, rbac};
 use cms_backend::state::AppState;
 use tower_http::compression::CompressionLayer;
@@ -41,6 +42,7 @@ async fn main() -> anyhow::Result<()> {
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(30),
         ))
+        .layer(axum::middleware::from_fn(security_headers))
         .layer(CompressionLayer::new())
         .layer(
             CorsLayer::new()
@@ -52,7 +54,8 @@ async fn main() -> anyhow::Result<()> {
                     Method::PATCH,
                     Method::DELETE,
                 ])
-                .allow_headers([AUTHORIZATION, CONTENT_TYPE]),
+                .allow_headers([AUTHORIZATION, CONTENT_TYPE])
+                .allow_credentials(true),
         )
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
@@ -64,10 +67,13 @@ async fn main() -> anyhow::Result<()> {
         .with_context(|| format!("failed to bind {addr}"))?;
 
     tracing::info!(%addr, "ZinharCMS API listening");
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .context("server failed")?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .context("server failed")?;
 
     Ok(())
 }

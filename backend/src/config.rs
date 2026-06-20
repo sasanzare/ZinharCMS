@@ -12,6 +12,9 @@ pub struct Config {
     pub upload_dir: String,
     pub max_upload_size: u64,
     pub cors_origin: String,
+    pub cookie_secure: bool,
+    pub login_rate_limit_max_failures: i64,
+    pub login_rate_limit_window_seconds: i64,
     pub port: u16,
 }
 
@@ -41,6 +44,9 @@ impl Config {
             upload_dir: get("UPLOAD_DIR", Some("./uploads"))?,
             max_upload_size: parse_u64("MAX_UPLOAD_SIZE", 52_428_800)?,
             cors_origin: get("CORS_ORIGIN", Some("http://localhost:5173"))?,
+            cookie_secure: parse_bool("COOKIE_SECURE", false)?,
+            login_rate_limit_max_failures: parse_i64("LOGIN_RATE_LIMIT_MAX_FAILURES", 5)?,
+            login_rate_limit_window_seconds: parse_i64("LOGIN_RATE_LIMIT_WINDOW_SECONDS", 900)?,
             port: parse_u16("PORT", 8080)?,
         })
     }
@@ -64,6 +70,25 @@ fn parse_u64(name: &'static str, default: u64) -> Result<u64, ConfigError> {
     }
 }
 
+fn parse_i64(name: &'static str, default: i64) -> Result<i64, ConfigError> {
+    match env::var(name) {
+        Ok(value) if !value.trim().is_empty() => value
+            .parse::<i64>()
+            .map_err(|_| ConfigError::Invalid { name, value }),
+        _ => Ok(default),
+    }
+}
+
+fn parse_bool(name: &'static str, default: bool) -> Result<bool, ConfigError> {
+    match env::var(name) {
+        Ok(value) if !value.trim().is_empty() => match value.to_ascii_lowercase().as_str() {
+            "1" | "true" | "yes" | "on" => Ok(true),
+            "0" | "false" | "no" | "off" => Ok(false),
+            _ => Err(ConfigError::Invalid { name, value }),
+        },
+        _ => Ok(default),
+    }
+}
 fn parse_u16(name: &'static str, default: u16) -> Result<u16, ConfigError> {
     match env::var(name) {
         Ok(value) if !value.trim().is_empty() => value

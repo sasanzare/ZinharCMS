@@ -85,6 +85,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    credentials: "include",
     headers,
     body: options.formData ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
   });
@@ -123,8 +124,17 @@ export const api = {
       request<AuthResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
     register: (email: string, password: string, name: string) =>
       request<AuthResponse>("/api/auth/register", { method: "POST", body: { email, password, name } }),
-    logout: (refresh_token: string) =>
-      request<{ revoked: boolean }>("/api/auth/logout", { method: "POST", auth: true, body: { refresh_token } }),
+    refresh: (refresh_token?: string | null) =>
+      request<AuthResponse>("/api/auth/refresh", {
+        method: "POST",
+        body: refresh_token ? { refresh_token } : undefined,
+      }),
+    logout: (refresh_token?: string | null) =>
+      request<{ revoked: boolean }>("/api/auth/logout", {
+        method: "POST",
+        auth: true,
+        body: refresh_token ? { refresh_token } : undefined,
+      }),
     me: () => request<AuthUser>("/api/auth/me", { auth: true }),
   },
 

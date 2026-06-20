@@ -82,12 +82,10 @@ export function SettingsPage() {
 
   async function logout() {
     const refreshToken = getStoredRefreshToken();
-    if (refreshToken) {
-      try {
-        await api.auth.logout(refreshToken);
-      } catch {
-        // Local logout remains valid when the refresh token is already revoked.
-      }
+    try {
+      await api.auth.logout(refreshToken);
+    } catch {
+      // Local logout remains valid when the refresh token is already revoked.
     }
     clearSession();
   }
@@ -193,7 +191,7 @@ export function SettingsPage() {
           </label>
           <label>
             Refresh token
-            <input value={getStoredRefreshToken() ? "Stored" : "Missing"} readOnly />
+            <input value={getStoredRefreshToken() ? "Legacy localStorage" : "HttpOnly cookie"} readOnly />
           </label>
         </div>
 

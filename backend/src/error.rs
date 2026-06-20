@@ -23,6 +23,8 @@ pub enum AppError {
     Validation(String),
     #[error("conflict: {0}")]
     Conflict(String),
+    #[error("too many requests: {0}")]
+    TooManyRequests(String),
     #[error("service unavailable: {0}")]
     ServiceUnavailable(String),
     #[error("internal server error: {0}")]
@@ -38,6 +40,7 @@ impl IntoResponse for AppError {
             Self::BadRequest(_) => (StatusCode::BAD_REQUEST, "bad_request"),
             Self::Validation(_) => (StatusCode::UNPROCESSABLE_ENTITY, "validation_error"),
             Self::Conflict(_) => (StatusCode::CONFLICT, "conflict"),
+            Self::TooManyRequests(_) => (StatusCode::TOO_MANY_REQUESTS, "too_many_requests"),
             Self::ServiceUnavailable(_) => (StatusCode::SERVICE_UNAVAILABLE, "service_unavailable"),
             Self::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, "internal_error"),
         };

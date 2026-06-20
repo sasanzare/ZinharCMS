@@ -19,12 +19,12 @@ workflow, comments, plugins, and webhooks.
 | --- | --- | --- |
 | `GET` | `/api/auth` | Auth module planned endpoints |
 | `POST` | `/api/auth/register` | Create user; first user becomes `super_admin` |
-| `POST` | `/api/auth/login` | Issue access and refresh tokens |
-| `POST` | `/api/auth/refresh` | Rotate refresh token and issue a new access token |
-| `POST` | `/api/auth/logout` | Revoke refresh token |
+| `POST` | `/api/auth/login` | Issue access token and HttpOnly refresh cookie; rate-limited by failed IP attempts |
+| `POST` | `/api/auth/refresh` | Rotate refresh cookie and issue a new access token |
+| `POST` | `/api/auth/logout` | Revoke refresh token and clear refresh cookie |
 | `GET` | `/api/auth/me` | Current authenticated user |
 
-Use the access token as `Authorization: Bearer <token>` for protected endpoints.
+Use the access token as `Authorization: Bearer <token>` for protected endpoints. Refresh tokens are issued as the `zinhar_refresh_token` HttpOnly cookie; legacy clients may still send `refresh_token` in the refresh/logout JSON body.
 
 ## Content Types
 
@@ -162,6 +162,18 @@ Responses are cached in Redis for 300 seconds. Publish/unpublish and published u
 | `POST` | `/api/plugins/{plugin_key}/disable` | Disable plugin; admin-only |
 
 The `seo-auto` plugin runs on `entry.before_save` and fills `data.slug` from `data.title` when `data.slug` is empty.
+
+## Security Controls
+
+| Area | Control |
+| --- | --- |
+| Auth | Failed login attempts are limited by IP address. Default: 5 failures per 15 minutes. |
+| Auth | Refresh tokens are stored in `HttpOnly` cookies at `/api/auth`. |
+| API | CORS is restricted to `CORS_ORIGIN` and supports credentialed requests. |
+| API | Responses include CSP, frame, content-type, referrer, and permissions policy headers. |
+| Content | Entry `richtext` fields are sanitized before validation and storage. |
+| Webhooks | Webhook URLs reject credentials, localhost, private IP ranges, and metadata hosts. |
+| Uploads | File type is detected from content signatures and must match the declared MIME type. |
 
 ## Webhooks
 

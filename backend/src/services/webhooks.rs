@@ -1,3 +1,4 @@
+use std::net::IpAddr;
 use std::time::Duration;
 
 use base64::Engine;
@@ -51,7 +52,44 @@ pub fn validate_url(value: &str) -> Result<(), AppError> {
             "webhook url cannot include credentials".to_owned(),
         ));
     }
+    let host = url.host_str().unwrap_or_default();
+    if is_forbidden_webhook_host(host) {
+        return Err(AppError::Validation(
+            "webhook url host is not allowed".to_owned(),
+        ));
+    }
     Ok(())
+}
+
+fn is_forbidden_webhook_host(host: &str) -> bool {
+    let host = host.trim_end_matches('.').to_ascii_lowercase();
+    if matches!(
+        host.as_str(),
+        "localhost" | "ip6-localhost" | "metadata.google.internal"
+    ) || host.ends_with(".localhost")
+    {
+        return true;
+    }
+
+    match host.parse::<IpAddr>() {
+        Ok(IpAddr::V4(ip)) => {
+            ip.is_loopback()
+                || ip.is_private()
+                || ip.is_link_local()
+                || ip.is_multicast()
+                || ip.is_broadcast()
+                || ip.is_unspecified()
+                || ip.octets() == [169, 254, 169, 254]
+        }
+        Ok(IpAddr::V6(ip)) => {
+            ip.is_loopback()
+                || ip.is_multicast()
+                || ip.is_unspecified()
+                || ip.is_unique_local()
+                || ip.is_unicast_link_local()
+        }
+        Err(_) => false,
+    }
 }
 
 pub fn validate_events(events: &[String]) -> Result<(), AppError> {
@@ -208,6 +246,13 @@ fn truncate(value: &str, max_chars: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn validate_url_rejects_private_hosts() {
+        assert!(validate_url("http://127.0.0.1/hook").is_err());
+        assert!(validate_url("http://localhost/hook").is_err());
+        assert!(validate_url("https://example.com/hook").is_ok());
+    }
 
     #[test]
     fn sign_payload_is_stable_for_same_secret_and_body() {

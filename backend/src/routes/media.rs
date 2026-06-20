@@ -1,4 +1,4 @@
-use std::path::{Path as FsPath, PathBuf};
+use std::path::PathBuf;
 
 use axum::extract::{Extension, Multipart, Path, Query, State};
 use axum::routing::{get, post};
@@ -217,7 +217,7 @@ pub async fn upload_media(
             state.config.max_upload_size
         )));
     }
-    validate_upload_type(&upload)?;
+    let detected_mime_type = validate_upload_type(&upload)?;
 
     let upload_dir = PathBuf::from(&state.config.upload_dir);
     fs::create_dir_all(&upload_dir)
@@ -228,7 +228,7 @@ pub async fn upload_media(
         .map_err(|error| AppError::Internal(error.to_string()))?;
 
     let file_id = Uuid::now_v7();
-    let extension = extension_for(&upload.filename).unwrap_or("bin");
+    let extension = extension_for_mime(detected_mime_type);
     let stored_filename = format!("{file_id}.{extension}");
     let path = upload_dir.join(&stored_filename);
     fs::write(&path, &upload.bytes)
@@ -255,7 +255,7 @@ pub async fn upload_media(
     .bind(file_id)
     .bind(&upload.filename)
     .bind(&url)
-    .bind(&upload.mime_type)
+    .bind(detected_mime_type)
     .bind(upload.bytes.len() as i64)
     .bind(clean_optional_text(alt_text))
     .bind(clean_optional_text(caption))
@@ -264,7 +264,7 @@ pub async fn upload_media(
     .await?;
 
     let mut variants = Vec::new();
-    if is_supported_image_mime(&upload.mime_type) {
+    if is_supported_image_mime(detected_mime_type) {
         let processed =
             process_image_variants(upload.bytes, &upload_dir, &file_id.to_string()).await?;
         for variant in processed {
@@ -408,22 +408,58 @@ struct IncomingUpload {
     bytes: Vec<u8>,
 }
 
-fn validate_upload_type(upload: &IncomingUpload) -> Result<(), AppError> {
+fn validate_upload_type(upload: &IncomingUpload) -> Result<&'static str, AppError> {
     let allowed = [
         "image/jpeg",
         "image/png",
         "image/webp",
-        "image/svg+xml",
         "application/pdf",
         "text/plain",
     ];
-    if allowed.contains(&upload.mime_type.as_str()) {
-        Ok(())
-    } else {
-        Err(AppError::Validation(format!(
-            "mime type '{}' is not allowed",
+    let detected = detect_mime_type(&upload.bytes).ok_or_else(|| {
+        AppError::Validation("file type could not be detected from content".to_owned())
+    })?;
+    if !allowed.contains(&detected) {
+        return Err(AppError::Validation(format!(
+            "detected mime type '{detected}' is not allowed"
+        )));
+    }
+    if upload.mime_type != "application/octet-stream" && upload.mime_type != detected {
+        return Err(AppError::Validation(format!(
+            "declared mime type '{}' does not match detected type '{detected}'",
             upload.mime_type
-        )))
+        )));
+    }
+    Ok(detected)
+}
+
+fn detect_mime_type(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.starts_with(&[0xff, 0xd8, 0xff]) {
+        return Some("image/jpeg");
+    }
+    if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        return Some("image/png");
+    }
+    if bytes.len() >= 12 && bytes.starts_with(b"RIFF") && &bytes[8..12] == b"WEBP" {
+        return Some("image/webp");
+    }
+    if bytes.starts_with(b"%PDF-") {
+        return Some("application/pdf");
+    }
+    if !bytes.is_empty() && !bytes.contains(&0) && std::str::from_utf8(bytes).is_ok() {
+        return Some("text/plain");
+    }
+    None
+}
+
+fn extension_for_mime(mime_type: &str) -> &'static str {
+    match mime_type {
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/webp" => "webp",
+        "application/pdf" => "pdf",
+        "text/plain" => "txt",
+        _ => "bin",
     }
 }
 
@@ -439,16 +475,17 @@ fn sanitize_filename(filename: &str) -> String {
         })
         .collect();
 
-    sanitized.trim_matches('-').chars().take(180).collect()
+    let sanitized: String = sanitized
+        .trim_matches(|ch| matches!(ch, '-' | '.'))
+        .chars()
+        .take(180)
+        .collect();
+    if sanitized.is_empty() {
+        "upload.bin".to_owned()
+    } else {
+        sanitized
+    }
 }
-
-fn extension_for(filename: &str) -> Option<&str> {
-    FsPath::new(filename)
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .filter(|ext| ext.chars().all(|ch| ch.is_ascii_alphanumeric()))
-}
-
 fn clean_optional_text(value: Option<String>) -> Option<String> {
     value.and_then(|value| {
         let value = value.trim().to_owned();

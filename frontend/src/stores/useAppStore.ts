@@ -9,7 +9,7 @@ const USER_KEY = "zinhar.user";
 
 type AuthSession = {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string | null;
   user: AuthUser;
 };
 
@@ -42,9 +42,9 @@ export const useAppStore = create<AppStore>((set) => ({
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSession: ({ accessToken, refreshToken, user }) => {
     setApiAccessToken(accessToken);
-    setApiRefreshToken(refreshToken);
+    setApiRefreshToken(refreshToken ?? null);
     window.localStorage.setItem(USER_KEY, JSON.stringify(user));
-    set({ accessToken, refreshToken, user });
+    set({ accessToken, refreshToken: refreshToken ?? null, user });
   },
   clearSession: () => {
     setApiAccessToken(null);
