@@ -74,7 +74,8 @@ export type ContentTypeResponse = {
   updated_at: string;
 };
 
-export type EntryStatus = "draft" | "pending_review" | "published" | "archived";
+export type WorkflowStatus = "draft" | "pending_review" | "published" | "archived";
+export type EntryStatus = WorkflowStatus;
 
 export type ContentEntryResponse = {
   id: string;
@@ -151,7 +152,7 @@ export type PageResponse = {
   title: string;
   slug: string;
   page_json: PageJson;
-  status: "draft" | "published" | "archived";
+  status: WorkflowStatus;
   author_id: string | null;
   published_at: string | null;
   created_at: string;
@@ -219,4 +220,41 @@ export type WebhookDeliveryResponse = {
 export type WebhookTestResponse = {
   sent: boolean;
   event: WebhookEvent;
+};
+export type CommentEntityType = "entry" | "page";
+
+export type CommentRequest = {
+  entity_type: CommentEntityType;
+  entity_id: string;
+  body: string;
+};
+
+export type CommentResponse = {
+  id: string;
+  entity_type: CommentEntityType;
+  entity_id: string;
+  body: string;
+  author_id: string | null;
+  author_name: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PluginUpdateRequest = {
+  is_enabled: boolean;
+};
+
+export type PluginResponse = {
+  id: string;
+  plugin_key: string;
+  name: string;
+  version: string;
+  description: string;
+  hooks: string[];
+  is_enabled: boolean;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
 };

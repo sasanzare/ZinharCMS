@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { label: "Entries", path: "/entries", icon: FileText },
   { label: "Media", path: "/media", icon: Image },
   { label: "Pages", path: "/pages", icon: Workflow },
+  { label: "Workflow", path: "/workflow", icon: Workflow },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 

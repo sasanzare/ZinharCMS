@@ -10,9 +10,10 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
+use crate::plugins;
 use crate::routes::delivery;
 use crate::services::entry_validation::{is_valid_slug, parse_fields, validate_entry_data};
-use crate::services::{rbac, webhooks};
+use crate::services::{rbac, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -35,7 +36,14 @@ pub fn router() -> Router<AppState> {
             "/api/entries/{type_slug}/{id}",
             get(get_entry).put(update_entry).delete(delete_entry),
         )
+        .route(
+            "/api/entries/{type_slug}/{id}/submit-review",
+            post(submit_entry_for_review),
+        )
         .route("/api/entries/{type_slug}/{id}/publish", post(publish_entry))
+        .route("/api/entries/{type_slug}/{id}/reject", post(reject_entry))
+        .route("/api/entries/{type_slug}/{id}/archive", post(archive_entry))
+        .route("/api/entries/{type_slug}/{id}/restore", post(restore_entry))
         .route(
             "/api/entries/{type_slug}/{id}/unpublish",
             post(unpublish_entry),
@@ -342,7 +350,8 @@ pub async fn create_entry(
     rbac::require_entry_writer(&claims)?;
     let content_type = load_content_type_by_slug(&state, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
-    validate_entry_data(&fields, &payload.data)?;
+    let data = plugins::run_entry_before_save(&state, &type_slug, payload.data, claims.sub).await?;
+    validate_entry_data(&fields, &data)?;
 
     let row = sqlx::query_as::<_, ContentEntryResponse>(
         r#"
@@ -360,7 +369,7 @@ pub async fn create_entry(
         "#,
     )
     .bind(content_type.id)
-    .bind(payload.data)
+    .bind(data)
     .bind(claims.sub)
     .fetch_one(&state.db)
     .await?;
@@ -406,7 +415,8 @@ pub async fn update_entry(
     rbac::require_entry_writer(&claims)?;
     let content_type = load_content_type_by_slug(&state, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
-    validate_entry_data(&fields, &payload.data)?;
+    let data = plugins::run_entry_before_save(&state, &type_slug, payload.data, claims.sub).await?;
+    validate_entry_data(&fields, &data)?;
 
     let row = sqlx::query_as::<_, ContentEntryResponse>(
         r#"
@@ -428,7 +438,7 @@ pub async fn update_entry(
     )
     .bind(id)
     .bind(content_type.id)
-    .bind(payload.data)
+    .bind(data)
     .fetch_one(&state.db)
     .await?;
 
@@ -486,6 +496,33 @@ pub async fn delete_entry(
 
 #[utoipa::path(
     post,
+    path = "/api/entries/{type_slug}/{id}/submit-review",
+    tag = "entries",
+    params(
+        ("type_slug" = String, Path, description = "Content type slug"),
+        ("id" = Uuid, Path, description = "Entry id")
+    ),
+    responses((status = 200, description = "Submitted entry for review", body = ContentEntryResponse))
+)]
+pub async fn submit_entry_for_review(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((type_slug, id)): Path<(String, Uuid)>,
+) -> Result<Json<ContentEntryResponse>, AppError> {
+    rbac::require_entry_writer(&claims)?;
+    let entry = transition_entry(
+        &state,
+        &type_slug,
+        id,
+        workflow::WorkflowStatus::PendingReview,
+        false,
+    )
+    .await?;
+    Ok(Json(entry))
+}
+
+#[utoipa::path(
+    post,
     path = "/api/entries/{type_slug}/{id}/publish",
     tag = "entries",
     params(
@@ -500,8 +537,16 @@ pub async fn publish_entry(
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
     rbac::require_entry_publisher(&claims)?;
-    let entry = transition_entry(&state, &type_slug, id, "published").await?;
+    let entry = transition_entry(
+        &state,
+        &type_slug,
+        id,
+        workflow::WorkflowStatus::Published,
+        true,
+    )
+    .await?;
     delivery::invalidate_content_cache(&state, &type_slug).await;
+    plugins::run_entry_after_publish(&state, &type_slug, entry.data.clone(), claims.sub).await?;
     webhooks::trigger_event(
         &state,
         webhooks::ENTRY_PUBLISH,
@@ -527,7 +572,14 @@ pub async fn unpublish_entry(
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
     rbac::require_entry_publisher(&claims)?;
-    let entry = transition_entry(&state, &type_slug, id, "draft").await?;
+    let entry = transition_entry(
+        &state,
+        &type_slug,
+        id,
+        workflow::WorkflowStatus::Draft,
+        true,
+    )
+    .await?;
     delivery::invalidate_content_cache(&state, &type_slug).await;
     webhooks::trigger_event(
         &state,
@@ -535,6 +587,88 @@ pub async fn unpublish_entry(
         entry_webhook_payload(webhooks::ENTRY_UNPUBLISH, &type_slug, &entry),
     )
     .await;
+    Ok(Json(entry))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/entries/{type_slug}/{id}/reject",
+    tag = "entries",
+    params(
+        ("type_slug" = String, Path, description = "Content type slug"),
+        ("id" = Uuid, Path, description = "Entry id")
+    ),
+    responses((status = 200, description = "Rejected entry", body = ContentEntryResponse))
+)]
+pub async fn reject_entry(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((type_slug, id)): Path<(String, Uuid)>,
+) -> Result<Json<ContentEntryResponse>, AppError> {
+    rbac::require_workflow_reviewer(&claims)?;
+    let entry = transition_entry(
+        &state,
+        &type_slug,
+        id,
+        workflow::WorkflowStatus::Draft,
+        true,
+    )
+    .await?;
+    Ok(Json(entry))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/entries/{type_slug}/{id}/archive",
+    tag = "entries",
+    params(
+        ("type_slug" = String, Path, description = "Content type slug"),
+        ("id" = Uuid, Path, description = "Entry id")
+    ),
+    responses((status = 200, description = "Archived entry", body = ContentEntryResponse))
+)]
+pub async fn archive_entry(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((type_slug, id)): Path<(String, Uuid)>,
+) -> Result<Json<ContentEntryResponse>, AppError> {
+    rbac::require_workflow_reviewer(&claims)?;
+    let entry = transition_entry(
+        &state,
+        &type_slug,
+        id,
+        workflow::WorkflowStatus::Archived,
+        true,
+    )
+    .await?;
+    delivery::invalidate_content_cache(&state, &type_slug).await;
+    Ok(Json(entry))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/entries/{type_slug}/{id}/restore",
+    tag = "entries",
+    params(
+        ("type_slug" = String, Path, description = "Content type slug"),
+        ("id" = Uuid, Path, description = "Entry id")
+    ),
+    responses((status = 200, description = "Restored entry", body = ContentEntryResponse))
+)]
+pub async fn restore_entry(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((type_slug, id)): Path<(String, Uuid)>,
+) -> Result<Json<ContentEntryResponse>, AppError> {
+    rbac::require_workflow_reviewer(&claims)?;
+    let entry = transition_entry(
+        &state,
+        &type_slug,
+        id,
+        workflow::WorkflowStatus::Draft,
+        true,
+    )
+    .await?;
     Ok(Json(entry))
 }
 
@@ -546,14 +680,19 @@ fn entry_webhook_payload(event: &str, type_slug: &str, entry: &ContentEntryRespo
         "entry": entry,
     })
 }
+
 async fn transition_entry(
     state: &AppState,
     type_slug: &str,
     id: Uuid,
-    status: &str,
+    status: workflow::WorkflowStatus,
+    can_bypass_review: bool,
 ) -> Result<ContentEntryResponse, AppError> {
     let content_type = load_content_type_by_slug(state, type_slug).await?;
-    let published_at_sql = if status == "published" {
+    let current = load_entry(state, type_slug, id).await?;
+    workflow::require_transition(&current.status, status, can_bypass_review)?;
+    let next_status = status.as_str();
+    let published_at_sql = if status == workflow::WorkflowStatus::Published {
         "now()"
     } else {
         "NULL"
@@ -581,7 +720,7 @@ async fn transition_entry(
     sqlx::query_as::<_, ContentEntryResponse>(&sql)
         .bind(id)
         .bind(content_type.id)
-        .bind(status)
+        .bind(next_status)
         .fetch_one(&state.db)
         .await
         .map_err(AppError::from)
@@ -690,10 +829,6 @@ fn parse_sort(sort: Option<&str>) -> Result<(&'static str, &'static str), AppErr
 }
 
 fn validate_status(status: &str) -> Result<(), AppError> {
-    match status {
-        "draft" | "pending_review" | "published" | "archived" => Ok(()),
-        other => Err(AppError::Validation(format!(
-            "status '{other}' is not supported"
-        ))),
-    }
+    workflow::WorkflowStatus::parse(status)?;
+    Ok(())
 }

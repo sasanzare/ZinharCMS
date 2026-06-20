@@ -2,6 +2,9 @@ import type {
   ApiInfo,
   AuthResponse,
   AuthUser,
+  CommentEntityType,
+  CommentRequest,
+  CommentResponse,
   ComponentRegistryResponse,
   ContentEntryResponse,
   ContentTypeResponse,
@@ -15,6 +18,8 @@ import type {
   PageListResponse,
   PageResponse,
   PageVersionResponse,
+  PluginResponse,
+  PluginUpdateRequest,
   ReadyResponse,
   WebhookTestResponse,
   WebhookResponse,
@@ -98,7 +103,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return response.json() as Promise<T>;
 }
 
-function query(params: Record<string, string | number | undefined>) {
+function query(params: Record<string, string | number | boolean | undefined>) {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== "") search.set(key, String(value));
@@ -142,10 +147,18 @@ export const api = {
       request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}`, { method: "PUT", auth: true, body: { data } }),
     delete: (typeSlug: string, id: string) =>
       request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}`, { method: "DELETE", auth: true }),
+    submitReview: (typeSlug: string, id: string) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/submit-review`, { method: "POST", auth: true }),
     publish: (typeSlug: string, id: string) =>
       request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/publish`, { method: "POST", auth: true }),
     unpublish: (typeSlug: string, id: string) =>
       request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/unpublish`, { method: "POST", auth: true }),
+    reject: (typeSlug: string, id: string) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/reject`, { method: "POST", auth: true }),
+    archive: (typeSlug: string, id: string) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/archive`, { method: "POST", auth: true }),
+    restore: (typeSlug: string, id: string) =>
+      request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/restore`, { method: "POST", auth: true }),
   },
 
   media: {
@@ -171,8 +184,12 @@ export const api = {
     update: (id: string, payload: { title: string; slug: string; page_json: PageJson }) =>
       request<PageResponse>(`/api/pages/${id}`, { method: "PUT", auth: true, body: payload }),
     delete: (id: string) => request<PageResponse>(`/api/pages/${id}?confirm=true`, { method: "DELETE", auth: true }),
+    submitReview: (id: string) => request<PageResponse>(`/api/pages/${id}/submit-review`, { method: "POST", auth: true }),
     publish: (id: string) => request<PageResponse>(`/api/pages/${id}/publish`, { method: "POST", auth: true }),
     unpublish: (id: string) => request<PageResponse>(`/api/pages/${id}/unpublish`, { method: "POST", auth: true }),
+    reject: (id: string) => request<PageResponse>(`/api/pages/${id}/reject`, { method: "POST", auth: true }),
+    archive: (id: string) => request<PageResponse>(`/api/pages/${id}/archive`, { method: "POST", auth: true }),
+    restoreStatus: (id: string) => request<PageResponse>(`/api/pages/${id}/restore`, { method: "POST", auth: true }),
     versions: (id: string) => request<PageVersionResponse[]>(`/api/pages/${id}/versions`, { auth: true }),
     restore: (id: string, version: number) =>
       request<PageResponse>(`/api/pages/${id}/versions/${version}/restore`, { method: "POST", auth: true }),
@@ -181,6 +198,22 @@ export const api = {
   components: {
     list: (category?: string) =>
       request<ComponentRegistryResponse[]>(`/api/component-registry${query({ category })}`, { auth: true }),
+  },
+  comments: {
+    list: (entity_type: CommentEntityType, entity_id: string, include_resolved = false) =>
+      request<CommentResponse[]>(`/api/comments${query({ entity_type, entity_id, include_resolved })}`, { auth: true }),
+    create: (payload: CommentRequest) =>
+      request<CommentResponse>("/api/comments", { method: "POST", auth: true, body: payload }),
+    resolve: (id: string) => request<CommentResponse>(`/api/comments/${id}/resolve`, { method: "POST", auth: true }),
+    unresolve: (id: string) => request<CommentResponse>(`/api/comments/${id}/resolve`, { method: "DELETE", auth: true }),
+    delete: (id: string) => request<CommentResponse>(`/api/comments/${id}`, { method: "DELETE", auth: true }),
+  },
+  plugins: {
+    list: () => request<PluginResponse[]>("/api/plugins", { auth: true }),
+    update: (pluginKey: string, payload: PluginUpdateRequest) =>
+      request<PluginResponse>(`/api/plugins/${pluginKey}`, { method: "PUT", auth: true, body: payload }),
+    enable: (pluginKey: string) => request<PluginResponse>(`/api/plugins/${pluginKey}/enable`, { method: "POST", auth: true }),
+    disable: (pluginKey: string) => request<PluginResponse>(`/api/plugins/${pluginKey}/disable`, { method: "POST", auth: true }),
   },
   webhooks: {
     list: () => request<WebhookResponse[]>("/api/webhooks", { auth: true }),

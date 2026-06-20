@@ -1,8 +1,10 @@
 pub mod auth;
+pub mod comments;
 pub mod content;
 pub mod delivery;
 pub mod media;
 pub mod pages;
+pub mod plugins;
 pub mod webhooks;
 
 use axum::extract::DefaultBodyLimit;
@@ -28,6 +30,8 @@ pub fn router(state: AppState) -> Router {
         .merge(content::router())
         .merge(media::router())
         .merge(pages::router())
+        .merge(comments::router())
+        .merge(plugins::router())
         .merge(webhooks::router())
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
@@ -69,8 +73,12 @@ pub fn router(state: AppState) -> Router {
         content::get_entry,
         content::update_entry,
         content::delete_entry,
+        content::submit_entry_for_review,
         content::publish_entry,
         content::unpublish_entry,
+        content::reject_entry,
+        content::archive_entry,
+        content::restore_entry,
         media::list_media,
         media::upload_media,
         media::get_media,
@@ -82,8 +90,12 @@ pub fn router(state: AppState) -> Router {
         pages::get_page_by_slug,
         pages::update_page,
         pages::delete_page,
+        pages::submit_page_for_review,
         pages::publish_page,
         pages::unpublish_page,
+        pages::reject_page,
+        pages::archive_page,
+        pages::restore_page,
         pages::list_page_versions,
         pages::restore_page_version,
         pages::list_components,
@@ -104,7 +116,18 @@ pub fn router(state: AppState) -> Router {
         webhooks::update_webhook,
         webhooks::delete_webhook,
         webhooks::list_deliveries,
-        webhooks::test_webhook
+        webhooks::test_webhook,
+        comments::list_comments,
+        comments::create_comment,
+        comments::get_comment,
+        comments::resolve_comment,
+        comments::unresolve_comment,
+        comments::delete_comment,
+        plugins::list_plugins,
+        plugins::get_plugin,
+        plugins::update_plugin,
+        plugins::enable_plugin,
+        plugins::disable_plugin
     ),
     components(schemas(
         ApiInfo,
@@ -143,7 +166,11 @@ pub fn router(state: AppState) -> Router {
         webhooks::WebhookRequest,
         webhooks::WebhookResponse,
         webhooks::WebhookDeliveryResponse,
-        webhooks::WebhookTestResponse
+        webhooks::WebhookTestResponse,
+        comments::CommentRequest,
+        comments::CommentResponse,
+        plugins::PluginUpdateRequest,
+        plugins::PluginResponse
     )),
     tags(
         (name = "system", description = "Phase-zero system endpoints"),
@@ -155,7 +182,9 @@ pub fn router(state: AppState) -> Router {
         (name = "components", description = "Visual builder component registry"),
         (name = "preview", description = "Live page preview WebSocket"),
         (name = "delivery", description = "Public delivery API"),
-        (name = "webhooks", description = "Webhook subscriptions and delivery logs")
+        (name = "webhooks", description = "Webhook subscriptions and delivery logs"),
+        (name = "comments", description = "Editorial collaboration comments"),
+        (name = "plugins", description = "CMS plugin registry and settings")
     )
 )]
 struct ApiDoc;

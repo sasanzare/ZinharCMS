@@ -8,6 +8,7 @@ import { EntriesPage } from "./pages/EntriesPage";
 import { MediaPage } from "./pages/MediaPage";
 import { PagesPage } from "./pages/PagesPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { WorkflowPage } from "./pages/WorkflowPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <AuthPage /> },
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
       { path: "entries", element: <EntriesPage /> },
       { path: "media", element: <MediaPage /> },
       { path: "pages", element: <PagesPage /> },
+      { path: "workflow", element: <WorkflowPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

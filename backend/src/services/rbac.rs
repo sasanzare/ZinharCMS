@@ -54,6 +54,29 @@ pub fn require_webhook_manager(claims: &Claims) -> Result<(), AppError> {
     require_any(claims, &[ADMIN])
 }
 
+pub fn require_workflow_reviewer(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN, EDITOR])
+}
+
+pub fn require_comment_reader(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN, EDITOR, AUTHOR, VIEWER])
+}
+
+pub fn require_comment_writer(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN, EDITOR, AUTHOR])
+}
+
+pub fn require_comment_manager(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN, EDITOR])
+}
+
+pub fn require_plugin_reader(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN, EDITOR, AUTHOR, VIEWER])
+}
+
+pub fn require_plugin_manager(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN])
+}
 pub fn default_registration_role(existing_users: i64) -> &'static str {
     if existing_users == 0 {
         SUPER_ADMIN

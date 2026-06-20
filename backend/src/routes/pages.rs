@@ -16,7 +16,7 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::routes::delivery;
 use crate::services::entry_validation::is_valid_slug;
-use crate::services::{rbac, webhooks};
+use crate::services::{rbac, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -27,7 +27,14 @@ pub fn router() -> Router<AppState> {
             "/api/pages/{id}",
             get(get_page).put(update_page).delete(delete_page),
         )
+        .route(
+            "/api/pages/{id}/submit-review",
+            post(submit_page_for_review),
+        )
         .route("/api/pages/{id}/publish", post(publish_page))
+        .route("/api/pages/{id}/reject", post(reject_page))
+        .route("/api/pages/{id}/archive", post(archive_page))
+        .route("/api/pages/{id}/restore", post(restore_page))
         .route("/api/pages/{id}/unpublish", post(unpublish_page))
         .route("/api/pages/{id}/versions", get(list_page_versions))
         .route(
@@ -386,7 +393,7 @@ pub async fn publish_page(
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
     rbac::require_page_publisher(&claims)?;
-    let page = transition_page(&state, id, "published").await?;
+    let page = transition_page(&state, id, workflow::WorkflowStatus::Published, true).await?;
     delivery::invalidate_page_cache(&state).await;
     webhooks::trigger_event(
         &state,
@@ -410,7 +417,7 @@ pub async fn unpublish_page(
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
     rbac::require_page_publisher(&claims)?;
-    let page = transition_page(&state, id, "draft").await?;
+    let page = transition_page(&state, id, workflow::WorkflowStatus::Draft, true).await?;
     delivery::invalidate_page_cache(&state).await;
     webhooks::trigger_event(
         &state,
@@ -421,6 +428,74 @@ pub async fn unpublish_page(
     Ok(Json(page))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/pages/{id}/submit-review",
+    tag = "pages",
+    params(("id" = Uuid, Path, description = "Page id")),
+    responses((status = 200, description = "Submitted page for review", body = PageResponse))
+)]
+pub async fn submit_page_for_review(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<PageResponse>, AppError> {
+    rbac::require_page_writer(&claims)?;
+    let page = transition_page(&state, id, workflow::WorkflowStatus::PendingReview, false).await?;
+    Ok(Json(page))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pages/{id}/reject",
+    tag = "pages",
+    params(("id" = Uuid, Path, description = "Page id")),
+    responses((status = 200, description = "Rejected page", body = PageResponse))
+)]
+pub async fn reject_page(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<PageResponse>, AppError> {
+    rbac::require_workflow_reviewer(&claims)?;
+    let page = transition_page(&state, id, workflow::WorkflowStatus::Draft, true).await?;
+    Ok(Json(page))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pages/{id}/archive",
+    tag = "pages",
+    params(("id" = Uuid, Path, description = "Page id")),
+    responses((status = 200, description = "Archived page", body = PageResponse))
+)]
+pub async fn archive_page(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<PageResponse>, AppError> {
+    rbac::require_workflow_reviewer(&claims)?;
+    let page = transition_page(&state, id, workflow::WorkflowStatus::Archived, true).await?;
+    delivery::invalidate_page_cache(&state).await;
+    Ok(Json(page))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pages/{id}/restore",
+    tag = "pages",
+    params(("id" = Uuid, Path, description = "Page id")),
+    responses((status = 200, description = "Restored page", body = PageResponse))
+)]
+pub async fn restore_page(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<PageResponse>, AppError> {
+    rbac::require_workflow_reviewer(&claims)?;
+    let page = transition_page(&state, id, workflow::WorkflowStatus::Draft, true).await?;
+    Ok(Json(page))
+}
 #[utoipa::path(
     get,
     path = "/api/pages/{id}/versions",
@@ -767,10 +842,13 @@ fn page_webhook_payload(event: &str, page: &PageResponse) -> Value {
 async fn transition_page(
     state: &AppState,
     id: Uuid,
-    status: &str,
+    status: workflow::WorkflowStatus,
+    can_bypass_review: bool,
 ) -> Result<PageResponse, AppError> {
-    validate_page_status(status)?;
-    let published_at_sql = if status == "published" {
+    let current = load_page_by_id(state, id).await?;
+    workflow::require_transition(&current.status, status, can_bypass_review)?;
+    let next_status = status.as_str();
+    let published_at_sql = if status == workflow::WorkflowStatus::Published {
         "now()"
     } else {
         "NULL"
@@ -796,7 +874,7 @@ async fn transition_page(
 
     let page = sqlx::query_as::<_, PageResponse>(&sql)
         .bind(id)
-        .bind(status)
+        .bind(next_status)
         .fetch_one(&state.db)
         .await?;
     broadcast_page_json(state, page.id, &page.page_json).await;
@@ -1112,7 +1190,7 @@ fn parse_sort(sort: Option<&str>) -> Result<(&'static str, &'static str), AppErr
 
 fn validate_page_status(status: &str) -> Result<(), AppError> {
     match status {
-        "draft" | "published" | "archived" => Ok(()),
+        "draft" | "pending_review" | "published" | "archived" => Ok(()),
         other => Err(AppError::Validation(format!(
             "status '{other}' is not supported"
         ))),

@@ -22,6 +22,20 @@ function titleForEntry(entry: ContentEntryResponse) {
   return typeof title === "string" ? title : entry.id;
 }
 
+function statusTone(status: ContentEntryResponse["status"]) {
+  if (status === "published") return "success";
+  if (status === "pending_review") return "warning";
+  if (status === "archived") return "danger";
+  return "neutral";
+}
+
+function workflowActionLabel(status: ContentEntryResponse["status"]) {
+  if (status === "draft") return "Submit";
+  if (status === "pending_review") return "Publish";
+  if (status === "published") return "Archive";
+  return "Restore";
+}
+
 export function EntriesPage() {
   const [contentTypes, setContentTypes] = useState<ContentTypeResponse[]>([]);
   const [selectedSlug, setSelectedSlug] = useState("");
@@ -115,10 +129,14 @@ export function EntriesPage() {
     if (!selectedSlug) return;
     setError(null);
     try {
-      if (entry.status === "published") {
-        await api.entries.unpublish(selectedSlug, entry.id);
-      } else {
+      if (entry.status === "draft") {
+        await api.entries.submitReview(selectedSlug, entry.id);
+      } else if (entry.status === "pending_review") {
         await api.entries.publish(selectedSlug, entry.id);
+      } else if (entry.status === "published") {
+        await api.entries.archive(selectedSlug, entry.id);
+      } else {
+        await api.entries.restore(selectedSlug, entry.id);
       }
       await reloadEntries();
     } catch (caught) {
@@ -213,7 +231,7 @@ export function EntriesPage() {
               <tr key={entry.id}>
                 <td>{titleForEntry(entry)}</td>
                 <td>
-                  <StatusBadge label={entry.status} tone={entry.status === "published" ? "success" : "neutral"} />
+                  <StatusBadge label={entry.status} tone={statusTone(entry.status)} />
                 </td>
                 <td>{entry.version}</td>
                 <td>{new Date(entry.updated_at).toLocaleString()}</td>
@@ -223,7 +241,7 @@ export function EntriesPage() {
                       <Edit3 size={16} aria-hidden="true" />
                     </button>
                     <button className="secondary-button" type="button" onClick={() => void transitionEntry(entry)}>
-                      {entry.status === "published" ? "Unpublish" : "Publish"}
+                      {workflowActionLabel(entry.status)}
                     </button>
                     <button className="icon-button" type="button" onClick={() => void deleteEntry(entry)} aria-label="Delete entry">
                       <Trash2 size={16} aria-hidden="true" />

@@ -90,6 +90,20 @@ function countNodes(pageJson: PageJson) {
   return Math.max(0, walk(pageJson.layout) - 1);
 }
 
+function pageStatusTone(status: PageResponse["status"]) {
+  if (status === "published") return "success";
+  if (status === "pending_review") return "warning";
+  if (status === "archived") return "danger";
+  return "neutral";
+}
+
+function pageWorkflowActionLabel(status: PageResponse["status"]) {
+  if (status === "draft") return "Submit";
+  if (status === "pending_review") return "Publish";
+  if (status === "published") return "Archive";
+  return "Restore";
+}
+
 function isJsonRecord(value: JsonValue | undefined): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -605,10 +619,14 @@ export function PagesPage() {
   async function transitionPage(page: PageResponse) {
     setError(null);
     try {
-      if (page.status === "published") {
-        await api.pages.unpublish(page.id);
-      } else {
+      if (page.status === "draft") {
+        await api.pages.submitReview(page.id);
+      } else if (page.status === "pending_review") {
         await api.pages.publish(page.id);
+      } else if (page.status === "published") {
+        await api.pages.archive(page.id);
+      } else {
+        await api.pages.restoreStatus(page.id);
       }
       await load(page.id);
     } catch (caught) {
@@ -805,7 +823,7 @@ export function PagesPage() {
               <tr key={page.id}>
                 <td>{page.title}</td>
                 <td>
-                  <StatusBadge label={page.status} tone={page.status === "published" ? "success" : "neutral"} />
+                  <StatusBadge label={page.status} tone={pageStatusTone(page.status)} />
                 </td>
                 <td>{countNodes(page.page_json)}</td>
                 <td>{new Date(page.updated_at).toLocaleString()}</td>
@@ -821,7 +839,7 @@ export function PagesPage() {
                       <Eye size={16} aria-hidden="true" />
                     </button>
                     <button className="secondary-button" type="button" onClick={() => void transitionPage(page)}>
-                      {page.status === "published" ? "Unpublish" : "Publish"}
+                      {pageWorkflowActionLabel(page.status)}
                     </button>
                     <button className="icon-button" type="button" onClick={() => void deletePage(page)} aria-label="Delete page">
                       <Trash2 size={16} aria-hidden="true" />

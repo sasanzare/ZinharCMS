@@ -1,8 +1,8 @@
 # API
 
 The API exposes a functional backend for authentication, RBAC-protected content
-management, entries, the media library, and the phase-two visual page builder
-engine.
+management, entries, the media library, visual page builder, delivery API,
+workflow, comments, plugins, and webhooks.
 
 ## System
 
@@ -45,8 +45,12 @@ Use the access token as `Authorization: Bearer <token>` for protected endpoints.
 | `GET` | `/api/entries/{type_slug}/{id}` | Get entry |
 | `PUT` | `/api/entries/{type_slug}/{id}` | Update entry and increment version |
 | `DELETE` | `/api/entries/{type_slug}/{id}` | Delete entry; admin/editor |
+| `POST` | `/api/entries/{type_slug}/{id}/submit-review` | Move draft entry to pending review |
 | `POST` | `/api/entries/{type_slug}/{id}/publish` | Publish entry; admin/editor |
 | `POST` | `/api/entries/{type_slug}/{id}/unpublish` | Move entry back to draft; admin/editor |
+| `POST` | `/api/entries/{type_slug}/{id}/reject` | Reject pending entry back to draft; admin/editor |
+| `POST` | `/api/entries/{type_slug}/{id}/archive` | Archive published entry; admin/editor |
+| `POST` | `/api/entries/{type_slug}/{id}/restore` | Restore archived entry to draft; admin/editor |
 
 Supported sort fields: `created_at`, `updated_at`, `published_at`.
 Example: `sort=created_at:desc`.
@@ -88,8 +92,12 @@ registered `component_key` such as `hero-banner`.
 | `GET` | `/api/pages/slug/{slug}` | Get page by slug |
 | `PUT` | `/api/pages/{id}` | Update page JSON and create a new version snapshot |
 | `DELETE` | `/api/pages/{id}?confirm=true` | Delete page; editor/admin |
+| `POST` | `/api/pages/{id}/submit-review` | Move draft page to pending review |
 | `POST` | `/api/pages/{id}/publish` | Publish page; editor/admin |
 | `POST` | `/api/pages/{id}/unpublish` | Move page back to draft; editor/admin |
+| `POST` | `/api/pages/{id}/reject` | Reject pending page back to draft; editor/admin |
+| `POST` | `/api/pages/{id}/archive` | Archive published page; editor/admin |
+| `POST` | `/api/pages/{id}/restore` | Restore archived page to draft; editor/admin |
 | `GET` | `/api/pages/{id}/versions` | List page JSON snapshots |
 | `POST` | `/api/pages/{id}/versions/{version}/restore` | Restore snapshot as a new draft version |
 | `GET` | `/api/preview/{page_id}` | Authenticated WebSocket live preview stream; use `Authorization` header or `?access_token=` |
@@ -130,6 +138,30 @@ Public endpoints do not require `Authorization` and only expose published record
 | `GET` | `/api/v1/robots.txt` | Robots response pointing to the sitemap |
 
 Responses are cached in Redis for 300 seconds. Publish/unpublish and published update/delete operations invalidate related delivery keys.
+
+## Comments
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/comments?entity_type=entry&entity_id={uuid}` | List unresolved comments for an entry or page |
+| `GET` | `/api/comments?entity_type=page&entity_id={uuid}&include_resolved=true` | List comments including resolved threads |
+| `POST` | `/api/comments` | Create comment for an entry or page |
+| `GET` | `/api/comments/{id}` | Get comment |
+| `POST` | `/api/comments/{id}/resolve` | Resolve comment |
+| `DELETE` | `/api/comments/{id}/resolve` | Reopen comment |
+| `DELETE` | `/api/comments/{id}` | Delete comment; editor/admin |
+
+## Plugins
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/plugins` | List built-in CMS plugins |
+| `GET` | `/api/plugins/{plugin_key}` | Get plugin details |
+| `PUT` | `/api/plugins/{plugin_key}` | Update plugin enabled state; admin-only |
+| `POST` | `/api/plugins/{plugin_key}/enable` | Enable plugin; admin-only |
+| `POST` | `/api/plugins/{plugin_key}/disable` | Disable plugin; admin-only |
+
+The `seo-auto` plugin runs on `entry.before_save` and fills `data.slug` from `data.title` when `data.slug` is empty.
 
 ## Webhooks
 

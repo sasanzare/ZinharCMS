@@ -6,3 +6,4 @@ pub mod media_processing;
 pub mod password;
 pub mod rbac;
 pub mod webhooks;
+pub mod workflow;
