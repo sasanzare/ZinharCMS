@@ -16,6 +16,10 @@ import type {
   PageResponse,
   PageVersionResponse,
   ReadyResponse,
+  WebhookTestResponse,
+  WebhookResponse,
+  WebhookRequest,
+  WebhookDeliveryResponse,
 } from "../types/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
@@ -177,5 +181,18 @@ export const api = {
   components: {
     list: (category?: string) =>
       request<ComponentRegistryResponse[]>(`/api/component-registry${query({ category })}`, { auth: true }),
+  },
+  webhooks: {
+    list: () => request<WebhookResponse[]>("/api/webhooks", { auth: true }),
+    create: (payload: WebhookRequest) =>
+      request<WebhookResponse>("/api/webhooks", { method: "POST", auth: true, body: payload }),
+    update: (id: string, payload: WebhookRequest) =>
+      request<WebhookResponse>(`/api/webhooks/${id}`, { method: "PUT", auth: true, body: payload }),
+    delete: (id: string) =>
+      request<WebhookResponse>(`/api/webhooks/${id}?confirm=true`, { method: "DELETE", auth: true }),
+    deliveries: (id: string, limit = 20) =>
+      request<WebhookDeliveryResponse[]>(`/api/webhooks/${id}/deliveries${query({ limit })}`, { auth: true }),
+    test: (id: string) =>
+      request<WebhookTestResponse>(`/api/webhooks/${id}/test`, { method: "POST", auth: true }),
   },
 };

@@ -49,6 +49,13 @@ component registry, page versioning, live preview streaming, and a React admin p
 - Preview: live local preview of the current page JSON plus WebSocket preview URL copy for saved pages.
 - Persistence: manual save for new pages and debounced autosave for existing page drafts.
 - Compatibility: uses the existing `page_json`, page versions, publish/unpublish, and component registry APIs.
+
+## Phase Five Scope
+
+- Delivery API: public `/api/v1` endpoints for published content, pages, settings, and navigation.
+- SEO: sitemap and robots endpoints generated from published pages and entry slugs.
+- Cache: Redis-backed delivery responses with publish/update invalidation and PostgreSQL fallback when Redis is unavailable.
+- Webhooks: admin-managed subscriptions for entry/page publish and unpublish events with HMAC signatures and delivery logs.
 ## Quick Start
 
 Copy the environment template and start the local stack:

@@ -50,6 +50,10 @@ pub fn require_component_registry_manager(claims: &Claims) -> Result<(), AppErro
     require_any(claims, &[ADMIN])
 }
 
+pub fn require_webhook_manager(claims: &Claims) -> Result<(), AppError> {
+    require_any(claims, &[ADMIN])
+}
+
 pub fn default_registration_role(existing_users: i64) -> &'static str {
     if existing_users == 0 {
         SUPER_ADMIN

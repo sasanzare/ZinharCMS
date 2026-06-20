@@ -183,3 +183,40 @@ export type ComponentRegistryResponse = {
   created_at: string;
   updated_at: string;
 };
+export type WebhookEvent = "entry.publish" | "entry.unpublish" | "page.publish" | "page.unpublish";
+
+export type WebhookRequest = {
+  name: string;
+  url: string;
+  events: WebhookEvent[];
+  secret?: string;
+  is_active?: boolean;
+};
+
+export type WebhookResponse = {
+  id: string;
+  name: string;
+  url: string;
+  events: WebhookEvent[];
+  secret: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WebhookDeliveryResponse = {
+  id: string;
+  webhook_id: string;
+  event: WebhookEvent;
+  payload: JsonRecord;
+  status: "delivered" | "failed";
+  status_code: number | null;
+  response_body: string | null;
+  error: string | null;
+  attempted_at: string;
+};
+
+export type WebhookTestResponse = {
+  sent: boolean;
+  event: WebhookEvent;
+};

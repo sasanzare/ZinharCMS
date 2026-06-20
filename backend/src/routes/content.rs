@@ -10,8 +10,9 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
+use crate::routes::delivery;
 use crate::services::entry_validation::{is_valid_slug, parse_fields, validate_entry_data};
-use crate::services::rbac;
+use crate::services::{rbac, webhooks};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -431,6 +432,10 @@ pub async fn update_entry(
     .fetch_one(&state.db)
     .await?;
 
+    if row.status == "published" {
+        delivery::invalidate_content_cache(&state, &type_slug).await;
+    }
+
     Ok(Json(row))
 }
 
@@ -472,6 +477,10 @@ pub async fn delete_entry(
     .fetch_one(&state.db)
     .await?;
 
+    if row.status == "published" {
+        delivery::invalidate_content_cache(&state, &type_slug).await;
+    }
+
     Ok(Json(row))
 }
 
@@ -491,9 +500,15 @@ pub async fn publish_entry(
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
     rbac::require_entry_publisher(&claims)?;
-    transition_entry(&state, &type_slug, id, "published")
-        .await
-        .map(Json)
+    let entry = transition_entry(&state, &type_slug, id, "published").await?;
+    delivery::invalidate_content_cache(&state, &type_slug).await;
+    webhooks::trigger_event(
+        &state,
+        webhooks::ENTRY_PUBLISH,
+        entry_webhook_payload(webhooks::ENTRY_PUBLISH, &type_slug, &entry),
+    )
+    .await;
+    Ok(Json(entry))
 }
 
 #[utoipa::path(
@@ -512,11 +527,25 @@ pub async fn unpublish_entry(
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
     rbac::require_entry_publisher(&claims)?;
-    transition_entry(&state, &type_slug, id, "draft")
-        .await
-        .map(Json)
+    let entry = transition_entry(&state, &type_slug, id, "draft").await?;
+    delivery::invalidate_content_cache(&state, &type_slug).await;
+    webhooks::trigger_event(
+        &state,
+        webhooks::ENTRY_UNPUBLISH,
+        entry_webhook_payload(webhooks::ENTRY_UNPUBLISH, &type_slug, &entry),
+    )
+    .await;
+    Ok(Json(entry))
 }
 
+fn entry_webhook_payload(event: &str, type_slug: &str, entry: &ContentEntryResponse) -> Value {
+    serde_json::json!({
+        "event": event,
+        "entity": "entry",
+        "type_slug": type_slug,
+        "entry": entry,
+    })
+}
 async fn transition_entry(
     state: &AppState,
     type_slug: &str,

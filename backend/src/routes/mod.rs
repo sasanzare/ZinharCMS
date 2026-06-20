@@ -1,7 +1,9 @@
 pub mod auth;
 pub mod content;
+pub mod delivery;
 pub mod media;
 pub mod pages;
+pub mod webhooks;
 
 use axum::extract::DefaultBodyLimit;
 use axum::extract::State;
@@ -26,6 +28,7 @@ pub fn router(state: AppState) -> Router {
         .merge(content::router())
         .merge(media::router())
         .merge(pages::router())
+        .merge(webhooks::router())
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -38,6 +41,7 @@ pub fn router(state: AppState) -> Router {
         .route("/ready", get(readiness))
         .route("/openapi.json", get(openapi))
         .merge(auth::public_router())
+        .merge(delivery::router())
         .merge(protected)
         .nest_service("/uploads", uploads)
         .with_state(state)
@@ -87,7 +91,20 @@ pub fn router(state: AppState) -> Router {
         pages::get_component,
         pages::update_component,
         pages::delete_component,
-        pages::preview_page
+        pages::preview_page,
+        delivery::list_public_entries,
+        delivery::get_public_entry,
+        delivery::list_public_pages,
+        delivery::get_public_page,
+        delivery::public_settings,
+        delivery::public_navigation,
+        webhooks::list_webhooks,
+        webhooks::create_webhook,
+        webhooks::get_webhook,
+        webhooks::update_webhook,
+        webhooks::delete_webhook,
+        webhooks::list_deliveries,
+        webhooks::test_webhook
     ),
     components(schemas(
         ApiInfo,
@@ -117,7 +134,16 @@ pub fn router(state: AppState) -> Router {
         pages::PageListResponse,
         pages::PageVersionResponse,
         pages::ComponentRegistryRequest,
-        pages::ComponentRegistryResponse
+        pages::ComponentRegistryResponse,
+        delivery::PublicEntryResponse,
+        delivery::PublicEntryListResponse,
+        delivery::PublicPageResponse,
+        delivery::PublicPageListResponse,
+        delivery::NavigationItemResponse,
+        webhooks::WebhookRequest,
+        webhooks::WebhookResponse,
+        webhooks::WebhookDeliveryResponse,
+        webhooks::WebhookTestResponse
     )),
     tags(
         (name = "system", description = "Phase-zero system endpoints"),
@@ -127,7 +153,9 @@ pub fn router(state: AppState) -> Router {
         (name = "media", description = "Media library"),
         (name = "pages", description = "Visual page builder pages"),
         (name = "components", description = "Visual builder component registry"),
-        (name = "preview", description = "Live page preview WebSocket")
+        (name = "preview", description = "Live page preview WebSocket"),
+        (name = "delivery", description = "Public delivery API"),
+        (name = "webhooks", description = "Webhook subscriptions and delivery logs")
     )
 )]
 struct ApiDoc;

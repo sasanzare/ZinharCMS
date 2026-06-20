@@ -14,8 +14,9 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
+use crate::routes::delivery;
 use crate::services::entry_validation::is_valid_slug;
-use crate::services::rbac;
+use crate::services::{rbac, webhooks};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -319,6 +320,9 @@ pub async fn update_page(
     create_version_snapshot(&mut tx, page.id, &page.page_json, claims.sub).await?;
     tx.commit().await?;
     broadcast_page_json(&state, page.id, &page.page_json).await;
+    if page.status == "published" {
+        delivery::invalidate_page_cache(&state).await;
+    }
 
     Ok(Json(page))
 }
@@ -362,6 +366,10 @@ pub async fn delete_page(
     .fetch_one(&state.db)
     .await?;
 
+    if page.status == "published" {
+        delivery::invalidate_page_cache(&state).await;
+    }
+
     Ok(Json(page))
 }
 
@@ -378,7 +386,15 @@ pub async fn publish_page(
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
     rbac::require_page_publisher(&claims)?;
-    transition_page(&state, id, "published").await.map(Json)
+    let page = transition_page(&state, id, "published").await?;
+    delivery::invalidate_page_cache(&state).await;
+    webhooks::trigger_event(
+        &state,
+        webhooks::PAGE_PUBLISH,
+        page_webhook_payload(webhooks::PAGE_PUBLISH, &page),
+    )
+    .await;
+    Ok(Json(page))
 }
 
 #[utoipa::path(
@@ -394,7 +410,15 @@ pub async fn unpublish_page(
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
     rbac::require_page_publisher(&claims)?;
-    transition_page(&state, id, "draft").await.map(Json)
+    let page = transition_page(&state, id, "draft").await?;
+    delivery::invalidate_page_cache(&state).await;
+    webhooks::trigger_event(
+        &state,
+        webhooks::PAGE_UNPUBLISH,
+        page_webhook_payload(webhooks::PAGE_UNPUBLISH, &page),
+    )
+    .await;
+    Ok(Json(page))
 }
 
 #[utoipa::path(
@@ -733,6 +757,13 @@ async fn handle_preview_socket(mut socket: WebSocket, page_id: Uuid, state: AppS
     }
 }
 
+fn page_webhook_payload(event: &str, page: &PageResponse) -> Value {
+    serde_json::json!({
+        "event": event,
+        "entity": "page",
+        "page": page,
+    })
+}
 async fn transition_page(
     state: &AppState,
     id: Uuid,

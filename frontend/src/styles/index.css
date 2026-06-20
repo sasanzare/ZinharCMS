@@ -1089,3 +1089,56 @@ input {
     grid-template-columns: 34px minmax(0, 1fr) 34px;
   }
 }
+.webhook-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+  gap: 16px;
+  padding: 16px;
+}
+
+.webhook-form {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.webhook-form .form-grid {
+  padding: 0;
+}
+
+.webhook-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.webhook-actions {
+  padding: 0;
+}
+
+.status-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.webhook-table-wrap .data-table {
+  min-width: 760px;
+}
+
+.truncate-cell {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 920px) {
+  .webhook-workspace {
+    grid-template-columns: 1fr;
+  }
+}

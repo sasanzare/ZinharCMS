@@ -113,3 +113,35 @@ Page JSON requires a root layout node:
   }
 }
 ```
+
+## Delivery API
+
+Public endpoints do not require `Authorization` and only expose published records.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/content/{type_slug}` | List published entries with `page`, `per_page`, `sort`, `locale`, `author_id`, `filter=field=value` |
+| `GET` | `/api/v1/content/{type_slug}/{id_or_slug}` | Get a published entry by UUID or `data.slug` |
+| `GET` | `/api/v1/pages` | List published pages |
+| `GET` | `/api/v1/pages/{slug}` | Get a published page by slug |
+| `GET` | `/api/v1/settings/public` | Public settings map |
+| `GET` | `/api/v1/navigation?locale=fa` | Public navigation items |
+| `GET` | `/api/v1/sitemap.xml` | XML sitemap from published pages and entries with `data.slug` |
+| `GET` | `/api/v1/robots.txt` | Robots response pointing to the sitemap |
+
+Responses are cached in Redis for 300 seconds. Publish/unpublish and published update/delete operations invalidate related delivery keys.
+
+## Webhooks
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/webhooks` | List webhook subscriptions; admin-only |
+| `POST` | `/api/webhooks` | Create webhook subscription; admin-only |
+| `GET` | `/api/webhooks/{id}` | Get webhook subscription; admin-only |
+| `PUT` | `/api/webhooks/{id}` | Update webhook subscription; admin-only |
+| `DELETE` | `/api/webhooks/{id}?confirm=true` | Delete webhook subscription; admin-only |
+| `GET` | `/api/webhooks/{id}/deliveries` | Recent delivery attempts |
+| `POST` | `/api/webhooks/{id}/test` | Send a signed test payload |
+
+Supported events: `entry.publish`, `entry.unpublish`, `page.publish`, `page.unpublish`.
+Webhook requests include `X-CMS-Event` and `X-CMS-Signature` headers.
