@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "VazirmatnZinhar";
+  src: url("/fonts/vazirmatn/Vazirmatn[wght].woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   color: #1e252b;
   background: #f3f6f4;
@@ -33,6 +40,85 @@ button {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.62;
+}
+:root[dir="rtl"] {
+  font-family:
+    "VazirmatnZinhar", Tahoma, Arial, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+:root[dir="rtl"] .data-table th,
+:root[dir="rtl"] .data-table td {
+  text-align: right;
+}
+
+:root[dir="rtl"] .palette-item button,
+:root[dir="rtl"] .review-row,
+:root[dir="rtl"] .canvas-node-main {
+  text-align: right;
+}
+
+.language-select {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d5dddc;
+  border-radius: 8px;
+  padding: 0 8px;
+  color: #2d3a3f;
+  background: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.language-select select {
+  min-height: 30px;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font-weight: 700;
+}
+
+.language-select--compact span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+
+.file-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+}
+
+.file-picker-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.file-picker span {
+  min-width: 0;
+  overflow: hidden;
+  color: #56646a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.auth-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 select,
@@ -807,11 +893,11 @@ input {
 }
 
 .component-panel {
-  border-right: 1px solid #e4ebea;
+  border-inline-end: 1px solid #e4ebea;
 }
 
 .props-panel {
-  border-left: 1px solid #e4ebea;
+  border-inline-start: 1px solid #e4ebea;
 }
 
 .builder-column-header,
@@ -1016,8 +1102,8 @@ input {
 }
 
 .preview-block blockquote {
-  border-left: 3px solid #166a5b;
-  padding-left: 10px;
+  border-inline-start: 3px solid #166a5b;
+  padding-inline-start: 10px;
   color: #4f5e65;
 }
 

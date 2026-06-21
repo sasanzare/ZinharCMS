@@ -3,6 +3,7 @@ import { Edit3, FilePlus2, Filter, Send, Trash2 } from "lucide-react";
 
 import { DynamicForm } from "../components/DynamicForm";
 import { StatusBadge } from "../components/StatusBadge";
+import { useI18n, workflowActionKey, workflowStatusKey } from "../i18n";
 import { ApiError, api } from "../services/api";
 import type { ContentEntryResponse, ContentTypeResponse, JsonRecord } from "../types/api";
 
@@ -29,14 +30,8 @@ function statusTone(status: ContentEntryResponse["status"]) {
   return "neutral";
 }
 
-function workflowActionLabel(status: ContentEntryResponse["status"]) {
-  if (status === "draft") return "Submit";
-  if (status === "pending_review") return "Publish";
-  if (status === "published") return "Archive";
-  return "Restore";
-}
-
 export function EntriesPage() {
+  const { t } = useI18n();
   const [contentTypes, setContentTypes] = useState<ContentTypeResponse[]>([]);
   const [selectedSlug, setSelectedSlug] = useState("");
   const [entries, setEntries] = useState<ContentEntryResponse[]>([]);
@@ -57,12 +52,12 @@ export function EntriesPage() {
         setContentTypes(types);
         setSelectedSlug((current) => current || types[0]?.slug || "");
       } catch (caught) {
-        setError(caught instanceof ApiError ? caught.message : "Failed to load content types");
+        setError(caught instanceof ApiError ? caught.message : t("entries.error.loadTypes"));
       }
     }
 
     void loadTypes();
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!selectedSlug) {
@@ -78,14 +73,14 @@ export function EntriesPage() {
         const response = await api.entries.list(selectedSlug, { status, sort: "updated_at:desc" });
         setEntries(response.data);
       } catch (caught) {
-        setError(caught instanceof ApiError ? caught.message : "Failed to load entries");
+        setError(caught instanceof ApiError ? caught.message : t("entries.error.load"));
       } finally {
         setLoading(false);
       }
     }
 
     void loadEntries();
-  }, [selectedSlug, status]);
+  }, [selectedSlug, status, t]);
 
   useEffect(() => {
     setEditingId(null);
@@ -114,7 +109,7 @@ export function EntriesPage() {
       setEntryData(emptyData(selectedType));
       await reloadEntries();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to save entry");
+      setError(caught instanceof ApiError ? caught.message : t("entries.error.save"));
     } finally {
       setSaving(false);
     }
@@ -140,18 +135,18 @@ export function EntriesPage() {
       }
       await reloadEntries();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to change entry status");
+      setError(caught instanceof ApiError ? caught.message : t("entries.error.status"));
     }
   }
 
   async function deleteEntry(entry: ContentEntryResponse) {
-    if (!selectedSlug || !window.confirm(`Delete ${titleForEntry(entry)}?`)) return;
+    if (!selectedSlug || !window.confirm(t("entries.confirmDelete", { title: titleForEntry(entry) }))) return;
     setError(null);
     try {
       await api.entries.delete(selectedSlug, entry.id);
       await reloadEntries();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to delete entry");
+      setError(caught instanceof ApiError ? caught.message : t("entries.error.delete"));
     }
   }
 
@@ -160,8 +155,8 @@ export function EntriesPage() {
       <section className="panel editor-panel">
         <div className="panel-header">
           <div>
-            <h2>{editingId ? "Edit entry" : "New entry"}</h2>
-            <span>{selectedType ? selectedType.name : "Create a content type first"}</span>
+            <h2>{editingId ? t("entries.editor.edit") : t("entries.editor.new")}</h2>
+            <span>{selectedType ? selectedType.name : t("entries.createTypeFirst")}</span>
           </div>
           <button
             className="secondary-button"
@@ -172,13 +167,13 @@ export function EntriesPage() {
             }}
           >
             <FilePlus2 size={16} aria-hidden="true" />
-            New
+            {t("common.new")}
           </button>
         </div>
 
         <form className="form-grid padded" onSubmit={handleSubmit}>
           <label>
-            Content type
+            {t("entries.contentType")}
             <select value={selectedSlug} onChange={(event) => setSelectedSlug(event.target.value)}>
               {contentTypes.map((type) => (
                 <option key={type.id} value={type.slug}>
@@ -193,7 +188,7 @@ export function EntriesPage() {
           {error && <StatusBadge label={error} tone="danger" />}
           <button className="primary-button" type="submit" disabled={saving || !selectedType}>
             <Send size={16} aria-hidden="true" />
-            {saving ? "Saving..." : "Save entry"}
+            {saving ? t("common.saving") : t("entries.saveEntry")}
           </button>
         </form>
       </section>
@@ -201,17 +196,17 @@ export function EntriesPage() {
       <section className="panel list-panel">
         <div className="panel-header">
           <div>
-            <h2>Entries</h2>
-            <span>{loading ? "Loading" : `${entries.length} records`}</span>
+            <h2>{t("entries.list.title")}</h2>
+            <span>{loading ? t("common.loading") : t("entries.recordsCount", { count: entries.length })}</span>
           </div>
           <label className="filter-select">
             <Filter size={16} aria-hidden="true" />
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="">All</option>
-              <option value="draft">Draft</option>
-              <option value="pending_review">Pending</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
+              <option value="">{t("common.all")}</option>
+              <option value="draft">{t("common.draft")}</option>
+              <option value="pending_review">{t("common.pending")}</option>
+              <option value="published">{t("common.published")}</option>
+              <option value="archived">{t("common.archived")}</option>
             </select>
           </label>
         </div>
@@ -219,11 +214,11 @@ export function EntriesPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Status</th>
-              <th>Version</th>
-              <th>Updated</th>
-              <th>Actions</th>
+              <th>{t("common.title")}</th>
+              <th>{t("common.status")}</th>
+              <th>{t("common.version")}</th>
+              <th>{t("common.updated")}</th>
+              <th>{t("common.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -231,19 +226,19 @@ export function EntriesPage() {
               <tr key={entry.id}>
                 <td>{titleForEntry(entry)}</td>
                 <td>
-                  <StatusBadge label={entry.status} tone={statusTone(entry.status)} />
+                  <StatusBadge label={t(workflowStatusKey(entry.status))} tone={statusTone(entry.status)} />
                 </td>
                 <td>{entry.version}</td>
                 <td>{new Date(entry.updated_at).toLocaleString()}</td>
                 <td>
                   <div className="table-actions">
-                    <button className="icon-button" type="button" onClick={() => editEntry(entry)} aria-label="Edit entry">
+                    <button className="icon-button" type="button" onClick={() => editEntry(entry)} aria-label={t("entries.edit")}>
                       <Edit3 size={16} aria-hidden="true" />
                     </button>
                     <button className="secondary-button" type="button" onClick={() => void transitionEntry(entry)}>
-                      {workflowActionLabel(entry.status)}
+                      {t(workflowActionKey(entry.status))}
                     </button>
-                    <button className="icon-button" type="button" onClick={() => void deleteEntry(entry)} aria-label="Delete entry">
+                    <button className="icon-button" type="button" onClick={() => void deleteEntry(entry)} aria-label={t("entries.delete")}>
                       <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
@@ -252,7 +247,7 @@ export function EntriesPage() {
             ))}
             {!loading && entries.length === 0 && (
               <tr>
-                <td colSpan={5}>No entries found.</td>
+                <td colSpan={5}>{t("entries.empty")}</td>
               </tr>
             )}
           </tbody>

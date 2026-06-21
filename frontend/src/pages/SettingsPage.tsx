@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PlugZap, Plus, RefreshCw, Send, Shield, Trash2, UserRound } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useHealth } from "../hooks/useHealth";
+import { useI18n } from "../i18n";
 import { ApiError, api, getStoredRefreshToken } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import type { AuthUser, WebhookEvent, WebhookResponse } from "../types/api";
@@ -39,6 +40,7 @@ function apiMessage(caught: unknown, fallback: string) {
 }
 
 export function SettingsPage() {
+  const { t } = useI18n();
   const storedUser = useAppStore((state) => state.user);
   const clearSession = useAppStore((state) => state.clearSession);
   const { readiness } = useHealth();
@@ -51,34 +53,34 @@ export function SettingsPage() {
   const [webhookMessage, setWebhookMessage] = useState<string | null>(null);
   const [webhookLoading, setWebhookLoading] = useState(false);
 
-  async function loadMe() {
+  const loadMe = useCallback(async function loadMe() {
     setLoading(true);
     setError(null);
     try {
       setUser(await api.auth.me());
     } catch (caught) {
-      setError(apiMessage(caught, "Failed to load current user"));
+      setError(apiMessage(caught, t("settings.error.loadUser")));
     } finally {
       setLoading(false);
     }
-  }
+  }, [t]);
 
-  async function loadWebhooks() {
+  const loadWebhooks = useCallback(async function loadWebhooks() {
     setWebhookLoading(true);
     setWebhookError(null);
     try {
       setWebhooks(await api.webhooks.list());
     } catch (caught) {
-      setWebhookError(apiMessage(caught, "Failed to load webhooks"));
+      setWebhookError(apiMessage(caught, t("settings.error.loadWebhooks")));
     } finally {
       setWebhookLoading(false);
     }
-  }
+  }, [t]);
 
   useEffect(() => {
     void loadMe();
     void loadWebhooks();
-  }, []);
+  }, [loadMe, loadWebhooks]);
 
   async function logout() {
     const refreshToken = getStoredRefreshToken();
@@ -103,7 +105,7 @@ export function SettingsPage() {
     setWebhookError(null);
     setWebhookMessage(null);
     if (webhookDraft.events.length === 0) {
-      setWebhookError("Select at least one event");
+      setWebhookError(t("settings.selectEvent"));
       return;
     }
     try {
@@ -116,9 +118,9 @@ export function SettingsPage() {
       });
       setWebhooks((current) => [saved, ...current]);
       setWebhookDraft(createWebhookDraft());
-      setWebhookMessage("Webhook saved");
+      setWebhookMessage(t("settings.webhookSaved"));
     } catch (caught) {
-      setWebhookError(apiMessage(caught, "Failed to save webhook"));
+      setWebhookError(apiMessage(caught, t("settings.error.saveWebhook")));
     }
   }
 
@@ -135,20 +137,20 @@ export function SettingsPage() {
       });
       setWebhooks((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (caught) {
-      setWebhookError(apiMessage(caught, "Failed to update webhook"));
+      setWebhookError(apiMessage(caught, t("settings.error.updateWebhook")));
     }
   }
 
   async function deleteWebhook(webhook: WebhookResponse) {
-    if (!window.confirm(`Delete webhook ${webhook.name}?`)) return;
+    if (!window.confirm(t("settings.confirmDeleteWebhook", { name: webhook.name }))) return;
     setWebhookError(null);
     setWebhookMessage(null);
     try {
       const deleted = await api.webhooks.delete(webhook.id);
       setWebhooks((current) => current.filter((item) => item.id !== deleted.id));
-      setWebhookMessage("Webhook deleted");
+      setWebhookMessage(t("settings.webhookDeleted"));
     } catch (caught) {
-      setWebhookError(apiMessage(caught, "Failed to delete webhook"));
+      setWebhookError(apiMessage(caught, t("settings.error.deleteWebhook")));
     }
   }
 
@@ -157,9 +159,9 @@ export function SettingsPage() {
     setWebhookMessage(null);
     try {
       const result = await api.webhooks.test(webhook.id);
-      setWebhookMessage(`Test sent: ${result.event}`);
+      setWebhookMessage(t("settings.testSent", { event: result.event }));
     } catch (caught) {
-      setWebhookError(apiMessage(caught, "Failed to test webhook"));
+      setWebhookError(apiMessage(caught, t("settings.error.testWebhook")));
     }
   }
 
@@ -168,10 +170,10 @@ export function SettingsPage() {
       <section className="panel editor-panel">
         <div className="panel-header">
           <div>
-            <h2>Current user</h2>
-            <span>Token-backed profile from `/api/auth/me`</span>
+            <h2>{t("settings.currentUser")}</h2>
+            <span>{t("settings.currentUserDescription")}</span>
           </div>
-          <button className="icon-button" type="button" onClick={() => void loadMe()} aria-label="Refresh user">
+          <button className="icon-button" type="button" onClick={() => void loadMe()} aria-label={t("settings.refreshUser")}>
             <RefreshCw size={16} aria-hidden="true" />
           </button>
         </div>
@@ -199,11 +201,11 @@ export function SettingsPage() {
           {error && <StatusBadge label={error} tone="danger" />}
           <button className="secondary-button" type="button" onClick={() => void loadMe()} disabled={loading}>
             <UserRound size={16} aria-hidden="true" />
-            {loading ? "Refreshing..." : "Refresh profile"}
+            {loading ? t("settings.refreshing") : t("settings.refreshProfile")}
           </button>
           <button className="primary-button" type="button" onClick={() => void logout()}>
             <Shield size={16} aria-hidden="true" />
-            Logout
+            {t("app.action.logout")}
           </button>
         </div>
       </section>
@@ -211,27 +213,27 @@ export function SettingsPage() {
       <section className="panel list-panel">
         <div className="panel-header">
           <div>
-            <h2>Environment</h2>
-            <span>Local development defaults</span>
+            <h2>{t("settings.environment")}</h2>
+            <span>{t("settings.environmentDescription")}</span>
           </div>
           <StatusBadge label={readiness?.status ?? "unknown"} tone={readiness?.status === "ready" ? "success" : "warning"} />
         </div>
 
         <div className="settings-grid">
           <label>
-            API URL
+            {t("settings.apiUrl")}
             <input value={api.baseUrl} readOnly />
           </label>
           <label>
-            Upload limit
+            {t("settings.uploadLimit")}
             <input value="50 MB" readOnly />
           </label>
           <label>
-            Access token TTL
+            {t("settings.accessTokenTtl")}
             <input value="3600 seconds" readOnly />
           </label>
           <label>
-            Delivery API
+            {t("settings.deliveryApi")}
             <input value="/api/v1" readOnly />
           </label>
         </div>
@@ -240,10 +242,10 @@ export function SettingsPage() {
       <section className="panel list-panel full-width-panel">
         <div className="panel-header">
           <div>
-            <h2>Webhooks</h2>
-            <span>Signed delivery events</span>
+            <h2>{t("settings.webhooks")}</h2>
+            <span>{t("settings.webhooksDescription")}</span>
           </div>
-          <button className="icon-button" type="button" onClick={() => void loadWebhooks()} aria-label="Refresh webhooks">
+          <button className="icon-button" type="button" onClick={() => void loadWebhooks()} aria-label={t("settings.refreshWebhooks")}>
             <RefreshCw size={16} aria-hidden="true" />
           </button>
         </div>
@@ -252,21 +254,21 @@ export function SettingsPage() {
           <div className="webhook-form">
             <div className="form-grid">
               <label>
-                Name
+                {t("common.name")}
                 <input
                   value={webhookDraft.name}
                   onChange={(event) => setWebhookDraft((current) => ({ ...current, name: event.target.value }))}
                 />
               </label>
               <label>
-                URL
+                {t("common.url")}
                 <input
                   value={webhookDraft.url}
                   onChange={(event) => setWebhookDraft((current) => ({ ...current, url: event.target.value }))}
                 />
               </label>
               <label>
-                Secret
+                {t("settings.secret")}
                 <input
                   value={webhookDraft.secret}
                   onChange={(event) => setWebhookDraft((current) => ({ ...current, secret: event.target.value }))}
@@ -278,7 +280,7 @@ export function SettingsPage() {
                   checked={webhookDraft.is_active}
                   onChange={(event) => setWebhookDraft((current) => ({ ...current, is_active: event.target.checked }))}
                 />
-                Active
+                {t("common.active")}
               </label>
             </div>
 
@@ -302,7 +304,7 @@ export function SettingsPage() {
               </div>
               <button className="primary-button" type="button" onClick={() => void saveWebhook()} disabled={webhookLoading}>
                 <Plus size={16} aria-hidden="true" />
-                Save webhook
+                {t("settings.saveWebhook")}
               </button>
             </div>
           </div>
@@ -311,17 +313,17 @@ export function SettingsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>URL</th>
-                  <th>Events</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>{t("common.name")}</th>
+                  <th>{t("common.url")}</th>
+                  <th>{t("settings.events")}</th>
+                  <th>{t("common.status")}</th>
+                  <th>{t("common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {webhooks.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>No webhooks configured.</td>
+                    <td colSpan={5}>{t("settings.noWebhooks")}</td>
                   </tr>
                 ) : (
                   webhooks.map((webhook) => (
@@ -330,19 +332,19 @@ export function SettingsPage() {
                       <td className="truncate-cell">{webhook.url}</td>
                       <td>{webhook.events.join(", ")}</td>
                       <td>
-                        <StatusBadge label={webhook.is_active ? "Active" : "Paused"} tone={webhook.is_active ? "success" : "neutral"} />
+                        <StatusBadge label={webhook.is_active ? t("common.active") : t("common.paused")} tone={webhook.is_active ? "success" : "neutral"} />
                       </td>
                       <td>
                         <div className="table-actions">
                           <button className="secondary-button" type="button" onClick={() => void toggleWebhook(webhook)}>
                             <PlugZap size={16} aria-hidden="true" />
-                            {webhook.is_active ? "Pause" : "Activate"}
+                            {webhook.is_active ? t("common.pause") : t("settings.activate")}
                           </button>
                           <button className="secondary-button" type="button" onClick={() => void testWebhook(webhook)}>
                             <Send size={16} aria-hidden="true" />
-                            Test
+                            {t("common.test")}
                           </button>
-                          <button className="icon-button" type="button" onClick={() => void deleteWebhook(webhook)} aria-label={`Delete ${webhook.name}`}>
+                          <button className="icon-button" type="button" onClick={() => void deleteWebhook(webhook)} aria-label={t("settings.deleteWebhook", { name: webhook.name })}>
                             <Trash2 size={16} aria-hidden="true" />
                           </button>
                         </div>

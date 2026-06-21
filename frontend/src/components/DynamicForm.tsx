@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import type { FieldSchema, JsonRecord, JsonValue } from "../types/api";
 
 type DynamicFormProps = {
@@ -20,12 +21,13 @@ function parseFieldValue(field: FieldSchema, raw: string | boolean): JsonValue {
 }
 
 export function DynamicForm({ fields, value, onChange }: DynamicFormProps) {
+  const { t } = useI18n();
   function updateField(field: FieldSchema, raw: string | boolean) {
     onChange({ ...value, [field.name]: parseFieldValue(field, raw) });
   }
 
   if (fields.length === 0) {
-    return <p className="empty-copy">This content type has no fields yet.</p>;
+    return <p className="empty-copy">{t("dynamicForm.empty")}</p>;
   }
 
   return (

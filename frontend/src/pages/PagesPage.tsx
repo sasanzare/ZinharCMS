@@ -1,4 +1,4 @@
-import { type CSSProperties, type FormEvent, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -14,6 +14,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { Copy, Edit3, Eye, GripVertical, History, Layers3, Plus, Save, Trash2, X } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
+import { useI18n, workflowActionKey, workflowStatusKey, type MessageKey } from "../i18n";
 import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import type { ComponentRegistryResponse, JsonRecord, JsonValue, PageJson, PageNode, PageResponse, PageVersionResponse } from "../types/api";
@@ -95,13 +96,6 @@ function pageStatusTone(status: PageResponse["status"]) {
   if (status === "pending_review") return "warning";
   if (status === "archived") return "danger";
   return "neutral";
-}
-
-function pageWorkflowActionLabel(status: PageResponse["status"]) {
-  if (status === "draft") return "Submit";
-  if (status === "pending_review") return "Publish";
-  if (status === "published") return "Archive";
-  return "Restore";
 }
 
 function isJsonRecord(value: JsonValue | undefined): value is JsonRecord {
@@ -252,6 +246,7 @@ function SortableCanvasNode({
     opacity: isDragging ? 0.55 : undefined,
   };
 
+  const { t } = useI18n();
   const title = component?.name ?? node.type;
   const props = node.props ?? {};
   const previewText = [props.title, props.subtitle, props.body, props.quote]
@@ -260,14 +255,14 @@ function SortableCanvasNode({
 
   return (
     <div className={`canvas-node ${selected ? "canvas-node--selected" : ""}`} ref={setNodeRef} style={style}>
-      <button className="drag-handle" type="button" aria-label={`Move ${title}`} {...listeners} {...attributes}>
+      <button className="drag-handle" type="button" aria-label={t("pages.moveBlock", { title })} {...listeners} {...attributes}>
         <GripVertical size={16} aria-hidden="true" />
       </button>
       <button className="canvas-node-main" type="button" onClick={() => onSelect(node.id)}>
         <strong>{title}</strong>
         <span>{previewText || node.type}</span>
       </button>
-      <button className="icon-button" type="button" onClick={() => onRemove(node.id)} aria-label={`Remove ${title}`}>
+      <button className="icon-button" type="button" onClick={() => onRemove(node.id)} aria-label={t("pages.removeBlock", { title })}>
         <X size={16} aria-hidden="true" />
       </button>
     </div>
@@ -287,20 +282,21 @@ function BuilderCanvas({
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const { setNodeRef, isOver } = useDroppable({ id: CANVAS_DROP_ID });
   const children = pageJson.layout.children ?? [];
 
   return (
     <div className={`builder-canvas ${isOver ? "builder-canvas--over" : ""}`} ref={setNodeRef}>
       <div className="canvas-chrome">
-        <span>Desktop canvas</span>
-        <strong>{children.length} blocks</strong>
+        <span>{t("pages.desktopCanvas")}</span>
+        <strong>{t("pages.blocksCount", { count: children.length })}</strong>
       </div>
       {children.length === 0 ? (
         <div className="drop-empty">
           <Layers3 size={22} aria-hidden="true" />
-          <strong>Drop components here</strong>
-          <span>Drag from the component panel or double-click an item to add it.</span>
+          <strong>{t("pages.dropHere")}</strong>
+          <span>{t("pages.dropHelp")}</span>
         </div>
       ) : (
         <SortableContext items={children.map((node) => node.id)} strategy={verticalListSortingStrategy}>
@@ -344,13 +340,14 @@ function PreviewNode({ node, component }: { node: PageNode; component: Component
 }
 
 function LivePreview({ pageJson, components }: { pageJson: PageJson; components: ComponentRegistryResponse[] }) {
+  const { t } = useI18n();
   const children = pageJson.layout.children ?? [];
 
   return (
     <div className="live-preview">
       <div className="preview-page">
         {children.length === 0 ? (
-          <div className="preview-empty">Preview updates as components are added.</div>
+          <div className="preview-empty">{t("pages.previewEmpty")}</div>
         ) : (
           children.map((node) => <PreviewNode component={componentForNode(components, node)} key={node.id} node={node} />)
         )}
@@ -368,6 +365,8 @@ function PropControl({
   value: JsonValue | undefined;
   onChange: (value: JsonValue) => void;
 }) {
+  const { t } = useI18n();
+
   if (definition.type === "boolean") {
     return (
       <label className="checkbox-row">
@@ -382,7 +381,7 @@ function PropControl({
       <label>
         {definition.label}
         <select value={typeof value === "string" ? value : ""} onChange={(event) => onChange(event.target.value)} required={definition.required}>
-          <option value="">Select</option>
+          <option value="">{t("common.select")}</option>
           {definition.options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -423,6 +422,7 @@ function PropControl({
 }
 
 export function PagesPage() {
+  const { t } = useI18n();
   const accessToken = useAppStore((state) => state.accessToken);
   const [pages, setPages] = useState<PageResponse[]>([]);
   const [components, setComponents] = useState<ComponentRegistryResponse[]>([]);
@@ -433,7 +433,7 @@ export function PagesPage() {
   const [componentQuery, setComponentQuery] = useState("");
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [autoSaveState, setAutoSaveState] = useState("Manual save");
+  const [autoSaveState, setAutoSaveState] = useState<MessageKey>("pages.builder.manualSave");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -445,7 +445,7 @@ export function PagesPage() {
     }),
   );
 
-  async function load(preferredPageId?: string) {
+  const load = useCallback(async function load(preferredPageId?: string) {
     setLoading(true);
     setError(null);
     try {
@@ -460,15 +460,15 @@ export function PagesPage() {
         if (page) setSelectedPage(page);
       }
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load page builder data");
+      setError(caught instanceof ApiError ? caught.message : t("pages.error.load"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [t]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   async function saveDraftPage(options: { silent?: boolean } = {}) {
     setSaving(true);
@@ -478,11 +478,11 @@ export function PagesPage() {
       const saved = draft.id ? await api.pages.update(draft.id, payload) : await api.pages.create(payload);
       setDraft(createDraft(saved));
       setDirty(false);
-      setAutoSaveState(options.silent ? "Autosaved" : "Saved");
+      setAutoSaveState(options.silent ? "pages.builder.autosaved" : "pages.builder.saved");
       await load(saved.id);
     } catch (caught) {
-      setAutoSaveState("Save failed");
-      setError(caught instanceof ApiError ? caught.message : caught instanceof Error ? caught.message : "Failed to save page");
+      setAutoSaveState("pages.builder.saveFailed");
+      setError(caught instanceof ApiError ? caught.message : caught instanceof Error ? caught.message : t("pages.error.save"));
     } finally {
       setSaving(false);
     }
@@ -494,7 +494,7 @@ export function PagesPage() {
 
   useEffect(() => {
     if (!draft.id || !dirty || saving) return;
-    setAutoSaveState("Autosave pending");
+    setAutoSaveState("pages.builder.autosavePending");
     const timeout = window.setTimeout(() => {
       autoSaveRef.current();
     }, 10_000);
@@ -507,14 +507,14 @@ export function PagesPage() {
     try {
       setVersions(await api.pages.versions(page.id));
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load versions");
+      setError(caught instanceof ApiError ? caught.message : t("pages.error.loadVersions"));
     }
   }
 
   function mutatePageJson(updater: (pageJson: PageJson) => PageJson) {
     setDraft((current) => ({ ...current, pageJson: normalizePageJson(updater(normalizePageJson(current.pageJson))) }));
     setDirty(true);
-    setAutoSaveState(draft.id ? "Unsaved changes" : "Save to enable autosave");
+    setAutoSaveState(draft.id ? "pages.builder.unsavedChanges" : "pages.builder.saveToEnableAutosave");
   }
 
   function editPage(page: PageResponse) {
@@ -522,7 +522,7 @@ export function PagesPage() {
     setDraft(nextDraft);
     setSelectedNodeId(nextDraft.pageJson.layout.children?.[0]?.id ?? null);
     setDirty(false);
-    setAutoSaveState("Manual save");
+    setAutoSaveState("pages.builder.manualSave");
     void loadVersions(page);
   }
 
@@ -532,7 +532,7 @@ export function PagesPage() {
     setSelectedPage(null);
     setVersions([]);
     setDirty(false);
-    setAutoSaveState("Manual save");
+    setAutoSaveState("pages.builder.manualSave");
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -630,12 +630,12 @@ export function PagesPage() {
       }
       await load(page.id);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to change page status");
+      setError(caught instanceof ApiError ? caught.message : t("pages.error.status"));
     }
   }
 
   async function deletePage(page: PageResponse) {
-    if (!window.confirm(`Delete page ${page.title}?`)) return;
+    if (!window.confirm(t("pages.confirmDelete", { title: page.title }))) return;
     setError(null);
     try {
       await api.pages.delete(page.id);
@@ -646,7 +646,7 @@ export function PagesPage() {
       if (draft.id === page.id) resetDraft();
       await load();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to delete page");
+      setError(caught instanceof ApiError ? caught.message : t("pages.error.delete"));
     }
   }
 
@@ -658,7 +658,7 @@ export function PagesPage() {
       await load(restored.id);
       await loadVersions(restored);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to restore version");
+      setError(caught instanceof ApiError ? caught.message : t("pages.error.restore"));
     }
   }
 
@@ -681,18 +681,18 @@ export function PagesPage() {
       <section className="panel full-width-panel page-builder-shell">
         <div className="panel-header builder-header">
           <div>
-            <h2>{draft.id ? "Page Builder Editor" : "New page builder"}</h2>
-            <span>{draft.id ? autoSaveState : "Create the page once, then autosave will keep drafts current."}</span>
+            <h2>{draft.id ? t("pages.builder.editor") : t("pages.builder.new")}</h2>
+            <span>{draft.id ? t(autoSaveState) : t("pages.builder.createFirst")}</span>
           </div>
           <div className="panel-actions">
-            {draft.id && <StatusBadge label={`${countNodes(draft.pageJson)} blocks`} tone="neutral" />}
+            {draft.id && <StatusBadge label={t("pages.blocksCount", { count: countNodes(draft.pageJson) })} tone="neutral" />}
             <button className="secondary-button" type="button" onClick={resetDraft}>
               <Plus size={16} aria-hidden="true" />
               New
             </button>
             <button className="secondary-button" type="button" onClick={() => draft.id && void copyPreviewUrl(draft.id)} disabled={!draft.id}>
               <Copy size={16} aria-hidden="true" />
-              Preview socket
+              {t("pages.previewSocket")}
             </button>
           </div>
         </div>
@@ -708,7 +708,7 @@ export function PagesPage() {
           </label>
           <button className="primary-button" type="submit" disabled={saving}>
             <Save size={16} aria-hidden="true" />
-            {saving ? "Saving..." : "Save page"}
+            {saving ? t("common.saving") : t("pages.savePage")}
           </button>
         </form>
 
@@ -720,23 +720,23 @@ export function PagesPage() {
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="page-builder-grid">
-            <aside className="component-panel" aria-label="Component panel">
+            <aside className="component-panel" aria-label={t("pages.componentPanel")}>
               <div className="builder-column-header">
-                <strong>Components</strong>
+                <strong>{t("pages.components")}</strong>
                 <span>{filteredComponents.length}</span>
               </div>
               <label className="builder-search">
-                <input value={componentQuery} onChange={(event) => setComponentQuery(event.target.value)} placeholder="Search components" />
+                <input value={componentQuery} onChange={(event) => setComponentQuery(event.target.value)} placeholder={t("pages.searchComponents")} />
               </label>
               <div className="palette-list">
                 {filteredComponents.map((component) => (
                   <PaletteItem component={component} key={component.id} onAdd={addComponent} />
                 ))}
-                {!loading && filteredComponents.length === 0 && <p className="empty-copy">No components registered.</p>}
+                {!loading && filteredComponents.length === 0 && <p className="empty-copy">{t("pages.noComponents")}</p>}
               </div>
             </aside>
 
-            <main className="canvas-panel" aria-label="Canvas">
+            <main className="canvas-panel" aria-label={t("pages.canvas")}>
               <BuilderCanvas
                 components={components}
                 onRemove={removeComponent}
@@ -747,16 +747,16 @@ export function PagesPage() {
               <LivePreview components={components} pageJson={draft.pageJson} />
             </main>
 
-            <aside className="props-panel" aria-label="Props editor">
+            <aside className="props-panel" aria-label={t("pages.propsEditor")}>
               <div className="builder-column-header">
-                <strong>Props editor</strong>
+                <strong>{t("pages.propsEditor")}</strong>
                 {selectedComponent && <span>{selectedComponent.component_key}</span>}
               </div>
 
               {selectedNode && selectedComponent ? (
                 <div className="props-form">
                   <label>
-                    Component ID
+                    {t("pages.componentId")}
                     <input value={selectedNode.id} readOnly />
                   </label>
                   {getPropDefinitions(selectedComponent).map((definition) => (
@@ -767,21 +767,21 @@ export function PagesPage() {
                       value={selectedNode.props?.[definition.name]}
                     />
                   ))}
-                  {getPropDefinitions(selectedComponent).length === 0 && <p className="empty-copy">This component has no editable props.</p>}
+                  {getPropDefinitions(selectedComponent).length === 0 && <p className="empty-copy">{t("pages.noEditableProps")}</p>}
                 </div>
               ) : (
                 <div className="props-form">
-                  <p className="empty-copy">Select a block to edit its props, or update page metadata below.</p>
+                  <p className="empty-copy">{t("pages.selectBlock")}</p>
                   <label>
-                    Metadata title
+                    {t("pages.metadataTitle")}
                     <input value={draft.pageJson.metadata?.title ?? ""} onChange={(event) => updateMetadata("title", event.target.value)} />
                   </label>
                   <label>
-                    Description
+                    {t("common.description")}
                     <textarea rows={4} value={draft.pageJson.metadata?.description ?? ""} onChange={(event) => updateMetadata("description", event.target.value)} />
                   </label>
                   <label>
-                    OG image
+                    {t("pages.ogImage")}
                     <input value={draft.pageJson.metadata?.og_image ?? ""} onChange={(event) => updateMetadata("og_image", event.target.value)} />
                   </label>
                 </div>
@@ -802,20 +802,20 @@ export function PagesPage() {
       <section className="panel list-panel full-width-panel">
         <div className="panel-header">
           <div>
-            <h2>Pages</h2>
-            <span>{loading ? "Loading" : `${pages.length} pages`}</span>
+            <h2>{t("pages.list.title")}</h2>
+            <span>{loading ? t("common.loading") : t("pages.pagesCount", { count: pages.length })}</span>
           </div>
-          <StatusBadge label={`${components.length} components`} tone="neutral" />
+          <StatusBadge label={t("pages.componentsCount", { count: components.length })} tone="neutral" />
         </div>
 
         <table className="data-table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Status</th>
-              <th>Components</th>
-              <th>Updated</th>
-              <th>Actions</th>
+              <th>{t("common.title")}</th>
+              <th>{t("common.status")}</th>
+              <th>{t("pages.table.components")}</th>
+              <th>{t("common.updated")}</th>
+              <th>{t("common.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -823,25 +823,25 @@ export function PagesPage() {
               <tr key={page.id}>
                 <td>{page.title}</td>
                 <td>
-                  <StatusBadge label={page.status} tone={pageStatusTone(page.status)} />
+                  <StatusBadge label={t(workflowStatusKey(page.status))} tone={pageStatusTone(page.status)} />
                 </td>
                 <td>{countNodes(page.page_json)}</td>
                 <td>{new Date(page.updated_at).toLocaleString()}</td>
                 <td>
                   <div className="table-actions">
-                    <button className="icon-button" type="button" onClick={() => editPage(page)} aria-label="Edit page">
+                    <button className="icon-button" type="button" onClick={() => editPage(page)} aria-label={t("pages.edit")}>
                       <Edit3 size={16} aria-hidden="true" />
                     </button>
-                    <button className="icon-button" type="button" onClick={() => void loadVersions(page)} aria-label="Show versions">
+                    <button className="icon-button" type="button" onClick={() => void loadVersions(page)} aria-label={t("pages.showVersions")}>
                       <History size={16} aria-hidden="true" />
                     </button>
-                    <button className="icon-button" type="button" onClick={() => void copyPreviewUrl(page.id)} aria-label="Copy preview socket URL">
+                    <button className="icon-button" type="button" onClick={() => void copyPreviewUrl(page.id)} aria-label={t("pages.copyPreview")}>
                       <Eye size={16} aria-hidden="true" />
                     </button>
                     <button className="secondary-button" type="button" onClick={() => void transitionPage(page)}>
-                      {pageWorkflowActionLabel(page.status)}
+                      {t(workflowActionKey(page.status))}
                     </button>
-                    <button className="icon-button" type="button" onClick={() => void deletePage(page)} aria-label="Delete page">
+                    <button className="icon-button" type="button" onClick={() => void deletePage(page)} aria-label={t("pages.delete")}>
                       <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
@@ -850,7 +850,7 @@ export function PagesPage() {
             ))}
             {!loading && pages.length === 0 && (
               <tr>
-                <td colSpan={5}>No pages found.</td>
+                <td colSpan={5}>{t("pages.empty")}</td>
               </tr>
             )}
           </tbody>
@@ -861,16 +861,16 @@ export function PagesPage() {
         <section className="panel full-width-panel">
           <div className="panel-header">
             <div>
-              <h2>{selectedPage.title} versions</h2>
-              <span>{versions.length} snapshots</span>
+              <h2>{t("pages.versionsTitle", { title: selectedPage.title })}</h2>
+              <span>{t("pages.snapshotsCount", { count: versions.length })}</span>
             </div>
           </div>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Version</th>
-                <th>Snapshot</th>
-                <th>Action</th>
+                <th>{t("common.version")}</th>
+                <th>{t("pages.snapshot")}</th>
+                <th>{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -887,7 +887,7 @@ export function PagesPage() {
               ))}
               {versions.length === 0 && (
                 <tr>
-                  <td colSpan={3}>No snapshots found.</td>
+                  <td colSpan={3}>{t("pages.noSnapshots")}</td>
                 </tr>
               )}
             </tbody>

@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Check, MessageSquare, PlugZap, RefreshCw, Send, X } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
+import { useI18n, workflowStatusKey } from "../i18n";
 import { ApiError, api } from "../services/api";
 import type {
   CommentResponse,
@@ -65,6 +66,7 @@ function pageReviewItems(pages: PageResponse[]): ReviewItem[] {
 }
 
 export function WorkflowPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [comments, setComments] = useState<CommentResponse[]>([]);
@@ -78,7 +80,7 @@ export function WorkflowPage() {
 
   const selectedItem = useMemo(() => items.find((item) => item.key === selectedKey) ?? null, [items, selectedKey]);
 
-  async function loadWorkflow() {
+  const loadWorkflow = useCallback(async function loadWorkflow() {
     setLoading(true);
     setError(null);
     try {
@@ -100,11 +102,11 @@ export function WorkflowPage() {
       setPlugins(pluginRows);
       setSelectedKey((current) => (current && nextItems.some((item) => item.key === current) ? current : nextItems[0]?.key ?? null));
     } catch (caught) {
-      setError(apiMessage(caught, "Failed to load workflow"));
+      setError(apiMessage(caught, t("workflow.error.load")));
     } finally {
       setLoading(false);
     }
-  }
+  }, [t]);
 
   const loadComments = useCallback(async (item = selectedItem) => {
     if (!item) {
@@ -115,15 +117,15 @@ export function WorkflowPage() {
     try {
       setComments(await api.comments.list(item.kind, item.id, includeResolved));
     } catch (caught) {
-      setError(apiMessage(caught, "Failed to load comments"));
+      setError(apiMessage(caught, t("workflow.error.comments")));
     } finally {
       setCommentLoading(false);
     }
-  }, [includeResolved, selectedItem]);
+  }, [includeResolved, selectedItem, t]);
 
   useEffect(() => {
     void loadWorkflow();
-  }, []);
+  }, [loadWorkflow]);
 
   useEffect(() => {
     void loadComments();
@@ -138,10 +140,10 @@ export function WorkflowPage() {
       } else {
         await api.pages.publish(item.id);
       }
-      setMessage(`${item.title} published`);
+      setMessage(t("workflow.itemPublished", { title: item.title }));
       await loadWorkflow();
     } catch (caught) {
-      setError(apiMessage(caught, "Failed to publish item"));
+      setError(apiMessage(caught, t("workflow.error.publish")));
     }
   }
 
@@ -154,10 +156,10 @@ export function WorkflowPage() {
       } else {
         await api.pages.reject(item.id);
       }
-      setMessage(`${item.title} rejected`);
+      setMessage(t("workflow.itemRejected", { title: item.title }));
       await loadWorkflow();
     } catch (caught) {
-      setError(apiMessage(caught, "Failed to reject item"));
+      setError(apiMessage(caught, t("workflow.error.reject")));
     }
   }
 
@@ -174,7 +176,7 @@ export function WorkflowPage() {
       setCommentBody("");
       await loadComments(selectedItem);
     } catch (caught) {
-      setError(apiMessage(caught, "Failed to add comment"));
+      setError(apiMessage(caught, t("workflow.error.addComment")));
     }
   }
 
@@ -188,7 +190,7 @@ export function WorkflowPage() {
       }
       await loadComments();
     } catch (caught) {
-      setError(apiMessage(caught, "Failed to update comment"));
+      setError(apiMessage(caught, t("workflow.error.updateComment")));
     }
   }
 
@@ -198,9 +200,9 @@ export function WorkflowPage() {
     try {
       const updated = plugin.is_enabled ? await api.plugins.disable(plugin.plugin_key) : await api.plugins.enable(plugin.plugin_key);
       setPlugins((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-      setMessage(`${updated.name} ${updated.is_enabled ? "enabled" : "disabled"}`);
+      setMessage(t("workflow.pluginUpdated", { name: updated.name, status: t(updated.is_enabled ? "common.enabled" : "common.disabled") }));
     } catch (caught) {
-      setError(apiMessage(caught, "Failed to update plugin"));
+      setError(apiMessage(caught, t("workflow.error.updatePlugin")));
     }
   }
 
@@ -209,10 +211,10 @@ export function WorkflowPage() {
       <section className="panel workflow-review-panel">
         <div className="panel-header">
           <div>
-            <h2>Review queue</h2>
-            <span>{loading ? "Loading" : `${items.length} pending items`}</span>
+            <h2>{t("workflow.reviewQueue")}</h2>
+            <span>{loading ? t("common.loading") : t("workflow.pendingItems", { count: items.length })}</span>
           </div>
-          <button className="icon-button" type="button" onClick={() => void loadWorkflow()} aria-label="Refresh workflow">
+          <button className="icon-button" type="button" onClick={() => void loadWorkflow()} aria-label={t("workflow.refresh")}>
             <RefreshCw size={16} aria-hidden="true" />
           </button>
         </div>
@@ -235,20 +237,20 @@ export function WorkflowPage() {
                 <span>{item.subtitle}</span>
               </span>
               <span className="review-meta">
-                <StatusBadge label={item.status} tone={statusTone(item.status)} />
+                <StatusBadge label={t(workflowStatusKey(item.status))} tone={statusTone(item.status)} />
                 <small>{new Date(item.updated_at).toLocaleString()}</small>
               </span>
             </button>
           ))}
-          {!loading && items.length === 0 && <p className="empty-copy padded">No items waiting for review.</p>}
+          {!loading && items.length === 0 && <p className="empty-copy padded">{t("workflow.noItems")}</p>}
         </div>
       </section>
 
       <section className="panel workflow-detail-panel">
         <div className="panel-header">
           <div>
-            <h2>{selectedItem?.title ?? "No item selected"}</h2>
-            <span>{selectedItem ? `${selectedItem.kind} review controls` : "Select a pending item"}</span>
+            <h2>{selectedItem?.title ?? t("workflow.noSelected")}</h2>
+            <span>{selectedItem ? t("workflow.controls", { kind: selectedItem.kind }) : t("workflow.selectPending")}</span>
           </div>
           <div className="panel-actions">
             <button className="secondary-button" type="button" onClick={() => selectedItem && void reject(selectedItem)} disabled={!selectedItem}>
@@ -265,12 +267,12 @@ export function WorkflowPage() {
         <div className="comments-toolbar">
           <div>
             <MessageSquare size={16} aria-hidden="true" />
-            <strong>Comments</strong>
+            <strong>{t("workflow.comments")}</strong>
             <span>{commentLoading ? "Loading" : comments.length}</span>
           </div>
           <label className="checkbox-row compact-checkbox">
             <input type="checkbox" checked={includeResolved} onChange={(event) => setIncludeResolved(event.target.checked)} />
-            Resolved
+            {t("workflow.resolved")}
           </label>
         </div>
 
@@ -278,7 +280,7 @@ export function WorkflowPage() {
           <textarea
             disabled={!selectedItem}
             onChange={(event) => setCommentBody(event.target.value)}
-            placeholder="Add review feedback"
+            placeholder={t("workflow.addFeedback")}
             rows={3}
             value={commentBody}
           />
@@ -292,24 +294,24 @@ export function WorkflowPage() {
           {comments.map((comment) => (
             <div className="comment-item" key={comment.id}>
               <div>
-                <strong>{comment.author_name ?? "Team member"}</strong>
+                <strong>{comment.author_name ?? t("workflow.teamMember")}</strong>
                 <span>{new Date(comment.created_at).toLocaleString()}</span>
               </div>
               <p>{comment.body}</p>
               <button className="secondary-button" type="button" onClick={() => void toggleResolved(comment)}>
-                {comment.resolved_at ? "Reopen" : "Resolve"}
+                {comment.resolved_at ? t("common.reopen") : t("common.resolve")}
               </button>
             </div>
           ))}
-          {!commentLoading && selectedItem && comments.length === 0 && <p className="empty-copy">No comments for this item.</p>}
+          {!commentLoading && selectedItem && comments.length === 0 && <p className="empty-copy">{t("workflow.noComments")}</p>}
         </div>
       </section>
 
       <section className="panel workflow-plugin-panel">
         <div className="panel-header">
           <div>
-            <h2>Plugins</h2>
-            <span>{plugins.length} registered</span>
+            <h2>{t("workflow.plugins")}</h2>
+            <span>{t("workflow.pluginsRegistered", { count: plugins.length })}</span>
           </div>
           <PlugZap size={18} aria-hidden="true" />
         </div>
@@ -319,15 +321,15 @@ export function WorkflowPage() {
               <div className="plugin-main">
                 <strong>{plugin.name}</strong>
                 <span>{plugin.description}</span>
-                <small>{plugin.hooks.join(", ") || "No hooks"}</small>
+                <small>{plugin.hooks.join(", ") || t("common.noHooks")}</small>
               </div>
-              <StatusBadge label={plugin.is_enabled ? "Enabled" : "Disabled"} tone={plugin.is_enabled ? "success" : "neutral"} />
+              <StatusBadge label={plugin.is_enabled ? t("common.enabled") : t("common.disabled")} tone={plugin.is_enabled ? "success" : "neutral"} />
               <button className="secondary-button" type="button" onClick={() => void togglePlugin(plugin)}>
-                {plugin.is_enabled ? "Disable" : "Enable"}
+                {plugin.is_enabled ? t("common.disable") : t("common.enable")}
               </button>
             </div>
           ))}
-          {!loading && plugins.length === 0 && <p className="empty-copy padded">No plugins registered.</p>}
+          {!loading && plugins.length === 0 && <p className="empty-copy padded">{t("workflow.noPlugins")}</p>}
         </div>
       </section>
     </div>

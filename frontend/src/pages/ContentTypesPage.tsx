@@ -1,19 +1,12 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Edit3, Plus, Save, Search, Trash2, X } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
+import { fieldTypeKey, useI18n } from "../i18n";
 import { ApiError, api } from "../services/api";
 import type { ContentTypeResponse, FieldSchema, FieldType } from "../types/api";
 
-const fieldTypes: FieldType[] = [
-  "text",
-  "longtext",
-  "richtext",
-  "number",
-  "boolean",
-  "datetime",
-  "media",
-];
+const fieldTypes: FieldType[] = ["text", "longtext", "richtext", "number", "boolean", "datetime", "media"];
 
 const emptyField: FieldSchema = {
   id: "title",
@@ -33,6 +26,7 @@ function createEmptyDraft() {
 }
 
 export function ContentTypesPage() {
+  const { t } = useI18n();
   const [rows, setRows] = useState<ContentTypeResponse[]>([]);
   const [draft, setDraft] = useState(createEmptyDraft);
   const [query, setQuery] = useState("");
@@ -40,21 +34,21 @@ export function ContentTypesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async function load() {
     setLoading(true);
     setError(null);
     try {
       setRows(await api.contentTypes.list());
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load content types");
+      setError(caught instanceof ApiError ? caught.message : t("contentTypes.error.load"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [t]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const filtered = rows.filter((row) => `${row.name} ${row.slug}`.toLowerCase().includes(query.toLowerCase()));
 
@@ -92,20 +86,20 @@ export function ContentTypesPage() {
       setDraft(createEmptyDraft());
       await load();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to save content type");
+      setError(caught instanceof ApiError ? caught.message : t("contentTypes.error.save"));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(row: ContentTypeResponse) {
-    if (!window.confirm(`Delete content type ${row.name}? Entries for this type will be removed.`)) return;
+    if (!window.confirm(t("contentTypes.confirmDelete", { name: row.name }))) return;
     setError(null);
     try {
       await api.contentTypes.delete(row.id);
       await load();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to delete content type");
+      setError(caught instanceof ApiError ? caught.message : t("contentTypes.error.delete"));
     }
   }
 
@@ -114,11 +108,11 @@ export function ContentTypesPage() {
       <section className="panel editor-panel">
         <div className="panel-header">
           <div>
-            <h2>{draft.id ? "Edit content type" : "New content type"}</h2>
-            <span>Define the schema used by dynamic entry forms.</span>
+            <h2>{draft.id ? t("contentTypes.editor.edit") : t("contentTypes.editor.new")}</h2>
+            <span>{t("contentTypes.editor.description")}</span>
           </div>
           {draft.id && (
-            <button className="icon-button" type="button" onClick={() => setDraft(createEmptyDraft())} aria-label="Cancel edit">
+            <button className="icon-button" type="button" onClick={() => setDraft(createEmptyDraft())} aria-label={t("common.cancel")}>
               <X size={16} aria-hidden="true" />
             </button>
           )}
@@ -126,49 +120,49 @@ export function ContentTypesPage() {
 
         <form className="form-grid padded" onSubmit={handleSubmit}>
           <label>
-            Name
+            {t("common.name")}
             <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} required />
           </label>
           <label>
-            Slug
+            {t("common.slug")}
             <input value={draft.slug} onChange={(event) => setDraft({ ...draft, slug: event.target.value })} required />
           </label>
 
           <div className="field-builder">
             <div className="section-title-row">
-              <strong>Fields</strong>
+              <strong>{t("contentTypes.fields")}</strong>
               <button
                 className="secondary-button"
                 type="button"
                 onClick={() => setDraft((current) => ({ ...current, fields: [...current.fields, { ...emptyField, name: "field" }] }))}
               >
                 <Plus size={16} aria-hidden="true" />
-                Field
+                {t("contentTypes.addField")}
               </button>
             </div>
 
             {draft.fields.map((field, index) => (
               <div className="field-row" key={`${field.name}-${index}`}>
                 <input
-                  aria-label="Field name"
+                  aria-label={t("contentTypes.fieldName")}
                   value={field.name}
                   onChange={(event) => updateField(index, { name: event.target.value, id: event.target.value })}
-                  placeholder="name"
+                  placeholder={t("common.name")}
                 />
                 <input
-                  aria-label="Field label"
+                  aria-label={t("contentTypes.fieldLabel")}
                   value={field.label ?? ""}
                   onChange={(event) => updateField(index, { label: event.target.value })}
-                  placeholder="Label"
+                  placeholder={t("common.label")}
                 />
                 <select
-                  aria-label="Field type"
+                  aria-label={t("contentTypes.fieldType")}
                   value={field.type}
                   onChange={(event) => updateField(index, { type: event.target.value as FieldType })}
                 >
                   {fieldTypes.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {t(fieldTypeKey(type))}
                     </option>
                   ))}
                 </select>
@@ -178,13 +172,13 @@ export function ContentTypesPage() {
                     checked={Boolean(field.required)}
                     onChange={(event) => updateField(index, { required: event.target.checked })}
                   />
-                  <span>Required</span>
+                  <span>{t("common.required")}</span>
                 </label>
                 <button
                   className="icon-button"
                   type="button"
                   onClick={() => setDraft((current) => ({ ...current, fields: current.fields.filter((_, fieldIndex) => fieldIndex !== index) }))}
-                  aria-label="Remove field"
+                  aria-label={t("contentTypes.removeField")}
                 >
                   <Trash2 size={16} aria-hidden="true" />
                 </button>
@@ -195,7 +189,7 @@ export function ContentTypesPage() {
           {error && <StatusBadge label={error} tone="danger" />}
           <button className="primary-button" type="submit" disabled={saving}>
             <Save size={16} aria-hidden="true" />
-            {saving ? "Saving..." : "Save schema"}
+            {saving ? t("common.saving") : t("contentTypes.saveSchema")}
           </button>
         </form>
       </section>
@@ -203,22 +197,22 @@ export function ContentTypesPage() {
       <section className="panel list-panel">
         <div className="panel-header">
           <div>
-            <h2>Content types</h2>
-            <span>{loading ? "Loading" : `${filtered.length} models`}</span>
+            <h2>{t("contentTypes.list.title")}</h2>
+            <span>{loading ? t("common.loading") : t("contentTypes.modelsCount", { count: filtered.length })}</span>
           </div>
           <label className="search-field compact-search">
             <Search size={16} aria-hidden="true" />
-            <input type="search" placeholder="Search" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <input type="search" placeholder={t("common.search")} value={query} onChange={(event) => setQuery(event.target.value)} />
           </label>
         </div>
 
         <table className="data-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Slug</th>
-              <th>Fields</th>
-              <th>Actions</th>
+              <th>{t("common.name")}</th>
+              <th>{t("common.slug")}</th>
+              <th>{t("contentTypes.fields")}</th>
+              <th>{t("common.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -229,10 +223,10 @@ export function ContentTypesPage() {
                 <td>{row.fields.fields.length}</td>
                 <td>
                   <div className="table-actions">
-                    <button className="icon-button" type="button" onClick={() => editRow(row)} aria-label={`Edit ${row.name}`}>
+                    <button className="icon-button" type="button" onClick={() => editRow(row)} aria-label={`${t("common.edit")} ${row.name}`}>
                       <Edit3 size={16} aria-hidden="true" />
                     </button>
-                    <button className="icon-button" type="button" onClick={() => void handleDelete(row)} aria-label={`Delete ${row.name}`}>
+                    <button className="icon-button" type="button" onClick={() => void handleDelete(row)} aria-label={`${t("common.delete")} ${row.name}`}>
                       <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
@@ -241,7 +235,7 @@ export function ContentTypesPage() {
             ))}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={4}>No content types found.</td>
+                <td colSpan={4}>{t("contentTypes.empty")}</td>
               </tr>
             )}
           </tbody>

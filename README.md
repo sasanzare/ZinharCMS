@@ -6,7 +6,7 @@ proposal: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
-management, security hardening, and a React admin panel for those capabilities.
+management, security hardening, i18n-ready admin localization, and a React admin panel for those capabilities.
 
 ## Phase Zero Scope
 
@@ -17,6 +17,7 @@ management, security hardening, and a React admin panel for those capabilities.
 - `.github/workflows/`: initial backend and frontend CI.
 - `backend/migrations/`: database schema based on the proposal ERD.
 - `docs/`: architecture, API, and phase-zero notes.
+- Internationalization: typed frontend locale dictionaries for en and a-IR, persisted language selection, and RTL document direction support. See docs/I18N.md.
 
 ## Phase One Scope
 

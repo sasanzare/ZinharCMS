@@ -13,33 +13,35 @@ import type { LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useHealth } from "../hooks/useHealth";
+import { LanguageSelect, useI18n, type MessageKey } from "../i18n";
 import { api, getStoredRefreshToken } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import { StatusBadge } from "./StatusBadge";
 
 type NavItem = {
-  label: string;
+  labelKey: MessageKey;
   path: string;
   icon: LucideIcon;
 };
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", path: "/", icon: Gauge },
-  { label: "Content Types", path: "/content-types", icon: Layers3 },
-  { label: "Entries", path: "/entries", icon: FileText },
-  { label: "Media", path: "/media", icon: Image },
-  { label: "Pages", path: "/pages", icon: Workflow },
-  { label: "Workflow", path: "/workflow", icon: Workflow },
-  { label: "Settings", path: "/settings", icon: Settings },
+  { labelKey: "app.nav.dashboard", path: "/", icon: Gauge },
+  { labelKey: "app.nav.contentTypes", path: "/content-types", icon: Layers3 },
+  { labelKey: "app.nav.entries", path: "/entries", icon: FileText },
+  { labelKey: "app.nav.media", path: "/media", icon: Image },
+  { labelKey: "app.nav.pages", path: "/pages", icon: Workflow },
+  { labelKey: "app.nav.workflow", path: "/workflow", icon: Workflow },
+  { labelKey: "app.nav.settings", path: "/settings", icon: Settings },
 ];
 
-const titles = new Map(navItems.map((item) => [item.path, item.label]));
+const titleKeys = new Map(navItems.map((item) => [item.path, item.labelKey]));
 
 export function AppShell() {
   const location = useLocation();
+  const { t } = useI18n();
   const { sidebarCollapsed, toggleSidebar, user, clearSession } = useAppStore();
   const { readiness, error } = useHealth();
-  const title = titles.get(location.pathname) ?? "Dashboard";
+  const title = t(titleKeys.get(location.pathname) ?? "app.nav.dashboard");
   const ready = readiness?.status === "ready" && !error;
 
   async function handleLogout() {
@@ -59,11 +61,11 @@ export function AppShell() {
           <div className="brand-mark">Z</div>
           <div className="brand-copy">
             <strong>ZinharCMS</strong>
-            <span>Headless admin</span>
+            <span>{t("app.brand.subtitle")}</span>
           </div>
         </div>
 
-        <nav className="side-nav" aria-label="Primary navigation">
+        <nav className="side-nav" aria-label={t("app.nav.aria")}>
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -72,7 +74,7 @@ export function AppShell() {
               className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
             >
               <item.icon aria-hidden="true" size={18} />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </NavLink>
           ))}
         </nav>
@@ -80,7 +82,7 @@ export function AppShell() {
 
       <div className="workspace">
         <header className="topbar">
-          <button className="icon-button" type="button" onClick={toggleSidebar} aria-label="Toggle navigation">
+          <button className="icon-button" type="button" onClick={toggleSidebar} aria-label={t("app.action.toggleNavigation")}>
             <Menu size={18} aria-hidden="true" />
           </button>
           <div className="topbar-title">
@@ -88,10 +90,11 @@ export function AppShell() {
             <span className="topbar-subtitle">{api.baseUrl}</span>
           </div>
           <div className="topbar-status">
+            <LanguageSelect compact />
             <Database size={16} aria-hidden="true" />
-            <StatusBadge label={ready ? "Ready" : "Checking"} tone={ready ? "success" : "warning"} />
+            <StatusBadge label={ready ? t("app.status.ready") : t("app.status.checking")} tone={ready ? "success" : "warning"} />
             {user && <span className="user-chip">{user.role}</span>}
-            <button className="icon-button" type="button" onClick={handleLogout} aria-label="Logout">
+            <button className="icon-button" type="button" onClick={handleLogout} aria-label={t("app.action.logout")}>
               <LogOut size={18} aria-hidden="true" />
             </button>
           </div>
