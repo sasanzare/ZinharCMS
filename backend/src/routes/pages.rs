@@ -658,8 +658,8 @@ pub async fn create_component(
 
     let row = sqlx::query_as::<_, ComponentRegistryResponse>(
         r#"
-        INSERT INTO component_registry (component_key, name, category, props_schema, is_system)
-        VALUES ($1, $2, $3, $4, false)
+        INSERT INTO component_registry (organization_id, component_key, name, category, props_schema, is_system)
+        VALUES (app_default_organization_id(), $1, $2, $3, $4, false)
         RETURNING id,
                   component_key,
                   name,

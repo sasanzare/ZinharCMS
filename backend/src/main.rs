@@ -116,8 +116,58 @@ async fn seed_default_admin(db: &sqlx::PgPool) -> anyhow::Result<()> {
     .execute(&mut *tx)
     .await?;
 
+    attach_default_organization_membership(&mut tx, user_id, rbac::SUPER_ADMIN).await?;
     tx.commit().await?;
     tracing::info!("seeded default admin user admin@example.com");
+    Ok(())
+}
+async fn attach_default_organization_membership(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: uuid::Uuid,
+    global_role: &str,
+) -> anyhow::Result<()> {
+    sqlx::query(
+        r#"
+        INSERT INTO organization_members (organization_id, user_id, role, status, joined_at)
+        SELECT id,
+               $1,
+               CASE $2
+                 WHEN 'super_admin' THEN 'owner'::organization_member_role
+                 WHEN 'admin' THEN 'admin'::organization_member_role
+                 WHEN 'editor' THEN 'editor'::organization_member_role
+                 WHEN 'viewer' THEN 'viewer'::organization_member_role
+                 ELSE 'author'::organization_member_role
+               END,
+               'active'::organization_member_status,
+               now()
+        FROM organizations
+        WHERE slug = 'default'
+        ON CONFLICT (organization_id, user_id) DO UPDATE
+        SET role = EXCLUDED.role,
+            status = 'active'::organization_member_status,
+            updated_at = now()
+        "#,
+    )
+    .bind(user_id)
+    .bind(global_role)
+    .execute(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE organizations
+        SET owner_id = $1,
+            updated_at = now()
+        WHERE slug = 'default'
+          AND owner_id IS NULL
+          AND $2 IN ('super_admin', 'admin')
+        "#,
+    )
+    .bind(user_id)
+    .bind(global_role)
+    .execute(&mut **tx)
+    .await?;
+
     Ok(())
 }
 async fn shutdown_signal() {

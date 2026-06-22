@@ -20,7 +20,7 @@ VALUES (
   }'::jsonb,
   (SELECT id FROM users WHERE email = 'admin@example.com' ORDER BY created_at ASC LIMIT 1)
 )
-ON CONFLICT (slug) DO UPDATE
+ON CONFLICT (organization_id, slug) DO UPDATE
 SET name = EXCLUDED.name,
     fields = EXCLUDED.fields,
     updated_at = now();
@@ -42,7 +42,7 @@ VALUES (
   }'::jsonb,
   (SELECT id FROM users WHERE email = 'admin@example.com' ORDER BY created_at ASC LIMIT 1)
 )
-ON CONFLICT (slug) DO UPDATE
+ON CONFLICT (organization_id, slug) DO UPDATE
 SET name = EXCLUDED.name,
     fields = EXCLUDED.fields,
     updated_at = now();
@@ -70,7 +70,7 @@ SET filename = EXCLUDED.filename,
 INSERT INTO content_entries (id, type_id, data, status, version, author_id, published_at)
 VALUES (
   '44444444-4444-4444-8444-444444444444'::uuid,
-  (SELECT id FROM content_types WHERE slug = 'article'),
+  (SELECT id FROM content_types WHERE slug = 'article' AND organization_id = app_default_organization_id()),
   '{
     "title": "Getting started with ZinharCMS",
     "slug": "getting-started-with-zinharcms",
@@ -96,7 +96,7 @@ SET type_id = EXCLUDED.type_id,
 INSERT INTO content_entries (id, type_id, data, status, version, author_id, published_at)
 VALUES (
   '55555555-5555-4555-8555-555555555555'::uuid,
-  (SELECT id FROM content_types WHERE slug = 'article'),
+  (SELECT id FROM content_types WHERE slug = 'article' AND organization_id = app_default_organization_id()),
   '{
     "title": "Editorial workflow sample",
     "slug": "editorial-workflow-sample",
@@ -122,7 +122,7 @@ SET type_id = EXCLUDED.type_id,
 INSERT INTO content_entries (id, type_id, data, status, version, author_id, published_at)
 VALUES (
   '66666666-6666-4666-8666-666666666666'::uuid,
-  (SELECT id FROM content_types WHERE slug = 'product'),
+  (SELECT id FROM content_types WHERE slug = 'product' AND organization_id = app_default_organization_id()),
   '{
     "name": "Starter CMS Plan",
     "slug": "starter-cms-plan",
@@ -167,7 +167,7 @@ VALUES (
   (SELECT id FROM users WHERE email = 'admin@example.com' ORDER BY created_at ASC LIMIT 1),
   now()
 )
-ON CONFLICT (slug) DO UPDATE
+ON CONFLICT (organization_id, slug) DO UPDATE
 SET title = EXCLUDED.title,
     page_json = EXCLUDED.page_json,
     status = EXCLUDED.status,
@@ -195,7 +195,7 @@ VALUES (
   (SELECT id FROM users WHERE email = 'admin@example.com' ORDER BY created_at ASC LIMIT 1),
   NULL
 )
-ON CONFLICT (slug) DO UPDATE
+ON CONFLICT (organization_id, slug) DO UPDATE
 SET title = EXCLUDED.title,
     page_json = EXCLUDED.page_json,
     status = EXCLUDED.status,
@@ -204,14 +204,14 @@ SET title = EXCLUDED.title,
     updated_at = now();
 
 INSERT INTO page_versions (page_id, version, page_json, created_by)
-SELECT id, 1, page_json, author_id FROM pages WHERE slug = 'home'
+SELECT id, 1, page_json, author_id FROM pages WHERE slug = 'home' AND organization_id = app_default_organization_id()
 ON CONFLICT (page_id, version) DO UPDATE
 SET page_json = EXCLUDED.page_json,
     created_by = EXCLUDED.created_by,
     snapshot_at = now();
 
 INSERT INTO page_versions (page_id, version, page_json, created_by)
-SELECT id, 1, page_json, author_id FROM pages WHERE slug = 'about'
+SELECT id, 1, page_json, author_id FROM pages WHERE slug = 'about' AND organization_id = app_default_organization_id()
 ON CONFLICT (page_id, version) DO UPDATE
 SET page_json = EXCLUDED.page_json,
     created_by = EXCLUDED.created_by,
@@ -236,7 +236,7 @@ INSERT INTO comments (id, entity_type, entity_id, body, author_id)
 VALUES (
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid,
   'page',
-  (SELECT id FROM pages WHERE slug = 'about'),
+  (SELECT id FROM pages WHERE slug = 'about' AND organization_id = app_default_organization_id()),
   'Draft sample: confirm the about section copy before moving to review.',
   (SELECT id FROM users WHERE email = 'admin@example.com' ORDER BY created_at ASC LIMIT 1)
 )
@@ -255,18 +255,21 @@ VALUES
   ('default_locale', '"fa"'::jsonb, true),
   ('support_email', '"support@example.com"'::jsonb, true),
   ('social_links', '{"github":"https://github.com/example/zinharcms","docs":"/docs"}'::jsonb, true)
-ON CONFLICT (key) DO UPDATE
+ON CONFLICT (organization_id, key) DO UPDATE
 SET value = EXCLUDED.value,
     is_public = EXCLUDED.is_public,
     updated_at = now();
 
 DELETE FROM navigation_items
-WHERE label IN ('Home', 'Articles', 'Products', 'About', 'Content')
-  OR id IN (
-    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'::uuid,
-    'cccccccc-cccc-4ccc-8ccc-cccccccccccc'::uuid,
-    'dddddddd-dddd-4ddd-8ddd-dddddddddddd'::uuid,
-    'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'::uuid
+WHERE organization_id = app_default_organization_id()
+  AND (
+    label IN ('Home', 'Articles', 'Products', 'About', 'Content')
+    OR id IN (
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'::uuid,
+      'cccccccc-cccc-4ccc-8ccc-cccccccccccc'::uuid,
+      'dddddddd-dddd-4ddd-8ddd-dddddddddddd'::uuid,
+      'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'::uuid
+    )
   );
 
 INSERT INTO navigation_items (id, label, url, position, locale, is_public)
@@ -286,18 +289,18 @@ SET label = EXCLUDED.label,
 COMMIT;
 
 SELECT
-  (SELECT count(*) FROM content_types WHERE slug IN ('article', 'product')) AS sample_content_types,
+  (SELECT count(*) FROM content_types WHERE organization_id = app_default_organization_id() AND slug IN ('article', 'product')) AS sample_content_types,
   (SELECT count(*) FROM content_entries WHERE id IN (
     '44444444-4444-4444-8444-444444444444'::uuid,
     '55555555-5555-4555-8555-555555555555'::uuid,
     '66666666-6666-4666-8666-666666666666'::uuid
   )) AS sample_entries,
-  (SELECT count(*) FROM pages WHERE slug IN ('home', 'about')) AS sample_pages,
+  (SELECT count(*) FROM pages WHERE organization_id = app_default_organization_id() AND slug IN ('home', 'about')) AS sample_pages,
   (SELECT count(*) FROM comments WHERE id IN (
     '99999999-9999-4999-8999-999999999999'::uuid,
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid
   )) AS sample_comments,
-  (SELECT count(*) FROM navigation_items WHERE id IN (
+  (SELECT count(*) FROM navigation_items WHERE organization_id = app_default_organization_id() AND id IN (
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'::uuid,
     'cccccccc-cccc-4ccc-8ccc-cccccccccccc'::uuid,
     'dddddddd-dddd-4ddd-8ddd-dddddddddddd'::uuid,

@@ -8,7 +8,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
+use sqlx::{FromRow, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -175,6 +175,8 @@ pub async fn register(
     .bind(role)
     .execute(&mut *tx)
     .await?;
+
+    attach_default_organization_membership(&mut tx, user.id, role).await?;
     tx.commit().await?;
 
     let issued = issue_auth_response(&state, user).await?;
@@ -358,6 +360,55 @@ pub async fn me(
     load_auth_user(&state, claims.sub).await.map(Json)
 }
 
+async fn attach_default_organization_membership(
+    tx: &mut Transaction<'_, Postgres>,
+    user_id: Uuid,
+    global_role: &str,
+) -> Result<(), AppError> {
+    sqlx::query(
+        r#"
+        INSERT INTO organization_members (organization_id, user_id, role, status, joined_at)
+        SELECT id,
+               $1,
+               CASE $2
+                 WHEN 'super_admin' THEN 'owner'::organization_member_role
+                 WHEN 'admin' THEN 'admin'::organization_member_role
+                 WHEN 'editor' THEN 'editor'::organization_member_role
+                 WHEN 'viewer' THEN 'viewer'::organization_member_role
+                 ELSE 'author'::organization_member_role
+               END,
+               'active'::organization_member_status,
+               now()
+        FROM organizations
+        WHERE slug = 'default'
+        ON CONFLICT (organization_id, user_id) DO UPDATE
+        SET role = EXCLUDED.role,
+            status = 'active'::organization_member_status,
+            updated_at = now()
+        "#,
+    )
+    .bind(user_id)
+    .bind(global_role)
+    .execute(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE organizations
+        SET owner_id = $1,
+            updated_at = now()
+        WHERE slug = 'default'
+          AND owner_id IS NULL
+          AND $2 IN ('super_admin', 'admin')
+        "#,
+    )
+    .bind(user_id)
+    .bind(global_role)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
 async fn issue_auth_response(
     state: &AppState,
     user: AuthUser,
