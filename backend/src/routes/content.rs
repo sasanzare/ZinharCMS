@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
+use crate::middleware::tenant::TenantContext;
 use crate::plugins;
 use crate::routes::delivery;
 use crate::services::entry_validation::{is_valid_slug, parse_fields, validate_entry_data};
@@ -114,15 +115,17 @@ pub struct EntryListResponse {
 )]
 pub async fn list_content_types(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
 ) -> Result<Json<Vec<ContentTypeResponse>>, AppError> {
     let rows = sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         SELECT id, name, slug, fields, created_by, created_at, updated_at
         FROM content_types
+        WHERE organization_id = $1
         ORDER BY created_at DESC
         "#,
     )
+    .bind(tenant.organization_id)
     .fetch_all(&state.db)
     .await?;
 
@@ -139,18 +142,20 @@ pub async fn list_content_types(
 pub async fn create_content_type(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<ContentTypeRequest>,
 ) -> Result<Json<ContentTypeResponse>, AppError> {
-    rbac::require_content_type_manager(&claims)?;
+    rbac::require_org_content_type_manager(&tenant.role)?;
     validate_content_type_request(&payload)?;
 
     let row = sqlx::query_as::<_, ContentTypeResponse>(
         r#"
-        INSERT INTO content_types (name, slug, fields, created_by)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO content_types (organization_id, name, slug, fields, created_by)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id, name, slug, fields, created_by, created_at, updated_at
         "#,
     )
+    .bind(tenant.organization_id)
     .bind(payload.name.trim())
     .bind(payload.slug.trim())
     .bind(payload.fields)
@@ -170,10 +175,10 @@ pub async fn create_content_type(
 )]
 pub async fn get_content_type(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ContentTypeResponse>, AppError> {
-    load_content_type_by_id(&state, id).await.map(Json)
+    load_content_type_by_id(&state, &tenant, id).await.map(Json)
 }
 
 #[utoipa::path(
@@ -186,11 +191,11 @@ pub async fn get_content_type(
 )]
 pub async fn update_content_type(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
     Json(payload): Json<ContentTypeRequest>,
 ) -> Result<Json<ContentTypeResponse>, AppError> {
-    rbac::require_content_type_manager(&claims)?;
+    rbac::require_org_content_type_manager(&tenant.role)?;
     validate_content_type_request(&payload)?;
 
     let row = sqlx::query_as::<_, ContentTypeResponse>(
@@ -200,7 +205,7 @@ pub async fn update_content_type(
             slug = $3,
             fields = $4,
             updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $5
         RETURNING id, name, slug, fields, created_by, created_at, updated_at
         "#,
     )
@@ -208,6 +213,7 @@ pub async fn update_content_type(
     .bind(payload.name.trim())
     .bind(payload.slug.trim())
     .bind(payload.fields)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
@@ -223,11 +229,11 @@ pub async fn update_content_type(
 )]
 pub async fn delete_content_type(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
     Query(query): Query<DeleteConfirm>,
 ) -> Result<Json<ContentTypeResponse>, AppError> {
-    rbac::require_content_type_manager(&claims)?;
+    rbac::require_org_content_type_manager(&tenant.role)?;
     if query.confirm != Some(true) {
         return Err(AppError::Validation(
             "pass ?confirm=true to delete a content type".to_owned(),
@@ -237,11 +243,12 @@ pub async fn delete_content_type(
     let row = sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         DELETE FROM content_types
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         RETURNING id, name, slug, fields, created_by, created_at, updated_at
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
@@ -257,7 +264,7 @@ pub async fn delete_content_type(
 )]
 pub async fn list_entries(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(type_slug): Path<String>,
     Query(query): Query<EntryListQuery>,
 ) -> Result<Json<EntryListResponse>, AppError> {
@@ -281,12 +288,16 @@ pub async fn list_entries(
                    e.updated_at
             FROM content_entries e
             JOIN content_types ct ON ct.id = e.type_id
-            WHERE ct.slug = $1 AND e.status::text = $2
+            WHERE ct.organization_id = $1
+              AND e.organization_id = $1
+              AND ct.slug = $2
+              AND e.status::text = $3
             ORDER BY e.{sort_column} {sort_direction}
-            LIMIT $3 OFFSET $4
+            LIMIT $4 OFFSET $5
             "#
         );
         let data = sqlx::query_as::<_, ContentEntryResponse>(&sql)
+            .bind(tenant.organization_id)
             .bind(&type_slug)
             .bind(status)
             .bind(per_page)
@@ -314,12 +325,15 @@ pub async fn list_entries(
                e.updated_at
         FROM content_entries e
         JOIN content_types ct ON ct.id = e.type_id
-        WHERE ct.slug = $1
+        WHERE ct.organization_id = $1
+          AND e.organization_id = $1
+          AND ct.slug = $2
         ORDER BY e.{sort_column} {sort_direction}
-        LIMIT $2 OFFSET $3
+        LIMIT $3 OFFSET $4
         "#
     );
     let data = sqlx::query_as::<_, ContentEntryResponse>(&sql)
+        .bind(tenant.organization_id)
         .bind(&type_slug)
         .bind(per_page)
         .bind(offset)
@@ -344,20 +358,28 @@ pub async fn list_entries(
 pub async fn create_entry(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(type_slug): Path<String>,
     Json(payload): Json<EntryRequest>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_entry_writer(&claims)?;
-    let content_type = load_content_type_by_slug(&state, &type_slug).await?;
+    rbac::require_org_entry_writer(&tenant.role)?;
+    let content_type = load_content_type_by_slug(&state, &tenant, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
-    let data = plugins::run_entry_before_save(&state, &type_slug, payload.data, claims.sub).await?;
+    let data = plugins::run_entry_before_save(
+        &state,
+        tenant.organization_id,
+        &type_slug,
+        payload.data,
+        claims.sub,
+    )
+    .await?;
     let data = security::sanitize_entry_data(&fields, data);
     validate_entry_data(&fields, &data)?;
 
     let row = sqlx::query_as::<_, ContentEntryResponse>(
         r#"
-        INSERT INTO content_entries (type_id, data, author_id)
-        VALUES ($1, $2, $3)
+        INSERT INTO content_entries (organization_id, type_id, data, author_id)
+        VALUES ($1, $2, $3, $4)
         RETURNING id,
                   type_id,
                   data,
@@ -369,6 +391,7 @@ pub async fn create_entry(
                   updated_at
         "#,
     )
+    .bind(tenant.organization_id)
     .bind(content_type.id)
     .bind(data)
     .bind(claims.sub)
@@ -390,10 +413,10 @@ pub async fn create_entry(
 )]
 pub async fn get_entry(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    load_entry(&state, &type_slug, id).await.map(Json)
+    load_entry(&state, &tenant, &type_slug, id).await.map(Json)
 }
 
 #[utoipa::path(
@@ -410,13 +433,21 @@ pub async fn get_entry(
 pub async fn update_entry(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
     Json(payload): Json<EntryRequest>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_entry_writer(&claims)?;
-    let content_type = load_content_type_by_slug(&state, &type_slug).await?;
+    rbac::require_org_entry_writer(&tenant.role)?;
+    let content_type = load_content_type_by_slug(&state, &tenant, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
-    let data = plugins::run_entry_before_save(&state, &type_slug, payload.data, claims.sub).await?;
+    let data = plugins::run_entry_before_save(
+        &state,
+        tenant.organization_id,
+        &type_slug,
+        payload.data,
+        claims.sub,
+    )
+    .await?;
     let data = security::sanitize_entry_data(&fields, data);
     validate_entry_data(&fields, &data)?;
 
@@ -426,7 +457,7 @@ pub async fn update_entry(
         SET data = $3,
             version = version + 1,
             updated_at = now()
-        WHERE id = $1 AND type_id = $2
+        WHERE id = $1 AND type_id = $2 AND organization_id = $4
         RETURNING id,
                   type_id,
                   data,
@@ -441,11 +472,12 @@ pub async fn update_entry(
     .bind(id)
     .bind(content_type.id)
     .bind(data)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
     if row.status == "published" {
-        delivery::invalidate_content_cache(&state, &type_slug).await;
+        delivery::invalidate_content_cache(&state, tenant.organization_id, &type_slug).await;
     }
 
     Ok(Json(row))
@@ -463,16 +495,16 @@ pub async fn update_entry(
 )]
 pub async fn delete_entry(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_any(&claims, &[rbac::ADMIN, rbac::EDITOR])?;
-    let content_type = load_content_type_by_slug(&state, &type_slug).await?;
+    rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_EDITOR])?;
+    let content_type = load_content_type_by_slug(&state, &tenant, &type_slug).await?;
 
     let row = sqlx::query_as::<_, ContentEntryResponse>(
         r#"
         DELETE FROM content_entries
-        WHERE id = $1 AND type_id = $2
+        WHERE id = $1 AND type_id = $2 AND organization_id = $3
         RETURNING id,
                   type_id,
                   data,
@@ -486,11 +518,12 @@ pub async fn delete_entry(
     )
     .bind(id)
     .bind(content_type.id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
     if row.status == "published" {
-        delivery::invalidate_content_cache(&state, &type_slug).await;
+        delivery::invalidate_content_cache(&state, tenant.organization_id, &type_slug).await;
     }
 
     Ok(Json(row))
@@ -508,12 +541,13 @@ pub async fn delete_entry(
 )]
 pub async fn submit_entry_for_review(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_entry_writer(&claims)?;
+    rbac::require_org_entry_writer(&tenant.role)?;
     let entry = transition_entry(
         &state,
+        &tenant,
         &type_slug,
         id,
         workflow::WorkflowStatus::PendingReview,
@@ -536,23 +570,33 @@ pub async fn submit_entry_for_review(
 pub async fn publish_entry(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_entry_publisher(&claims)?;
+    rbac::require_org_entry_publisher(&tenant.role)?;
     let entry = transition_entry(
         &state,
+        &tenant,
         &type_slug,
         id,
         workflow::WorkflowStatus::Published,
         true,
     )
     .await?;
-    delivery::invalidate_content_cache(&state, &type_slug).await;
-    plugins::run_entry_after_publish(&state, &type_slug, entry.data.clone(), claims.sub).await?;
+    delivery::invalidate_content_cache(&state, tenant.organization_id, &type_slug).await;
+    plugins::run_entry_after_publish(
+        &state,
+        tenant.organization_id,
+        &type_slug,
+        entry.data.clone(),
+        claims.sub,
+    )
+    .await?;
     webhooks::trigger_event(
         &state,
+        tenant.organization_id,
         webhooks::ENTRY_PUBLISH,
-        entry_webhook_payload(webhooks::ENTRY_PUBLISH, &type_slug, &entry),
+        entry_webhook_payload(webhooks::ENTRY_PUBLISH, &tenant, &type_slug, &entry),
     )
     .await;
     Ok(Json(entry))
@@ -570,23 +614,25 @@ pub async fn publish_entry(
 )]
 pub async fn unpublish_entry(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_entry_publisher(&claims)?;
+    rbac::require_org_entry_publisher(&tenant.role)?;
     let entry = transition_entry(
         &state,
+        &tenant,
         &type_slug,
         id,
         workflow::WorkflowStatus::Draft,
         true,
     )
     .await?;
-    delivery::invalidate_content_cache(&state, &type_slug).await;
+    delivery::invalidate_content_cache(&state, tenant.organization_id, &type_slug).await;
     webhooks::trigger_event(
         &state,
+        tenant.organization_id,
         webhooks::ENTRY_UNPUBLISH,
-        entry_webhook_payload(webhooks::ENTRY_UNPUBLISH, &type_slug, &entry),
+        entry_webhook_payload(webhooks::ENTRY_UNPUBLISH, &tenant, &type_slug, &entry),
     )
     .await;
     Ok(Json(entry))
@@ -604,12 +650,13 @@ pub async fn unpublish_entry(
 )]
 pub async fn reject_entry(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_workflow_reviewer(&claims)?;
+    rbac::require_org_workflow_reviewer(&tenant.role)?;
     let entry = transition_entry(
         &state,
+        &tenant,
         &type_slug,
         id,
         workflow::WorkflowStatus::Draft,
@@ -631,19 +678,20 @@ pub async fn reject_entry(
 )]
 pub async fn archive_entry(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_workflow_reviewer(&claims)?;
+    rbac::require_org_workflow_reviewer(&tenant.role)?;
     let entry = transition_entry(
         &state,
+        &tenant,
         &type_slug,
         id,
         workflow::WorkflowStatus::Archived,
         true,
     )
     .await?;
-    delivery::invalidate_content_cache(&state, &type_slug).await;
+    delivery::invalidate_content_cache(&state, tenant.organization_id, &type_slug).await;
     Ok(Json(entry))
 }
 
@@ -659,12 +707,13 @@ pub async fn archive_entry(
 )]
 pub async fn restore_entry(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
-    rbac::require_workflow_reviewer(&claims)?;
+    rbac::require_org_workflow_reviewer(&tenant.role)?;
     let entry = transition_entry(
         &state,
+        &tenant,
         &type_slug,
         id,
         workflow::WorkflowStatus::Draft,
@@ -674,10 +723,17 @@ pub async fn restore_entry(
     Ok(Json(entry))
 }
 
-fn entry_webhook_payload(event: &str, type_slug: &str, entry: &ContentEntryResponse) -> Value {
+fn entry_webhook_payload(
+    event: &str,
+    tenant: &TenantContext,
+    type_slug: &str,
+    entry: &ContentEntryResponse,
+) -> Value {
     serde_json::json!({
         "event": event,
         "entity": "entry",
+        "organization_id": tenant.organization_id,
+        "organization_slug": tenant.organization_slug,
         "type_slug": type_slug,
         "entry": entry,
     })
@@ -685,13 +741,14 @@ fn entry_webhook_payload(event: &str, type_slug: &str, entry: &ContentEntryRespo
 
 async fn transition_entry(
     state: &AppState,
+    tenant: &TenantContext,
     type_slug: &str,
     id: Uuid,
     status: workflow::WorkflowStatus,
     can_bypass_review: bool,
 ) -> Result<ContentEntryResponse, AppError> {
-    let content_type = load_content_type_by_slug(state, type_slug).await?;
-    let current = load_entry(state, type_slug, id).await?;
+    let content_type = load_content_type_by_slug(state, tenant, type_slug).await?;
+    let current = load_entry(state, tenant, type_slug, id).await?;
     workflow::require_transition(&current.status, status, can_bypass_review)?;
     let next_status = status.as_str();
     let published_at_sql = if status == workflow::WorkflowStatus::Published {
@@ -706,7 +763,7 @@ async fn transition_entry(
             published_at = {published_at_sql},
             version = version + 1,
             updated_at = now()
-        WHERE id = $1 AND type_id = $2
+        WHERE id = $1 AND type_id = $2 AND organization_id = $4
         RETURNING id,
                   type_id,
                   data,
@@ -723,6 +780,7 @@ async fn transition_entry(
         .bind(id)
         .bind(content_type.id)
         .bind(next_status)
+        .bind(tenant.organization_id)
         .fetch_one(&state.db)
         .await
         .map_err(AppError::from)
@@ -730,16 +788,18 @@ async fn transition_entry(
 
 async fn load_content_type_by_id(
     state: &AppState,
+    tenant: &TenantContext,
     id: Uuid,
 ) -> Result<ContentTypeResponse, AppError> {
     sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         SELECT id, name, slug, fields, created_by, created_at, updated_at
         FROM content_types
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
@@ -747,16 +807,18 @@ async fn load_content_type_by_id(
 
 async fn load_content_type_by_slug(
     state: &AppState,
+    tenant: &TenantContext,
     slug: &str,
 ) -> Result<ContentTypeResponse, AppError> {
     sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         SELECT id, name, slug, fields, created_by, created_at, updated_at
         FROM content_types
-        WHERE slug = $1
+        WHERE slug = $1 AND organization_id = $2
         "#,
     )
     .bind(slug)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
@@ -764,6 +826,7 @@ async fn load_content_type_by_slug(
 
 async fn load_entry(
     state: &AppState,
+    tenant: &TenantContext,
     type_slug: &str,
     id: Uuid,
 ) -> Result<ContentEntryResponse, AppError> {
@@ -780,9 +843,13 @@ async fn load_entry(
                e.updated_at
         FROM content_entries e
         JOIN content_types ct ON ct.id = e.type_id
-        WHERE ct.slug = $1 AND e.id = $2
+        WHERE ct.organization_id = $1
+          AND e.organization_id = $1
+          AND ct.slug = $2
+          AND e.id = $3
         "#,
     )
+    .bind(tenant.organization_id)
     .bind(type_slug)
     .bind(id)
     .fetch_one(&state.db)

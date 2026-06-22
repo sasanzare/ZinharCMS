@@ -26,6 +26,7 @@ pub const SUPPORTED_EVENTS: &[&str] =
 #[derive(Debug, Clone, FromRow)]
 pub struct Webhook {
     pub id: Uuid,
+    pub organization_id: Uuid,
     pub name: String,
     pub url: String,
     pub events: Vec<String>,
@@ -115,21 +116,37 @@ pub fn sign_payload(secret: &str, body: &str) -> Result<String, AppError> {
     Ok(URL_SAFE_NO_PAD.encode(mac.finalize().into_bytes()))
 }
 
-pub async fn trigger_event(state: &AppState, event: &'static str, payload: Value) {
+pub async fn trigger_event(
+    state: &AppState,
+    organization_id: Uuid,
+    event: &'static str,
+    payload: Value,
+) {
     let webhooks = match sqlx::query_as::<_, Webhook>(
         r#"
-        SELECT id, name, url, events, secret, is_active, created_at, updated_at
+        SELECT id,
+               organization_id,
+               name,
+               url,
+               events,
+               secret,
+               is_active,
+               created_at,
+               updated_at
         FROM webhooks
-        WHERE is_active = TRUE AND $1 = ANY(events)
+        WHERE organization_id = $1
+          AND is_active = TRUE
+          AND $2 = ANY(events)
         "#,
     )
+    .bind(organization_id)
     .bind(event)
     .fetch_all(&state.db)
     .await
     {
         Ok(webhooks) => webhooks,
         Err(error) => {
-            tracing::warn!(%event, %error, "failed to load webhooks for event");
+            tracing::warn!(%organization_id, %event, %error, "failed to load webhooks for event");
             return;
         }
     };
@@ -142,6 +159,7 @@ pub async fn trigger_event(state: &AppState, event: &'static str, payload: Value
                 tracing::warn!(
                     webhook_id = %webhook.id,
                     webhook_name = %webhook.name,
+                    organization_id = %webhook.organization_id,
                     %event,
                     %error,
                     "webhook dispatch failed"
@@ -164,6 +182,7 @@ pub async fn dispatch_webhook(
         .post(&webhook.url)
         .header("X-CMS-Event", event)
         .header("X-CMS-Signature", signature)
+        .header("X-Organization-Id", webhook.organization_id.to_string())
         .header("Content-Type", "application/json")
         .body(body)
         .timeout(Duration::from_secs(10))
@@ -176,6 +195,7 @@ pub async fn dispatch_webhook(
             let delivered = response.status().is_success();
             let response_body = response.text().await.unwrap_or_default();
             DeliveryAttempt {
+                organization_id: webhook.organization_id,
                 webhook_id: webhook.id,
                 event,
                 payload,
@@ -186,6 +206,7 @@ pub async fn dispatch_webhook(
             }
         }
         Err(error) => DeliveryAttempt {
+            organization_id: webhook.organization_id,
             webhook_id: webhook.id,
             event,
             payload,
@@ -202,6 +223,7 @@ pub async fn dispatch_webhook(
 }
 
 struct DeliveryAttempt<'a> {
+    organization_id: Uuid,
     webhook_id: Uuid,
     event: &'a str,
     payload: &'a Value,
@@ -215,6 +237,7 @@ async fn record_delivery(state: &AppState, attempt: DeliveryAttempt<'_>) -> Resu
     sqlx::query(
         r#"
         INSERT INTO webhook_deliveries (
+          organization_id,
           webhook_id,
           event,
           payload,
@@ -223,9 +246,10 @@ async fn record_delivery(state: &AppState, attempt: DeliveryAttempt<'_>) -> Resu
           response_body,
           error
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         "#,
     )
+    .bind(attempt.organization_id)
     .bind(attempt.webhook_id)
     .bind(attempt.event)
     .bind(attempt.payload)

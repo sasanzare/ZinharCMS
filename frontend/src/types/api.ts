@@ -33,12 +33,25 @@ export type AuthUser = {
   role: string;
 };
 
-export type AuthResponse = {
+export type OrganizationMembership = {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  status: string;
+};
+
+export type MeResponse = {
+  user: AuthUser;
+  organizations: OrganizationMembership[];
+  default_organization_id: string | null;
+};
+
+export type AuthResponse = MeResponse & {
   access_token: string;
   refresh_token: string | null;
   token_type: string;
   expires_in: number;
-  user: AuthUser;
 };
 
 export type FieldType = "text" | "longtext" | "richtext" | "number" | "boolean" | "datetime" | "media";

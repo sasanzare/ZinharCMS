@@ -97,6 +97,11 @@ pub struct NavigationItemResponse {
     pub locale: String,
 }
 
+#[derive(Debug, Clone, FromRow)]
+struct PublicOrganization {
+    id: Uuid,
+}
+
 #[derive(Debug, FromRow)]
 struct PublicSettingRow {
     key: String,
@@ -116,6 +121,19 @@ struct SitemapEntryRow {
     updated_at: DateTime<Utc>,
 }
 
+async fn default_public_organization(db: &PgPool) -> Result<PublicOrganization, AppError> {
+    sqlx::query_as::<_, PublicOrganization>(
+        r#"
+        SELECT id
+        FROM organizations
+        WHERE slug = 'default' AND status = 'active'::organization_status
+        "#,
+    )
+    .fetch_one(db)
+    .await
+    .map_err(AppError::from)
+}
+
 #[utoipa::path(
     get,
     path = "/api/v1/content/{type_slug}",
@@ -132,7 +150,12 @@ pub async fn list_public_entries(
         return Err(AppError::Validation("type_slug is invalid".to_owned()));
     }
     let normalized = NormalizedListQuery::from(query)?;
-    let cache_key = format!("delivery:content:{type_slug}:{}", normalized.cache_suffix());
+    let organization = default_public_organization(&state.db).await?;
+    let cache_key = format!(
+        "delivery:{}:content:{type_slug}:{}",
+        organization.id,
+        normalized.cache_suffix()
+    );
     let db = state.db.clone();
     let type_slug_for_fetch = type_slug.clone();
     let fetch_query = normalized.clone();
@@ -140,7 +163,9 @@ pub async fn list_public_entries(
         &state.redis,
         &cache_key,
         DEFAULT_TTL_SECONDS,
-        || async move { fetch_public_entries(&db, &type_slug_for_fetch, &fetch_query).await },
+        || async move {
+            fetch_public_entries(&db, organization.id, &type_slug_for_fetch, &fetch_query).await
+        },
     )
     .await?;
 
@@ -173,7 +198,11 @@ pub async fn get_public_entry(
 
     let locale = normalize_locale(query.locale)?;
     let locale_key = locale.as_deref().unwrap_or("all");
-    let cache_key = format!("delivery:content:{type_slug}:detail:{id_or_slug}:locale={locale_key}");
+    let organization = default_public_organization(&state.db).await?;
+    let cache_key = format!(
+        "delivery:{}:content:{type_slug}:detail:{id_or_slug}:locale={locale_key}",
+        organization.id
+    );
     let db = state.db.clone();
     let type_slug_for_fetch = type_slug.clone();
     let id_or_slug_for_fetch = id_or_slug.clone();
@@ -184,6 +213,7 @@ pub async fn get_public_entry(
         || async move {
             fetch_public_entry(
                 &db,
+                organization.id,
                 &type_slug_for_fetch,
                 &id_or_slug_for_fetch,
                 locale.as_deref(),
@@ -207,14 +237,19 @@ pub async fn list_public_pages(
     Query(query): Query<DeliveryListQuery>,
 ) -> Result<Json<PublicPageListResponse>, AppError> {
     let normalized = NormalizedListQuery::from(query)?;
-    let cache_key = format!("delivery:pages:{}", normalized.cache_suffix());
+    let organization = default_public_organization(&state.db).await?;
+    let cache_key = format!(
+        "delivery:{}:pages:{}",
+        organization.id,
+        normalized.cache_suffix()
+    );
     let db = state.db.clone();
     let fetch_query = normalized.clone();
     let response = cache::get_or_set_json(
         &state.redis,
         &cache_key,
         DEFAULT_TTL_SECONDS,
-        || async move { fetch_public_pages(&db, &fetch_query).await },
+        || async move { fetch_public_pages(&db, organization.id, &fetch_query).await },
     )
     .await?;
 
@@ -236,14 +271,15 @@ pub async fn get_public_page(
         return Err(AppError::Validation("slug is invalid".to_owned()));
     }
 
-    let cache_key = format!("delivery:page:{slug}");
+    let organization = default_public_organization(&state.db).await?;
+    let cache_key = format!("delivery:{}:page:{slug}", organization.id);
     let db = state.db.clone();
     let slug_for_fetch = slug.clone();
     let response = cache::get_or_set_json(
         &state.redis,
         &cache_key,
         DEFAULT_TTL_SECONDS,
-        || async move { fetch_public_page(&db, &slug_for_fetch).await },
+        || async move { fetch_public_page(&db, organization.id, &slug_for_fetch).await },
     )
     .await?;
 
@@ -257,12 +293,13 @@ pub async fn get_public_page(
     responses((status = 200, description = "Public settings", body = Object))
 )]
 pub async fn public_settings(State(state): State<AppState>) -> Result<Json<Value>, AppError> {
+    let organization = default_public_organization(&state.db).await?;
     let db = state.db.clone();
     let response = cache::get_or_set_json(
         &state.redis,
-        "delivery:settings:public",
+        &format!("delivery:{}:settings:public", organization.id),
         DEFAULT_TTL_SECONDS,
-        || async move { fetch_public_settings(&db).await },
+        || async move { fetch_public_settings(&db, organization.id).await },
     )
     .await?;
 
@@ -281,13 +318,14 @@ pub async fn public_navigation(
 ) -> Result<Json<Vec<NavigationItemResponse>>, AppError> {
     let locale = normalize_locale(query.locale)?;
     let locale_key = locale.as_deref().unwrap_or("all");
-    let cache_key = format!("delivery:navigation:{locale_key}");
+    let organization = default_public_organization(&state.db).await?;
+    let cache_key = format!("delivery:{}:navigation:{locale_key}", organization.id);
     let db = state.db.clone();
     let response = cache::get_or_set_json(
         &state.redis,
         &cache_key,
         DEFAULT_TTL_SECONDS,
-        || async move { fetch_navigation(&db, locale.as_deref()).await },
+        || async move { fetch_navigation(&db, organization.id, locale.as_deref()).await },
     )
     .await?;
 
@@ -295,12 +333,13 @@ pub async fn public_navigation(
 }
 
 pub async fn sitemap(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let organization = default_public_organization(&state.db).await?;
     let db = state.db.clone();
     let body = cache::get_or_set_json(
         &state.redis,
-        "delivery:sitemap",
+        &format!("delivery:{}:sitemap", organization.id),
         DEFAULT_TTL_SECONDS,
-        || async move { build_sitemap(&db).await },
+        || async move { build_sitemap(&db, organization.id).await },
     )
     .await?;
 
@@ -308,28 +347,33 @@ pub async fn sitemap(State(state): State<AppState>) -> Result<impl IntoResponse,
 }
 
 pub async fn robots(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let organization = default_public_organization(&state.db).await?;
     let db = state.db.clone();
     let body = cache::get_or_set_json(
         &state.redis,
-        "delivery:robots",
+        &format!("delivery:{}:robots", organization.id),
         DEFAULT_TTL_SECONDS,
-        || async move { build_robots(&db).await },
+        || async move { build_robots(&db, organization.id).await },
     )
     .await?;
 
     Ok(([(CONTENT_TYPE, "text/plain; charset=utf-8")], body))
 }
 
-pub async fn invalidate_content_cache(state: &AppState, type_slug: &str) {
-    cache::invalidate_prefix(&state.redis, &format!("delivery:content:{type_slug}:")).await;
-    cache::invalidate(&state.redis, "delivery:sitemap").await;
+pub async fn invalidate_content_cache(state: &AppState, organization_id: Uuid, type_slug: &str) {
+    cache::invalidate_prefix(
+        &state.redis,
+        &format!("delivery:{organization_id}:content:{type_slug}:"),
+    )
+    .await;
+    cache::invalidate(&state.redis, &format!("delivery:{organization_id}:sitemap")).await;
 }
 
-pub async fn invalidate_page_cache(state: &AppState) {
-    cache::invalidate_prefix(&state.redis, "delivery:page:").await;
-    cache::invalidate_prefix(&state.redis, "delivery:pages:").await;
-    cache::invalidate(&state.redis, "delivery:sitemap").await;
-    cache::invalidate(&state.redis, "delivery:robots").await;
+pub async fn invalidate_page_cache(state: &AppState, organization_id: Uuid) {
+    cache::invalidate_prefix(&state.redis, &format!("delivery:{organization_id}:page:")).await;
+    cache::invalidate_prefix(&state.redis, &format!("delivery:{organization_id}:pages:")).await;
+    cache::invalidate(&state.redis, &format!("delivery:{organization_id}:sitemap")).await;
+    cache::invalidate(&state.redis, &format!("delivery:{organization_id}:robots")).await;
 }
 
 #[derive(Clone)]
@@ -384,6 +428,7 @@ impl NormalizedListQuery {
 
 async fn fetch_public_entries(
     db: &PgPool,
+    organization_id: Uuid,
     type_slug: &str,
     query: &NormalizedListQuery,
 ) -> Result<PublicEntryListResponse, AppError> {
@@ -397,9 +442,13 @@ async fn fetch_public_entries(
                e.updated_at
         FROM content_entries e
         JOIN content_types ct ON ct.id = e.type_id
-        WHERE ct.slug =
+        WHERE ct.organization_id =
         "#,
     );
+    builder.push_bind(organization_id);
+    builder.push(" AND e.organization_id = ");
+    builder.push_bind(organization_id);
+    builder.push(" AND ct.slug = ");
     builder.push_bind(type_slug);
     builder.push(" AND e.status = 'published'::content_status");
     push_entry_filters(&mut builder, query);
@@ -427,6 +476,7 @@ async fn fetch_public_entries(
 
 async fn fetch_public_entry(
     db: &PgPool,
+    organization_id: Uuid,
     type_slug: &str,
     id_or_slug: &str,
     locale: Option<&str>,
@@ -442,9 +492,13 @@ async fn fetch_public_entry(
                e.updated_at
         FROM content_entries e
         JOIN content_types ct ON ct.id = e.type_id
-        WHERE ct.slug =
+        WHERE ct.organization_id =
         "#,
     );
+    builder.push_bind(organization_id);
+    builder.push(" AND e.organization_id = ");
+    builder.push_bind(organization_id);
+    builder.push(" AND ct.slug = ");
     builder.push_bind(type_slug);
     builder.push(" AND e.status = 'published'::content_status");
     if let Some(uuid) = uuid {
@@ -468,6 +522,7 @@ async fn fetch_public_entry(
 
 async fn fetch_public_pages(
     db: &PgPool,
+    organization_id: Uuid,
     query: &NormalizedListQuery,
 ) -> Result<PublicPageListResponse, AppError> {
     let sort_column = match query.sort_column {
@@ -486,9 +541,11 @@ async fn fetch_public_pages(
                published_at,
                updated_at
         FROM pages
-        WHERE status = 'published'::page_status
+        WHERE organization_id =
         "#,
     );
+    builder.push_bind(organization_id);
+    builder.push(" AND status = 'published'::page_status");
     if let Some(locale) = query.locale.as_deref() {
         builder.push(" AND page_json->'metadata'->>'locale' = ");
         builder.push_bind(locale);
@@ -515,7 +572,11 @@ async fn fetch_public_pages(
     })
 }
 
-async fn fetch_public_page(db: &PgPool, slug: &str) -> Result<PublicPageResponse, AppError> {
+async fn fetch_public_page(
+    db: &PgPool,
+    organization_id: Uuid,
+    slug: &str,
+) -> Result<PublicPageResponse, AppError> {
     sqlx::query_as::<_, PublicPageResponse>(
         r#"
         SELECT id,
@@ -526,24 +587,26 @@ async fn fetch_public_page(db: &PgPool, slug: &str) -> Result<PublicPageResponse
                published_at,
                updated_at
         FROM pages
-        WHERE slug = $1 AND status = 'published'::page_status
+        WHERE organization_id = $1 AND slug = $2 AND status = 'published'::page_status
         "#,
     )
+    .bind(organization_id)
     .bind(slug)
     .fetch_one(db)
     .await
     .map_err(AppError::from)
 }
 
-async fn fetch_public_settings(db: &PgPool) -> Result<Value, AppError> {
+async fn fetch_public_settings(db: &PgPool, organization_id: Uuid) -> Result<Value, AppError> {
     let rows = sqlx::query_as::<_, PublicSettingRow>(
         r#"
         SELECT key, value
         FROM public_settings
-        WHERE is_public = TRUE
+        WHERE organization_id = $1 AND is_public = TRUE
         ORDER BY key ASC
         "#,
     )
+    .bind(organization_id)
     .fetch_all(db)
     .await?;
     let mut object = Map::new();
@@ -555,15 +618,18 @@ async fn fetch_public_settings(db: &PgPool) -> Result<Value, AppError> {
 
 async fn fetch_navigation(
     db: &PgPool,
+    organization_id: Uuid,
     locale: Option<&str>,
 ) -> Result<Vec<NavigationItemResponse>, AppError> {
     let mut builder = QueryBuilder::<Postgres>::new(
         r#"
         SELECT id, label, url, parent_id, position, locale
         FROM navigation_items
-        WHERE is_public = TRUE
+        WHERE organization_id =
         "#,
     );
+    builder.push_bind(organization_id);
+    builder.push(" AND is_public = TRUE");
     if let Some(locale) = locale {
         builder.push(" AND locale = ");
         builder.push_bind(locale);
@@ -597,16 +663,17 @@ fn push_entry_filters<'a>(
     }
 }
 
-async fn build_sitemap(db: &PgPool) -> Result<String, AppError> {
-    let site_url = load_site_url(db).await?;
+async fn build_sitemap(db: &PgPool, organization_id: Uuid) -> Result<String, AppError> {
+    let site_url = load_site_url(db, organization_id).await?;
     let pages = sqlx::query_as::<_, SitemapPageRow>(
         r#"
         SELECT slug, updated_at
         FROM pages
-        WHERE status = 'published'::page_status
+        WHERE organization_id = $1 AND status = 'published'::page_status
         ORDER BY slug ASC
         "#,
     )
+    .bind(organization_id)
     .fetch_all(db)
     .await?;
     let entries = sqlx::query_as::<_, SitemapEntryRow>(
@@ -616,12 +683,15 @@ async fn build_sitemap(db: &PgPool) -> Result<String, AppError> {
                e.updated_at
         FROM content_entries e
         JOIN content_types ct ON ct.id = e.type_id
-        WHERE e.status = 'published'::content_status
+        WHERE e.organization_id = $1
+          AND ct.organization_id = $1
+          AND e.status = 'published'::content_status
           AND e.data ? 'slug'
           AND length(e.data->>'slug') > 0
         ORDER BY ct.slug ASC, slug ASC
         "#,
     )
+    .bind(organization_id)
     .fetch_all(db)
     .await?;
 
@@ -644,21 +714,22 @@ async fn build_sitemap(db: &PgPool) -> Result<String, AppError> {
     Ok(body)
 }
 
-async fn build_robots(db: &PgPool) -> Result<String, AppError> {
-    let site_url = load_site_url(db).await?;
+async fn build_robots(db: &PgPool, organization_id: Uuid) -> Result<String, AppError> {
+    let site_url = load_site_url(db, organization_id).await?;
     Ok(format!(
         "User-agent: *\nAllow: /\nSitemap: {site_url}/api/v1/sitemap.xml\n"
     ))
 }
 
-async fn load_site_url(db: &PgPool) -> Result<String, AppError> {
+async fn load_site_url(db: &PgPool, organization_id: Uuid) -> Result<String, AppError> {
     let row = sqlx::query_as::<_, PublicSettingRow>(
         r#"
         SELECT key, value
         FROM public_settings
-        WHERE key = 'site_url' AND is_public = TRUE
+        WHERE organization_id = $1 AND key = 'site_url' AND is_public = TRUE
         "#,
     )
+    .bind(organization_id)
     .fetch_optional(db)
     .await?;
     let site_url = row

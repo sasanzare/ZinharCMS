@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
-use axum::http::{HeaderValue, Method, StatusCode};
+use axum::http::{HeaderName, HeaderValue, Method, StatusCode};
 use cms_backend::config::Config;
 use cms_backend::db;
 use cms_backend::middleware::security::security_headers;
@@ -37,6 +37,7 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState::new(config.clone(), db, redis);
 
     let cors_origin = HeaderValue::from_str(&config.cors_origin).context("invalid CORS_ORIGIN")?;
+    let organization_header = HeaderName::from_static("x-organization-id");
     let app = cms_backend::app(state)
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
@@ -54,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
                     Method::PATCH,
                     Method::DELETE,
                 ])
-                .allow_headers([AUTHORIZATION, CONTENT_TYPE])
+                .allow_headers([AUTHORIZATION, CONTENT_TYPE, organization_header])
                 .allow_credentials(true),
         )
         .layer(PropagateRequestIdLayer::x_request_id())

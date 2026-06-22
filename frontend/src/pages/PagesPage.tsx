@@ -424,6 +424,7 @@ function PropControl({
 export function PagesPage() {
   const { t } = useI18n();
   const accessToken = useAppStore((state) => state.accessToken);
+  const activeOrganizationId = useAppStore((state) => state.activeOrganizationId);
   const [pages, setPages] = useState<PageResponse[]>([]);
   const [components, setComponents] = useState<ComponentRegistryResponse[]>([]);
   const [versions, setVersions] = useState<PageVersionResponse[]>([]);
@@ -663,8 +664,11 @@ export function PagesPage() {
   }
 
   async function copyPreviewUrl(pageId: string) {
-    const token = accessToken ? `?access_token=${encodeURIComponent(accessToken)}` : "";
-    await navigator.clipboard.writeText(`${api.baseUrl.replace(/^http/, "ws")}/api/preview/${pageId}${token}`);
+    const params = new URLSearchParams();
+    if (accessToken) params.set("access_token", accessToken);
+    if (activeOrganizationId) params.set("organization_id", activeOrganizationId);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    await navigator.clipboard.writeText(`${api.baseUrl.replace(/^http/, "ws")}/api/preview/${pageId}${query}`);
   }
 
   const filteredComponents = components.filter((component) =>

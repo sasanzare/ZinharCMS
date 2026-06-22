@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
+use crate::middleware::tenant::TenantContext;
 use crate::services::rbac;
 use crate::state::AppState;
 
@@ -61,11 +62,12 @@ pub struct CommentResponse {
 )]
 pub async fn list_comments(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Query(query): Query<CommentListQuery>,
 ) -> Result<Json<Vec<CommentResponse>>, AppError> {
-    rbac::require_comment_reader(&claims)?;
+    rbac::require_org_comment_reader(&tenant.role)?;
     validate_entity_type(&query.entity_type)?;
+    ensure_entity_exists(&state, &tenant, &query.entity_type, query.entity_id).await?;
 
     let rows = if query.include_resolved.unwrap_or(false) {
         sqlx::query_as::<_, CommentResponse>(
@@ -82,10 +84,11 @@ pub async fn list_comments(
                    c.updated_at
             FROM comments c
             LEFT JOIN users u ON u.id = c.author_id
-            WHERE c.entity_type = $1 AND c.entity_id = $2
+            WHERE c.organization_id = $1 AND c.entity_type = $2 AND c.entity_id = $3
             ORDER BY c.created_at DESC
             "#,
         )
+        .bind(tenant.organization_id)
         .bind(&query.entity_type)
         .bind(query.entity_id)
         .fetch_all(&state.db)
@@ -105,10 +108,14 @@ pub async fn list_comments(
                    c.updated_at
             FROM comments c
             LEFT JOIN users u ON u.id = c.author_id
-            WHERE c.entity_type = $1 AND c.entity_id = $2 AND c.resolved_at IS NULL
+            WHERE c.organization_id = $1
+              AND c.entity_type = $2
+              AND c.entity_id = $3
+              AND c.resolved_at IS NULL
             ORDER BY c.created_at DESC
             "#,
         )
+        .bind(tenant.organization_id)
         .bind(&query.entity_type)
         .bind(query.entity_id)
         .fetch_all(&state.db)
@@ -128,16 +135,17 @@ pub async fn list_comments(
 pub async fn create_comment(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<CommentRequest>,
 ) -> Result<Json<CommentResponse>, AppError> {
-    rbac::require_comment_writer(&claims)?;
+    rbac::require_org_comment_writer(&tenant.role)?;
     validate_comment_request(&payload)?;
-    ensure_entity_exists(&state, &payload.entity_type, payload.entity_id).await?;
+    ensure_entity_exists(&state, &tenant, &payload.entity_type, payload.entity_id).await?;
 
     let row = sqlx::query_as::<_, CommentResponse>(
         r#"
-        INSERT INTO comments (entity_type, entity_id, body, author_id)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO comments (organization_id, entity_type, entity_id, body, author_id)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id,
                   entity_type,
                   entity_id,
@@ -150,6 +158,7 @@ pub async fn create_comment(
                   updated_at
         "#,
     )
+    .bind(tenant.organization_id)
     .bind(payload.entity_type)
     .bind(payload.entity_id)
     .bind(payload.body.trim())
@@ -169,11 +178,11 @@ pub async fn create_comment(
 )]
 pub async fn get_comment(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<CommentResponse>, AppError> {
-    rbac::require_comment_reader(&claims)?;
-    load_comment(&state, id).await.map(Json)
+    rbac::require_org_comment_reader(&tenant.role)?;
+    load_comment(&state, &tenant, id).await.map(Json)
 }
 
 #[utoipa::path(
@@ -186,16 +195,17 @@ pub async fn get_comment(
 pub async fn resolve_comment(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<CommentResponse>, AppError> {
-    rbac::require_comment_manager(&claims)?;
+    rbac::require_org_comment_manager(&tenant.role)?;
     let row = sqlx::query_as::<_, CommentResponse>(
         r#"
         UPDATE comments
         SET resolved_at = now(),
-            resolved_by = $2,
+            resolved_by = $3,
             updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         RETURNING id,
                   entity_type,
                   entity_id,
@@ -209,6 +219,7 @@ pub async fn resolve_comment(
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .bind(claims.sub)
     .fetch_one(&state.db)
     .await?;
@@ -225,17 +236,17 @@ pub async fn resolve_comment(
 )]
 pub async fn unresolve_comment(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<CommentResponse>, AppError> {
-    rbac::require_comment_manager(&claims)?;
+    rbac::require_org_comment_manager(&tenant.role)?;
     let row = sqlx::query_as::<_, CommentResponse>(
         r#"
         UPDATE comments
         SET resolved_at = NULL,
             resolved_by = NULL,
             updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         RETURNING id,
                   entity_type,
                   entity_id,
@@ -249,6 +260,7 @@ pub async fn unresolve_comment(
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
@@ -264,14 +276,14 @@ pub async fn unresolve_comment(
 )]
 pub async fn delete_comment(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<CommentResponse>, AppError> {
-    rbac::require_comment_manager(&claims)?;
+    rbac::require_org_comment_manager(&tenant.role)?;
     let row = sqlx::query_as::<_, CommentResponse>(
         r#"
         DELETE FROM comments
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         RETURNING id,
                   entity_type,
                   entity_id,
@@ -285,13 +297,18 @@ pub async fn delete_comment(
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
     Ok(Json(row))
 }
 
-async fn load_comment(state: &AppState, id: Uuid) -> Result<CommentResponse, AppError> {
+async fn load_comment(
+    state: &AppState,
+    tenant: &TenantContext,
+    id: Uuid,
+) -> Result<CommentResponse, AppError> {
     sqlx::query_as::<_, CommentResponse>(
         r#"
         SELECT c.id,
@@ -306,10 +323,11 @@ async fn load_comment(state: &AppState, id: Uuid) -> Result<CommentResponse, App
                c.updated_at
         FROM comments c
         LEFT JOIN users u ON u.id = c.author_id
-        WHERE c.id = $1
+        WHERE c.id = $1 AND c.organization_id = $2
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
@@ -317,21 +335,28 @@ async fn load_comment(state: &AppState, id: Uuid) -> Result<CommentResponse, App
 
 async fn ensure_entity_exists(
     state: &AppState,
+    tenant: &TenantContext,
     entity_type: &str,
     entity_id: Uuid,
 ) -> Result<(), AppError> {
     match entity_type {
         "entry" => {
-            sqlx::query_scalar::<_, Uuid>("SELECT id FROM content_entries WHERE id = $1")
-                .bind(entity_id)
-                .fetch_one(&state.db)
-                .await?;
+            sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM content_entries WHERE id = $1 AND organization_id = $2",
+            )
+            .bind(entity_id)
+            .bind(tenant.organization_id)
+            .fetch_one(&state.db)
+            .await?;
         }
         "page" => {
-            sqlx::query_scalar::<_, Uuid>("SELECT id FROM pages WHERE id = $1")
-                .bind(entity_id)
-                .fetch_one(&state.db)
-                .await?;
+            sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM pages WHERE id = $1 AND organization_id = $2",
+            )
+            .bind(entity_id)
+            .bind(tenant.organization_id)
+            .fetch_one(&state.db)
+            .await?;
         }
         _ => validate_entity_type(entity_type)?,
     }

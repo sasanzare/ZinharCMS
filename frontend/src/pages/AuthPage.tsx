@@ -35,6 +35,8 @@ export function AuthPage() {
         accessToken: response.access_token,
         refreshToken: response.refresh_token,
         user: response.user,
+        organizations: response.organizations,
+        defaultOrganizationId: response.default_organization_id,
       });
       navigate("/", { replace: true });
     } catch (caught) {

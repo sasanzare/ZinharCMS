@@ -20,6 +20,7 @@ use utoipa::{OpenApi, ToSchema};
 
 use crate::error::AppError;
 use crate::middleware::auth::auth_middleware;
+use crate::middleware::tenant::tenant_middleware;
 use crate::state::AppState;
 
 pub fn router(state: AppState) -> Router {
@@ -27,15 +28,21 @@ pub fn router(state: AppState) -> Router {
     let uploads = ServeDir::new(state.config.upload_dir.clone());
     let protected = Router::new()
         .merge(auth::protected_router())
+        .merge(plugins::router())
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ));
+
+    let tenant_protected = Router::new()
         .merge(content::router())
         .merge(media::router())
         .merge(pages::router())
         .merge(comments::router())
-        .merge(plugins::router())
         .merge(webhooks::router())
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
-            auth_middleware,
+            tenant_middleware,
         ))
         .layer(DefaultBodyLimit::max(upload_limit));
 
@@ -47,6 +54,7 @@ pub fn router(state: AppState) -> Router {
         .merge(auth::public_router())
         .merge(delivery::router())
         .merge(protected)
+        .merge(tenant_protected)
         .nest_service("/uploads", uploads)
         .with_state(state)
 }
@@ -142,6 +150,9 @@ pub fn router(state: AppState) -> Router {
         auth::LogoutResponse,
         auth::AuthResponse,
         auth::AuthUser,
+        auth::MeResponse,
+        auth::OrganizationMembershipResponse,
+        crate::middleware::tenant::TenantContext,
         content::ContentTypeRequest,
         content::ContentTypeResponse,
         content::EntryRequest,

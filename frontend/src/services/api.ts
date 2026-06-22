@@ -1,7 +1,6 @@
 import type {
   ApiInfo,
   AuthResponse,
-  AuthUser,
   CommentEntityType,
   CommentRequest,
   CommentResponse,
@@ -12,6 +11,7 @@ import type {
   FieldSchemaDocument,
   HealthResponse,
   JsonRecord,
+  MeResponse,
   MediaDetailResponse,
   MediaListResponse,
   PageJson,
@@ -30,8 +30,10 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 const ACCESS_TOKEN_KEY = "zinhar.access_token";
 const REFRESH_TOKEN_KEY = "zinhar.refresh_token";
+const ACTIVE_ORGANIZATION_KEY = "zinhar.active_organization_id";
 
 let accessToken = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+let activeOrganizationId = window.localStorage.getItem(ACTIVE_ORGANIZATION_KEY);
 
 export function setApiAccessToken(token: string | null) {
   accessToken = token;
@@ -47,6 +49,15 @@ export function setApiRefreshToken(token: string | null) {
     window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
   } else {
     window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+}
+
+export function setApiOrganizationId(organizationId: string | null) {
+  activeOrganizationId = organizationId;
+  if (organizationId) {
+    window.localStorage.setItem(ACTIVE_ORGANIZATION_KEY, organizationId);
+  } else {
+    window.localStorage.removeItem(ACTIVE_ORGANIZATION_KEY);
   }
 }
 
@@ -81,6 +92,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (needsAuth && accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
+    if (activeOrganizationId) {
+      headers.set("X-Organization-Id", activeOrganizationId);
+    }
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -135,7 +149,7 @@ export const api = {
         auth: true,
         body: refresh_token ? { refresh_token } : undefined,
       }),
-    me: () => request<AuthUser>("/api/auth/me", { auth: true }),
+    me: () => request<MeResponse>("/api/auth/me", { auth: true }),
   },
 
   contentTypes: {

@@ -76,6 +76,8 @@ pub struct AuthResponse {
     pub token_type: String,
     pub expires_in: u64,
     pub user: AuthUser,
+    pub organizations: Vec<OrganizationMembershipResponse>,
+    pub default_organization_id: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
@@ -85,6 +87,22 @@ pub struct AuthUser {
     pub name: String,
     pub avatar_url: Option<String>,
     pub role: String,
+}
+
+#[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
+pub struct OrganizationMembershipResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub slug: String,
+    pub role: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MeResponse {
+    pub user: AuthUser,
+    pub organizations: Vec<OrganizationMembershipResponse>,
+    pub default_organization_id: Option<Uuid>,
 }
 
 #[derive(Debug, FromRow)]
@@ -351,13 +369,20 @@ pub async fn logout(
     get,
     path = "/api/auth/me",
     tag = "auth",
-    responses((status = 200, description = "Current user", body = AuthUser))
+    responses((status = 200, description = "Current user", body = MeResponse))
 )]
 pub async fn me(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-) -> Result<Json<AuthUser>, AppError> {
-    load_auth_user(&state, claims.sub).await.map(Json)
+) -> Result<Json<MeResponse>, AppError> {
+    let user = load_auth_user(&state, claims.sub).await?;
+    let organizations = load_organization_memberships(&state, user.id).await?;
+    let default_organization_id = default_organization_id(&organizations);
+    Ok(Json(MeResponse {
+        user,
+        organizations,
+        default_organization_id,
+    }))
 }
 
 async fn attach_default_organization_membership(
@@ -430,6 +455,9 @@ async fn issue_auth_response(
     .execute(&state.db)
     .await?;
 
+    let organizations = load_organization_memberships(state, user.id).await?;
+    let default_organization_id = default_organization_id(&organizations);
+
     Ok(IssuedAuthResponse {
         body: AuthResponse {
             access_token,
@@ -437,6 +465,8 @@ async fn issue_auth_response(
             token_type: "Bearer".to_owned(),
             expires_in: state.config.jwt_access_expiry,
             user,
+            organizations,
+            default_organization_id,
         },
         refresh_token,
     })
@@ -485,6 +515,47 @@ async fn load_auth_user(state: &AppState, user_id: Uuid) -> Result<AuthUser, App
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
+}
+
+async fn load_organization_memberships(
+    state: &AppState,
+    user_id: Uuid,
+) -> Result<Vec<OrganizationMembershipResponse>, AppError> {
+    sqlx::query_as::<_, OrganizationMembershipResponse>(
+        r#"
+        SELECT o.id,
+               o.name,
+               o.slug,
+               om.role::text as role,
+               om.status::text as status
+        FROM organizations o
+        JOIN organization_members om ON om.organization_id = o.id
+        WHERE om.user_id = $1
+          AND om.status = 'active'::organization_member_status
+          AND o.status = 'active'::organization_status
+        ORDER BY CASE om.role
+            WHEN 'owner' THEN 1
+            WHEN 'admin' THEN 2
+            WHEN 'editor' THEN 3
+            WHEN 'author' THEN 4
+            WHEN 'viewer' THEN 5
+            WHEN 'billing_manager' THEN 6
+            ELSE 99
+        END, o.created_at ASC
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(&state.db)
+    .await
+    .map_err(AppError::from)
+}
+
+fn default_organization_id(organizations: &[OrganizationMembershipResponse]) -> Option<Uuid> {
+    organizations
+        .iter()
+        .find(|organization| organization.slug == "default")
+        .or_else(|| organizations.first())
+        .map(|organization| organization.id)
 }
 
 fn refresh_token_from_request(

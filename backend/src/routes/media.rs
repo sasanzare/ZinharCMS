@@ -12,6 +12,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
+use crate::middleware::tenant::TenantContext;
 use crate::services::media_processing::{is_supported_image_mime, process_image_variants};
 use crate::services::rbac;
 use crate::state::AppState;
@@ -85,7 +86,7 @@ pub struct MediaListResponse {
 )]
 pub async fn list_media(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Query(query): Query<MediaListQuery>,
 ) -> Result<Json<MediaListResponse>, AppError> {
     let page = query.page.unwrap_or(1).max(1);
@@ -106,11 +107,12 @@ pub async fn list_media(
                    created_at,
                    updated_at
             FROM media
-            WHERE mime_type = $1
+            WHERE organization_id = $1 AND mime_type = $2
             ORDER BY created_at DESC
-            LIMIT $2 OFFSET $3
+            LIMIT $3 OFFSET $4
             "#,
         )
+        .bind(tenant.organization_id)
         .bind(mime_type)
         .bind(per_page)
         .bind(offset)
@@ -130,10 +132,12 @@ pub async fn list_media(
                    created_at,
                    updated_at
             FROM media
+            WHERE organization_id = $1
             ORDER BY created_at DESC
-            LIMIT $1 OFFSET $2
+            LIMIT $2 OFFSET $3
             "#,
         )
+        .bind(tenant.organization_id)
         .bind(per_page)
         .bind(offset)
         .fetch_all(&state.db)
@@ -156,9 +160,10 @@ pub async fn list_media(
 pub async fn upload_media(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     mut multipart: Multipart,
 ) -> Result<Json<MediaDetailResponse>, AppError> {
-    rbac::require_media_writer(&claims)?;
+    rbac::require_org_media_writer(&tenant.role)?;
 
     let mut alt_text: Option<String> = None;
     let mut caption: Option<String> = None;
@@ -219,7 +224,9 @@ pub async fn upload_media(
     }
     let detected_mime_type = validate_upload_type(&upload)?;
 
-    let upload_dir = PathBuf::from(&state.config.upload_dir);
+    let organization_path = tenant.organization_id.to_string();
+    let upload_root = PathBuf::from(&state.config.upload_dir);
+    let upload_dir = upload_root.join(&organization_path);
     fs::create_dir_all(&upload_dir)
         .await
         .map_err(|error| AppError::Internal(error.to_string()))?;
@@ -235,11 +242,12 @@ pub async fn upload_media(
         .await
         .map_err(|error| AppError::Internal(error.to_string()))?;
 
-    let url = format!("/uploads/{stored_filename}");
+    let url_prefix = format!("/uploads/{organization_path}");
+    let url = format!("{url_prefix}/{stored_filename}");
     let media = sqlx::query_as::<_, MediaResponse>(
         r#"
-        INSERT INTO media (id, filename, url, mime_type, size, alt_text, caption, uploader_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO media (id, organization_id, filename, url, mime_type, size, alt_text, caption, uploader_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING id,
                   filename,
                   url,
@@ -253,6 +261,7 @@ pub async fn upload_media(
         "#,
     )
     .bind(file_id)
+    .bind(tenant.organization_id)
     .bind(&upload.filename)
     .bind(&url)
     .bind(detected_mime_type)
@@ -266,15 +275,17 @@ pub async fn upload_media(
     let mut variants = Vec::new();
     if is_supported_image_mime(detected_mime_type) {
         let processed =
-            process_image_variants(upload.bytes, &upload_dir, &file_id.to_string()).await?;
+            process_image_variants(upload.bytes, &upload_dir, &url_prefix, &file_id.to_string())
+                .await?;
         for variant in processed {
             let row = sqlx::query_as::<_, MediaVariantResponse>(
                 r#"
-                INSERT INTO media_variants (media_id, variant_name, url, width, height)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO media_variants (organization_id, media_id, variant_name, url, width, height)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING id, media_id, variant_name, url, width, height, created_at
                 "#,
             )
+            .bind(tenant.organization_id)
             .bind(media.id)
             .bind(variant.name)
             .bind(variant.url)
@@ -298,10 +309,10 @@ pub async fn upload_media(
 )]
 pub async fn get_media(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<MediaDetailResponse>, AppError> {
-    load_media_detail(&state, id).await.map(Json)
+    load_media_detail(&state, &tenant, id).await.map(Json)
 }
 
 #[utoipa::path(
@@ -314,28 +325,29 @@ pub async fn get_media(
 )]
 pub async fn update_media(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
     Json(payload): Json<MediaUpdateRequest>,
 ) -> Result<Json<MediaDetailResponse>, AppError> {
-    rbac::require_media_writer(&claims)?;
+    rbac::require_org_media_writer(&tenant.role)?;
 
     sqlx::query(
         r#"
         UPDATE media
-        SET alt_text = COALESCE($2, alt_text),
-            caption = COALESCE($3, caption),
+        SET alt_text = COALESCE($3, alt_text),
+            caption = COALESCE($4, caption),
             updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .bind(clean_optional_text(payload.alt_text))
     .bind(clean_optional_text(payload.caption))
     .execute(&state.db)
     .await?;
 
-    load_media_detail(&state, id).await.map(Json)
+    load_media_detail(&state, &tenant, id).await.map(Json)
 }
 
 #[utoipa::path(
@@ -347,14 +359,15 @@ pub async fn update_media(
 )]
 pub async fn delete_media(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<MediaDetailResponse>, AppError> {
-    rbac::require_any(&claims, &[rbac::ADMIN, rbac::EDITOR])?;
-    let detail = load_media_detail(&state, id).await?;
+    rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_EDITOR])?;
+    let detail = load_media_detail(&state, &tenant, id).await?;
 
-    sqlx::query("DELETE FROM media WHERE id = $1")
+    sqlx::query("DELETE FROM media WHERE id = $1 AND organization_id = $2")
         .bind(id)
+        .bind(tenant.organization_id)
         .execute(&state.db)
         .await?;
 
@@ -366,7 +379,11 @@ pub async fn delete_media(
     Ok(Json(detail))
 }
 
-async fn load_media_detail(state: &AppState, id: Uuid) -> Result<MediaDetailResponse, AppError> {
+async fn load_media_detail(
+    state: &AppState,
+    tenant: &TenantContext,
+    id: Uuid,
+) -> Result<MediaDetailResponse, AppError> {
     let media = sqlx::query_as::<_, MediaResponse>(
         r#"
         SELECT id,
@@ -380,10 +397,11 @@ async fn load_media_detail(state: &AppState, id: Uuid) -> Result<MediaDetailResp
                created_at,
                updated_at
         FROM media
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
@@ -391,11 +409,12 @@ async fn load_media_detail(state: &AppState, id: Uuid) -> Result<MediaDetailResp
         r#"
         SELECT id, media_id, variant_name, url, width, height, created_at
         FROM media_variants
-        WHERE media_id = $1
+        WHERE media_id = $1 AND organization_id = $2
         ORDER BY variant_name ASC
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_all(&state.db)
     .await?;
 

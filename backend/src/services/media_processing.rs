@@ -49,19 +49,24 @@ pub fn is_supported_image_mime(mime_type: &str) -> bool {
 pub async fn process_image_variants(
     bytes: Vec<u8>,
     upload_dir: &Path,
+    url_prefix: &str,
     file_id: &str,
 ) -> Result<Vec<ProcessedVariant>, AppError> {
     let upload_dir = upload_dir.to_owned();
+    let url_prefix = url_prefix.trim_end_matches('/').to_owned();
     let file_id = file_id.to_owned();
 
-    task::spawn_blocking(move || process_variants_blocking(bytes, &upload_dir, &file_id))
-        .await
-        .map_err(|error| AppError::Internal(error.to_string()))?
+    task::spawn_blocking(move || {
+        process_variants_blocking(bytes, &upload_dir, &url_prefix, &file_id)
+    })
+    .await
+    .map_err(|error| AppError::Internal(error.to_string()))?
 }
 
 fn process_variants_blocking(
     bytes: Vec<u8>,
     upload_dir: &Path,
+    url_prefix: &str,
     file_id: &str,
 ) -> Result<Vec<ProcessedVariant>, AppError> {
     let image = image::load_from_memory(&bytes)
@@ -80,7 +85,7 @@ fn process_variants_blocking(
 
         processed.push(ProcessedVariant {
             name: variant.name.to_owned(),
-            url: format!("/uploads/variants/{filename}"),
+            url: format!("{url_prefix}/variants/{filename}"),
             path,
             width: resized.width() as i32,
             height: resized.height() as i32,

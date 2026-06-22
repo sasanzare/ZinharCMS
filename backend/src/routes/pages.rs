@@ -14,6 +14,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
+use crate::middleware::tenant::TenantContext;
 use crate::routes::delivery;
 use crate::services::entry_validation::is_valid_slug;
 use crate::services::{rbac, webhooks, workflow};
@@ -139,7 +140,7 @@ pub struct DeleteConfirm {
 )]
 pub async fn list_pages(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Query(query): Query<PageListQuery>,
 ) -> Result<Json<PageListResponse>, AppError> {
     let page = query.page.unwrap_or(1).max(1);
@@ -161,12 +162,13 @@ pub async fn list_pages(
                    created_at,
                    updated_at
             FROM pages
-            WHERE status::text = $1
+            WHERE organization_id = $1 AND status::text = $2
             ORDER BY {sort_column} {sort_direction}
-            LIMIT $2 OFFSET $3
+            LIMIT $3 OFFSET $4
             "#
         );
         sqlx::query_as::<_, PageResponse>(&sql)
+            .bind(tenant.organization_id)
             .bind(status)
             .bind(per_page)
             .bind(offset)
@@ -185,11 +187,13 @@ pub async fn list_pages(
                    created_at,
                    updated_at
             FROM pages
+            WHERE organization_id = $1
             ORDER BY {sort_column} {sort_direction}
-            LIMIT $1 OFFSET $2
+            LIMIT $2 OFFSET $3
             "#
         );
         sqlx::query_as::<_, PageResponse>(&sql)
+            .bind(tenant.organization_id)
             .bind(per_page)
             .bind(offset)
             .fetch_all(&state.db)
@@ -213,16 +217,17 @@ pub async fn list_pages(
 pub async fn create_page(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<PageRequest>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_page_writer(&claims)?;
-    validate_page_request(&state, &payload).await?;
+    rbac::require_org_page_writer(&tenant.role)?;
+    validate_page_request(&state, &tenant, &payload).await?;
 
     let mut tx = state.db.begin().await?;
     let page = sqlx::query_as::<_, PageResponse>(
         r#"
-        INSERT INTO pages (title, slug, page_json, author_id)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO pages (organization_id, title, slug, page_json, author_id)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id,
                   title,
                   slug,
@@ -234,6 +239,7 @@ pub async fn create_page(
                   updated_at
         "#,
     )
+    .bind(tenant.organization_id)
     .bind(payload.title.trim())
     .bind(payload.slug.trim())
     .bind(&payload.page_json)
@@ -241,7 +247,14 @@ pub async fn create_page(
     .fetch_one(&mut *tx)
     .await?;
 
-    create_version_snapshot(&mut tx, page.id, &page.page_json, claims.sub).await?;
+    create_version_snapshot(
+        &mut tx,
+        tenant.organization_id,
+        page.id,
+        &page.page_json,
+        claims.sub,
+    )
+    .await?;
     tx.commit().await?;
     broadcast_page_json(&state, page.id, &page.page_json).await;
 
@@ -257,10 +270,10 @@ pub async fn create_page(
 )]
 pub async fn get_page(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
-    load_page_by_id(&state, id).await.map(Json)
+    load_page_by_id(&state, &tenant, id).await.map(Json)
 }
 
 #[utoipa::path(
@@ -272,13 +285,13 @@ pub async fn get_page(
 )]
 pub async fn get_page_by_slug(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(slug): Path<String>,
 ) -> Result<Json<PageResponse>, AppError> {
     if !is_valid_slug(&slug) {
         return Err(AppError::Validation("slug is invalid".to_owned()));
     }
-    load_page_by_slug(&state, &slug).await.map(Json)
+    load_page_by_slug(&state, &tenant, &slug).await.map(Json)
 }
 #[utoipa::path(
     put,
@@ -291,11 +304,12 @@ pub async fn get_page_by_slug(
 pub async fn update_page(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
     Json(payload): Json<PageRequest>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_page_writer(&claims)?;
-    validate_page_request(&state, &payload).await?;
+    rbac::require_org_page_writer(&tenant.role)?;
+    validate_page_request(&state, &tenant, &payload).await?;
 
     let mut tx = state.db.begin().await?;
     let page = sqlx::query_as::<_, PageResponse>(
@@ -305,7 +319,7 @@ pub async fn update_page(
             slug = $3,
             page_json = $4,
             updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $5
         RETURNING id,
                   title,
                   slug,
@@ -321,14 +335,22 @@ pub async fn update_page(
     .bind(payload.title.trim())
     .bind(payload.slug.trim())
     .bind(&payload.page_json)
+    .bind(tenant.organization_id)
     .fetch_one(&mut *tx)
     .await?;
 
-    create_version_snapshot(&mut tx, page.id, &page.page_json, claims.sub).await?;
+    create_version_snapshot(
+        &mut tx,
+        tenant.organization_id,
+        page.id,
+        &page.page_json,
+        claims.sub,
+    )
+    .await?;
     tx.commit().await?;
     broadcast_page_json(&state, page.id, &page.page_json).await;
     if page.status == "published" {
-        delivery::invalidate_page_cache(&state).await;
+        delivery::invalidate_page_cache(&state, tenant.organization_id).await;
     }
 
     Ok(Json(page))
@@ -343,11 +365,11 @@ pub async fn update_page(
 )]
 pub async fn delete_page(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
     Query(query): Query<DeleteConfirm>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_page_manager(&claims)?;
+    rbac::require_org_page_manager(&tenant.role)?;
     if query.confirm != Some(true) {
         return Err(AppError::Validation(
             "pass ?confirm=true to delete a page".to_owned(),
@@ -357,7 +379,7 @@ pub async fn delete_page(
     let page = sqlx::query_as::<_, PageResponse>(
         r#"
         DELETE FROM pages
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         RETURNING id,
                   title,
                   slug,
@@ -370,11 +392,12 @@ pub async fn delete_page(
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
     if page.status == "published" {
-        delivery::invalidate_page_cache(&state).await;
+        delivery::invalidate_page_cache(&state, tenant.organization_id).await;
     }
 
     Ok(Json(page))
@@ -389,16 +412,24 @@ pub async fn delete_page(
 )]
 pub async fn publish_page(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_page_publisher(&claims)?;
-    let page = transition_page(&state, id, workflow::WorkflowStatus::Published, true).await?;
-    delivery::invalidate_page_cache(&state).await;
+    rbac::require_org_page_publisher(&tenant.role)?;
+    let page = transition_page(
+        &state,
+        &tenant,
+        id,
+        workflow::WorkflowStatus::Published,
+        true,
+    )
+    .await?;
+    delivery::invalidate_page_cache(&state, tenant.organization_id).await;
     webhooks::trigger_event(
         &state,
+        tenant.organization_id,
         webhooks::PAGE_PUBLISH,
-        page_webhook_payload(webhooks::PAGE_PUBLISH, &page),
+        page_webhook_payload(webhooks::PAGE_PUBLISH, &tenant, &page),
     )
     .await;
     Ok(Json(page))
@@ -413,16 +444,17 @@ pub async fn publish_page(
 )]
 pub async fn unpublish_page(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_page_publisher(&claims)?;
-    let page = transition_page(&state, id, workflow::WorkflowStatus::Draft, true).await?;
-    delivery::invalidate_page_cache(&state).await;
+    rbac::require_org_page_publisher(&tenant.role)?;
+    let page = transition_page(&state, &tenant, id, workflow::WorkflowStatus::Draft, true).await?;
+    delivery::invalidate_page_cache(&state, tenant.organization_id).await;
     webhooks::trigger_event(
         &state,
+        tenant.organization_id,
         webhooks::PAGE_UNPUBLISH,
-        page_webhook_payload(webhooks::PAGE_UNPUBLISH, &page),
+        page_webhook_payload(webhooks::PAGE_UNPUBLISH, &tenant, &page),
     )
     .await;
     Ok(Json(page))
@@ -437,11 +469,18 @@ pub async fn unpublish_page(
 )]
 pub async fn submit_page_for_review(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_page_writer(&claims)?;
-    let page = transition_page(&state, id, workflow::WorkflowStatus::PendingReview, false).await?;
+    rbac::require_org_page_writer(&tenant.role)?;
+    let page = transition_page(
+        &state,
+        &tenant,
+        id,
+        workflow::WorkflowStatus::PendingReview,
+        false,
+    )
+    .await?;
     Ok(Json(page))
 }
 
@@ -454,11 +493,11 @@ pub async fn submit_page_for_review(
 )]
 pub async fn reject_page(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_workflow_reviewer(&claims)?;
-    let page = transition_page(&state, id, workflow::WorkflowStatus::Draft, true).await?;
+    rbac::require_org_workflow_reviewer(&tenant.role)?;
+    let page = transition_page(&state, &tenant, id, workflow::WorkflowStatus::Draft, true).await?;
     Ok(Json(page))
 }
 
@@ -471,12 +510,19 @@ pub async fn reject_page(
 )]
 pub async fn archive_page(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_workflow_reviewer(&claims)?;
-    let page = transition_page(&state, id, workflow::WorkflowStatus::Archived, true).await?;
-    delivery::invalidate_page_cache(&state).await;
+    rbac::require_org_workflow_reviewer(&tenant.role)?;
+    let page = transition_page(
+        &state,
+        &tenant,
+        id,
+        workflow::WorkflowStatus::Archived,
+        true,
+    )
+    .await?;
+    delivery::invalidate_page_cache(&state, tenant.organization_id).await;
     Ok(Json(page))
 }
 
@@ -489,11 +535,11 @@ pub async fn archive_page(
 )]
 pub async fn restore_page(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_workflow_reviewer(&claims)?;
-    let page = transition_page(&state, id, workflow::WorkflowStatus::Draft, true).await?;
+    rbac::require_org_workflow_reviewer(&tenant.role)?;
+    let page = transition_page(&state, &tenant, id, workflow::WorkflowStatus::Draft, true).await?;
     Ok(Json(page))
 }
 #[utoipa::path(
@@ -505,18 +551,19 @@ pub async fn restore_page(
 )]
 pub async fn list_page_versions(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<PageVersionResponse>>, AppError> {
     let versions = sqlx::query_as::<_, PageVersionResponse>(
         r#"
         SELECT id, page_id, version, page_json, snapshot_at, created_by
         FROM page_versions
-        WHERE page_id = $1
+        WHERE page_id = $1 AND organization_id = $2
         ORDER BY version DESC
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_all(&state.db)
     .await?;
 
@@ -536,9 +583,10 @@ pub async fn list_page_versions(
 pub async fn restore_page_version(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path((id, version)): Path<(Uuid, i32)>,
 ) -> Result<Json<PageResponse>, AppError> {
-    rbac::require_page_manager(&claims)?;
+    rbac::require_org_page_manager(&tenant.role)?;
     if version < 1 {
         return Err(AppError::Validation("version must be positive".to_owned()));
     }
@@ -547,15 +595,16 @@ pub async fn restore_page_version(
         r#"
         SELECT id, page_id, version, page_json, snapshot_at, created_by
         FROM page_versions
-        WHERE page_id = $1 AND version = $2
+        WHERE page_id = $1 AND version = $2 AND organization_id = $3
         "#,
     )
     .bind(id)
     .bind(version)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
-    let component_keys = load_component_keys(&state).await?;
+    let component_keys = load_component_keys(&state, &tenant).await?;
     validate_page_json(&version_row.page_json, &component_keys)?;
 
     let mut tx = state.db.begin().await?;
@@ -566,7 +615,7 @@ pub async fn restore_page_version(
             status = 'draft'::page_status,
             published_at = NULL,
             updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $3
         RETURNING id,
                   title,
                   slug,
@@ -580,10 +629,18 @@ pub async fn restore_page_version(
     )
     .bind(id)
     .bind(&version_row.page_json)
+    .bind(tenant.organization_id)
     .fetch_one(&mut *tx)
     .await?;
 
-    create_version_snapshot(&mut tx, page.id, &page.page_json, claims.sub).await?;
+    create_version_snapshot(
+        &mut tx,
+        tenant.organization_id,
+        page.id,
+        &page.page_json,
+        claims.sub,
+    )
+    .await?;
     tx.commit().await?;
     broadcast_page_json(&state, page.id, &page.page_json).await;
 
@@ -598,7 +655,7 @@ pub async fn restore_page_version(
 )]
 pub async fn list_components(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Query(query): Query<ComponentListQuery>,
 ) -> Result<Json<Vec<ComponentRegistryResponse>>, AppError> {
     let rows = if let Some(category) = query.category.as_deref() {
@@ -613,10 +670,11 @@ pub async fn list_components(
                    created_at,
                    updated_at
             FROM component_registry
-            WHERE category = $1
+            WHERE (is_system = TRUE OR organization_id = $1) AND category = $2
             ORDER BY category ASC, name ASC
             "#,
         )
+        .bind(tenant.organization_id)
         .bind(category)
         .fetch_all(&state.db)
         .await?
@@ -632,9 +690,11 @@ pub async fn list_components(
                    created_at,
                    updated_at
             FROM component_registry
+            WHERE is_system = TRUE OR organization_id = $1
             ORDER BY category ASC, name ASC
             "#,
         )
+        .bind(tenant.organization_id)
         .fetch_all(&state.db)
         .await?
     };
@@ -650,16 +710,16 @@ pub async fn list_components(
 )]
 pub async fn create_component(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<ComponentRegistryRequest>,
 ) -> Result<Json<ComponentRegistryResponse>, AppError> {
-    rbac::require_component_registry_manager(&claims)?;
+    rbac::require_org_component_registry_manager(&tenant.role)?;
     validate_component_request(&payload)?;
 
     let row = sqlx::query_as::<_, ComponentRegistryResponse>(
         r#"
         INSERT INTO component_registry (organization_id, component_key, name, category, props_schema, is_system)
-        VALUES (app_default_organization_id(), $1, $2, $3, $4, false)
+        VALUES ($1, $2, $3, $4, $5, false)
         RETURNING id,
                   component_key,
                   name,
@@ -670,6 +730,7 @@ pub async fn create_component(
                   updated_at
         "#,
     )
+    .bind(tenant.organization_id)
     .bind(payload.component_key.trim())
     .bind(payload.name.trim())
     .bind(payload.category.trim())
@@ -689,13 +750,15 @@ pub async fn create_component(
 )]
 pub async fn get_component(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(component_key): Path<String>,
 ) -> Result<Json<ComponentRegistryResponse>, AppError> {
     if !is_valid_slug(&component_key) {
         return Err(AppError::Validation("component_key is invalid".to_owned()));
     }
-    load_component(&state, &component_key).await.map(Json)
+    load_component(&state, &tenant, &component_key)
+        .await
+        .map(Json)
 }
 
 #[utoipa::path(
@@ -708,11 +771,11 @@ pub async fn get_component(
 )]
 pub async fn update_component(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(component_key): Path<String>,
     Json(payload): Json<ComponentRegistryRequest>,
 ) -> Result<Json<ComponentRegistryResponse>, AppError> {
-    rbac::require_component_registry_manager(&claims)?;
+    rbac::require_org_component_registry_manager(&tenant.role)?;
     validate_component_request(&payload)?;
     if payload.component_key.trim() != component_key {
         return Err(AppError::Validation(
@@ -723,11 +786,11 @@ pub async fn update_component(
     let row = sqlx::query_as::<_, ComponentRegistryResponse>(
         r#"
         UPDATE component_registry
-        SET name = $2,
-            category = $3,
-            props_schema = $4,
+        SET name = $3,
+            category = $4,
+            props_schema = $5,
             updated_at = now()
-        WHERE component_key = $1
+        WHERE component_key = $1 AND organization_id = $2 AND is_system = FALSE
         RETURNING id,
                   component_key,
                   name,
@@ -739,6 +802,7 @@ pub async fn update_component(
         "#,
     )
     .bind(component_key)
+    .bind(tenant.organization_id)
     .bind(payload.name.trim())
     .bind(payload.category.trim())
     .bind(payload.props_schema)
@@ -757,18 +821,18 @@ pub async fn update_component(
 )]
 pub async fn delete_component(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(component_key): Path<String>,
     Query(query): Query<DeleteConfirm>,
 ) -> Result<Json<ComponentRegistryResponse>, AppError> {
-    rbac::require_component_registry_manager(&claims)?;
+    rbac::require_org_component_registry_manager(&tenant.role)?;
     if query.confirm != Some(true) {
         return Err(AppError::Validation(
             "pass ?confirm=true to delete a component".to_owned(),
         ));
     }
 
-    let existing = load_component(&state, &component_key).await?;
+    let existing = load_component(&state, &tenant, &component_key).await?;
     if existing.is_system {
         return Err(AppError::Validation(
             "system components cannot be deleted".to_owned(),
@@ -778,7 +842,7 @@ pub async fn delete_component(
     let row = sqlx::query_as::<_, ComponentRegistryResponse>(
         r#"
         DELETE FROM component_registry
-        WHERE component_key = $1
+        WHERE component_key = $1 AND organization_id = $2 AND is_system = FALSE
         RETURNING id,
                   component_key,
                   name,
@@ -790,6 +854,7 @@ pub async fn delete_component(
         "#,
     )
     .bind(component_key)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
@@ -806,17 +871,22 @@ pub async fn delete_component(
 pub async fn preview_page(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(page_id): Path<Uuid>,
 ) -> Response {
-    ws.on_upgrade(move |socket| handle_preview_socket(socket, page_id, state))
+    ws.on_upgrade(move |socket| handle_preview_socket(socket, page_id, tenant, state))
 }
 
-async fn handle_preview_socket(mut socket: WebSocket, page_id: Uuid, state: AppState) {
+async fn handle_preview_socket(
+    mut socket: WebSocket,
+    page_id: Uuid,
+    tenant: TenantContext,
+    state: AppState,
+) {
     let sender = preview_sender(&state, page_id).await;
     let mut rx = sender.subscribe();
 
-    if let Ok(page) = load_page_by_id(&state, page_id).await {
+    if let Ok(page) = load_page_by_id(&state, &tenant, page_id).await {
         let Ok(message) = serde_json::to_string(&page.page_json) else {
             return;
         };
@@ -832,20 +902,23 @@ async fn handle_preview_socket(mut socket: WebSocket, page_id: Uuid, state: AppS
     }
 }
 
-fn page_webhook_payload(event: &str, page: &PageResponse) -> Value {
+fn page_webhook_payload(event: &str, tenant: &TenantContext, page: &PageResponse) -> Value {
     serde_json::json!({
         "event": event,
         "entity": "page",
+        "organization_id": tenant.organization_id,
+        "organization_slug": tenant.organization_slug,
         "page": page,
     })
 }
 async fn transition_page(
     state: &AppState,
+    tenant: &TenantContext,
     id: Uuid,
     status: workflow::WorkflowStatus,
     can_bypass_review: bool,
 ) -> Result<PageResponse, AppError> {
-    let current = load_page_by_id(state, id).await?;
+    let current = load_page_by_id(state, tenant, id).await?;
     workflow::require_transition(&current.status, status, can_bypass_review)?;
     let next_status = status.as_str();
     let published_at_sql = if status == workflow::WorkflowStatus::Published {
@@ -859,7 +932,7 @@ async fn transition_page(
         SET status = $2::page_status,
             published_at = {published_at_sql},
             updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $3
         RETURNING id,
                   title,
                   slug,
@@ -875,6 +948,7 @@ async fn transition_page(
     let page = sqlx::query_as::<_, PageResponse>(&sql)
         .bind(id)
         .bind(next_status)
+        .bind(tenant.organization_id)
         .fetch_one(&state.db)
         .await?;
     broadcast_page_json(state, page.id, &page.page_json).await;
@@ -882,7 +956,11 @@ async fn transition_page(
     Ok(page)
 }
 
-async fn load_page_by_id(state: &AppState, id: Uuid) -> Result<PageResponse, AppError> {
+async fn load_page_by_id(
+    state: &AppState,
+    tenant: &TenantContext,
+    id: Uuid,
+) -> Result<PageResponse, AppError> {
     sqlx::query_as::<_, PageResponse>(
         r#"
         SELECT id,
@@ -895,16 +973,21 @@ async fn load_page_by_id(state: &AppState, id: Uuid) -> Result<PageResponse, App
                created_at,
                updated_at
         FROM pages
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
 }
 
-async fn load_page_by_slug(state: &AppState, slug: &str) -> Result<PageResponse, AppError> {
+async fn load_page_by_slug(
+    state: &AppState,
+    tenant: &TenantContext,
+    slug: &str,
+) -> Result<PageResponse, AppError> {
     sqlx::query_as::<_, PageResponse>(
         r#"
         SELECT id,
@@ -917,10 +1000,11 @@ async fn load_page_by_slug(state: &AppState, slug: &str) -> Result<PageResponse,
                created_at,
                updated_at
         FROM pages
-        WHERE slug = $1
+        WHERE slug = $1 AND organization_id = $2
         "#,
     )
     .bind(slug)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
@@ -928,6 +1012,7 @@ async fn load_page_by_slug(state: &AppState, slug: &str) -> Result<PageResponse,
 
 async fn load_component(
     state: &AppState,
+    tenant: &TenantContext,
     component_key: &str,
 ) -> Result<ComponentRegistryResponse, AppError> {
     sqlx::query_as::<_, ComponentRegistryResponse>(
@@ -941,32 +1026,37 @@ async fn load_component(
                created_at,
                updated_at
         FROM component_registry
-        WHERE component_key = $1
+        WHERE component_key = $1 AND (is_system = TRUE OR organization_id = $2)
+        ORDER BY is_system ASC
         "#,
     )
     .bind(component_key)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
 }
 async fn create_version_snapshot(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    organization_id: Uuid,
     page_id: Uuid,
     page_json: &Value,
     user_id: Uuid,
 ) -> Result<PageVersionResponse, AppError> {
     sqlx::query_as::<_, PageVersionResponse>(
         r#"
-        INSERT INTO page_versions (page_id, version, page_json, created_by)
+        INSERT INTO page_versions (organization_id, page_id, version, page_json, created_by)
         VALUES (
           $1,
-          COALESCE((SELECT MAX(version) + 1 FROM page_versions WHERE page_id = $1), 1),
           $2,
-          $3
+          COALESCE((SELECT MAX(version) + 1 FROM page_versions WHERE page_id = $2 AND organization_id = $1), 1),
+          $3,
+          $4
         )
         RETURNING id, page_id, version, page_json, snapshot_at, created_by
         "#,
     )
+    .bind(organization_id)
     .bind(page_id)
     .bind(page_json)
     .bind(user_id)
@@ -975,14 +1065,24 @@ async fn create_version_snapshot(
     .map_err(AppError::from)
 }
 
-async fn load_component_keys(state: &AppState) -> Result<HashSet<String>, AppError> {
-    let rows = sqlx::query_scalar::<_, String>("SELECT component_key FROM component_registry")
-        .fetch_all(&state.db)
-        .await?;
+async fn load_component_keys(
+    state: &AppState,
+    tenant: &TenantContext,
+) -> Result<HashSet<String>, AppError> {
+    let rows = sqlx::query_scalar::<_, String>(
+        "SELECT component_key FROM component_registry WHERE is_system = TRUE OR organization_id = $1",
+    )
+    .bind(tenant.organization_id)
+    .fetch_all(&state.db)
+    .await?;
     Ok(rows.into_iter().collect())
 }
 
-async fn validate_page_request(state: &AppState, payload: &PageRequest) -> Result<(), AppError> {
+async fn validate_page_request(
+    state: &AppState,
+    tenant: &TenantContext,
+    payload: &PageRequest,
+) -> Result<(), AppError> {
     if payload.title.trim().is_empty() {
         return Err(AppError::Validation("title is required".to_owned()));
     }
@@ -990,7 +1090,7 @@ async fn validate_page_request(state: &AppState, payload: &PageRequest) -> Resul
         return Err(AppError::Validation("slug is invalid".to_owned()));
     }
 
-    let component_keys = load_component_keys(state).await?;
+    let component_keys = load_component_keys(state, tenant).await?;
     validate_page_json(&payload.page_json, &component_keys)
 }
 

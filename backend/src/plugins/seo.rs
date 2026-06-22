@@ -89,6 +89,7 @@ mod tests {
         };
         let ctx = PluginContext {
             user_id: uuid::Uuid::nil(),
+            organization_id: uuid::Uuid::nil(),
         };
         SeoAutoPlugin
             .on_entry_before_save(&mut entry, &ctx)

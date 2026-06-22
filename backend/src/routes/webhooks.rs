@@ -9,7 +9,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::middleware::auth::Claims;
+use crate::middleware::tenant::TenantContext;
 use crate::services::{rbac, webhooks};
 use crate::state::AppState;
 
@@ -82,16 +82,18 @@ pub struct WebhookTestResponse {
 )]
 pub async fn list_webhooks(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
 ) -> Result<Json<Vec<WebhookResponse>>, AppError> {
-    rbac::require_webhook_manager(&claims)?;
+    rbac::require_org_webhook_manager(&tenant.role)?;
     let rows = sqlx::query_as::<_, WebhookResponse>(
         r#"
         SELECT id, name, url, events, secret, is_active, created_at, updated_at
         FROM webhooks
+        WHERE organization_id = $1
         ORDER BY created_at DESC
         "#,
     )
+    .bind(tenant.organization_id)
     .fetch_all(&state.db)
     .await?;
 
@@ -107,21 +109,22 @@ pub async fn list_webhooks(
 )]
 pub async fn create_webhook(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<WebhookRequest>,
 ) -> Result<Json<WebhookResponse>, AppError> {
-    rbac::require_webhook_manager(&claims)?;
+    rbac::require_org_webhook_manager(&tenant.role)?;
     let events = normalize_events(payload.events)?;
     let secret = normalize_secret(payload.secret)?.unwrap_or_else(webhooks::generate_secret);
     validate_webhook_request(&payload.name, &payload.url, &events, Some(&secret))?;
 
     let row = sqlx::query_as::<_, WebhookResponse>(
         r#"
-        INSERT INTO webhooks (name, url, events, secret, is_active)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO webhooks (organization_id, name, url, events, secret, is_active)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, name, url, events, secret, is_active, created_at, updated_at
         "#,
     )
+    .bind(tenant.organization_id)
     .bind(payload.name.trim())
     .bind(payload.url.trim())
     .bind(events)
@@ -142,11 +145,11 @@ pub async fn create_webhook(
 )]
 pub async fn get_webhook(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<WebhookResponse>, AppError> {
-    rbac::require_webhook_manager(&claims)?;
-    load_webhook_response(&state, id).await.map(Json)
+    rbac::require_org_webhook_manager(&tenant.role)?;
+    load_webhook_response(&state, &tenant, id).await.map(Json)
 }
 
 #[utoipa::path(
@@ -159,11 +162,11 @@ pub async fn get_webhook(
 )]
 pub async fn update_webhook(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
     Json(payload): Json<WebhookRequest>,
 ) -> Result<Json<WebhookResponse>, AppError> {
-    rbac::require_webhook_manager(&claims)?;
+    rbac::require_org_webhook_manager(&tenant.role)?;
     let events = normalize_events(payload.events)?;
     let secret = normalize_secret(payload.secret)?;
     validate_webhook_request(&payload.name, &payload.url, &events, secret.as_deref())?;
@@ -171,17 +174,18 @@ pub async fn update_webhook(
     let row = sqlx::query_as::<_, WebhookResponse>(
         r#"
         UPDATE webhooks
-        SET name = $2,
-            url = $3,
-            events = $4,
-            secret = COALESCE($5, secret),
-            is_active = $6,
+        SET name = $3,
+            url = $4,
+            events = $5,
+            secret = COALESCE($6, secret),
+            is_active = $7,
             updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         RETURNING id, name, url, events, secret, is_active, created_at, updated_at
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .bind(payload.name.trim())
     .bind(payload.url.trim())
     .bind(events)
@@ -202,11 +206,11 @@ pub async fn update_webhook(
 )]
 pub async fn delete_webhook(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
     Query(query): Query<DeleteConfirm>,
 ) -> Result<Json<WebhookResponse>, AppError> {
-    rbac::require_webhook_manager(&claims)?;
+    rbac::require_org_webhook_manager(&tenant.role)?;
     if query.confirm != Some(true) {
         return Err(AppError::Validation(
             "pass ?confirm=true to delete a webhook".to_owned(),
@@ -216,11 +220,12 @@ pub async fn delete_webhook(
     let row = sqlx::query_as::<_, WebhookResponse>(
         r#"
         DELETE FROM webhooks
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         RETURNING id, name, url, events, secret, is_active, created_at, updated_at
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await?;
 
@@ -236,11 +241,11 @@ pub async fn delete_webhook(
 )]
 pub async fn list_deliveries(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
     Query(query): Query<DeliveryListQuery>,
 ) -> Result<Json<Vec<WebhookDeliveryResponse>>, AppError> {
-    rbac::require_webhook_manager(&claims)?;
+    rbac::require_org_webhook_manager(&tenant.role)?;
     let limit = query.limit.unwrap_or(20).clamp(1, 100);
     let rows = sqlx::query_as::<_, WebhookDeliveryResponse>(
         r#"
@@ -254,12 +259,13 @@ pub async fn list_deliveries(
                error,
                attempted_at
         FROM webhook_deliveries
-        WHERE webhook_id = $1
+        WHERE webhook_id = $1 AND organization_id = $2
         ORDER BY attempted_at DESC
-        LIMIT $2
+        LIMIT $3
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .bind(limit)
     .fetch_all(&state.db)
     .await?;
@@ -276,11 +282,11 @@ pub async fn list_deliveries(
 )]
 pub async fn test_webhook(
     State(state): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<WebhookTestResponse>, AppError> {
-    rbac::require_webhook_manager(&claims)?;
-    let webhook = load_webhook(&state, id).await?;
+    rbac::require_org_webhook_manager(&tenant.role)?;
+    let webhook = load_webhook(&state, &tenant, id).await?;
     let event = webhook
         .events
         .first()
@@ -289,6 +295,8 @@ pub async fn test_webhook(
     let payload = serde_json::json!({
         "event": event,
         "test": true,
+        "organization_id": tenant.organization_id,
+        "organization_slug": tenant.organization_slug,
         "webhook_id": webhook.id,
         "sent_at": Utc::now(),
     });
@@ -297,29 +305,47 @@ pub async fn test_webhook(
     Ok(Json(WebhookTestResponse { sent: true, event }))
 }
 
-async fn load_webhook_response(state: &AppState, id: Uuid) -> Result<WebhookResponse, AppError> {
+async fn load_webhook_response(
+    state: &AppState,
+    tenant: &TenantContext,
+    id: Uuid,
+) -> Result<WebhookResponse, AppError> {
     sqlx::query_as::<_, WebhookResponse>(
         r#"
         SELECT id, name, url, events, secret, is_active, created_at, updated_at
         FROM webhooks
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)
 }
 
-async fn load_webhook(state: &AppState, id: Uuid) -> Result<webhooks::Webhook, AppError> {
+async fn load_webhook(
+    state: &AppState,
+    tenant: &TenantContext,
+    id: Uuid,
+) -> Result<webhooks::Webhook, AppError> {
     sqlx::query_as::<_, webhooks::Webhook>(
         r#"
-        SELECT id, name, url, events, secret, is_active, created_at, updated_at
+        SELECT id,
+               organization_id,
+               name,
+               url,
+               events,
+               secret,
+               is_active,
+               created_at,
+               updated_at
         FROM webhooks
-        WHERE id = $1
+        WHERE id = $1 AND organization_id = $2
         "#,
     )
     .bind(id)
+    .bind(tenant.organization_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::from)

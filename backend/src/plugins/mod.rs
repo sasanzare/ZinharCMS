@@ -12,6 +12,7 @@ pub struct EntryData {
 
 pub struct PluginContext {
     pub user_id: Uuid,
+    pub organization_id: Uuid,
 }
 
 pub trait CmsPlugin: Send + Sync {
@@ -44,6 +45,7 @@ pub fn builtin_plugins() -> Vec<Box<dyn CmsPlugin>> {
 
 pub async fn run_entry_before_save(
     state: &crate::state::AppState,
+    organization_id: Uuid,
     type_slug: &str,
     data: Value,
     user_id: Uuid,
@@ -53,7 +55,10 @@ pub async fn run_entry_before_save(
         type_slug: type_slug.to_owned(),
         data,
     };
-    let ctx = PluginContext { user_id };
+    let ctx = PluginContext {
+        user_id,
+        organization_id,
+    };
 
     for plugin in builtin_plugins() {
         if enabled.iter().any(|key| key == plugin.key()) {
@@ -66,6 +71,7 @@ pub async fn run_entry_before_save(
 
 pub async fn run_entry_after_publish(
     state: &crate::state::AppState,
+    organization_id: Uuid,
     type_slug: &str,
     data: Value,
     user_id: Uuid,
@@ -75,7 +81,10 @@ pub async fn run_entry_after_publish(
         type_slug: type_slug.to_owned(),
         data,
     };
-    let ctx = PluginContext { user_id };
+    let ctx = PluginContext {
+        user_id,
+        organization_id,
+    };
 
     for plugin in builtin_plugins() {
         if enabled.iter().any(|key| key == plugin.key()) {

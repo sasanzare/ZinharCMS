@@ -57,7 +57,8 @@ export function SettingsPage() {
     setLoading(true);
     setError(null);
     try {
-      setUser(await api.auth.me());
+      const response = await api.auth.me();
+      setUser(response.user);
     } catch (caught) {
       setError(apiMessage(caught, t("settings.error.loadUser")));
     } finally {
