@@ -14,7 +14,7 @@ use crate::middleware::tenant::TenantContext;
 use crate::plugins;
 use crate::routes::delivery;
 use crate::services::entry_validation::{is_valid_slug, parse_fields, validate_entry_data};
-use crate::services::{rbac, security, webhooks, workflow};
+use crate::services::{rbac, rls, security, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -117,6 +117,7 @@ pub async fn list_content_types(
     State(state): State<AppState>,
     Extension(tenant): Extension<TenantContext>,
 ) -> Result<Json<Vec<ContentTypeResponse>>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let rows = sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         SELECT id, name, slug, fields, created_by, created_at, updated_at
@@ -126,7 +127,7 @@ pub async fn list_content_types(
         "#,
     )
     .bind(tenant.organization_id)
-    .fetch_all(&state.db)
+    .fetch_all(db.as_mut())
     .await?;
 
     Ok(Json(rows))
@@ -145,6 +146,7 @@ pub async fn create_content_type(
     Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<ContentTypeRequest>,
 ) -> Result<Json<ContentTypeResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_content_type_manager(&tenant.role)?;
     validate_content_type_request(&payload)?;
 
@@ -160,7 +162,7 @@ pub async fn create_content_type(
     .bind(payload.slug.trim())
     .bind(payload.fields)
     .bind(claims.sub)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -195,6 +197,7 @@ pub async fn update_content_type(
     Path(id): Path<Uuid>,
     Json(payload): Json<ContentTypeRequest>,
 ) -> Result<Json<ContentTypeResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_content_type_manager(&tenant.role)?;
     validate_content_type_request(&payload)?;
 
@@ -214,7 +217,7 @@ pub async fn update_content_type(
     .bind(payload.slug.trim())
     .bind(payload.fields)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -233,6 +236,7 @@ pub async fn delete_content_type(
     Path(id): Path<Uuid>,
     Query(query): Query<DeleteConfirm>,
 ) -> Result<Json<ContentTypeResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_content_type_manager(&tenant.role)?;
     if query.confirm != Some(true) {
         return Err(AppError::Validation(
@@ -249,7 +253,7 @@ pub async fn delete_content_type(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -268,6 +272,7 @@ pub async fn list_entries(
     Path(type_slug): Path<String>,
     Query(query): Query<EntryListQuery>,
 ) -> Result<Json<EntryListResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
@@ -302,7 +307,7 @@ pub async fn list_entries(
             .bind(status)
             .bind(per_page)
             .bind(offset)
-            .fetch_all(&state.db)
+            .fetch_all(db.as_mut())
             .await?;
 
         return Ok(Json(EntryListResponse {
@@ -337,7 +342,7 @@ pub async fn list_entries(
         .bind(&type_slug)
         .bind(per_page)
         .bind(offset)
-        .fetch_all(&state.db)
+        .fetch_all(db.as_mut())
         .await?;
 
     Ok(Json(EntryListResponse {
@@ -362,6 +367,7 @@ pub async fn create_entry(
     Path(type_slug): Path<String>,
     Json(payload): Json<EntryRequest>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_entry_writer(&tenant.role)?;
     let content_type = load_content_type_by_slug(&state, &tenant, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
@@ -395,7 +401,7 @@ pub async fn create_entry(
     .bind(content_type.id)
     .bind(data)
     .bind(claims.sub)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -437,6 +443,7 @@ pub async fn update_entry(
     Path((type_slug, id)): Path<(String, Uuid)>,
     Json(payload): Json<EntryRequest>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_entry_writer(&tenant.role)?;
     let content_type = load_content_type_by_slug(&state, &tenant, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
@@ -473,7 +480,7 @@ pub async fn update_entry(
     .bind(content_type.id)
     .bind(data)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     if row.status == "published" {
@@ -498,6 +505,7 @@ pub async fn delete_entry(
     Extension(tenant): Extension<TenantContext>,
     Path((type_slug, id)): Path<(String, Uuid)>,
 ) -> Result<Json<ContentEntryResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_EDITOR])?;
     let content_type = load_content_type_by_slug(&state, &tenant, &type_slug).await?;
 
@@ -519,7 +527,7 @@ pub async fn delete_entry(
     .bind(id)
     .bind(content_type.id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     if row.status == "published" {
@@ -747,6 +755,7 @@ async fn transition_entry(
     status: workflow::WorkflowStatus,
     can_bypass_review: bool,
 ) -> Result<ContentEntryResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let content_type = load_content_type_by_slug(state, tenant, type_slug).await?;
     let current = load_entry(state, tenant, type_slug, id).await?;
     workflow::require_transition(&current.status, status, can_bypass_review)?;
@@ -781,7 +790,7 @@ async fn transition_entry(
         .bind(content_type.id)
         .bind(next_status)
         .bind(tenant.organization_id)
-        .fetch_one(&state.db)
+        .fetch_one(db.as_mut())
         .await
         .map_err(AppError::from)
 }
@@ -791,6 +800,7 @@ async fn load_content_type_by_id(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<ContentTypeResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         SELECT id, name, slug, fields, created_by, created_at, updated_at
@@ -800,7 +810,7 @@ async fn load_content_type_by_id(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }
@@ -810,6 +820,7 @@ async fn load_content_type_by_slug(
     tenant: &TenantContext,
     slug: &str,
 ) -> Result<ContentTypeResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         SELECT id, name, slug, fields, created_by, created_at, updated_at
@@ -819,7 +830,7 @@ async fn load_content_type_by_slug(
     )
     .bind(slug)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }
@@ -830,6 +841,7 @@ async fn load_entry(
     type_slug: &str,
     id: Uuid,
 ) -> Result<ContentEntryResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, ContentEntryResponse>(
         r#"
         SELECT e.id,
@@ -852,7 +864,7 @@ async fn load_entry(
     .bind(tenant.organization_id)
     .bind(type_slug)
     .bind(id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }

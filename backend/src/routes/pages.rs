@@ -17,7 +17,7 @@ use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::delivery;
 use crate::services::entry_validation::is_valid_slug;
-use crate::services::{rbac, webhooks, workflow};
+use crate::services::{rbac, rls, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -143,6 +143,7 @@ pub async fn list_pages(
     Extension(tenant): Extension<TenantContext>,
     Query(query): Query<PageListQuery>,
 ) -> Result<Json<PageListResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
@@ -172,7 +173,7 @@ pub async fn list_pages(
             .bind(status)
             .bind(per_page)
             .bind(offset)
-            .fetch_all(&state.db)
+            .fetch_all(db.as_mut())
             .await?
     } else {
         let sql = format!(
@@ -196,7 +197,7 @@ pub async fn list_pages(
             .bind(tenant.organization_id)
             .bind(per_page)
             .bind(offset)
-            .fetch_all(&state.db)
+            .fetch_all(db.as_mut())
             .await?
     };
 
@@ -223,7 +224,7 @@ pub async fn create_page(
     rbac::require_org_page_writer(&tenant.role)?;
     validate_page_request(&state, &tenant, &payload).await?;
 
-    let mut tx = state.db.begin().await?;
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
     let page = sqlx::query_as::<_, PageResponse>(
         r#"
         INSERT INTO pages (organization_id, title, slug, page_json, author_id)
@@ -311,7 +312,7 @@ pub async fn update_page(
     rbac::require_org_page_writer(&tenant.role)?;
     validate_page_request(&state, &tenant, &payload).await?;
 
-    let mut tx = state.db.begin().await?;
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
     let page = sqlx::query_as::<_, PageResponse>(
         r#"
         UPDATE pages
@@ -369,6 +370,7 @@ pub async fn delete_page(
     Path(id): Path<Uuid>,
     Query(query): Query<DeleteConfirm>,
 ) -> Result<Json<PageResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_page_manager(&tenant.role)?;
     if query.confirm != Some(true) {
         return Err(AppError::Validation(
@@ -393,7 +395,7 @@ pub async fn delete_page(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     if page.status == "published" {
@@ -554,6 +556,7 @@ pub async fn list_page_versions(
     Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<PageVersionResponse>>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let versions = sqlx::query_as::<_, PageVersionResponse>(
         r#"
         SELECT id, page_id, version, page_json, snapshot_at, created_by
@@ -564,7 +567,7 @@ pub async fn list_page_versions(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_all(&state.db)
+    .fetch_all(db.as_mut())
     .await?;
 
     Ok(Json(versions))
@@ -586,6 +589,7 @@ pub async fn restore_page_version(
     Extension(tenant): Extension<TenantContext>,
     Path((id, version)): Path<(Uuid, i32)>,
 ) -> Result<Json<PageResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_page_manager(&tenant.role)?;
     if version < 1 {
         return Err(AppError::Validation("version must be positive".to_owned()));
@@ -601,13 +605,13 @@ pub async fn restore_page_version(
     .bind(id)
     .bind(version)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     let component_keys = load_component_keys(&state, &tenant).await?;
     validate_page_json(&version_row.page_json, &component_keys)?;
 
-    let mut tx = state.db.begin().await?;
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
     let page = sqlx::query_as::<_, PageResponse>(
         r#"
         UPDATE pages
@@ -658,6 +662,7 @@ pub async fn list_components(
     Extension(tenant): Extension<TenantContext>,
     Query(query): Query<ComponentListQuery>,
 ) -> Result<Json<Vec<ComponentRegistryResponse>>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let rows = if let Some(category) = query.category.as_deref() {
         sqlx::query_as::<_, ComponentRegistryResponse>(
             r#"
@@ -676,7 +681,7 @@ pub async fn list_components(
         )
         .bind(tenant.organization_id)
         .bind(category)
-        .fetch_all(&state.db)
+        .fetch_all(db.as_mut())
         .await?
     } else {
         sqlx::query_as::<_, ComponentRegistryResponse>(
@@ -695,7 +700,7 @@ pub async fn list_components(
             "#,
         )
         .bind(tenant.organization_id)
-        .fetch_all(&state.db)
+        .fetch_all(db.as_mut())
         .await?
     };
 
@@ -713,6 +718,7 @@ pub async fn create_component(
     Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<ComponentRegistryRequest>,
 ) -> Result<Json<ComponentRegistryResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_component_registry_manager(&tenant.role)?;
     validate_component_request(&payload)?;
 
@@ -735,7 +741,7 @@ pub async fn create_component(
     .bind(payload.name.trim())
     .bind(payload.category.trim())
     .bind(payload.props_schema)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -775,6 +781,7 @@ pub async fn update_component(
     Path(component_key): Path<String>,
     Json(payload): Json<ComponentRegistryRequest>,
 ) -> Result<Json<ComponentRegistryResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_component_registry_manager(&tenant.role)?;
     validate_component_request(&payload)?;
     if payload.component_key.trim() != component_key {
@@ -806,7 +813,7 @@ pub async fn update_component(
     .bind(payload.name.trim())
     .bind(payload.category.trim())
     .bind(payload.props_schema)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -825,6 +832,7 @@ pub async fn delete_component(
     Path(component_key): Path<String>,
     Query(query): Query<DeleteConfirm>,
 ) -> Result<Json<ComponentRegistryResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_component_registry_manager(&tenant.role)?;
     if query.confirm != Some(true) {
         return Err(AppError::Validation(
@@ -855,7 +863,7 @@ pub async fn delete_component(
     )
     .bind(component_key)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -918,6 +926,7 @@ async fn transition_page(
     status: workflow::WorkflowStatus,
     can_bypass_review: bool,
 ) -> Result<PageResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let current = load_page_by_id(state, tenant, id).await?;
     workflow::require_transition(&current.status, status, can_bypass_review)?;
     let next_status = status.as_str();
@@ -949,7 +958,7 @@ async fn transition_page(
         .bind(id)
         .bind(next_status)
         .bind(tenant.organization_id)
-        .fetch_one(&state.db)
+        .fetch_one(db.as_mut())
         .await?;
     broadcast_page_json(state, page.id, &page.page_json).await;
 
@@ -961,6 +970,7 @@ async fn load_page_by_id(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<PageResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, PageResponse>(
         r#"
         SELECT id,
@@ -978,7 +988,7 @@ async fn load_page_by_id(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }
@@ -988,6 +998,7 @@ async fn load_page_by_slug(
     tenant: &TenantContext,
     slug: &str,
 ) -> Result<PageResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, PageResponse>(
         r#"
         SELECT id,
@@ -1005,7 +1016,7 @@ async fn load_page_by_slug(
     )
     .bind(slug)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }
@@ -1015,6 +1026,7 @@ async fn load_component(
     tenant: &TenantContext,
     component_key: &str,
 ) -> Result<ComponentRegistryResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, ComponentRegistryResponse>(
         r#"
         SELECT id,
@@ -1032,7 +1044,7 @@ async fn load_component(
     )
     .bind(component_key)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }
@@ -1069,11 +1081,12 @@ async fn load_component_keys(
     state: &AppState,
     tenant: &TenantContext,
 ) -> Result<HashSet<String>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let rows = sqlx::query_scalar::<_, String>(
         "SELECT component_key FROM component_registry WHERE is_system = TRUE OR organization_id = $1",
     )
     .bind(tenant.organization_id)
-    .fetch_all(&state.db)
+    .fetch_all(db.as_mut())
     .await?;
     Ok(rows.into_iter().collect())
 }

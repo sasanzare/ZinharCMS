@@ -14,7 +14,7 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::services::media_processing::{is_supported_image_mime, process_image_variants};
-use crate::services::rbac;
+use crate::services::{rbac, rls};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -93,6 +93,7 @@ pub async fn list_media(
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let data = if let Some(mime_type) = query.mime_type.as_deref() {
         sqlx::query_as::<_, MediaResponse>(
             r#"
@@ -116,7 +117,7 @@ pub async fn list_media(
         .bind(mime_type)
         .bind(per_page)
         .bind(offset)
-        .fetch_all(&state.db)
+        .fetch_all(db.as_mut())
         .await?
     } else {
         sqlx::query_as::<_, MediaResponse>(
@@ -140,7 +141,7 @@ pub async fn list_media(
         .bind(tenant.organization_id)
         .bind(per_page)
         .bind(offset)
-        .fetch_all(&state.db)
+        .fetch_all(db.as_mut())
         .await?
     };
 
@@ -244,6 +245,7 @@ pub async fn upload_media(
 
     let url_prefix = format!("/uploads/{organization_path}");
     let url = format!("{url_prefix}/{stored_filename}");
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let media = sqlx::query_as::<_, MediaResponse>(
         r#"
         INSERT INTO media (id, organization_id, filename, url, mime_type, size, alt_text, caption, uploader_id)
@@ -269,7 +271,7 @@ pub async fn upload_media(
     .bind(clean_optional_text(alt_text))
     .bind(clean_optional_text(caption))
     .bind(claims.sub)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     let mut variants = Vec::new();
@@ -291,7 +293,7 @@ pub async fn upload_media(
             .bind(variant.url)
             .bind(variant.width)
             .bind(variant.height)
-            .fetch_one(&state.db)
+            .fetch_one(db.as_mut())
             .await?;
             variants.push(row);
         }
@@ -330,6 +332,7 @@ pub async fn update_media(
     Json(payload): Json<MediaUpdateRequest>,
 ) -> Result<Json<MediaDetailResponse>, AppError> {
     rbac::require_org_media_writer(&tenant.role)?;
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
 
     sqlx::query(
         r#"
@@ -344,7 +347,7 @@ pub async fn update_media(
     .bind(tenant.organization_id)
     .bind(clean_optional_text(payload.alt_text))
     .bind(clean_optional_text(payload.caption))
-    .execute(&state.db)
+    .execute(db.as_mut())
     .await?;
 
     load_media_detail(&state, &tenant, id).await.map(Json)
@@ -363,12 +366,13 @@ pub async fn delete_media(
     Path(id): Path<Uuid>,
 ) -> Result<Json<MediaDetailResponse>, AppError> {
     rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_EDITOR])?;
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let detail = load_media_detail(&state, &tenant, id).await?;
 
     sqlx::query("DELETE FROM media WHERE id = $1 AND organization_id = $2")
         .bind(id)
         .bind(tenant.organization_id)
-        .execute(&state.db)
+        .execute(db.as_mut())
         .await?;
 
     remove_file_for_url(&state.config.upload_dir, &detail.media.url).await;
@@ -384,6 +388,7 @@ async fn load_media_detail(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<MediaDetailResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let media = sqlx::query_as::<_, MediaResponse>(
         r#"
         SELECT id,
@@ -402,7 +407,7 @@ async fn load_media_detail(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     let variants = sqlx::query_as::<_, MediaVariantResponse>(
@@ -415,7 +420,7 @@ async fn load_media_detail(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_all(&state.db)
+    .fetch_all(db.as_mut())
     .await?;
 
     Ok(MediaDetailResponse { media, variants })

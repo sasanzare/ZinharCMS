@@ -15,6 +15,7 @@ use uuid::Uuid;
 use crate::error::AppError;
 use crate::services::cache::{self, DEFAULT_TTL_SECONDS};
 use crate::services::entry_validation::is_valid_slug;
+use crate::services::rls;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -432,6 +433,7 @@ async fn fetch_public_entries(
     type_slug: &str,
     query: &NormalizedListQuery,
 ) -> Result<PublicEntryListResponse, AppError> {
+    let mut db = rls::organization_connection(db, organization_id, None).await?;
     let mut builder = QueryBuilder::<Postgres>::new(
         r#"
         SELECT e.id,
@@ -464,7 +466,7 @@ async fn fetch_public_entries(
 
     let data = builder
         .build_query_as::<PublicEntryResponse>()
-        .fetch_all(db)
+        .fetch_all(db.as_mut())
         .await?;
 
     Ok(PublicEntryListResponse {
@@ -481,6 +483,7 @@ async fn fetch_public_entry(
     id_or_slug: &str,
     locale: Option<&str>,
 ) -> Result<PublicEntryResponse, AppError> {
+    let mut db = rls::organization_connection(db, organization_id, None).await?;
     let uuid = Uuid::parse_str(id_or_slug).ok();
     let mut builder = QueryBuilder::<Postgres>::new(
         r#"
@@ -515,7 +518,7 @@ async fn fetch_public_entry(
 
     builder
         .build_query_as::<PublicEntryResponse>()
-        .fetch_one(db)
+        .fetch_one(db.as_mut())
         .await
         .map_err(AppError::from)
 }
@@ -525,6 +528,7 @@ async fn fetch_public_pages(
     organization_id: Uuid,
     query: &NormalizedListQuery,
 ) -> Result<PublicPageListResponse, AppError> {
+    let mut db = rls::organization_connection(db, organization_id, None).await?;
     let sort_column = match query.sort_column {
         "created_at" => "created_at",
         "updated_at" => "updated_at",
@@ -562,7 +566,7 @@ async fn fetch_public_pages(
 
     let data = builder
         .build_query_as::<PublicPageResponse>()
-        .fetch_all(db)
+        .fetch_all(db.as_mut())
         .await?;
 
     Ok(PublicPageListResponse {
@@ -577,6 +581,7 @@ async fn fetch_public_page(
     organization_id: Uuid,
     slug: &str,
 ) -> Result<PublicPageResponse, AppError> {
+    let mut db = rls::organization_connection(db, organization_id, None).await?;
     sqlx::query_as::<_, PublicPageResponse>(
         r#"
         SELECT id,
@@ -592,12 +597,13 @@ async fn fetch_public_page(
     )
     .bind(organization_id)
     .bind(slug)
-    .fetch_one(db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }
 
 async fn fetch_public_settings(db: &PgPool, organization_id: Uuid) -> Result<Value, AppError> {
+    let mut db = rls::organization_connection(db, organization_id, None).await?;
     let rows = sqlx::query_as::<_, PublicSettingRow>(
         r#"
         SELECT key, value
@@ -607,7 +613,7 @@ async fn fetch_public_settings(db: &PgPool, organization_id: Uuid) -> Result<Val
         "#,
     )
     .bind(organization_id)
-    .fetch_all(db)
+    .fetch_all(db.as_mut())
     .await?;
     let mut object = Map::new();
     for row in rows {
@@ -621,6 +627,7 @@ async fn fetch_navigation(
     organization_id: Uuid,
     locale: Option<&str>,
 ) -> Result<Vec<NavigationItemResponse>, AppError> {
+    let mut db = rls::organization_connection(db, organization_id, None).await?;
     let mut builder = QueryBuilder::<Postgres>::new(
         r#"
         SELECT id, label, url, parent_id, position, locale
@@ -638,7 +645,7 @@ async fn fetch_navigation(
 
     builder
         .build_query_as::<NavigationItemResponse>()
-        .fetch_all(db)
+        .fetch_all(db.as_mut())
         .await
         .map_err(AppError::from)
 }
@@ -665,6 +672,7 @@ fn push_entry_filters<'a>(
 
 async fn build_sitemap(db: &PgPool, organization_id: Uuid) -> Result<String, AppError> {
     let site_url = load_site_url(db, organization_id).await?;
+    let mut db = rls::organization_connection(db, organization_id, None).await?;
     let pages = sqlx::query_as::<_, SitemapPageRow>(
         r#"
         SELECT slug, updated_at
@@ -674,7 +682,7 @@ async fn build_sitemap(db: &PgPool, organization_id: Uuid) -> Result<String, App
         "#,
     )
     .bind(organization_id)
-    .fetch_all(db)
+    .fetch_all(db.as_mut())
     .await?;
     let entries = sqlx::query_as::<_, SitemapEntryRow>(
         r#"
@@ -692,7 +700,7 @@ async fn build_sitemap(db: &PgPool, organization_id: Uuid) -> Result<String, App
         "#,
     )
     .bind(organization_id)
-    .fetch_all(db)
+    .fetch_all(db.as_mut())
     .await?;
 
     let mut body = String::from(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
@@ -722,6 +730,7 @@ async fn build_robots(db: &PgPool, organization_id: Uuid) -> Result<String, AppE
 }
 
 async fn load_site_url(db: &PgPool, organization_id: Uuid) -> Result<String, AppError> {
+    let mut db = rls::organization_connection(db, organization_id, None).await?;
     let row = sqlx::query_as::<_, PublicSettingRow>(
         r#"
         SELECT key, value
@@ -730,7 +739,7 @@ async fn load_site_url(db: &PgPool, organization_id: Uuid) -> Result<String, App
         "#,
     )
     .bind(organization_id)
-    .fetch_optional(db)
+    .fetch_optional(db.as_mut())
     .await?;
     let site_url = row
         .and_then(|row| row.value.as_str().map(ToOwned::to_owned))

@@ -10,7 +10,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::services::jwt;
+use crate::services::{jwt, rls};
 use crate::state::AppState;
 
 type HmacSha256 = Hmac<Sha256>;
@@ -122,6 +122,13 @@ pub async fn trigger_event(
     event: &'static str,
     payload: Value,
 ) {
+    let mut db = match rls::organization_connection(&state.db, organization_id, None).await {
+        Ok(db) => db,
+        Err(error) => {
+            tracing::warn!(%organization_id, %event, %error, "failed to open RLS-scoped webhook connection");
+            return;
+        }
+    };
     let webhooks = match sqlx::query_as::<_, Webhook>(
         r#"
         SELECT id,
@@ -141,7 +148,7 @@ pub async fn trigger_event(
     )
     .bind(organization_id)
     .bind(event)
-    .fetch_all(&state.db)
+    .fetch_all(db.as_mut())
     .await
     {
         Ok(webhooks) => webhooks,
@@ -234,6 +241,7 @@ struct DeliveryAttempt<'a> {
 }
 
 async fn record_delivery(state: &AppState, attempt: DeliveryAttempt<'_>) -> Result<(), AppError> {
+    let mut db = rls::organization_connection(&state.db, attempt.organization_id, None).await?;
     sqlx::query(
         r#"
         INSERT INTO webhook_deliveries (
@@ -257,7 +265,7 @@ async fn record_delivery(state: &AppState, attempt: DeliveryAttempt<'_>) -> Resu
     .bind(attempt.status_code)
     .bind(attempt.response_body)
     .bind(attempt.error)
-    .execute(&state.db)
+    .execute(db.as_mut())
     .await?;
 
     Ok(())

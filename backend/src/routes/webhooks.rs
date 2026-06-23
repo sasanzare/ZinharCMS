@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::tenant::TenantContext;
-use crate::services::{rbac, webhooks};
+use crate::services::{rbac, rls, webhooks};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -84,6 +84,7 @@ pub async fn list_webhooks(
     State(state): State<AppState>,
     Extension(tenant): Extension<TenantContext>,
 ) -> Result<Json<Vec<WebhookResponse>>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_webhook_manager(&tenant.role)?;
     let rows = sqlx::query_as::<_, WebhookResponse>(
         r#"
@@ -94,7 +95,7 @@ pub async fn list_webhooks(
         "#,
     )
     .bind(tenant.organization_id)
-    .fetch_all(&state.db)
+    .fetch_all(db.as_mut())
     .await?;
 
     Ok(Json(rows))
@@ -112,6 +113,7 @@ pub async fn create_webhook(
     Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<WebhookRequest>,
 ) -> Result<Json<WebhookResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_webhook_manager(&tenant.role)?;
     let events = normalize_events(payload.events)?;
     let secret = normalize_secret(payload.secret)?.unwrap_or_else(webhooks::generate_secret);
@@ -130,7 +132,7 @@ pub async fn create_webhook(
     .bind(events)
     .bind(secret)
     .bind(payload.is_active.unwrap_or(true))
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -166,6 +168,7 @@ pub async fn update_webhook(
     Path(id): Path<Uuid>,
     Json(payload): Json<WebhookRequest>,
 ) -> Result<Json<WebhookResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_webhook_manager(&tenant.role)?;
     let events = normalize_events(payload.events)?;
     let secret = normalize_secret(payload.secret)?;
@@ -191,7 +194,7 @@ pub async fn update_webhook(
     .bind(events)
     .bind(secret)
     .bind(payload.is_active.unwrap_or(true))
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -210,6 +213,7 @@ pub async fn delete_webhook(
     Path(id): Path<Uuid>,
     Query(query): Query<DeleteConfirm>,
 ) -> Result<Json<WebhookResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_webhook_manager(&tenant.role)?;
     if query.confirm != Some(true) {
         return Err(AppError::Validation(
@@ -226,7 +230,7 @@ pub async fn delete_webhook(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -245,6 +249,7 @@ pub async fn list_deliveries(
     Path(id): Path<Uuid>,
     Query(query): Query<DeliveryListQuery>,
 ) -> Result<Json<Vec<WebhookDeliveryResponse>>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_webhook_manager(&tenant.role)?;
     let limit = query.limit.unwrap_or(20).clamp(1, 100);
     let rows = sqlx::query_as::<_, WebhookDeliveryResponse>(
@@ -267,7 +272,7 @@ pub async fn list_deliveries(
     .bind(id)
     .bind(tenant.organization_id)
     .bind(limit)
-    .fetch_all(&state.db)
+    .fetch_all(db.as_mut())
     .await?;
 
     Ok(Json(rows))
@@ -310,6 +315,7 @@ async fn load_webhook_response(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<WebhookResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, WebhookResponse>(
         r#"
         SELECT id, name, url, events, secret, is_active, created_at, updated_at
@@ -319,7 +325,7 @@ async fn load_webhook_response(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }
@@ -329,6 +335,7 @@ async fn load_webhook(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<webhooks::Webhook, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, webhooks::Webhook>(
         r#"
         SELECT id,
@@ -346,7 +353,7 @@ async fn load_webhook(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }

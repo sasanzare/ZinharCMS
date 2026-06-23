@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
-use crate::services::rbac;
+use crate::services::{rbac, rls};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -65,6 +65,7 @@ pub async fn list_comments(
     Extension(tenant): Extension<TenantContext>,
     Query(query): Query<CommentListQuery>,
 ) -> Result<Json<Vec<CommentResponse>>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_comment_reader(&tenant.role)?;
     validate_entity_type(&query.entity_type)?;
     ensure_entity_exists(&state, &tenant, &query.entity_type, query.entity_id).await?;
@@ -91,7 +92,7 @@ pub async fn list_comments(
         .bind(tenant.organization_id)
         .bind(&query.entity_type)
         .bind(query.entity_id)
-        .fetch_all(&state.db)
+        .fetch_all(db.as_mut())
         .await?
     } else {
         sqlx::query_as::<_, CommentResponse>(
@@ -118,7 +119,7 @@ pub async fn list_comments(
         .bind(tenant.organization_id)
         .bind(&query.entity_type)
         .bind(query.entity_id)
-        .fetch_all(&state.db)
+        .fetch_all(db.as_mut())
         .await?
     };
 
@@ -138,6 +139,7 @@ pub async fn create_comment(
     Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<CommentRequest>,
 ) -> Result<Json<CommentResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_comment_writer(&tenant.role)?;
     validate_comment_request(&payload)?;
     ensure_entity_exists(&state, &tenant, &payload.entity_type, payload.entity_id).await?;
@@ -163,7 +165,7 @@ pub async fn create_comment(
     .bind(payload.entity_id)
     .bind(payload.body.trim())
     .bind(claims.sub)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -198,6 +200,7 @@ pub async fn resolve_comment(
     Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<CommentResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_comment_manager(&tenant.role)?;
     let row = sqlx::query_as::<_, CommentResponse>(
         r#"
@@ -221,7 +224,7 @@ pub async fn resolve_comment(
     .bind(id)
     .bind(tenant.organization_id)
     .bind(claims.sub)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -239,6 +242,7 @@ pub async fn unresolve_comment(
     Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<CommentResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_comment_manager(&tenant.role)?;
     let row = sqlx::query_as::<_, CommentResponse>(
         r#"
@@ -261,7 +265,7 @@ pub async fn unresolve_comment(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -279,6 +283,7 @@ pub async fn delete_comment(
     Extension(tenant): Extension<TenantContext>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<CommentResponse>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_comment_manager(&tenant.role)?;
     let row = sqlx::query_as::<_, CommentResponse>(
         r#"
@@ -298,7 +303,7 @@ pub async fn delete_comment(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await?;
 
     Ok(Json(row))
@@ -309,6 +314,7 @@ async fn load_comment(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<CommentResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     sqlx::query_as::<_, CommentResponse>(
         r#"
         SELECT c.id,
@@ -328,7 +334,7 @@ async fn load_comment(
     )
     .bind(id)
     .bind(tenant.organization_id)
-    .fetch_one(&state.db)
+    .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
 }
@@ -339,6 +345,7 @@ async fn ensure_entity_exists(
     entity_type: &str,
     entity_id: Uuid,
 ) -> Result<(), AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     match entity_type {
         "entry" => {
             sqlx::query_scalar::<_, Uuid>(
@@ -346,7 +353,7 @@ async fn ensure_entity_exists(
             )
             .bind(entity_id)
             .bind(tenant.organization_id)
-            .fetch_one(&state.db)
+            .fetch_one(db.as_mut())
             .await?;
         }
         "page" => {
@@ -355,7 +362,7 @@ async fn ensure_entity_exists(
             )
             .bind(entity_id)
             .bind(tenant.organization_id)
-            .fetch_one(&state.db)
+            .fetch_one(db.as_mut())
             .await?;
         }
         _ => validate_entity_type(entity_type)?,

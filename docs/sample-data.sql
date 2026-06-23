@@ -2,6 +2,13 @@
 -- Safe to run multiple times. It upserts deterministic sample records.
 
 BEGIN;
+SELECT set_config('zinhar.organization_id', app_default_organization_id()::text, true);
+SELECT set_config(
+  'zinhar.user_id',
+  COALESCE((SELECT id::text FROM users WHERE email = 'admin@example.com' ORDER BY created_at ASC LIMIT 1), ''),
+  true
+);
+SELECT set_config('zinhar.rls_bypass', 'false', true);
 
 INSERT INTO content_types (id, name, slug, fields, created_by)
 VALUES (
