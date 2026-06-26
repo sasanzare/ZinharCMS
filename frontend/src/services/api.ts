@@ -1,6 +1,10 @@
 import type {
   ApiInfo,
   AuthResponse,
+  AcceptInvitationRequest,
+  CreateOrganizationRequest,
+  CreatedInvitationResponse,
+  InviteMemberRequest,
   CommentEntityType,
   CommentRequest,
   CommentResponse,
@@ -12,6 +16,10 @@ import type {
   HealthResponse,
   JsonRecord,
   MeResponse,
+  OrganizationDetailResponse,
+  OrganizationInvitationResponse,
+  OrganizationMemberResponse,
+  OrganizationMembership,
   MediaDetailResponse,
   MediaListResponse,
   PageJson,
@@ -21,6 +29,9 @@ import type {
   PluginResponse,
   PluginUpdateRequest,
   ReadyResponse,
+  TransferOwnershipRequest,
+  UpdateMemberRoleRequest,
+  UpdateOrganizationRequest,
   WebhookTestResponse,
   WebhookResponse,
   WebhookRequest,
@@ -150,6 +161,51 @@ export const api = {
         body: refresh_token ? { refresh_token } : undefined,
       }),
     me: () => request<MeResponse>("/api/auth/me", { auth: true }),
+  },
+  organizations: {
+    list: () => request<OrganizationMembership[]>("/api/organizations", { auth: true }),
+    create: (payload: CreateOrganizationRequest) =>
+      request<OrganizationDetailResponse>("/api/organizations", { method: "POST", auth: true, body: payload }),
+    current: () => request<OrganizationDetailResponse>("/api/organizations/current", { auth: true }),
+    updateCurrent: (payload: UpdateOrganizationRequest) =>
+      request<OrganizationDetailResponse>("/api/organizations/current", { method: "PUT", auth: true, body: payload }),
+    members: () => request<OrganizationMemberResponse[]>("/api/organizations/current/members", { auth: true }),
+    updateMember: (userId: string, payload: UpdateMemberRoleRequest) =>
+      request<OrganizationMemberResponse>(`/api/organizations/current/members/${userId}`, {
+        method: "PATCH",
+        auth: true,
+        body: payload,
+      }),
+    removeMember: (userId: string) =>
+      request<OrganizationMemberResponse>(`/api/organizations/current/members/${userId}`, {
+        method: "DELETE",
+        auth: true,
+      }),
+    invitations: () => request<OrganizationInvitationResponse[]>("/api/organizations/current/invitations", { auth: true }),
+    invite: (payload: InviteMemberRequest) =>
+      request<CreatedInvitationResponse>("/api/organizations/current/invitations", {
+        method: "POST",
+        auth: true,
+        body: payload,
+      }),
+    revokeInvitation: (invitationId: string) =>
+      request<OrganizationInvitationResponse>(`/api/organizations/current/invitations/${invitationId}`, {
+        method: "DELETE",
+        auth: true,
+      }),
+    acceptInvitation: (payload: AcceptInvitationRequest) =>
+      request<OrganizationMembership>("/api/organization-invitations/accept", {
+        method: "POST",
+        auth: true,
+        body: payload,
+      }),
+    leave: () => request<OrganizationMemberResponse>("/api/organizations/current/leave", { method: "POST", auth: true }),
+    transferOwnership: (payload: TransferOwnershipRequest) =>
+      request<OrganizationMemberResponse>("/api/organizations/current/transfer-ownership", {
+        method: "POST",
+        auth: true,
+        body: payload,
+      }),
   },
 
   contentTypes: {

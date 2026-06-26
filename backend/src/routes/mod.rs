@@ -3,6 +3,7 @@ pub mod comments;
 pub mod content;
 pub mod delivery;
 pub mod media;
+pub mod organizations;
 pub mod pages;
 pub mod plugins;
 pub mod webhooks;
@@ -28,6 +29,7 @@ pub fn router(state: AppState) -> Router {
     let uploads = ServeDir::new(state.config.upload_dir.clone());
     let protected = Router::new()
         .merge(auth::protected_router())
+        .merge(organizations::protected_router())
         .merge(plugins::router())
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
@@ -37,6 +39,7 @@ pub fn router(state: AppState) -> Router {
     let tenant_protected = Router::new()
         .merge(content::router())
         .merge(media::router())
+        .merge(organizations::tenant_router())
         .merge(pages::router())
         .merge(comments::router())
         .merge(webhooks::router())
@@ -71,6 +74,19 @@ pub fn router(state: AppState) -> Router {
         auth::refresh,
         auth::logout,
         auth::me,
+        organizations::list_organizations,
+        organizations::create_organization,
+        organizations::get_current_organization,
+        organizations::update_current_organization,
+        organizations::list_organization_members,
+        organizations::update_organization_member,
+        organizations::remove_organization_member,
+        organizations::list_organization_invitations,
+        organizations::create_organization_invitation,
+        organizations::revoke_organization_invitation,
+        organizations::accept_invitation,
+        organizations::leave_organization,
+        organizations::transfer_organization_ownership,
         content::list_content_types,
         content::create_content_type,
         content::get_content_type,
@@ -152,6 +168,18 @@ pub fn router(state: AppState) -> Router {
         auth::AuthUser,
         auth::MeResponse,
         auth::OrganizationMembershipResponse,
+        organizations::AcceptInvitationRequest,
+        organizations::CreateOrganizationRequest,
+        organizations::CreatedInvitationResponse,
+        organizations::InviteMemberRequest,
+        organizations::OrganizationDetailResponse,
+        organizations::OrganizationInvitationResponse,
+        organizations::OrganizationMemberResponse,
+        organizations::OrganizationResponse,
+        organizations::PlanLimitResponse,
+        organizations::TransferOwnershipRequest,
+        organizations::UpdateMemberRoleRequest,
+        organizations::UpdateOrganizationRequest,
         crate::middleware::tenant::TenantContext,
         content::ContentTypeRequest,
         content::ContentTypeResponse,
@@ -195,6 +223,7 @@ pub fn router(state: AppState) -> Router {
         (name = "delivery", description = "Public delivery API"),
         (name = "webhooks", description = "Webhook subscriptions and delivery logs"),
         (name = "comments", description = "Editorial collaboration comments"),
+        (name = "organizations", description = "Organization, member, and invitation management"),
         (name = "plugins", description = "CMS plugin registry and settings")
     )
 )]

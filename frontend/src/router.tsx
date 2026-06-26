@@ -6,6 +6,7 @@ import { ContentTypesPage } from "./pages/ContentTypesPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EntriesPage } from "./pages/EntriesPage";
 import { MediaPage } from "./pages/MediaPage";
+import { OrganizationPage } from "./pages/OrganizationPage";
 import { PagesPage } from "./pages/PagesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { WorkflowPage } from "./pages/WorkflowPage";
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
       { path: "media", element: <MediaPage /> },
       { path: "pages", element: <PagesPage /> },
       { path: "workflow", element: <WorkflowPage /> },
+      { path: "organization", element: <OrganizationPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

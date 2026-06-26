@@ -1,4 +1,5 @@
 import {
+  Building2,
   Database,
   FileText,
   Gauge,
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
   { labelKey: "app.nav.media", path: "/media", icon: Image },
   { labelKey: "app.nav.pages", path: "/pages", icon: Workflow },
   { labelKey: "app.nav.workflow", path: "/workflow", icon: Workflow },
+  { labelKey: "app.nav.organization", path: "/organization", icon: Building2 },
   { labelKey: "app.nav.settings", path: "/settings", icon: Settings },
 ];
 
@@ -39,7 +41,7 @@ const titleKeys = new Map(navItems.map((item) => [item.path, item.labelKey]));
 export function AppShell() {
   const location = useLocation();
   const { t } = useI18n();
-  const { sidebarCollapsed, toggleSidebar, user, clearSession } = useAppStore();
+  const { sidebarCollapsed, toggleSidebar, user, organizations, activeOrganizationId, setActiveOrganization, clearSession } = useAppStore();
   const { readiness, error } = useHealth();
   const title = t(titleKeys.get(location.pathname) ?? "app.nav.dashboard");
   const ready = readiness?.status === "ready" && !error;
@@ -52,6 +54,10 @@ export function AppShell() {
       // Local logout should still complete if the token is already invalid.
     }
     clearSession();
+  }
+  function handleOrganizationChange(nextOrganizationId: string) {
+    if (!nextOrganizationId || nextOrganizationId === activeOrganizationId) return;
+    setActiveOrganization(nextOrganizationId);
   }
 
   return (
@@ -90,6 +96,21 @@ export function AppShell() {
             <span className="topbar-subtitle">{api.baseUrl}</span>
           </div>
           <div className="topbar-status">
+            {organizations.length > 0 && (
+              <label className="organization-switcher" aria-label={t("organization.switcher.label")}>
+                <Building2 size={16} aria-hidden="true" />
+                <select
+                  value={activeOrganizationId ?? ""}
+                  onChange={(event) => handleOrganizationChange(event.target.value)}
+                >
+                  {organizations.map((organization) => (
+                    <option key={organization.id} value={organization.id}>
+                      {organization.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <LanguageSelect compact />
             <Database size={16} aria-hidden="true" />
             <StatusBadge label={ready ? t("app.status.ready") : t("app.status.checking")} tone={ready ? "success" : "warning"} />
@@ -100,7 +121,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="content-area">
+        <main className="content-area" key={activeOrganizationId ?? "no-organization"}>
           <Outlet />
         </main>
       </div>

@@ -27,6 +27,7 @@ type AppStore = {
   toggleSidebar: () => void;
   setSession: (session: AuthSession) => void;
   setActiveOrganization: (organizationId: string) => void;
+  setOrganizations: (organizations: OrganizationMembership[], preferredOrganizationId?: string | null) => void;
   clearSession: () => void;
 };
 
@@ -93,6 +94,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!exists) return;
     setApiOrganizationId(organizationId);
     set({ activeOrganizationId: organizationId });
+  },
+  setOrganizations: (organizations, preferredOrganizationId) => {
+    const activeOrganizationId = selectActiveOrganization(
+      organizations,
+      preferredOrganizationId ?? get().activeOrganizationId,
+    );
+    setApiOrganizationId(activeOrganizationId);
+    window.localStorage.setItem(ORGANIZATIONS_KEY, JSON.stringify(organizations));
+    set({ organizations, activeOrganizationId });
   },
   clearSession: () => {
     setApiAccessToken(null);

@@ -1384,3 +1384,128 @@ input {
     justify-items: start;
   }
 }
+
+.organization-switcher {
+  display: inline-flex;
+  min-width: min(240px, 34vw);
+  max-width: 280px;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #cbd7d5;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #26343a;
+  background: #ffffff;
+}
+
+.organization-switcher select {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+}
+
+.organization-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.82fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.organization-inline-form {
+  grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.8fr) auto;
+  align-items: end;
+}
+
+.organization-page textarea {
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.organization-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: #5e6c72;
+  font-size: 0.86rem;
+}
+
+.empty-state {
+  display: grid;
+  gap: 6px;
+  color: #5d6a70;
+}
+
+.empty-state strong {
+  color: #213035;
+}
+
+.invite-link-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid #e3e9e8;
+  color: #516166;
+  background: #f7faf9;
+}
+
+.invite-link-box code {
+  overflow: hidden;
+  border: 1px solid #d7e1df;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #18272b;
+  background: #ffffff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-name {
+  display: grid;
+  gap: 2px;
+}
+
+.member-name span {
+  color: #647179;
+  font-size: 0.78rem;
+}
+
+.table-select {
+  min-width: 142px;
+  min-height: 36px;
+  border: 1px solid #cfdad8;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #1d282d;
+  background: #fbfcfc;
+}
+
+@media (max-width: 960px) {
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .topbar-status {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .organization-switcher {
+    min-width: min(100%, 320px);
+    flex: 1 1 220px;
+  }
+
+  .organization-grid,
+  .organization-inline-form,
+  .invite-link-box {
+    grid-template-columns: 1fr;
+  }
+}

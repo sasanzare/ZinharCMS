@@ -53,6 +53,88 @@ export type AuthResponse = MeResponse & {
   token_type: string;
   expires_in: number;
 };
+export type OrganizationRole = "owner" | "admin" | "editor" | "author" | "viewer" | "billing_manager";
+
+export type OrganizationResponse = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  owner_id: string | null;
+  settings: JsonRecord;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PlanLimitResponse = {
+  plan: string;
+  members_limit: number;
+  content_limit: number;
+  media_limit_mb: number;
+};
+
+export type OrganizationDetailResponse = {
+  organization: OrganizationResponse;
+  membership: OrganizationMembership;
+  plan_limits: PlanLimitResponse;
+};
+
+export type OrganizationMemberResponse = {
+  user_id: string;
+  email: string;
+  name: string;
+  avatar_url: string | null;
+  role: OrganizationRole;
+  status: string;
+  joined_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrganizationInvitationResponse = {
+  id: string;
+  email: string;
+  role: OrganizationRole;
+  status: string;
+  invited_by: string | null;
+  invited_by_name: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatedInvitationResponse = OrganizationInvitationResponse & {
+  token: string;
+  accept_path: string;
+};
+
+export type CreateOrganizationRequest = {
+  name: string;
+  slug: string;
+};
+
+export type UpdateOrganizationRequest = CreateOrganizationRequest & {
+  settings?: JsonRecord;
+};
+
+export type InviteMemberRequest = {
+  email: string;
+  role: OrganizationRole;
+};
+
+export type UpdateMemberRoleRequest = {
+  role: OrganizationRole;
+};
+
+export type AcceptInvitationRequest = {
+  token: string;
+};
+
+export type TransferOwnershipRequest = {
+  user_id: string;
+};
+
 
 export type FieldType = "text" | "longtext" | "richtext" | "number" | "boolean" | "datetime" | "media";
 
