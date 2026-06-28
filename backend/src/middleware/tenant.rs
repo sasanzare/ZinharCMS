@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
-use crate::services::jwt;
+use crate::services::{jwt, quota};
 use crate::state::AppState;
 
 pub const ORGANIZATION_HEADER: &str = "X-Organization-Id";
@@ -43,11 +43,18 @@ pub async fn tenant_middleware(
         .unwrap_or_else(|| verify_claims(&state, &req))?;
     let organization_id = organization_id_from_request(&req)?;
     let tenant = load_tenant_context(&state, claims.sub, organization_id).await?;
+    if !is_quota_exempt_path(req.uri().path()) {
+        quota::check_and_record_api_request(&state.db, &tenant).await?;
+    }
 
     req.extensions_mut().insert(claims);
     req.extensions_mut().insert(tenant);
 
     Ok(next.run(req).await)
+}
+
+fn is_quota_exempt_path(path: &str) -> bool {
+    path.starts_with("/api/billing")
 }
 
 fn verify_claims(state: &AppState, req: &Request) -> Result<Claims, AppError> {

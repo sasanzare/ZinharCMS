@@ -1,5 +1,6 @@
 import {
   Building2,
+  CreditCard,
   Database,
   FileText,
   Gauge,
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { labelKey: "app.nav.pages", path: "/pages", icon: Workflow },
   { labelKey: "app.nav.workflow", path: "/workflow", icon: Workflow },
   { labelKey: "app.nav.organization", path: "/organization", icon: Building2 },
+  { labelKey: "app.nav.billing", path: "/billing", icon: CreditCard },
   { labelKey: "app.nav.settings", path: "/settings", icon: Settings },
 ];
 

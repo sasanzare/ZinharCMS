@@ -68,9 +68,11 @@ export type OrganizationResponse = {
 
 export type PlanLimitResponse = {
   plan: string;
+  plan_slug: string;
   members_limit: number;
   content_limit: number;
   media_limit_mb: number;
+  api_requests_limit: number;
 };
 
 export type OrganizationDetailResponse = {
@@ -135,6 +137,54 @@ export type TransferOwnershipRequest = {
   user_id: string;
 };
 
+export type PlanResponse = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price_monthly_cents: number;
+  member_limit: number;
+  content_limit: number;
+  media_limit_mb: number;
+  api_requests_limit: number;
+  features: JsonRecord;
+};
+
+export type SubscriptionResponse = {
+  organization_id: string;
+  plan_id: string;
+  plan_slug: string;
+  plan_name: string;
+  status: string;
+  provider: string;
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+};
+
+export type UsageMetricResponse = {
+  metric: string;
+  used: number;
+  limit: number;
+  remaining: number | null;
+  percent: number | null;
+  near_limit: boolean;
+  exceeded: boolean;
+};
+
+export type BillingUsageResponse = {
+  period_start: string;
+  plan: PlanResponse;
+  subscription: SubscriptionResponse;
+  members: UsageMetricResponse;
+  content_records: UsageMetricResponse;
+  media_bytes: UsageMetricResponse;
+  api_requests: UsageMetricResponse;
+};
+
+export type ChangePlanRequest = {
+  plan_slug: string;
+};
 
 export type FieldType = "text" | "longtext" | "richtext" | "number" | "boolean" | "datetime" | "media";
 

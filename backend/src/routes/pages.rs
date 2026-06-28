@@ -17,7 +17,7 @@ use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::delivery;
 use crate::services::entry_validation::is_valid_slug;
-use crate::services::{rbac, rls, webhooks, workflow};
+use crate::services::{quota, rbac, rls, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -222,6 +222,7 @@ pub async fn create_page(
     Json(payload): Json<PageRequest>,
 ) -> Result<Json<PageResponse>, AppError> {
     rbac::require_org_page_writer(&tenant.role)?;
+    quota::ensure_content_capacity(&state.db, &tenant).await?;
     validate_page_request(&state, &tenant, &payload).await?;
 
     let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;

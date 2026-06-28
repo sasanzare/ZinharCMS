@@ -14,7 +14,7 @@ use crate::middleware::tenant::TenantContext;
 use crate::plugins;
 use crate::routes::delivery;
 use crate::services::entry_validation::{is_valid_slug, parse_fields, validate_entry_data};
-use crate::services::{rbac, rls, security, webhooks, workflow};
+use crate::services::{quota, rbac, rls, security, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -369,6 +369,7 @@ pub async fn create_entry(
 ) -> Result<Json<ContentEntryResponse>, AppError> {
     let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     rbac::require_org_entry_writer(&tenant.role)?;
+    quota::ensure_content_capacity(&state.db, &tenant).await?;
     let content_type = load_content_type_by_slug(&state, &tenant, &type_slug).await?;
     let fields = parse_fields(&content_type.fields)?;
     let data = plugins::run_entry_before_save(

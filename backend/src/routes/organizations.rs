@@ -12,13 +12,10 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::auth::OrganizationMembershipResponse;
-use crate::services::{jwt, rbac};
+use crate::services::{jwt, quota, rbac};
 use crate::state::AppState;
 
 const INVITATION_TTL_DAYS: i64 = 7;
-const PLAN_MEMBER_LIMIT: i64 = 3;
-const PLAN_CONTENT_LIMIT: i64 = 50;
-const PLAN_MEDIA_LIMIT_MB: i64 = 1024;
 
 pub fn protected_router() -> Router<AppState> {
     Router::new()
@@ -117,9 +114,11 @@ pub struct OrganizationResponse {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct PlanLimitResponse {
     pub plan: String,
+    pub plan_slug: String,
     pub members_limit: i64,
     pub content_limit: i64,
     pub media_limit_mb: i64,
+    pub api_requests_limit: i64,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -237,14 +236,17 @@ pub async fn create_organization(
     .bind(claims.sub)
     .execute(&mut *tx)
     .await?;
+    quota::ensure_default_subscription_in_transaction(&mut tx, organization.id, claims.sub).await?;
 
     tx.commit().await?;
 
+    let tenant = organization_tenant_context(&organization, claims.sub, rbac::ORG_OWNER);
+    let plan_limits = load_plan_limit_response(&state, &tenant).await?;
     let membership = load_organization_membership(&state, claims.sub, organization.id).await?;
     Ok(Json(OrganizationDetailResponse {
         organization,
         membership,
-        plan_limits: default_plan_limits(),
+        plan_limits,
     }))
 }
 
@@ -261,10 +263,11 @@ pub async fn get_current_organization(
     let organization = load_organization(&state, tenant.organization_id).await?;
     let membership =
         load_organization_membership(&state, tenant.user_id, tenant.organization_id).await?;
+    let plan_limits = load_plan_limit_response(&state, &tenant).await?;
     Ok(Json(OrganizationDetailResponse {
         organization,
         membership,
-        plan_limits: default_plan_limits(),
+        plan_limits,
     }))
 }
 
@@ -319,10 +322,11 @@ pub async fn update_current_organization(
 
     let membership =
         load_organization_membership(&state, tenant.user_id, tenant.organization_id).await?;
+    let plan_limits = load_plan_limit_response(&state, &tenant).await?;
     Ok(Json(OrganizationDetailResponse {
         organization,
         membership,
-        plan_limits: default_plan_limits(),
+        plan_limits,
     }))
 }
 
@@ -508,6 +512,8 @@ pub async fn create_organization_invitation(
         require_org_admin(&tenant.role)?;
     }
 
+    quota::ensure_member_capacity(&state.db, &tenant, true).await?;
+
     let email = normalize_email(&payload.email)?;
     let token = jwt::generate_refresh_token();
     let token_hash = jwt::hash_refresh_token(&token);
@@ -596,7 +602,8 @@ pub async fn revoke_organization_invitation(
           AND invitation.organization_id = $2
           AND invitation.status = 'pending'::organization_invitation_status
         RETURNING invitation.id,
-                     invitation.role::text as role,
+                  invitation.email::text as email,
+                  invitation.role::text as role,
                   invitation.status::text as status,
                   invitation.invited_by,
                   (
@@ -658,6 +665,8 @@ pub async fn accept_invitation(
     .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(|| AppError::NotFound("valid invitation not found".to_owned()))?;
+    quota::ensure_member_capacity_for_org(&state.db, invitation.organization_id, claims.sub, false)
+        .await?;
 
     sqlx::query(
         r#"
@@ -950,6 +959,7 @@ async fn load_invitations(
     sqlx::query_as::<_, OrganizationInvitationResponse>(
         r#"
         SELECT invitation.id,
+               invitation.email::text as email,
                invitation.role::text as role,
                invitation.status::text as status,
                invitation.invited_by,
@@ -1076,11 +1086,36 @@ fn normalize_email(email: &str) -> Result<String, AppError> {
     Ok(email)
 }
 
-fn default_plan_limits() -> PlanLimitResponse {
+fn organization_tenant_context(
+    organization: &OrganizationResponse,
+    user_id: Uuid,
+    role: &str,
+) -> TenantContext {
+    TenantContext {
+        organization_id: organization.id,
+        organization_slug: organization.slug.clone(),
+        organization_name: organization.name.clone(),
+        role: role.to_owned(),
+        user_id,
+    }
+}
+
+async fn load_plan_limit_response(
+    state: &AppState,
+    tenant: &TenantContext,
+) -> Result<PlanLimitResponse, AppError> {
+    Ok(plan_limit_response(
+        quota::load_current_plan(&state.db, tenant).await?,
+    ))
+}
+
+fn plan_limit_response(plan: quota::PlanLimits) -> PlanLimitResponse {
     PlanLimitResponse {
-        plan: "Free".to_owned(),
-        members_limit: PLAN_MEMBER_LIMIT,
-        content_limit: PLAN_CONTENT_LIMIT,
-        media_limit_mb: PLAN_MEDIA_LIMIT_MB,
+        plan: plan.name,
+        plan_slug: plan.slug,
+        members_limit: i64::from(plan.member_limit),
+        content_limit: i64::from(plan.content_limit),
+        media_limit_mb: i64::from(plan.media_limit_mb),
+        api_requests_limit: i64::from(plan.api_requests_limit),
     }
 }

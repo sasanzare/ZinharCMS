@@ -1,6 +1,8 @@
 import type {
   ApiInfo,
   AuthResponse,
+  BillingUsageResponse,
+  ChangePlanRequest,
   AcceptInvitationRequest,
   CreateOrganizationRequest,
   CreatedInvitationResponse,
@@ -26,9 +28,11 @@ import type {
   PageListResponse,
   PageResponse,
   PageVersionResponse,
+  PlanResponse,
   PluginResponse,
   PluginUpdateRequest,
   ReadyResponse,
+  SubscriptionResponse,
   TransferOwnershipRequest,
   UpdateMemberRoleRequest,
   UpdateOrganizationRequest,
@@ -161,6 +165,14 @@ export const api = {
         body: refresh_token ? { refresh_token } : undefined,
       }),
     me: () => request<MeResponse>("/api/auth/me", { auth: true }),
+  },
+  billing: {
+    plans: () => request<PlanResponse[]>("/api/billing/plans", { auth: true }),
+    subscription: () => request<SubscriptionResponse>("/api/billing/subscription", { auth: true }),
+    changePlan: (payload: ChangePlanRequest) =>
+      request<SubscriptionResponse>("/api/billing/subscription", { method: "PUT", auth: true, body: payload }),
+    usage: () => request<BillingUsageResponse>("/api/billing/usage", { auth: true }),
+    rebuildUsage: () => request<BillingUsageResponse>("/api/billing/usage/rebuild", { method: "POST", auth: true }),
   },
   organizations: {
     list: () => request<OrganizationMembership[]>("/api/organizations", { auth: true }),

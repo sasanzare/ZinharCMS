@@ -4,6 +4,7 @@ pub mod health;
 pub mod jwt;
 pub mod media_processing;
 pub mod password;
+pub mod quota;
 pub mod rbac;
 pub mod rls;
 pub mod security;

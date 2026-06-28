@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod billing;
 pub mod comments;
 pub mod content;
 pub mod delivery;
@@ -38,6 +39,7 @@ pub fn router(state: AppState) -> Router {
 
     let tenant_protected = Router::new()
         .merge(content::router())
+        .merge(billing::router())
         .merge(media::router())
         .merge(organizations::tenant_router())
         .merge(pages::router())
@@ -74,6 +76,11 @@ pub fn router(state: AppState) -> Router {
         auth::refresh,
         auth::logout,
         auth::me,
+        billing::list_plans,
+        billing::get_subscription,
+        billing::change_subscription_plan,
+        billing::get_usage,
+        billing::rebuild_usage,
         organizations::list_organizations,
         organizations::create_organization,
         organizations::get_current_organization,
@@ -168,6 +175,11 @@ pub fn router(state: AppState) -> Router {
         auth::AuthUser,
         auth::MeResponse,
         auth::OrganizationMembershipResponse,
+        billing::BillingUsageResponse,
+        billing::ChangePlanRequest,
+        billing::PlanResponse,
+        billing::SubscriptionResponse,
+        billing::UsageMetricResponse,
         organizations::AcceptInvitationRequest,
         organizations::CreateOrganizationRequest,
         organizations::CreatedInvitationResponse,
@@ -214,6 +226,7 @@ pub fn router(state: AppState) -> Router {
     tags(
         (name = "system", description = "Phase-zero system endpoints"),
         (name = "auth", description = "Authentication and token management"),
+        (name = "billing", description = "Plans, subscriptions, and usage quotas"),
         (name = "content", description = "Content type management"),
         (name = "entries", description = "Content entry management"),
         (name = "media", description = "Media library"),

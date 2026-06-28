@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { RequireAuth } from "./components/RequireAuth";
 import { AuthPage } from "./pages/AuthPage";
+import { BillingPage } from "./pages/BillingPage";
 import { ContentTypesPage } from "./pages/ContentTypesPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EntriesPage } from "./pages/EntriesPage";
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "pages", element: <PagesPage /> },
       { path: "workflow", element: <WorkflowPage /> },
       { path: "organization", element: <OrganizationPage /> },
+      { path: "billing", element: <BillingPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

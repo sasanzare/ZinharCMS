@@ -14,7 +14,7 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::services::media_processing::{is_supported_image_mime, process_image_variants};
-use crate::services::{rbac, rls};
+use crate::services::{quota, rbac, rls};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -224,6 +224,7 @@ pub async fn upload_media(
         )));
     }
     let detected_mime_type = validate_upload_type(&upload)?;
+    quota::ensure_media_capacity(&state.db, &tenant, upload.bytes.len() as i64).await?;
 
     let organization_path = tenant.organization_id.to_string();
     let upload_root = PathBuf::from(&state.config.upload_dir);
