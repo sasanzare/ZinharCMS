@@ -14,7 +14,7 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::services::media_processing::{is_supported_image_mime, process_image_variants};
-use crate::services::{quota, rbac, rls};
+use crate::services::{audit, quota, rbac, rls};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -380,6 +380,20 @@ pub async fn delete_media(
     for variant in &detail.variants {
         remove_file_for_url(&state.config.upload_dir, &variant.url).await;
     }
+    audit::record(
+        &state.db,
+        &tenant,
+        "media.delete",
+        "media",
+        Some(detail.media.id),
+        serde_json::json!({
+            "filename": &detail.media.filename,
+            "mime_type": &detail.media.mime_type,
+            "size": detail.media.size,
+            "variants": detail.variants.len(),
+        }),
+    )
+    .await?;
 
     Ok(Json(detail))
 }

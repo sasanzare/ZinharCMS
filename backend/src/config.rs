@@ -22,6 +22,14 @@ pub struct Config {
     pub stripe_portal_return_url: String,
     pub stripe_pro_price_id: Option<String>,
     pub stripe_enterprise_price_id: Option<String>,
+    pub app_base_url: String,
+    pub email_provider: String,
+    pub email_from: String,
+    pub email_webhook_url: Option<String>,
+    pub email_failure_mode: String,
+    pub organization_rate_limit_per_minute: i64,
+    pub organization_user_rate_limit_per_minute: i64,
+    pub organization_rate_limit_burst: i64,
     pub port: u16,
 }
 
@@ -70,6 +78,17 @@ impl Config {
             )?,
             stripe_pro_price_id: get_optional("STRIPE_PRO_PRICE_ID"),
             stripe_enterprise_price_id: get_optional("STRIPE_ENTERPRISE_PRICE_ID"),
+            app_base_url: get("APP_BASE_URL", Some("http://localhost:5173"))?,
+            email_provider: get("EMAIL_PROVIDER", Some("log"))?.to_ascii_lowercase(),
+            email_from: get("EMAIL_FROM", Some("ZinharCMS <noreply@localhost>"))?,
+            email_webhook_url: get_optional("EMAIL_WEBHOOK_URL"),
+            email_failure_mode: get("EMAIL_FAILURE_MODE", Some("log"))?.to_ascii_lowercase(),
+            organization_rate_limit_per_minute: parse_i64("ORG_RATE_LIMIT_PER_MINUTE", 600)?,
+            organization_user_rate_limit_per_minute: parse_i64(
+                "ORG_USER_RATE_LIMIT_PER_MINUTE",
+                120,
+            )?,
+            organization_rate_limit_burst: parse_i64("ORG_RATE_LIMIT_BURST", 120)?,
             port: parse_u16("PORT", 8080)?,
         })
     }
@@ -150,6 +169,14 @@ impl Config {
             stripe_portal_return_url: "http://localhost:5173/billing".to_owned(),
             stripe_pro_price_id: Some("price_pro_test".to_owned()),
             stripe_enterprise_price_id: Some("price_enterprise_test".to_owned()),
+            app_base_url: "http://localhost:5173".to_owned(),
+            email_provider: "log".to_owned(),
+            email_from: "ZinharCMS <noreply@localhost>".to_owned(),
+            email_webhook_url: None,
+            email_failure_mode: "log".to_owned(),
+            organization_rate_limit_per_minute: 600,
+            organization_user_rate_limit_per_minute: 120,
+            organization_rate_limit_burst: 120,
             port: 8080,
         }
     }

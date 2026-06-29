@@ -11,6 +11,7 @@ import { OrganizationPage } from "./pages/OrganizationPage";
 import { PagesPage } from "./pages/PagesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { WorkflowPage } from "./pages/WorkflowPage";
+import { WorkspaceRedirectPage } from "./pages/WorkspaceRedirectPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <AuthPage /> },
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
       { path: "pages", element: <PagesPage /> },
       { path: "workflow", element: <WorkflowPage /> },
       { path: "organization", element: <OrganizationPage /> },
+      { path: "workspace/:slug", element: <WorkspaceRedirectPage /> },
       { path: "billing", element: <BillingPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <Navigate to="/" replace /> },

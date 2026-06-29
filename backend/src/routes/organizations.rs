@@ -1,4 +1,4 @@
-use axum::extract::{Extension, Path, State};
+use axum::extract::{Extension, Path, Query, State};
 use axum::routing::{delete, get, patch, post, put};
 use axum::{Json, Router};
 use chrono::{DateTime, Duration, Utc};
@@ -12,7 +12,7 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::auth::OrganizationMembershipResponse;
-use crate::services::{jwt, quota, rbac};
+use crate::services::{audit, email, jwt, quota, rbac, rls};
 use crate::state::AppState;
 
 const INVITATION_TTL_DAYS: i64 = 7;
@@ -58,6 +58,34 @@ pub fn tenant_router() -> Router<AppState> {
             "/api/organizations/current/invitations/{invitation_id}",
             delete(revoke_organization_invitation),
         )
+        .route(
+            "/api/organizations/current/workspace",
+            get(get_workspace_access),
+        )
+        .route(
+            "/api/organizations/current/domains",
+            get(list_organization_domains).post(create_organization_domain),
+        )
+        .route(
+            "/api/organizations/current/domains/{domain_id}",
+            delete(delete_organization_domain),
+        )
+        .route(
+            "/api/organizations/current/rate-limit",
+            get(get_rate_limit).put(update_rate_limit),
+        )
+        .route(
+            "/api/organizations/current/audit-logs",
+            get(list_audit_logs),
+        )
+        .route(
+            "/api/organizations/current/email-deliveries",
+            get(list_email_deliveries),
+        )
+        .route(
+            "/api/organizations/current/alerts",
+            get(list_saas_alert_rules),
+        )
         .route("/api/organizations/current/leave", post(leave_organization))
         .route(
             "/api/organizations/current/transfer-ownership",
@@ -97,6 +125,24 @@ pub struct TransferOwnershipRequest {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct AcceptInvitationRequest {
     pub token: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct OrganizationDomainRequest {
+    pub domain: String,
+    pub is_primary: Option<bool>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateRateLimitRequest {
+    pub requests_per_minute: i32,
+    pub user_requests_per_minute: i32,
+    pub burst: i32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LimitQuery {
+    pub limit: Option<i64>,
 }
 
 #[derive(Debug, Serialize, FromRow, ToSchema)]
@@ -151,6 +197,74 @@ pub struct OrganizationInvitationResponse {
     pub invited_by_name: Option<String>,
     pub expires_at: DateTime<Utc>,
     pub accepted_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct OrganizationWorkspaceResponse {
+    pub slug: String,
+    pub workspace_url: String,
+    pub domains: Vec<OrganizationDomainResponse>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct OrganizationDomainResponse {
+    pub id: Uuid,
+    pub domain: String,
+    pub status: String,
+    pub is_primary: bool,
+    pub verification_token: String,
+    pub verified_at: Option<DateTime<Utc>>,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct RateLimitResponse {
+    pub requests_per_minute: i32,
+    pub user_requests_per_minute: i32,
+    pub burst: i32,
+    pub updated_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct AuditLogResponse {
+    pub id: Uuid,
+    pub actor_id: Option<Uuid>,
+    pub actor_email: Option<String>,
+    pub action: String,
+    pub entity_type: String,
+    pub entity_id: Option<Uuid>,
+    pub metadata: Value,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct EmailDeliveryResponse {
+    pub id: Uuid,
+    pub recipient_email: String,
+    pub template: String,
+    pub subject: String,
+    pub provider: String,
+    pub status: String,
+    pub provider_message_id: Option<String>,
+    pub error: Option<String>,
+    pub sent_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct SaasAlertRuleResponse {
+    pub id: Uuid,
+    pub alert_key: String,
+    pub severity: String,
+    pub is_enabled: bool,
+    pub config: Value,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -239,6 +353,16 @@ pub async fn create_organization(
     quota::ensure_default_subscription_in_transaction(&mut tx, organization.id, claims.sub).await?;
 
     tx.commit().await?;
+    audit::record_for_organization(
+        &state.db,
+        organization.id,
+        Some(claims.sub),
+        "organization.create",
+        "organization",
+        Some(organization.id),
+        serde_json::json!({ "slug": &organization.slug, "name": &organization.name }),
+    )
+    .await?;
 
     let tenant = organization_tenant_context(&organization, claims.sub, rbac::ORG_OWNER);
     let plan_limits = load_plan_limit_response(&state, &tenant).await?;
@@ -271,6 +395,333 @@ pub async fn get_current_organization(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/organizations/current/workspace",
+    tag = "organizations",
+    responses((status = 200, description = "Current organization workspace access", body = OrganizationWorkspaceResponse))
+)]
+pub async fn get_workspace_access(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+) -> Result<Json<OrganizationWorkspaceResponse>, AppError> {
+    Ok(Json(OrganizationWorkspaceResponse {
+        slug: tenant.organization_slug.clone(),
+        workspace_url: workspace_url(&state.config.app_base_url, &tenant.organization_slug),
+        domains: load_domains(&state, tenant.organization_id).await?,
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/organizations/current/domains",
+    tag = "organizations",
+    responses((status = 200, description = "Current organization domains", body = [OrganizationDomainResponse]))
+)]
+pub async fn list_organization_domains(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+) -> Result<Json<Vec<OrganizationDomainResponse>>, AppError> {
+    require_org_admin(&tenant.role)?;
+    Ok(Json(load_domains(&state, tenant.organization_id).await?))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/organizations/current/domains",
+    tag = "organizations",
+    request_body = OrganizationDomainRequest,
+    responses((status = 200, description = "Created organization domain", body = OrganizationDomainResponse))
+)]
+pub async fn create_organization_domain(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Json(payload): Json<OrganizationDomainRequest>,
+) -> Result<Json<OrganizationDomainResponse>, AppError> {
+    require_org_admin(&tenant.role)?;
+    let domain = normalize_domain(&payload.domain)?;
+    let is_primary = payload.is_primary.unwrap_or(false);
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
+    if is_primary {
+        sqlx::query("UPDATE organization_domains SET is_primary = false, updated_at = now() WHERE organization_id = $1")
+            .bind(tenant.organization_id)
+            .execute(&mut *tx)
+            .await?;
+    }
+
+    let row = sqlx::query_as::<_, OrganizationDomainResponse>(
+        r#"
+        INSERT INTO organization_domains (organization_id, domain, is_primary, created_by)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id,
+                  domain,
+                  status,
+                  is_primary,
+                  verification_token,
+                  verified_at,
+                  created_by,
+                  created_at,
+                  updated_at
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .bind(domain)
+    .bind(is_primary)
+    .bind(tenant.user_id)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        "organization.domain.create",
+        "organization_domain",
+        Some(row.id),
+        serde_json::json!({ "domain": &row.domain, "is_primary": row.is_primary }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(row))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/organizations/current/domains/{domain_id}",
+    tag = "organizations",
+    params(("domain_id" = Uuid, Path, description = "Domain id")),
+    responses((status = 200, description = "Deleted organization domain", body = OrganizationDomainResponse))
+)]
+pub async fn delete_organization_domain(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(domain_id): Path<Uuid>,
+) -> Result<Json<OrganizationDomainResponse>, AppError> {
+    require_org_admin(&tenant.role)?;
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
+    let row = sqlx::query_as::<_, OrganizationDomainResponse>(
+        r#"
+        DELETE FROM organization_domains
+        WHERE id = $1 AND organization_id = $2
+        RETURNING id,
+                  domain,
+                  status,
+                  is_primary,
+                  verification_token,
+                  verified_at,
+                  created_by,
+                  created_at,
+                  updated_at
+        "#,
+    )
+    .bind(domain_id)
+    .bind(tenant.organization_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        "organization.domain.delete",
+        "organization_domain",
+        Some(row.id),
+        serde_json::json!({ "domain": &row.domain }),
+    )
+    .await?;
+    tx.commit().await?;
+
+    Ok(Json(row))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/organizations/current/rate-limit",
+    tag = "organizations",
+    responses((status = 200, description = "Current organization rate limit", body = RateLimitResponse))
+)]
+pub async fn get_rate_limit(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+) -> Result<Json<RateLimitResponse>, AppError> {
+    require_org_admin(&tenant.role)?;
+    Ok(Json(load_or_create_rate_limit(&state, &tenant).await?))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/organizations/current/rate-limit",
+    tag = "organizations",
+    request_body = UpdateRateLimitRequest,
+    responses((status = 200, description = "Updated current organization rate limit", body = RateLimitResponse))
+)]
+pub async fn update_rate_limit(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Json(payload): Json<UpdateRateLimitRequest>,
+) -> Result<Json<RateLimitResponse>, AppError> {
+    require_org_admin(&tenant.role)?;
+    validate_rate_limit(&payload)?;
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
+    let row = sqlx::query_as::<_, RateLimitResponse>(
+        r#"
+        INSERT INTO organization_rate_limits (
+          organization_id,
+          requests_per_minute,
+          user_requests_per_minute,
+          burst,
+          updated_by
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (organization_id) DO UPDATE
+        SET requests_per_minute = EXCLUDED.requests_per_minute,
+            user_requests_per_minute = EXCLUDED.user_requests_per_minute,
+            burst = EXCLUDED.burst,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = now()
+        RETURNING requests_per_minute,
+                  user_requests_per_minute,
+                  burst,
+                  updated_by,
+                  created_at,
+                  updated_at
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .bind(payload.requests_per_minute)
+    .bind(payload.user_requests_per_minute)
+    .bind(payload.burst)
+    .bind(tenant.user_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        "organization.rate_limit.update",
+        "organization_rate_limit",
+        None,
+        serde_json::json!({
+            "requests_per_minute": row.requests_per_minute,
+            "user_requests_per_minute": row.user_requests_per_minute,
+            "burst": row.burst,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(row))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/organizations/current/audit-logs",
+    tag = "organizations",
+    responses((status = 200, description = "Current organization audit log", body = [AuditLogResponse]))
+)]
+pub async fn list_audit_logs(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Query(query): Query<LimitQuery>,
+) -> Result<Json<Vec<AuditLogResponse>>, AppError> {
+    require_org_admin(&tenant.role)?;
+    let limit = query.limit.unwrap_or(50).clamp(1, 100);
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let rows = sqlx::query_as::<_, AuditLogResponse>(
+        r#"
+        SELECT audit.id,
+               audit.actor_id,
+               users.email::text as actor_email,
+               audit.action,
+               audit.entity_type,
+               audit.entity_id,
+               audit.metadata,
+               audit.created_at
+        FROM audit_logs audit
+        LEFT JOIN users ON users.id = audit.actor_id
+        WHERE audit.organization_id = $1
+        ORDER BY audit.created_at DESC
+        LIMIT $2
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .bind(limit)
+    .fetch_all(db.as_mut())
+    .await?;
+    Ok(Json(rows))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/organizations/current/email-deliveries",
+    tag = "organizations",
+    responses((status = 200, description = "Current organization email deliveries", body = [EmailDeliveryResponse]))
+)]
+pub async fn list_email_deliveries(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Query(query): Query<LimitQuery>,
+) -> Result<Json<Vec<EmailDeliveryResponse>>, AppError> {
+    require_org_admin(&tenant.role)?;
+    let limit = query.limit.unwrap_or(25).clamp(1, 100);
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let rows = sqlx::query_as::<_, EmailDeliveryResponse>(
+        r#"
+        SELECT id,
+               recipient_email,
+               template,
+               subject,
+               provider,
+               status,
+               provider_message_id,
+               error,
+               sent_at,
+               created_at,
+               updated_at
+        FROM email_deliveries
+        WHERE organization_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .bind(limit)
+    .fetch_all(db.as_mut())
+    .await?;
+    Ok(Json(rows))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/organizations/current/alerts",
+    tag = "organizations",
+    responses((status = 200, description = "Current organization SaaS alert rules", body = [SaasAlertRuleResponse]))
+)]
+pub async fn list_saas_alert_rules(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+) -> Result<Json<Vec<SaasAlertRuleResponse>>, AppError> {
+    require_org_admin(&tenant.role)?;
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let rows = sqlx::query_as::<_, SaasAlertRuleResponse>(
+        r#"
+        SELECT id,
+               alert_key,
+               severity,
+               is_enabled,
+               config,
+               created_at,
+               updated_at
+        FROM saas_alert_rules
+        WHERE organization_id = $1
+        ORDER BY CASE severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END,
+                 alert_key ASC
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .fetch_all(db.as_mut())
+    .await?;
+    Ok(Json(rows))
+}
 #[utoipa::path(
     put,
     path = "/api/organizations/current",
@@ -318,6 +769,16 @@ pub async fn update_current_organization(
     .bind(slug)
     .bind(settings)
     .fetch_one(&state.db)
+    .await?;
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "organization.settings.update",
+        "organization",
+        Some(organization.id),
+        serde_json::json!({ "slug": &organization.slug, "name": &organization.name }),
+    )
     .await?;
 
     let membership =
@@ -427,6 +888,16 @@ pub async fn update_organization_member(
     .fetch_one(&state.db)
     .await?;
 
+    audit::record(
+        &state.db,
+        &tenant,
+        "organization.member.role_update",
+        "organization_member",
+        Some(member.user_id),
+        serde_json::json!({ "email": &member.email, "old_role": &current.role, "new_role": &member.role }),
+    )
+    .await?;
+
     Ok(Json(member))
 }
 
@@ -471,6 +942,16 @@ pub async fn remove_organization_member(
     .bind(tenant.organization_id)
     .bind(user_id)
     .fetch_one(&state.db)
+    .await?;
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "organization.member.remove",
+        "organization_member",
+        Some(member.user_id),
+        serde_json::json!({ "email": &member.email, "role": &member.role }),
+    )
     .await?;
 
     Ok(Json(member))
@@ -572,6 +1053,23 @@ pub async fn create_organization_invitation(
     .await?;
 
     let accept_path = format!("/organization?invite={token}");
+    email::send_invitation_email(
+        &state.db,
+        &state.config,
+        &tenant,
+        &invitation.email,
+        &accept_path,
+    )
+    .await?;
+    audit::record(
+        &state.db,
+        &tenant,
+        "organization.invitation.create",
+        "organization_invitation",
+        Some(invitation.id),
+        serde_json::json!({ "email": &invitation.email, "role": &invitation.role }),
+    )
+    .await?;
     Ok(Json(CreatedInvitationResponse {
         invitation,
         token,
@@ -620,6 +1118,16 @@ pub async fn revoke_organization_invitation(
     .bind(invitation_id)
     .bind(tenant.organization_id)
     .fetch_one(&state.db)
+    .await?;
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "organization.invitation.revoke",
+        "organization_invitation",
+        Some(invitation.id),
+        serde_json::json!({ "email": &invitation.email, "role": &invitation.role }),
+    )
     .await?;
 
     Ok(Json(invitation))
@@ -681,7 +1189,7 @@ pub async fn accept_invitation(
     )
     .bind(invitation.organization_id)
     .bind(claims.sub)
-    .bind(invitation.role)
+    .bind(&invitation.role)
     .execute(&mut *tx)
     .await?;
 
@@ -699,6 +1207,16 @@ pub async fn accept_invitation(
     .await?;
 
     tx.commit().await?;
+    audit::record_for_organization(
+        &state.db,
+        invitation.organization_id,
+        Some(claims.sub),
+        "organization.invitation.accept",
+        "organization_invitation",
+        Some(invitation.id),
+        serde_json::json!({ "role": &invitation.role }),
+    )
+    .await?;
 
     Ok(Json(
         load_organization_membership(&state, claims.sub, invitation.organization_id).await?,
@@ -741,6 +1259,16 @@ pub async fn leave_organization(
     .bind(tenant.organization_id)
     .bind(tenant.user_id)
     .fetch_one(&state.db)
+    .await?;
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "organization.member.leave",
+        "organization_member",
+        Some(member.user_id),
+        serde_json::json!({ "email": &member.email, "role": &member.role }),
+    )
     .await?;
 
     Ok(Json(member))
@@ -811,12 +1339,88 @@ pub async fn transfer_organization_ownership(
     .await?;
 
     tx.commit().await?;
+    audit::record(
+        &state.db,
+        &tenant,
+        "organization.ownership.transfer",
+        "organization_member",
+        Some(payload.user_id),
+        serde_json::json!({ "previous_owner_id": tenant.user_id, "new_owner_id": payload.user_id }),
+    )
+    .await?;
 
     Ok(Json(
         load_organization_member(&state, tenant.organization_id, payload.user_id).await?,
     ))
 }
 
+async fn load_domains(
+    state: &AppState,
+    organization_id: Uuid,
+) -> Result<Vec<OrganizationDomainResponse>, AppError> {
+    let mut db = rls::organization_connection(&state.db, organization_id, None).await?;
+    sqlx::query_as::<_, OrganizationDomainResponse>(
+        r#"
+        SELECT id,
+               domain,
+               status,
+               is_primary,
+               verification_token,
+               verified_at,
+               created_by,
+               created_at,
+               updated_at
+        FROM organization_domains
+        WHERE organization_id = $1
+        ORDER BY is_primary DESC, created_at DESC
+        "#,
+    )
+    .bind(organization_id)
+    .fetch_all(db.as_mut())
+    .await
+    .map_err(AppError::from)
+}
+
+async fn load_or_create_rate_limit(
+    state: &AppState,
+    tenant: &TenantContext,
+) -> Result<RateLimitResponse, AppError> {
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
+    sqlx::query_as::<_, RateLimitResponse>(
+        r#"
+        INSERT INTO organization_rate_limits (organization_id)
+        VALUES ($1)
+        ON CONFLICT (organization_id) DO UPDATE
+        SET updated_at = organization_rate_limits.updated_at
+        RETURNING requests_per_minute,
+                  user_requests_per_minute,
+                  burst,
+                  updated_by,
+                  created_at,
+                  updated_at
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .fetch_one(db.as_mut())
+    .await
+    .map_err(AppError::from)
+}
+
+fn validate_rate_limit(payload: &UpdateRateLimitRequest) -> Result<(), AppError> {
+    if payload.requests_per_minute <= 0 || payload.user_requests_per_minute <= 0 {
+        return Err(AppError::Validation(
+            "rate limits must be positive integers".to_owned(),
+        ));
+    }
+    if payload.burst < 0 {
+        return Err(AppError::Validation("burst cannot be negative".to_owned()));
+    }
+    Ok(())
+}
+
+fn workspace_url(base_url: &str, slug: &str) -> String {
+    format!("{}/workspace/{}", base_url.trim_end_matches('/'), slug)
+}
 async fn load_organization(
     state: &AppState,
     organization_id: Uuid,
@@ -1078,6 +1682,30 @@ fn normalize_slug(slug: &str) -> Result<String, AppError> {
     Ok(slug)
 }
 
+fn normalize_domain(domain: &str) -> Result<String, AppError> {
+    let domain = domain
+        .trim()
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .trim_end_matches('/')
+        .to_ascii_lowercase();
+    let valid = !domain.is_empty()
+        && domain.contains('.')
+        && domain.bytes().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-' || byte == b'.'
+        })
+        && !domain.starts_with('-')
+        && !domain.ends_with('-')
+        && !domain.contains("..")
+        && domain
+            .rsplit('.')
+            .next()
+            .is_some_and(|part| part.len() >= 2);
+    if !valid {
+        return Err(AppError::Validation("domain is invalid".to_owned()));
+    }
+    Ok(domain)
+}
 fn normalize_email(email: &str) -> Result<String, AppError> {
     let email = email.trim().to_ascii_lowercase();
     if !email.contains('@') || email.starts_with('@') || email.ends_with('@') {

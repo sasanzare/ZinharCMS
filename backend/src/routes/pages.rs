@@ -17,7 +17,7 @@ use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::delivery;
 use crate::services::entry_validation::is_valid_slug;
-use crate::services::{quota, rbac, rls, webhooks, workflow};
+use crate::services::{audit, quota, rbac, rls, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -402,6 +402,16 @@ pub async fn delete_page(
     if page.status == "published" {
         delivery::invalidate_page_cache(&state, tenant.organization_id).await;
     }
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "page.delete",
+        "page",
+        Some(page.id),
+        serde_json::json!({ "title": &page.title, "slug": &page.slug, "status": &page.status }),
+    )
+    .await?;
 
     Ok(Json(page))
 }
@@ -865,6 +875,16 @@ pub async fn delete_component(
     .bind(component_key)
     .bind(tenant.organization_id)
     .fetch_one(db.as_mut())
+    .await?;
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "component.delete",
+        "component_registry",
+        Some(row.id),
+        serde_json::json!({ "component_key": &row.component_key, "name": &row.name }),
+    )
     .await?;
 
     Ok(Json(row))

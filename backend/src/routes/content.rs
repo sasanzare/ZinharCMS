@@ -14,7 +14,7 @@ use crate::middleware::tenant::TenantContext;
 use crate::plugins;
 use crate::routes::delivery;
 use crate::services::entry_validation::{is_valid_slug, parse_fields, validate_entry_data};
-use crate::services::{quota, rbac, rls, security, webhooks, workflow};
+use crate::services::{audit, quota, rbac, rls, security, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -254,6 +254,16 @@ pub async fn delete_content_type(
     .bind(id)
     .bind(tenant.organization_id)
     .fetch_one(db.as_mut())
+    .await?;
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "content.type.delete",
+        "content_type",
+        Some(row.id),
+        serde_json::json!({ "name": &row.name, "slug": &row.slug }),
+    )
     .await?;
 
     Ok(Json(row))
@@ -534,6 +544,16 @@ pub async fn delete_entry(
     if row.status == "published" {
         delivery::invalidate_content_cache(&state, tenant.organization_id, &type_slug).await;
     }
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "content.entry.delete",
+        "content_entry",
+        Some(row.id),
+        serde_json::json!({ "type_slug": &type_slug, "status": &row.status, "version": row.version }),
+    )
+    .await?;
 
     Ok(Json(row))
 }

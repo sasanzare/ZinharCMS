@@ -133,6 +133,78 @@ export type AcceptInvitationRequest = {
   token: string;
 };
 
+export type OrganizationDomainResponse = {
+  id: string;
+  domain: string;
+  status: string;
+  is_primary: boolean;
+  verification_token: string;
+  verified_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrganizationWorkspaceResponse = {
+  slug: string;
+  workspace_url: string;
+  domains: OrganizationDomainResponse[];
+};
+
+export type OrganizationDomainRequest = {
+  domain: string;
+  is_primary?: boolean;
+};
+
+export type RateLimitResponse = {
+  requests_per_minute: number;
+  user_requests_per_minute: number;
+  burst: number;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UpdateRateLimitRequest = {
+  requests_per_minute: number;
+  user_requests_per_minute: number;
+  burst: number;
+};
+
+export type AuditLogResponse = {
+  id: string;
+  actor_id: string | null;
+  actor_email: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  metadata: JsonRecord;
+  created_at: string;
+};
+
+export type EmailDeliveryResponse = {
+  id: string;
+  recipient_email: string;
+  template: string;
+  subject: string;
+  provider: string;
+  status: string;
+  provider_message_id: string | null;
+  error: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SaasAlertRuleResponse = {
+  id: string;
+  alert_key: string;
+  severity: string;
+  is_enabled: boolean;
+  config: JsonRecord;
+  created_at: string;
+  updated_at: string;
+};
 export type TransferOwnershipRequest = {
   user_id: string;
 };

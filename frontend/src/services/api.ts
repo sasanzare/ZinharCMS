@@ -1,5 +1,6 @@
 import type {
   ApiInfo,
+  AuditLogResponse,
   AuthResponse,
   BillingUsageResponse,
   ChangePlanRequest,
@@ -21,10 +22,14 @@ import type {
   HealthResponse,
   JsonRecord,
   MeResponse,
+  EmailDeliveryResponse,
   OrganizationDetailResponse,
+  OrganizationDomainRequest,
+  OrganizationDomainResponse,
   OrganizationInvitationResponse,
   OrganizationMemberResponse,
   OrganizationMembership,
+  OrganizationWorkspaceResponse,
   MediaDetailResponse,
   MediaListResponse,
   PageJson,
@@ -34,11 +39,14 @@ import type {
   PlanResponse,
   PluginResponse,
   PluginUpdateRequest,
+  RateLimitResponse,
   ReadyResponse,
+  SaasAlertRuleResponse,
   SubscriptionResponse,
   TransferOwnershipRequest,
   UpdateMemberRoleRequest,
   UpdateOrganizationRequest,
+  UpdateRateLimitRequest,
   WebhookTestResponse,
   WebhookResponse,
   WebhookRequest,
@@ -224,6 +232,30 @@ changePlan: (payload: ChangePlanRequest) =>
         auth: true,
         body: payload,
       }),
+    workspace: () => request<OrganizationWorkspaceResponse>("/api/organizations/current/workspace", { auth: true }),
+    domains: () => request<OrganizationDomainResponse[]>("/api/organizations/current/domains", { auth: true }),
+    createDomain: (payload: OrganizationDomainRequest) =>
+      request<OrganizationDomainResponse>("/api/organizations/current/domains", {
+        method: "POST",
+        auth: true,
+        body: payload,
+      }),
+    deleteDomain: (domainId: string) =>
+      request<OrganizationDomainResponse>(`/api/organizations/current/domains/${domainId}`, {
+        method: "DELETE",
+        auth: true,
+      }),
+    rateLimit: () => request<RateLimitResponse>("/api/organizations/current/rate-limit", { auth: true }),
+    updateRateLimit: (payload: UpdateRateLimitRequest) =>
+      request<RateLimitResponse>("/api/organizations/current/rate-limit", {
+        method: "PUT",
+        auth: true,
+        body: payload,
+      }),
+    auditLogs: (limit = 50) => request<AuditLogResponse[]>(`/api/organizations/current/audit-logs${query({ limit })}`, { auth: true }),
+    emailDeliveries: (limit = 25) =>
+      request<EmailDeliveryResponse[]>(`/api/organizations/current/email-deliveries${query({ limit })}`, { auth: true }),
+    alerts: () => request<SaasAlertRuleResponse[]>("/api/organizations/current/alerts", { auth: true }),
   },
 
   contentTypes: {

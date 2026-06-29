@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::config::Config;
 use crate::error::AppError;
 use crate::middleware::tenant::TenantContext;
-use crate::services::{quota, rbac, stripe_billing};
+use crate::services::{audit, email, quota, rbac, stripe_billing};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -154,11 +154,36 @@ pub async fn change_subscription_plan(
     Json(payload): Json<ChangePlanRequest>,
 ) -> Result<Json<SubscriptionResponse>, AppError> {
     rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
-    Ok(Json(
+    let subscription: SubscriptionResponse =
         quota::change_plan(&state.db, &tenant, &payload.plan_slug)
             .await?
-            .into(),
-    ))
+            .into();
+    audit::record(
+        &state.db,
+        &tenant,
+        "billing.subscription.change",
+        "organization_subscription",
+        None,
+        serde_json::json!({
+            "plan_slug": &subscription.plan_slug,
+            "plan_name": &subscription.plan_name,
+            "status": &subscription.status,
+            "provider": &subscription.provider,
+        }),
+    )
+    .await?;
+    if let Some(recipient) = load_actor_email(&state, &tenant).await? {
+        email::send_billing_notification(
+            &state.db,
+            &state.config,
+            &tenant,
+            &recipient,
+            &subscription.plan_name,
+            &subscription.status,
+        )
+        .await?;
+    }
+    Ok(Json(subscription))
 }
 
 #[utoipa::path(
@@ -174,16 +199,24 @@ pub async fn create_checkout_session(
     Json(payload): Json<CheckoutSessionRequest>,
 ) -> Result<Json<CheckoutSessionResponse>, AppError> {
     rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
-    Ok(Json(
-        stripe_billing::create_checkout_session(
-            &state.db,
-            &state.config,
-            &tenant,
-            &payload.plan_slug,
-        )
-        .await?
-        .into(),
-    ))
+    let session: CheckoutSessionResponse = stripe_billing::create_checkout_session(
+        &state.db,
+        &state.config,
+        &tenant,
+        &payload.plan_slug,
+    )
+    .await?
+    .into();
+    audit::record(
+        &state.db,
+        &tenant,
+        "billing.checkout.create",
+        "stripe_checkout_session",
+        None,
+        serde_json::json!({ "plan_slug": payload.plan_slug, "session_id": &session.session_id }),
+    )
+    .await?;
+    Ok(Json(session))
 }
 
 #[utoipa::path(
@@ -197,11 +230,20 @@ pub async fn create_customer_portal_session(
     Extension(tenant): Extension<TenantContext>,
 ) -> Result<Json<CustomerPortalResponse>, AppError> {
     rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
-    Ok(Json(
+    let session: CustomerPortalResponse =
         stripe_billing::create_customer_portal_session(&state.db, &state.config, &tenant)
             .await?
-            .into(),
-    ))
+            .into();
+    audit::record(
+        &state.db,
+        &tenant,
+        "billing.portal.create",
+        "stripe_customer_portal_session",
+        None,
+        serde_json::json!({ "url": &session.url }),
+    )
+    .await?;
+    Ok(Json(session))
 }
 
 #[utoipa::path(
@@ -255,12 +297,31 @@ pub async fn rebuild_usage(
 ) -> Result<Json<BillingUsageResponse>, AppError> {
     rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
     quota::rebuild_usage_counters(&state.db, &tenant).await?;
+    audit::record(
+        &state.db,
+        &tenant,
+        "billing.usage.rebuild",
+        "usage_counters",
+        None,
+        serde_json::json!({ "period": "current" }),
+    )
+    .await?;
     Ok(Json(BillingUsageResponse::from_summary(
         quota::usage_summary(&state.db, &tenant).await?,
         &state.config,
     )))
 }
 
+async fn load_actor_email(
+    state: &AppState,
+    tenant: &TenantContext,
+) -> Result<Option<String>, AppError> {
+    sqlx::query_scalar::<_, String>("SELECT email::text FROM users WHERE id = $1")
+        .bind(tenant.user_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(AppError::from)
+}
 impl PlanResponse {
     fn from_plan(plan: quota::PlanLimits, config: &Config) -> Self {
         let stripe_checkout_available = stripe_billing::price_id_for_plan(config, &plan).is_some();

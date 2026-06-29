@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, Copy, Crown, LogOut, Plus, RefreshCw, Send, Shield, Trash2, UserPlus, Users } from "lucide-react";
+import { Activity, AlertTriangle, Building2, Copy, Crown, Gauge, Globe2, LogOut, Mail, Plus, RefreshCw, Send, Shield, Trash2, UserPlus, Users } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import { StatusBadge } from "../components/StatusBadge";
@@ -8,11 +8,18 @@ import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import type {
   CreatedInvitationResponse,
+  EmailDeliveryResponse,
+  AuditLogResponse,
   JsonRecord,
   OrganizationDetailResponse,
+  OrganizationDomainResponse,
   OrganizationInvitationResponse,
   OrganizationMemberResponse,
   OrganizationRole,
+  UpdateRateLimitRequest,
+  SaasAlertRuleResponse,
+  RateLimitResponse,
+  OrganizationWorkspaceResponse,
 } from "../types/api";
 
 const ROLE_OPTIONS: OrganizationRole[] = ["owner", "admin", "editor", "author", "viewer", "billing_manager"];
@@ -41,6 +48,21 @@ type InviteDraft = {
   email: string;
   role: OrganizationRole;
 };
+
+type DomainDraft = {
+  domain: string;
+  is_primary: boolean;
+};
+
+type RateLimitDraft = UpdateRateLimitRequest;
+
+function toRateLimitDraft(rateLimit: RateLimitResponse | null): RateLimitDraft {
+  return {
+    requests_per_minute: rateLimit?.requests_per_minute ?? 600,
+    user_requests_per_minute: rateLimit?.user_requests_per_minute ?? 120,
+    burst: rateLimit?.burst ?? 120,
+  };
+}
 
 function apiMessage(caught: unknown, fallback: string) {
   return caught instanceof ApiError ? caught.message : fallback;
@@ -81,6 +103,12 @@ export function OrganizationPage() {
   const [detail, setDetail] = useState<OrganizationDetailResponse | null>(null);
   const [members, setMembers] = useState<OrganizationMemberResponse[]>([]);
   const [invitations, setInvitations] = useState<OrganizationInvitationResponse[]>([]);
+  const [workspace, setWorkspace] = useState<OrganizationWorkspaceResponse | null>(null);
+  const [domains, setDomains] = useState<OrganizationDomainResponse[]>([]);
+  const [rateLimit, setRateLimit] = useState<RateLimitResponse | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLogResponse[]>([]);
+  const [emailDeliveries, setEmailDeliveries] = useState<EmailDeliveryResponse[]>([]);
+  const [alerts, setAlerts] = useState<SaasAlertRuleResponse[]>([]);
   const [organizationDraft, setOrganizationDraft] = useState<OrganizationDraft>({
     name: "",
     slug: "",
@@ -88,6 +116,8 @@ export function OrganizationPage() {
   });
   const [createDraft, setCreateDraft] = useState<CreateOrganizationDraft>({ name: "", slug: "" });
   const [inviteDraft, setInviteDraft] = useState<InviteDraft>({ email: "", role: "editor" });
+  const [domainDraft, setDomainDraft] = useState<DomainDraft>({ domain: "", is_primary: false });
+  const [rateLimitDraft, setRateLimitDraft] = useState<RateLimitDraft>(toRateLimitDraft(null));
   const [acceptToken, setAcceptToken] = useState("");
   const [roleDrafts, setRoleDrafts] = useState<Record<string, OrganizationRole>>({});
   const [createdInvitation, setCreatedInvitation] = useState<CreatedInvitationResponse | null>(null);
@@ -125,25 +155,51 @@ export function OrganizationPage() {
           setDetail(null);
           setMembers([]);
           setInvitations([]);
+          setWorkspace(null);
+          setDomains([]);
+          setRateLimit(null);
+          setAuditLogs([]);
+          setEmailDeliveries([]);
+          setAlerts([]);
           return;
         }
 
-        const current = await api.organizations.current();
+        const [current, nextWorkspace] = await Promise.all([
+          api.organizations.current(),
+          api.organizations.workspace(),
+        ]);
         setDetail(current);
         setOrganizationDraft(toDraft(current));
+        setWorkspace(nextWorkspace);
+        setDomains(nextWorkspace.domains);
 
         const role = current.membership.role as OrganizationRole;
         if (MANAGER_ROLES.has(role)) {
-          const [nextMembers, nextInvitations] = await Promise.all([
+          const [nextMembers, nextInvitations, nextDomains, nextRateLimit, nextAuditLogs, nextEmailDeliveries, nextAlerts] = await Promise.all([
             api.organizations.members(),
             api.organizations.invitations(),
+            api.organizations.domains(),
+            api.organizations.rateLimit(),
+            api.organizations.auditLogs(),
+            api.organizations.emailDeliveries(),
+            api.organizations.alerts(),
           ]);
           setMembers(nextMembers);
           setInvitations(nextInvitations);
+          setDomains(nextDomains);
+          setRateLimit(nextRateLimit);
+          setRateLimitDraft(toRateLimitDraft(nextRateLimit));
+          setAuditLogs(nextAuditLogs);
+          setEmailDeliveries(nextEmailDeliveries);
+          setAlerts(nextAlerts);
           setRoleDrafts(Object.fromEntries(nextMembers.map((member) => [member.user_id, member.role])));
         } else {
           setMembers([]);
           setInvitations([]);
+          setRateLimit(null);
+          setAuditLogs([]);
+          setEmailDeliveries([]);
+          setAlerts([]);
           setRoleDrafts({});
         }
       } catch (caught) {
@@ -332,6 +388,70 @@ export function OrganizationPage() {
     setMessage(t("organization.message.copied"));
   }
 
+  async function copyWorkspaceUrl() {
+    if (!workspace?.workspace_url) return;
+    await window.navigator.clipboard.writeText(workspace.workspace_url);
+    setMessage(t("organization.message.workspaceCopied"));
+  }
+
+  async function createDomain() {
+    setActionLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.organizations.createDomain(domainDraft);
+      const [nextWorkspace, nextDomains] = await Promise.all([
+        api.organizations.workspace(),
+        api.organizations.domains(),
+      ]);
+      setWorkspace(nextWorkspace);
+      setDomains(nextDomains);
+      setDomainDraft({ domain: "", is_primary: false });
+      setMessage(t("organization.message.domainCreated"));
+    } catch (caught) {
+      setError(apiMessage(caught, t("organization.error.domain")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function deleteDomain(domain: OrganizationDomainResponse) {
+    if (!window.confirm(t("organization.confirm.deleteDomain", { domain: domain.domain }))) return;
+    setActionLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.organizations.deleteDomain(domain.id);
+      const [nextWorkspace, nextDomains] = await Promise.all([
+        api.organizations.workspace(),
+        api.organizations.domains(),
+      ]);
+      setWorkspace(nextWorkspace);
+      setDomains(nextDomains);
+      setMessage(t("organization.message.domainDeleted"));
+    } catch (caught) {
+      setError(apiMessage(caught, t("organization.error.domain")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function saveRateLimit() {
+    setActionLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const updated = await api.organizations.updateRateLimit(rateLimitDraft);
+      setRateLimit(updated);
+      setRateLimitDraft(toRateLimitDraft(updated));
+      setMessage(t("organization.message.rateLimitUpdated"));
+    } catch (caught) {
+      setError(apiMessage(caught, t("organization.error.rateLimit")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   function roleLabel(role: OrganizationRole) {
     return t(ROLE_LABEL_KEYS[role]);
   }
@@ -454,6 +574,224 @@ export function OrganizationPage() {
           </div>
         </section>
       </div>
+
+      {detail && (
+        <section className="panel full-width-panel">
+          <div className="panel-header">
+            <div>
+              <h2>{t("organization.workspace.title")}</h2>
+              <span>{t("organization.workspace.description")}</span>
+            </div>
+            <Globe2 size={18} aria-hidden="true" />
+          </div>
+          <div className="form-grid organization-inline-form padded">
+            <label>
+              {t("organization.workspace.url")}
+              <input value={workspace?.workspace_url ?? ""} readOnly />
+            </label>
+            <button className="secondary-button" type="button" onClick={() => void copyWorkspaceUrl()} disabled={!workspace?.workspace_url}>
+              <Copy size={16} aria-hidden="true" />
+              {t("organization.copyLink")}
+            </button>
+          </div>
+          {canManage && (
+            <div className="form-grid organization-inline-form padded">
+              <label>
+                {t("organization.domain.domain")}
+                <input
+                  value={domainDraft.domain}
+                  onChange={(event) => setDomainDraft((current) => ({ ...current, domain: event.target.value }))}
+                  placeholder="cms.example.com"
+                />
+              </label>
+              <label>
+                {t("organization.domain.primary")}
+                <input
+                  type="checkbox"
+                  checked={domainDraft.is_primary}
+                  onChange={(event) => setDomainDraft((current) => ({ ...current, is_primary: event.target.checked }))}
+                />
+              </label>
+              <button className="primary-button" type="button" onClick={() => void createDomain()} disabled={actionLoading || !domainDraft.domain.trim()}>
+                <Plus size={16} aria-hidden="true" />
+                {t("organization.domain.add")}
+              </button>
+            </div>
+          )}
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{t("organization.domain.domain")}</th>
+                  <th>{t("common.status")}</th>
+                  <th>{t("organization.domain.primary")}</th>
+                  <th>{t("organization.domain.verification")}</th>
+                  {canManage && <th>{t("common.actions")}</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {domains.length === 0 ? (
+                  <tr>
+                    <td colSpan={canManage ? 5 : 4}>{t("organization.domain.empty")}</td>
+                  </tr>
+                ) : (
+                  domains.map((domain) => (
+                    <tr key={domain.id}>
+                      <td>{domain.domain}</td>
+                      <td><StatusBadge label={domain.status} tone={domain.status === "verified" ? "success" : "warning"} /></td>
+                      <td>{domain.is_primary ? t("common.active") : "-"}</td>
+                      <td><code>{domain.verification_token}</code></td>
+                      {canManage && (
+                        <td>
+                          <button className="icon-button" type="button" onClick={() => void deleteDomain(domain)} disabled={actionLoading} aria-label={t("organization.domain.delete", { domain: domain.domain })}>
+                            <Trash2 size={16} aria-hidden="true" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {canManage && (
+        <section className="panel full-width-panel">
+          <div className="panel-header">
+            <div>
+              <h2>{t("organization.rateLimit.title")}</h2>
+              <span>{t("organization.rateLimit.description")}</span>
+            </div>
+            <Gauge size={18} aria-hidden="true" />
+          </div>
+          <div className="form-grid organization-inline-form padded">
+            <label>
+              {t("organization.rateLimit.organization")}
+              <input type="number" min={1} value={rateLimitDraft.requests_per_minute} onChange={(event) => setRateLimitDraft((current) => ({ ...current, requests_per_minute: Number(event.target.value) }))} />
+            </label>
+            <label>
+              {t("organization.rateLimit.user")}
+              <input type="number" min={1} value={rateLimitDraft.user_requests_per_minute} onChange={(event) => setRateLimitDraft((current) => ({ ...current, user_requests_per_minute: Number(event.target.value) }))} />
+            </label>
+            <label>
+              {t("organization.rateLimit.burst")}
+              <input type="number" min={0} value={rateLimitDraft.burst} onChange={(event) => setRateLimitDraft((current) => ({ ...current, burst: Number(event.target.value) }))} />
+            </label>
+            <button className="primary-button" type="button" onClick={() => void saveRateLimit()} disabled={actionLoading}>
+              <Shield size={16} aria-hidden="true" />
+              {t("organization.rateLimit.save")}
+            </button>
+          </div>
+          <div className="organization-meta padded">
+            <StatusBadge label={rateLimit ? t("common.active") : t("app.status.waiting")} tone={rateLimit ? "success" : "neutral"} />
+            <span>{rateLimit?.updated_at ? new Date(rateLimit.updated_at).toLocaleString() : "-"}</span>
+          </div>
+        </section>
+      )}
+
+      {canManage && (
+        <section className="panel full-width-panel">
+          <div className="panel-header">
+            <div>
+              <h2>{t("organization.audit.title")}</h2>
+              <span>{t("organization.audit.description")}</span>
+            </div>
+            <Activity size={18} aria-hidden="true" />
+          </div>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{t("organization.audit.action")}</th>
+                  <th>{t("organization.audit.actor")}</th>
+                  <th>{t("organization.audit.entity")}</th>
+                  <th>{t("organization.audit.metadata")}</th>
+                  <th>{t("common.updated")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs.length === 0 ? (
+                  <tr><td colSpan={5}>{t("organization.audit.empty")}</td></tr>
+                ) : (
+                  auditLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td>{log.action}</td>
+                      <td>{log.actor_email ?? log.actor_id ?? "-"}</td>
+                      <td>{log.entity_type}</td>
+                      <td><code>{JSON.stringify(log.metadata)}</code></td>
+                      <td>{new Date(log.created_at).toLocaleString()}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {canManage && (
+        <section className="panel full-width-panel">
+          <div className="panel-header">
+            <div>
+              <h2>{t("organization.email.title")}</h2>
+              <span>{t("organization.email.description")}</span>
+            </div>
+            <Mail size={18} aria-hidden="true" />
+          </div>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{t("common.email")}</th>
+                  <th>{t("organization.email.template")}</th>
+                  <th>{t("organization.email.provider")}</th>
+                  <th>{t("common.status")}</th>
+                  <th>{t("common.updated")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emailDeliveries.length === 0 ? (
+                  <tr><td colSpan={5}>{t("organization.email.empty")}</td></tr>
+                ) : (
+                  emailDeliveries.map((delivery) => (
+                    <tr key={delivery.id}>
+                      <td>{delivery.recipient_email}</td>
+                      <td>{delivery.template}</td>
+                      <td>{delivery.provider}</td>
+                      <td><StatusBadge label={delivery.status} tone={delivery.status === "sent" ? "success" : delivery.status === "failed" ? "danger" : "neutral"} /></td>
+                      <td>{new Date(delivery.updated_at).toLocaleString()}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {canManage && (
+        <section className="panel full-width-panel">
+          <div className="panel-header">
+            <div>
+              <h2>{t("organization.alerts.title")}</h2>
+              <span>{t("organization.alerts.description")}</span>
+            </div>
+            <AlertTriangle size={18} aria-hidden="true" />
+          </div>
+          <div className="metric-grid padded">
+            {alerts.map((alert) => (
+              <div className="metric-card" key={alert.id}>
+                <span>{alert.alert_key}</span>
+                <strong>{alert.severity}</strong>
+                <StatusBadge label={alert.is_enabled ? t("common.enabled") : t("common.disabled")} tone={alert.is_enabled ? "success" : "neutral"} />
+              </div>
+            ))}
+            {alerts.length === 0 && <div className="empty-state"><span>{t("organization.alerts.empty")}</span></div>}
+          </div>
+        </section>
+      )}
 
       <section className="panel full-width-panel">
         <div className="panel-header">

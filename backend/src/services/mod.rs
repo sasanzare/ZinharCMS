@@ -1,10 +1,13 @@
+pub mod audit;
 pub mod cache;
+pub mod email;
 pub mod entry_validation;
 pub mod health;
 pub mod jwt;
 pub mod media_processing;
 pub mod password;
 pub mod quota;
+pub mod rate_limit;
 pub mod rbac;
 pub mod rls;
 pub mod security;

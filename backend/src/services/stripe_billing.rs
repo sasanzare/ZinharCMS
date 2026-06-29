@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::config::Config;
 use crate::error::AppError;
 use crate::middleware::tenant::TenantContext;
-use crate::services::{quota, rls};
+use crate::services::{audit, quota, rls};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -161,6 +161,18 @@ pub async fn handle_webhook(
     match processing_result {
         Ok(EventOutcome::Processed(organization_id)) => {
             update_billing_event(&mut tx, &event_id, organization_id, "processed", None).await?;
+            if let Some(organization_id) = organization_id {
+                audit::record_in_transaction(
+                    &mut tx,
+                    organization_id,
+                    None,
+                    "billing.stripe_webhook.process",
+                    "billing_event",
+                    None,
+                    serde_json::json!({ "event_id": &event_id, "event_type": &event_type, "status": "processed" }),
+                )
+                .await?;
+            }
             tx.commit().await?;
             Ok(WebhookResult {
                 event_id,
@@ -171,6 +183,18 @@ pub async fn handle_webhook(
         }
         Ok(EventOutcome::Ignored(organization_id)) => {
             update_billing_event(&mut tx, &event_id, organization_id, "ignored", None).await?;
+            if let Some(organization_id) = organization_id {
+                audit::record_in_transaction(
+                    &mut tx,
+                    organization_id,
+                    None,
+                    "billing.stripe_webhook.ignore",
+                    "billing_event",
+                    None,
+                    serde_json::json!({ "event_id": &event_id, "event_type": &event_type, "status": "ignored" }),
+                )
+                .await?;
+            }
             tx.commit().await?;
             Ok(WebhookResult {
                 event_id,
