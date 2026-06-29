@@ -57,6 +57,7 @@ pub fn router(state: AppState) -> Router {
         .route("/ready", get(readiness))
         .route("/openapi.json", get(openapi))
         .merge(auth::public_router())
+        .merge(billing::public_router())
         .merge(delivery::router())
         .merge(protected)
         .merge(tenant_protected)
@@ -79,6 +80,9 @@ pub fn router(state: AppState) -> Router {
         billing::list_plans,
         billing::get_subscription,
         billing::change_subscription_plan,
+        billing::create_checkout_session,
+        billing::create_customer_portal_session,
+        billing::stripe_webhook,
         billing::get_usage,
         billing::rebuild_usage,
         organizations::list_organizations,
@@ -176,7 +180,11 @@ pub fn router(state: AppState) -> Router {
         auth::MeResponse,
         auth::OrganizationMembershipResponse,
         billing::BillingUsageResponse,
+        billing::BillingWebhookResponse,
         billing::ChangePlanRequest,
+        billing::CheckoutSessionRequest,
+        billing::CheckoutSessionResponse,
+        billing::CustomerPortalResponse,
         billing::PlanResponse,
         billing::SubscriptionResponse,
         billing::UsageMetricResponse,

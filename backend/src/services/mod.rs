@@ -8,5 +8,6 @@ pub mod quota;
 pub mod rbac;
 pub mod rls;
 pub mod security;
+pub mod stripe_billing;
 pub mod webhooks;
 pub mod workflow;

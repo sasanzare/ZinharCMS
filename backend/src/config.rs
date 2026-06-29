@@ -15,6 +15,13 @@ pub struct Config {
     pub cookie_secure: bool,
     pub login_rate_limit_max_failures: i64,
     pub login_rate_limit_window_seconds: i64,
+    pub stripe_secret_key: Option<String>,
+    pub stripe_webhook_secret: Option<String>,
+    pub stripe_success_url: String,
+    pub stripe_cancel_url: String,
+    pub stripe_portal_return_url: String,
+    pub stripe_pro_price_id: Option<String>,
+    pub stripe_enterprise_price_id: Option<String>,
     pub port: u16,
 }
 
@@ -47,8 +54,31 @@ impl Config {
             cookie_secure: parse_bool("COOKIE_SECURE", false)?,
             login_rate_limit_max_failures: parse_i64("LOGIN_RATE_LIMIT_MAX_FAILURES", 5)?,
             login_rate_limit_window_seconds: parse_i64("LOGIN_RATE_LIMIT_WINDOW_SECONDS", 900)?,
+            stripe_secret_key: get_optional("STRIPE_SECRET_KEY"),
+            stripe_webhook_secret: get_optional("STRIPE_WEBHOOK_SECRET"),
+            stripe_success_url: get(
+                "STRIPE_SUCCESS_URL",
+                Some("http://localhost:5173/billing?billing=success"),
+            )?,
+            stripe_cancel_url: get(
+                "STRIPE_CANCEL_URL",
+                Some("http://localhost:5173/billing?billing=cancelled"),
+            )?,
+            stripe_portal_return_url: get(
+                "STRIPE_PORTAL_RETURN_URL",
+                Some("http://localhost:5173/billing"),
+            )?,
+            stripe_pro_price_id: get_optional("STRIPE_PRO_PRICE_ID"),
+            stripe_enterprise_price_id: get_optional("STRIPE_ENTERPRISE_PRICE_ID"),
             port: parse_u16("PORT", 8080)?,
         })
+    }
+}
+
+fn get_optional(name: &'static str) -> Option<String> {
+    match env::var(name) {
+        Ok(value) if !value.trim().is_empty() => Some(value),
+        _ => None,
     }
 }
 
@@ -95,5 +125,32 @@ fn parse_u16(name: &'static str, default: u16) -> Result<u16, ConfigError> {
             .parse::<u16>()
             .map_err(|_| ConfigError::Invalid { name, value }),
         _ => Ok(default),
+    }
+}
+
+#[cfg(test)]
+impl Config {
+    pub fn test_with_stripe_secret(webhook_secret: &str) -> Self {
+        Self {
+            database_url: "postgresql://localhost/test".to_owned(),
+            redis_url: "redis://localhost:6379".to_owned(),
+            jwt_secret: "test-secret-with-at-least-32-characters".to_owned(),
+            jwt_access_expiry: 3600,
+            jwt_refresh_expiry: 604_800,
+            upload_dir: "./uploads".to_owned(),
+            max_upload_size: 52_428_800,
+            cors_origin: "http://localhost:5173".to_owned(),
+            cookie_secure: false,
+            login_rate_limit_max_failures: 5,
+            login_rate_limit_window_seconds: 900,
+            stripe_secret_key: Some("sk_test_local".to_owned()),
+            stripe_webhook_secret: Some(webhook_secret.to_owned()),
+            stripe_success_url: "http://localhost:5173/billing?billing=success".to_owned(),
+            stripe_cancel_url: "http://localhost:5173/billing?billing=cancelled".to_owned(),
+            stripe_portal_return_url: "http://localhost:5173/billing".to_owned(),
+            stripe_pro_price_id: Some("price_pro_test".to_owned()),
+            stripe_enterprise_price_id: Some("price_enterprise_test".to_owned()),
+            port: 8080,
+        }
     }
 }

@@ -3,6 +3,9 @@ import type {
   AuthResponse,
   BillingUsageResponse,
   ChangePlanRequest,
+  CheckoutSessionRequest,
+  CheckoutSessionResponse,
+  CustomerPortalResponse,
   AcceptInvitationRequest,
   CreateOrganizationRequest,
   CreatedInvitationResponse,
@@ -169,8 +172,11 @@ export const api = {
   billing: {
     plans: () => request<PlanResponse[]>("/api/billing/plans", { auth: true }),
     subscription: () => request<SubscriptionResponse>("/api/billing/subscription", { auth: true }),
-    changePlan: (payload: ChangePlanRequest) =>
+changePlan: (payload: ChangePlanRequest) =>
       request<SubscriptionResponse>("/api/billing/subscription", { method: "PUT", auth: true, body: payload }),
+    checkout: (payload: CheckoutSessionRequest) =>
+      request<CheckoutSessionResponse>("/api/billing/checkout", { method: "POST", auth: true, body: payload }),
+    portal: () => request<CustomerPortalResponse>("/api/billing/portal", { method: "POST", auth: true }),
     usage: () => request<BillingUsageResponse>("/api/billing/usage", { auth: true }),
     rebuildUsage: () => request<BillingUsageResponse>("/api/billing/usage/rebuild", { method: "POST", auth: true }),
   },

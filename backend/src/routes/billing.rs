@@ -1,4 +1,6 @@
+use axum::body::Bytes;
 use axum::extract::{Extension, State};
+use axum::http::HeaderMap;
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use chrono::{DateTime, NaiveDate, Utc};
@@ -7,9 +9,10 @@ use serde_json::Value;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::config::Config;
 use crate::error::AppError;
 use crate::middleware::tenant::TenantContext;
-use crate::services::{quota, rbac};
+use crate::services::{quota, rbac, stripe_billing};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -17,13 +20,43 @@ pub fn router() -> Router<AppState> {
         .route("/api/billing/plans", get(list_plans))
         .route("/api/billing/subscription", get(get_subscription))
         .route("/api/billing/subscription", put(change_subscription_plan))
+        .route("/api/billing/checkout", post(create_checkout_session))
+        .route("/api/billing/portal", post(create_customer_portal_session))
         .route("/api/billing/usage", get(get_usage))
         .route("/api/billing/usage/rebuild", post(rebuild_usage))
+}
+
+pub fn public_router() -> Router<AppState> {
+    Router::new().route("/api/billing/stripe/webhook", post(stripe_webhook))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ChangePlanRequest {
     pub plan_slug: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CheckoutSessionRequest {
+    pub plan_slug: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CheckoutSessionResponse {
+    pub session_id: String,
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CustomerPortalResponse {
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct BillingWebhookResponse {
+    pub event_id: String,
+    pub event_type: String,
+    pub status: String,
+    pub already_processed: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -37,6 +70,7 @@ pub struct PlanResponse {
     pub content_limit: i32,
     pub media_limit_mb: i32,
     pub api_requests_limit: i32,
+    pub stripe_checkout_available: bool,
     pub features: Value,
 }
 
@@ -87,7 +121,7 @@ pub async fn list_plans(
     let plans = quota::list_plans(&state.db)
         .await?
         .into_iter()
-        .map(PlanResponse::from)
+        .map(|plan| PlanResponse::from_plan(plan, &state.config))
         .collect();
     Ok(Json(plans))
 }
@@ -128,6 +162,72 @@ pub async fn change_subscription_plan(
 }
 
 #[utoipa::path(
+    post,
+    path = "/api/billing/checkout",
+    tag = "billing",
+    request_body = CheckoutSessionRequest,
+    responses((status = 200, description = "Created Stripe checkout session", body = CheckoutSessionResponse))
+)]
+pub async fn create_checkout_session(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Json(payload): Json<CheckoutSessionRequest>,
+) -> Result<Json<CheckoutSessionResponse>, AppError> {
+    rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
+    Ok(Json(
+        stripe_billing::create_checkout_session(
+            &state.db,
+            &state.config,
+            &tenant,
+            &payload.plan_slug,
+        )
+        .await?
+        .into(),
+    ))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/portal",
+    tag = "billing",
+    responses((status = 200, description = "Created Stripe customer portal session", body = CustomerPortalResponse))
+)]
+pub async fn create_customer_portal_session(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+) -> Result<Json<CustomerPortalResponse>, AppError> {
+    rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
+    Ok(Json(
+        stripe_billing::create_customer_portal_session(&state.db, &state.config, &tenant)
+            .await?
+            .into(),
+    ))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/billing/stripe/webhook",
+    tag = "billing",
+    request_body(content = String, content_type = "application/json"),
+    responses((status = 200, description = "Processed Stripe webhook", body = BillingWebhookResponse))
+)]
+pub async fn stripe_webhook(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Json<BillingWebhookResponse>, AppError> {
+    let signature = headers
+        .get("stripe-signature")
+        .and_then(|value| value.to_str().ok())
+        .ok_or_else(|| AppError::Unauthorized("Stripe signature header is missing".to_owned()))?;
+    Ok(Json(
+        stripe_billing::handle_webhook(&state.db, &state.config, signature, &body)
+            .await?
+            .into(),
+    ))
+}
+
+#[utoipa::path(
     get,
     path = "/api/billing/usage",
     tag = "billing",
@@ -137,7 +237,10 @@ pub async fn get_usage(
     State(state): State<AppState>,
     Extension(tenant): Extension<TenantContext>,
 ) -> Result<Json<BillingUsageResponse>, AppError> {
-    Ok(Json(quota::usage_summary(&state.db, &tenant).await?.into()))
+    Ok(Json(BillingUsageResponse::from_summary(
+        quota::usage_summary(&state.db, &tenant).await?,
+        &state.config,
+    )))
 }
 
 #[utoipa::path(
@@ -152,11 +255,15 @@ pub async fn rebuild_usage(
 ) -> Result<Json<BillingUsageResponse>, AppError> {
     rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
     quota::rebuild_usage_counters(&state.db, &tenant).await?;
-    Ok(Json(quota::usage_summary(&state.db, &tenant).await?.into()))
+    Ok(Json(BillingUsageResponse::from_summary(
+        quota::usage_summary(&state.db, &tenant).await?,
+        &state.config,
+    )))
 }
 
-impl From<quota::PlanLimits> for PlanResponse {
-    fn from(plan: quota::PlanLimits) -> Self {
+impl PlanResponse {
+    fn from_plan(plan: quota::PlanLimits, config: &Config) -> Self {
+        let stripe_checkout_available = stripe_billing::price_id_for_plan(config, &plan).is_some();
         Self {
             id: plan.id,
             slug: plan.slug,
@@ -167,6 +274,7 @@ impl From<quota::PlanLimits> for PlanResponse {
             content_limit: plan.content_limit,
             media_limit_mb: plan.media_limit_mb,
             api_requests_limit: plan.api_requests_limit,
+            stripe_checkout_available,
             features: plan.features,
         }
     }
@@ -202,16 +310,42 @@ impl From<quota::UsageMetric> for UsageMetricResponse {
     }
 }
 
-impl From<quota::UsageSummary> for BillingUsageResponse {
-    fn from(summary: quota::UsageSummary) -> Self {
+impl BillingUsageResponse {
+    fn from_summary(summary: quota::UsageSummary, config: &Config) -> Self {
         Self {
             period_start: summary.period_start,
-            plan: summary.plan.into(),
+            plan: PlanResponse::from_plan(summary.plan, config),
             subscription: summary.subscription.into(),
             members: summary.members.into(),
             content_records: summary.content_records.into(),
             media_bytes: summary.media_bytes.into(),
             api_requests: summary.api_requests.into(),
+        }
+    }
+}
+
+impl From<stripe_billing::CheckoutSession> for CheckoutSessionResponse {
+    fn from(session: stripe_billing::CheckoutSession) -> Self {
+        Self {
+            session_id: session.session_id,
+            url: session.url,
+        }
+    }
+}
+
+impl From<stripe_billing::CustomerPortalSession> for CustomerPortalResponse {
+    fn from(session: stripe_billing::CustomerPortalSession) -> Self {
+        Self { url: session.url }
+    }
+}
+
+impl From<stripe_billing::WebhookResult> for BillingWebhookResponse {
+    fn from(result: stripe_billing::WebhookResult) -> Self {
+        Self {
+            event_id: result.event_id,
+            event_type: result.event_type,
+            status: result.status,
+            already_processed: result.already_processed,
         }
     }
 }

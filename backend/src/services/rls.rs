@@ -50,6 +50,21 @@ pub async fn begin_organization_transaction(
     Ok(tx)
 }
 
+pub async fn begin_bypass_transaction(
+    pool: &PgPool,
+) -> Result<Transaction<'static, Postgres>, AppError> {
+    let mut tx = pool.begin().await?;
+    sqlx::query(
+        r#"
+        SELECT set_config('zinhar.organization_id', '', true),
+               set_config('zinhar.user_id', '', true),
+               set_config('zinhar.rls_bypass', 'true', true)
+        "#,
+    )
+    .execute(&mut *tx)
+    .await?;
+    Ok(tx)
+}
 async fn set_context_on_connection(
     connection: &mut PgConnection,
     organization_id: Uuid,

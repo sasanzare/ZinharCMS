@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CreditCard, Gauge, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
+import { CreditCard, ExternalLink, Gauge, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
@@ -44,6 +44,10 @@ function formatUsageValue(metric: string, value: number) {
 function formatLimit(metric: UsageMetricResponse, unlimitedLabel: string) {
   if (metric.limit < 0) return unlimitedLabel;
   return formatUsageValue(metric.metric, metric.limit);
+}
+
+function isCustomPriced(plan: PlanResponse) {
+  return plan.slug === "enterprise" && plan.price_monthly_cents === 0;
 }
 
 export function BillingPage() {
@@ -93,6 +97,32 @@ export function BillingPage() {
     }
   }
 
+  async function startCheckout(plan: PlanResponse) {
+    setActionLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const session = await api.billing.checkout({ plan_slug: plan.slug });
+      window.location.assign(session.url);
+    } catch (caught) {
+      setError(apiMessage(caught, t("billing.error.checkout")));
+      setActionLoading(false);
+    }
+  }
+
+  async function openCustomerPortal() {
+    setActionLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const session = await api.billing.portal();
+      window.location.assign(session.url);
+    } catch (caught) {
+      setError(apiMessage(caught, t("billing.error.portal")));
+      setActionLoading(false);
+    }
+  }
+
   async function rebuildUsage() {
     setActionLoading(true);
     setError(null);
@@ -116,6 +146,10 @@ export function BillingPage() {
           {message && <StatusBadge label={message} tone="success" />}
         </div>
         <div className="toolbar toolbar--end">
+          <button className="secondary-button" type="button" onClick={() => void openCustomerPortal()} disabled={!canManageBilling || actionLoading}>
+            <ExternalLink size={16} aria-hidden="true" />
+            {t("billing.managePortal")}
+          </button>
           <button className="secondary-button" type="button" onClick={() => void rebuildUsage()} disabled={!canManageBilling || actionLoading}>
             <RotateCcw size={16} aria-hidden="true" />
             {t("billing.rebuildUsage")}
@@ -205,12 +239,30 @@ export function BillingPage() {
         <div className="plan-grid padded">
           {plans.map((plan) => {
             const active = usage?.subscription.plan_slug === plan.slug;
+            const paidPlan = plan.slug !== "free";
+            const stripeReady = !paidPlan || plan.stripe_checkout_available;
+            const disabled = active || !canManageBilling || actionLoading || !stripeReady;
+            const label = active
+              ? t("billing.plans.current")
+              : !stripeReady
+                ? t("billing.plans.stripeNotConfigured")
+                : paidPlan
+                  ? t("billing.plans.checkout")
+                  : t("billing.plans.switchFree");
             return (
               <article className={`plan-card ${active ? "plan-card--active" : ""}`} key={plan.id}>
                 <div>
                   <span>{plan.description}</span>
                   <h3>{plan.name}</h3>
-                  <strong>{formatMoney(plan.price_monthly_cents)}<small>{t("billing.plans.perMonth")}</small></strong>
+                  <strong>
+                    {isCustomPriced(plan) ? (
+                      t("billing.plans.customPrice")
+                    ) : (
+                      <>
+                        {formatMoney(plan.price_monthly_cents)}<small>{t("billing.plans.perMonth")}</small>
+                      </>
+                    )}
+                  </strong>
                 </div>
                 <ul>
                   <li>{t("billing.plans.members", { limit: plan.member_limit < 0 ? t("billing.unlimited") : plan.member_limit })}</li>
@@ -218,8 +270,13 @@ export function BillingPage() {
                   <li>{t("billing.plans.media", { limit: plan.media_limit_mb < 0 ? t("billing.unlimited") : `${plan.media_limit_mb} MB` })}</li>
                   <li>{t("billing.plans.api", { limit: plan.api_requests_limit < 0 ? t("billing.unlimited") : plan.api_requests_limit })}</li>
                 </ul>
-                <button className={active ? "secondary-button" : "primary-button"} type="button" onClick={() => void changePlan(plan)} disabled={active || !canManageBilling || actionLoading}>
-                  {active ? t("billing.plans.current") : t("billing.plans.change")}
+                <button
+                  className={active || !stripeReady ? "secondary-button" : "primary-button"}
+                  type="button"
+                  onClick={() => void (paidPlan ? startCheckout(plan) : changePlan(plan))}
+                  disabled={disabled}
+                >
+                  {label}
                 </button>
               </article>
             );

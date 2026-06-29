@@ -422,7 +422,7 @@ Required V2 changes:
 Stripe rules:
 
 - `organization_subscriptions.stripe_customer_id` should be unique per organization.
-- `billing_events.stripe_event_id` must be unique to avoid duplicate webhook processing.
+- `billing_events.provider_event_id` must be unique to avoid duplicate webhook processing.
 - Downgrades must not delete data; they should only restrict new data creation.
 - Checkout success should update internal state only after a verified webhook is received.
 

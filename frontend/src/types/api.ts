@@ -147,6 +147,7 @@ export type PlanResponse = {
   content_limit: number;
   media_limit_mb: number;
   api_requests_limit: number;
+  stripe_checkout_available: boolean;
   features: JsonRecord;
 };
 
@@ -184,6 +185,19 @@ export type BillingUsageResponse = {
 
 export type ChangePlanRequest = {
   plan_slug: string;
+};
+
+export type CheckoutSessionRequest = {
+  plan_slug: string;
+};
+
+export type CheckoutSessionResponse = {
+  session_id: string;
+  url: string;
+};
+
+export type CustomerPortalResponse = {
+  url: string;
 };
 
 export type FieldType = "text" | "longtext" | "richtext" | "number" | "boolean" | "datetime" | "media";

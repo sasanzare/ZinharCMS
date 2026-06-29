@@ -26,6 +26,7 @@ pub struct PlanLimits {
     pub media_limit_mb: i32,
     pub api_requests_limit: i32,
     pub features: Value,
+    pub stripe_price_id: Option<String>,
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -84,7 +85,8 @@ pub async fn list_plans(pool: &PgPool) -> Result<Vec<PlanLimits>, AppError> {
                content_limit,
                media_limit_mb,
                api_requests_limit,
-               features
+               features,
+               stripe_price_id
         FROM plans
         WHERE is_active = true
         ORDER BY sort_order ASC, price_monthly_cents ASC, name ASC
@@ -101,7 +103,7 @@ pub async fn load_current_plan(
 ) -> Result<PlanLimits, AppError> {
     ensure_default_subscription(pool, tenant).await?;
     let mut db = rls::tenant_connection(pool, tenant).await?;
-    sqlx::query_as::<_, PlanLimits>(
+    if let Some(plan) = sqlx::query_as::<_, PlanLimits>(
         r#"
         SELECT p.id,
                p.slug,
@@ -112,7 +114,8 @@ pub async fn load_current_plan(
                p.content_limit,
                p.media_limit_mb,
                p.api_requests_limit,
-               p.features
+               p.features,
+               p.stripe_price_id
         FROM organization_subscriptions subscription
         JOIN plans p ON p.id = subscription.plan_id
         WHERE subscription.organization_id = $1
@@ -124,6 +127,31 @@ pub async fn load_current_plan(
         "#,
     )
     .bind(tenant.organization_id)
+    .fetch_optional(db.as_mut())
+    .await?
+    {
+        return Ok(plan);
+    }
+
+    sqlx::query_as::<_, PlanLimits>(
+        r#"
+        SELECT id,
+               slug,
+               name,
+               description,
+               price_monthly_cents,
+               member_limit,
+               content_limit,
+               media_limit_mb,
+               api_requests_limit,
+               features,
+               stripe_price_id
+        FROM plans
+        WHERE slug = $1
+          AND is_active = true
+        "#,
+    )
+    .bind(FREE_PLAN_SLUG)
     .fetch_one(db.as_mut())
     .await
     .map_err(AppError::from)
