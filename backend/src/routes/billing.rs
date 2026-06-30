@@ -153,7 +153,7 @@ pub async fn change_subscription_plan(
     Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<ChangePlanRequest>,
 ) -> Result<Json<SubscriptionResponse>, AppError> {
-    rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
+    rbac::require_org_billing_manager(&tenant.role)?;
     let subscription: SubscriptionResponse =
         quota::change_plan(&state.db, &tenant, &payload.plan_slug)
             .await?
@@ -198,7 +198,7 @@ pub async fn create_checkout_session(
     Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<CheckoutSessionRequest>,
 ) -> Result<Json<CheckoutSessionResponse>, AppError> {
-    rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
+    rbac::require_org_billing_manager(&tenant.role)?;
     let session: CheckoutSessionResponse = stripe_billing::create_checkout_session(
         &state.db,
         &state.config,
@@ -229,7 +229,7 @@ pub async fn create_customer_portal_session(
     State(state): State<AppState>,
     Extension(tenant): Extension<TenantContext>,
 ) -> Result<Json<CustomerPortalResponse>, AppError> {
-    rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
+    rbac::require_org_billing_manager(&tenant.role)?;
     let session: CustomerPortalResponse =
         stripe_billing::create_customer_portal_session(&state.db, &state.config, &tenant)
             .await?
@@ -295,7 +295,7 @@ pub async fn rebuild_usage(
     State(state): State<AppState>,
     Extension(tenant): Extension<TenantContext>,
 ) -> Result<Json<BillingUsageResponse>, AppError> {
-    rbac::require_org_any(&tenant.role, &[rbac::ORG_ADMIN, rbac::ORG_BILLING_MANAGER])?;
+    rbac::require_org_billing_manager(&tenant.role)?;
     quota::rebuild_usage_counters(&state.db, &tenant).await?;
     audit::record(
         &state.db,

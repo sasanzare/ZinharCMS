@@ -587,7 +587,7 @@ fn usage_metric(metric: &'static str, used: i64, limit: i64) -> UsageMetric {
         };
     }
 
-    let remaining = limit.saturating_sub(used);
+    let remaining = limit.saturating_sub(used).max(0);
     let percent = if limit == 0 {
         Some(100.0)
     } else {
@@ -601,5 +601,28 @@ fn usage_metric(metric: &'static str, used: i64, limit: i64) -> UsageMetric {
         percent,
         near_limit: percent.is_some_and(|value| value >= 80.0),
         exceeded: used >= limit,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{METRIC_CONTENT_RECORDS, usage_metric};
+
+    #[test]
+    fn downgraded_plan_marks_metric_exceeded_without_negative_remaining() {
+        let metric = usage_metric(METRIC_CONTENT_RECORDS, 75, 50);
+
+        assert!(metric.exceeded);
+        assert_eq!(metric.remaining, Some(0));
+        assert_eq!(metric.percent, Some(100.0));
+    }
+
+    #[test]
+    fn unlimited_plan_has_no_remaining_or_percent() {
+        let metric = usage_metric(METRIC_CONTENT_RECORDS, 75, -1);
+
+        assert!(!metric.exceeded);
+        assert_eq!(metric.remaining, None);
+        assert_eq!(metric.percent, None);
     }
 }

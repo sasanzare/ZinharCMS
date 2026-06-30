@@ -131,12 +131,13 @@ pub async fn handle_webhook(
         .map_err(|error| AppError::BadRequest(format!("invalid Stripe payload: {error}")))?;
     let event_id = required_string(&payload, "id")?;
     let event_type = required_string(&payload, "type")?;
+    let provider_event_created_at = event_created_at(&payload);
 
     let mut tx = rls::begin_bypass_transaction(pool).await?;
     let inserted = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO billing_events (provider, provider_event_id, event_type, payload, status)
-        VALUES ('stripe', $1, $2, $3, 'processing')
+        INSERT INTO billing_events (provider, provider_event_id, event_type, payload, provider_event_created_at, status)
+        VALUES ('stripe', $1, $2, $3, $4, 'processing')
         ON CONFLICT (provider, provider_event_id) DO NOTHING
         RETURNING id
         "#,
@@ -144,6 +145,7 @@ pub async fn handle_webhook(
     .bind(&event_id)
     .bind(&event_type)
     .bind(&payload)
+    .bind(provider_event_created_at)
     .fetch_optional(&mut *tx)
     .await?;
 
@@ -157,10 +159,25 @@ pub async fn handle_webhook(
         });
     }
 
-    let processing_result = process_event(&mut tx, config, &event_type, &payload).await;
+    let processing_result = process_event(
+        &mut tx,
+        config,
+        &event_type,
+        &payload,
+        provider_event_created_at,
+    )
+    .await;
     match processing_result {
         Ok(EventOutcome::Processed(organization_id)) => {
-            update_billing_event(&mut tx, &event_id, organization_id, "processed", None).await?;
+            update_billing_event(
+                &mut tx,
+                &event_id,
+                organization_id,
+                "processed",
+                None,
+                provider_event_created_at,
+            )
+            .await?;
             if let Some(organization_id) = organization_id {
                 audit::record_in_transaction(
                     &mut tx,
@@ -182,7 +199,15 @@ pub async fn handle_webhook(
             })
         }
         Ok(EventOutcome::Ignored(organization_id)) => {
-            update_billing_event(&mut tx, &event_id, organization_id, "ignored", None).await?;
+            update_billing_event(
+                &mut tx,
+                &event_id,
+                organization_id,
+                "ignored",
+                None,
+                provider_event_created_at,
+            )
+            .await?;
             if let Some(organization_id) = organization_id {
                 audit::record_in_transaction(
                     &mut tx,
@@ -205,7 +230,15 @@ pub async fn handle_webhook(
         }
         Err(error) => {
             let message = error.to_string();
-            update_billing_event(&mut tx, &event_id, None, "failed", Some(&message)).await?;
+            update_billing_event(
+                &mut tx,
+                &event_id,
+                None,
+                "failed",
+                Some(&message),
+                provider_event_created_at,
+            )
+            .await?;
             tx.commit().await?;
             Err(error)
         }
@@ -222,19 +255,37 @@ async fn process_event(
     config: &Config,
     event_type: &str,
     payload: &Value,
+    provider_event_created_at: Option<DateTime<Utc>>,
 ) -> Result<EventOutcome, AppError> {
     match event_type {
         "checkout.session.completed" => {
-            let organization_id = apply_checkout_completed(tx, payload).await?;
-            Ok(EventOutcome::Processed(Some(organization_id)))
+            let (organization_id, applied) =
+                apply_checkout_completed(tx, payload, provider_event_created_at).await?;
+            if applied {
+                Ok(EventOutcome::Processed(Some(organization_id)))
+            } else {
+                Ok(EventOutcome::Ignored(Some(organization_id)))
+            }
         }
         "customer.subscription.updated" => {
-            let organization_id = apply_subscription_event(tx, config, payload, false).await?;
-            Ok(EventOutcome::Processed(Some(organization_id)))
+            let (organization_id, applied) =
+                apply_subscription_event(tx, config, payload, false, provider_event_created_at)
+                    .await?;
+            if applied {
+                Ok(EventOutcome::Processed(Some(organization_id)))
+            } else {
+                Ok(EventOutcome::Ignored(Some(organization_id)))
+            }
         }
         "customer.subscription.deleted" => {
-            let organization_id = apply_subscription_event(tx, config, payload, true).await?;
-            Ok(EventOutcome::Processed(Some(organization_id)))
+            let (organization_id, applied) =
+                apply_subscription_event(tx, config, payload, true, provider_event_created_at)
+                    .await?;
+            if applied {
+                Ok(EventOutcome::Processed(Some(organization_id)))
+            } else {
+                Ok(EventOutcome::Ignored(Some(organization_id)))
+            }
         }
         _ => Ok(EventOutcome::Ignored(None)),
     }
@@ -243,7 +294,8 @@ async fn process_event(
 async fn apply_checkout_completed(
     tx: &mut Transaction<'_, Postgres>,
     payload: &Value,
-) -> Result<Uuid, AppError> {
+    provider_event_created_at: Option<DateTime<Utc>>,
+) -> Result<(Uuid, bool), AppError> {
     let object = event_object(payload)?;
     let organization_id = organization_id_from_object(object)?;
     let plan_slug = metadata_string(object, "plan_slug").ok_or_else(|| {
@@ -257,7 +309,7 @@ async fn apply_checkout_completed(
     let customer_id = object_string(object, "customer");
     let subscription_id = object_string(object, "subscription");
 
-    upsert_subscription(
+    let applied = upsert_subscription(
         tx,
         organization_id,
         plan_id,
@@ -267,9 +319,10 @@ async fn apply_checkout_completed(
         None,
         None,
         false,
+        provider_event_created_at,
     )
     .await?;
-    Ok(organization_id)
+    Ok((organization_id, applied))
 }
 
 async fn apply_subscription_event(
@@ -277,7 +330,8 @@ async fn apply_subscription_event(
     config: &Config,
     payload: &Value,
     deleted: bool,
-) -> Result<Uuid, AppError> {
+    provider_event_created_at: Option<DateTime<Utc>>,
+) -> Result<(Uuid, bool), AppError> {
     let object = event_object(payload)?;
     let subscription_id = object_string(object, "id");
     let customer_id = object_string(object, "customer");
@@ -320,7 +374,7 @@ async fn apply_subscription_event(
         .and_then(Value::as_bool)
         .unwrap_or(false);
 
-    upsert_subscription(
+    let applied = upsert_subscription(
         tx,
         organization_id,
         plan_id,
@@ -330,17 +384,18 @@ async fn apply_subscription_event(
         period_start,
         period_end,
         cancel_at_period_end,
+        provider_event_created_at,
     )
     .await?;
-    Ok(organization_id)
+    Ok((organization_id, applied))
 }
-
 async fn update_billing_event(
     tx: &mut Transaction<'_, Postgres>,
     event_id: &str,
     organization_id: Option<Uuid>,
     status: &str,
     error: Option<&str>,
+    provider_event_created_at: Option<DateTime<Utc>>,
 ) -> Result<(), AppError> {
     sqlx::query(
         r#"
@@ -348,6 +403,7 @@ async fn update_billing_event(
         SET organization_id = COALESCE($2, organization_id),
             status = $3,
             error = $4,
+            provider_event_created_at = COALESCE($5, provider_event_created_at),
             processed_at = CASE WHEN $3 IN ('processed', 'ignored') THEN now() ELSE processed_at END,
             updated_at = now()
         WHERE provider = 'stripe'
@@ -358,6 +414,7 @@ async fn update_billing_event(
     .bind(organization_id)
     .bind(status)
     .bind(error)
+    .bind(provider_event_created_at)
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -735,8 +792,9 @@ async fn upsert_subscription(
     period_start: Option<DateTime<Utc>>,
     period_end: Option<DateTime<Utc>>,
     cancel_at_period_end: bool,
-) -> Result<(), AppError> {
-    sqlx::query(
+    provider_event_created_at: Option<DateTime<Utc>>,
+) -> Result<bool, AppError> {
+    let applied = sqlx::query_scalar::<_, Uuid>(
         r#"
         INSERT INTO organization_subscriptions (
           organization_id,
@@ -747,7 +805,8 @@ async fn upsert_subscription(
           provider_subscription_id,
           current_period_start,
           current_period_end,
-          cancel_at_period_end
+          cancel_at_period_end,
+          provider_event_created_at
         )
         VALUES (
           $1,
@@ -758,7 +817,8 @@ async fn upsert_subscription(
           $5,
           COALESCE($6, date_trunc('month', now())),
           COALESCE($7, date_trunc('month', now()) + interval '1 month'),
-          $8
+          $8,
+          $9
         )
         ON CONFLICT (organization_id) DO UPDATE
         SET plan_id = EXCLUDED.plan_id,
@@ -769,7 +829,12 @@ async fn upsert_subscription(
             current_period_start = COALESCE(EXCLUDED.current_period_start, organization_subscriptions.current_period_start),
             current_period_end = COALESCE(EXCLUDED.current_period_end, organization_subscriptions.current_period_end),
             cancel_at_period_end = EXCLUDED.cancel_at_period_end,
+            provider_event_created_at = COALESCE(EXCLUDED.provider_event_created_at, organization_subscriptions.provider_event_created_at),
             updated_at = now()
+        WHERE organization_subscriptions.provider_event_created_at IS NULL
+           OR EXCLUDED.provider_event_created_at IS NULL
+           OR organization_subscriptions.provider_event_created_at <= EXCLUDED.provider_event_created_at
+        RETURNING organization_id
         "#,
     )
     .bind(organization_id)
@@ -780,9 +845,28 @@ async fn upsert_subscription(
     .bind(period_start)
     .bind(period_end)
     .bind(cancel_at_period_end)
-    .execute(&mut **tx)
+    .bind(provider_event_created_at)
+    .fetch_optional(&mut **tx)
     .await?;
-    Ok(())
+    Ok(applied.is_some())
+}
+
+fn event_created_at(payload: &Value) -> Option<DateTime<Utc>> {
+    payload
+        .get("created")
+        .and_then(Value::as_i64)
+        .and_then(|seconds| DateTime::from_timestamp(seconds, 0))
+}
+
+#[cfg(test)]
+fn should_apply_provider_event(
+    current: Option<DateTime<Utc>>,
+    incoming: Option<DateTime<Utc>>,
+) -> bool {
+    match (current, incoming) {
+        (Some(current), Some(incoming)) => current <= incoming,
+        _ => true,
+    }
 }
 
 #[cfg(test)]
@@ -802,6 +886,33 @@ mod tests {
         );
     }
 
+    #[test]
+    fn event_created_at_reads_stripe_top_level_timestamp() {
+        let payload = serde_json::json!({
+            "id": "evt_test",
+            "created": 1_700_000_000,
+            "type": "customer.subscription.updated"
+        });
+
+        assert_eq!(
+            event_created_at(&payload).unwrap().timestamp(),
+            1_700_000_000
+        );
+    }
+
+    #[test]
+    fn provider_event_ordering_rejects_older_events() {
+        let current = DateTime::from_timestamp(1_700_000_100, 0);
+        let older = DateTime::from_timestamp(1_700_000_000, 0);
+        let same = current;
+        let newer = DateTime::from_timestamp(1_700_000_200, 0);
+
+        assert!(!should_apply_provider_event(current, older));
+        assert!(should_apply_provider_event(current, same));
+        assert!(should_apply_provider_event(current, newer));
+        assert!(should_apply_provider_event(current, None));
+        assert!(should_apply_provider_event(None, older));
+    }
     #[test]
     fn signature_verification_accepts_valid_payload() {
         let payload = br#"{"id":"evt_test","type":"checkout.session.completed"}"#;

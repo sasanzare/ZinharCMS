@@ -131,6 +131,10 @@ pub fn require_org_webhook_manager(role: &str) -> Result<(), AppError> {
     require_org_any(role, &[ORG_ADMIN])
 }
 
+pub fn require_org_billing_manager(role: &str) -> Result<(), AppError> {
+    require_org_any(role, &[ORG_ADMIN, ORG_BILLING_MANAGER])
+}
+
 pub fn require_org_workflow_reviewer(role: &str) -> Result<(), AppError> {
     require_org_any(role, &[ORG_ADMIN, ORG_EDITOR])
 }
@@ -152,5 +156,77 @@ pub fn default_registration_role(existing_users: i64) -> &'static str {
         SUPER_ADMIN
     } else {
         AUTHOR
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type Check = fn(&str) -> Result<(), AppError>;
+
+    #[test]
+    fn organization_permission_matrix_matches_phase8_contract() {
+        let matrix: &[(&str, Check, &[&str])] = &[
+            (
+                "content_type_manager",
+                require_org_content_type_manager,
+                &[ORG_OWNER, ORG_ADMIN, ORG_EDITOR],
+            ),
+            (
+                "entry_writer",
+                require_org_entry_writer,
+                &[ORG_OWNER, ORG_ADMIN, ORG_EDITOR, ORG_AUTHOR],
+            ),
+            (
+                "entry_publisher",
+                require_org_entry_publisher,
+                &[ORG_OWNER, ORG_ADMIN, ORG_EDITOR],
+            ),
+            (
+                "media_writer",
+                require_org_media_writer,
+                &[ORG_OWNER, ORG_ADMIN, ORG_EDITOR, ORG_AUTHOR],
+            ),
+            (
+                "page_manager",
+                require_org_page_manager,
+                &[ORG_OWNER, ORG_ADMIN, ORG_EDITOR],
+            ),
+            (
+                "webhook_manager",
+                require_org_webhook_manager,
+                &[ORG_OWNER, ORG_ADMIN],
+            ),
+            (
+                "billing_manager",
+                require_org_billing_manager,
+                &[ORG_OWNER, ORG_ADMIN, ORG_BILLING_MANAGER],
+            ),
+            (
+                "comment_reader",
+                require_org_comment_reader,
+                &[ORG_OWNER, ORG_ADMIN, ORG_EDITOR, ORG_AUTHOR, ORG_VIEWER],
+            ),
+        ];
+        let roles = [
+            ORG_OWNER,
+            ORG_ADMIN,
+            ORG_EDITOR,
+            ORG_AUTHOR,
+            ORG_VIEWER,
+            ORG_BILLING_MANAGER,
+        ];
+
+        for (permission, check, allowed_roles) in matrix {
+            for role in roles {
+                let allowed = allowed_roles.contains(&role);
+                assert_eq!(
+                    check(role).is_ok(),
+                    allowed,
+                    "permission {permission} for role {role}"
+                );
+            }
+        }
     }
 }
