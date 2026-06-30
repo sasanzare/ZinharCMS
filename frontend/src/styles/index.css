@@ -1625,3 +1625,62 @@ input {
   background: #166a5b;
   content: "";
 }
+.beta-page .table-subtext {
+  display: block;
+  max-width: 320px;
+  overflow: hidden;
+  color: #68747a;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.beta-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.beta-health-grid > div {
+  display: grid;
+  gap: 8px;
+  min-height: 96px;
+  border: 1px solid #dfe8e6;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfdfc;
+}
+
+.beta-health-grid span {
+  color: #657178;
+  font-size: 0.84rem;
+}
+
+.beta-health-grid strong {
+  color: #1f2b30;
+  font-size: 1rem;
+}
+
+.beta-feedback-panel,
+.beta-list-panel {
+  min-width: 0;
+}
+
+.beta-inline-form {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: end;
+}
+
+.beta-inline-form button {
+  min-width: 150px;
+}
+
+@media (min-width: 980px) {
+  .beta-feedback-panel {
+    grid-column: span 5;
+  }
+
+  .beta-list-panel {
+    grid-column: span 7;
+  }
+}

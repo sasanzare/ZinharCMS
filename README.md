@@ -1,12 +1,12 @@
 # ZinharCMS
 
 ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
-This repository currently implements phases zero through seven from the project
+This repository currently implements phases zero through nine from the project
 proposal: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
-management, security hardening, i18n-ready admin localization, and a React admin panel for those capabilities.
+management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, and a React admin panel for those capabilities.
 
 ## Phase Zero Scope
 
@@ -74,6 +74,13 @@ management, security hardening, i18n-ready admin localization, and a React admin
 - Webhook security: SSRF-focused URL validation for webhook registration.
 - Upload security: allowlisted MIME types verified from file content signatures.
 
+## V2 Beta Scope
+
+- Multi-tenant organization model with membership-based access.
+- Tenant-aware API context, PostgreSQL RLS, billing plans, quotas, and Stripe lifecycle hooks.
+- Organization operations for invitations, workspace URLs, domains, rate limits, audit logs, email deliveries, and SaaS alerts.
+- Phase 8 hardening coverage for tenant isolation, billing webhook ordering, security headers, and production readiness checks.
+- Phase 9 beta release tooling for selected organizations, in-product feedback, product dashboarding, and GA blocker tracking.
 ## Quick Start
 
 Copy the environment template and start the local stack:

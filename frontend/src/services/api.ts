@@ -3,6 +3,16 @@ import type {
   AuditLogResponse,
   AuthResponse,
   BillingUsageResponse,
+  BetaDashboardResponse,
+  BetaFeedbackRequest,
+  BetaFeedbackResponse,
+  BetaGaBlockerRequest,
+  BetaGaBlockerResponse,
+  BetaParticipantRequest,
+  BetaParticipantResponse,
+  BetaProductDashboardResponse,
+  UpdateBetaFeedbackRequest,
+  UpdateBetaGaBlockerRequest,
   ChangePlanRequest,
   CheckoutSessionRequest,
   CheckoutSessionResponse,
@@ -187,6 +197,23 @@ changePlan: (payload: ChangePlanRequest) =>
     portal: () => request<CustomerPortalResponse>("/api/billing/portal", { method: "POST", auth: true }),
     usage: () => request<BillingUsageResponse>("/api/billing/usage", { auth: true }),
     rebuildUsage: () => request<BillingUsageResponse>("/api/billing/usage/rebuild", { method: "POST", auth: true }),
+  },
+
+  beta: {
+    dashboard: () => request<BetaDashboardResponse>("/api/beta/dashboard", { auth: true }),
+    feedback: (limit = 50) => request<BetaFeedbackResponse[]>(`/api/beta/feedback${query({ limit })}`, { auth: true }),
+    createFeedback: (payload: BetaFeedbackRequest) =>
+      request<BetaFeedbackResponse>("/api/beta/feedback", { method: "POST", auth: true, body: payload }),
+    updateFeedback: (feedbackId: string, payload: UpdateBetaFeedbackRequest) =>
+      request<BetaFeedbackResponse>(`/api/beta/feedback/${feedbackId}`, { method: "PATCH", auth: true, body: payload }),
+    blockers: (limit = 50) => request<BetaGaBlockerResponse[]>(`/api/beta/ga-blockers${query({ limit })}`, { auth: true }),
+    createBlocker: (payload: BetaGaBlockerRequest) =>
+      request<BetaGaBlockerResponse>("/api/beta/ga-blockers", { method: "POST", auth: true, body: payload }),
+    updateBlocker: (blockerId: string, payload: UpdateBetaGaBlockerRequest) =>
+      request<BetaGaBlockerResponse>(`/api/beta/ga-blockers/${blockerId}`, { method: "PATCH", auth: true, body: payload }),
+    productDashboard: () => request<BetaProductDashboardResponse>("/api/beta/product-dashboard", { auth: true }),
+    upsertParticipant: (organizationId: string, payload: BetaParticipantRequest) =>
+      request<BetaParticipantResponse>(`/api/beta/participants/${organizationId}`, { method: "PUT", auth: true, body: payload }),
   },
   organizations: {
     list: () => request<OrganizationMembership[]>("/api/organizations", { auth: true }),

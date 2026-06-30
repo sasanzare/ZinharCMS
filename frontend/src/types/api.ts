@@ -205,6 +205,136 @@ export type SaasAlertRuleResponse = {
   created_at: string;
   updated_at: string;
 };
+
+export type BetaFeedbackCategory = "bug" | "ux" | "billing" | "performance" | "tenant_isolation" | "onboarding" | "other";
+export type BetaFeedbackSeverity = "low" | "medium" | "high" | "critical";
+export type BetaFeedbackStatus = "open" | "triaged" | "planned" | "fixed" | "closed";
+export type BetaBlockerPriority = "p0" | "p1" | "p2" | "p3";
+export type BetaBlockerStatus = "open" | "in_progress" | "blocked" | "resolved" | "deferred";
+export type BetaParticipantStatus = "candidate" | "invited" | "onboarding" | "active" | "paused" | "graduated" | "rejected";
+
+export type BetaFeedbackRequest = {
+  category?: BetaFeedbackCategory;
+  severity?: BetaFeedbackSeverity;
+  title: string;
+  description: string;
+  page_url?: string;
+  metadata?: JsonRecord;
+};
+
+export type UpdateBetaFeedbackRequest = {
+  status?: BetaFeedbackStatus;
+  severity?: BetaFeedbackSeverity;
+};
+
+export type BetaFeedbackResponse = {
+  id: string;
+  organization_id: string;
+  submitted_by: string | null;
+  submitted_by_email: string | null;
+  category: BetaFeedbackCategory;
+  severity: BetaFeedbackSeverity;
+  status: BetaFeedbackStatus;
+  title: string;
+  description: string;
+  page_url: string | null;
+  metadata: JsonRecord;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BetaGaBlockerRequest = {
+  feedback_id?: string;
+  priority?: BetaBlockerPriority;
+  area: string;
+  title: string;
+  owner?: string;
+  due_at?: string;
+  metadata?: JsonRecord;
+};
+
+export type UpdateBetaGaBlockerRequest = {
+  priority?: BetaBlockerPriority;
+  status?: BetaBlockerStatus;
+  owner?: string;
+  due_at?: string;
+};
+
+export type BetaGaBlockerResponse = {
+  id: string;
+  organization_id: string;
+  feedback_id: string | null;
+  priority: BetaBlockerPriority;
+  area: string;
+  title: string;
+  status: BetaBlockerStatus;
+  owner: string | null;
+  due_at: string | null;
+  metadata: JsonRecord;
+  created_at: string;
+  updated_at: string;
+};
+
+
+export type BetaParticipantRequest = {
+  cohort_label?: string;
+  contact_name?: string;
+  contact_email?: string;
+  status: BetaParticipantStatus;
+  notes?: string;
+  metadata?: JsonRecord;
+};
+
+export type BetaParticipantResponse = {
+  organization_id: string;
+  organization_name: string;
+  organization_slug: string;
+  cohort_label: string;
+  contact_name: string | null;
+  contact_email: string | null;
+  status: BetaParticipantStatus;
+  onboarded_at: string | null;
+  last_check_in_at: string | null;
+  notes: string | null;
+  metadata: JsonRecord;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BetaOrganizationDashboardResponse = {
+  organization_id: string;
+  organization_name: string;
+  organization_slug: string;
+  participant_status: BetaParticipantStatus | null;
+  cohort_label: string | null;
+  current_plan: string | null;
+  current_plan_slug: string | null;
+  open_feedback: number;
+  critical_feedback: number;
+  open_ga_blockers: number;
+  failed_billing_events: number;
+  failed_email_deliveries: number;
+};
+
+export type BetaDashboardResponse = {
+  organization: BetaOrganizationDashboardResponse;
+  exceeded_usage_metrics: string[];
+};
+
+export type BetaProductTotalsResponse = {
+  beta_organizations: number;
+  active_organizations: number;
+  open_feedback: number;
+  critical_feedback: number;
+  open_ga_blockers: number;
+  failed_billing_events: number;
+  failed_email_deliveries: number;
+};
+
+export type BetaProductDashboardResponse = {
+  organizations: BetaOrganizationDashboardResponse[];
+  totals: BetaProductTotalsResponse;
+};
 export type TransferOwnershipRequest = {
   user_id: string;
 };

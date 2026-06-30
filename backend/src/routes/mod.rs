@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod beta;
 pub mod billing;
 pub mod comments;
 pub mod content;
@@ -30,6 +31,7 @@ pub fn router(state: AppState) -> Router {
     let uploads = ServeDir::new(state.config.upload_dir.clone());
     let protected = Router::new()
         .merge(auth::protected_router())
+        .merge(beta::protected_router())
         .merge(organizations::protected_router())
         .merge(plugins::router())
         .route_layer(middleware::from_fn_with_state(
@@ -39,6 +41,7 @@ pub fn router(state: AppState) -> Router {
 
     let tenant_protected = Router::new()
         .merge(content::router())
+        .merge(beta::router())
         .merge(billing::router())
         .merge(media::router())
         .merge(organizations::tenant_router())
@@ -85,6 +88,15 @@ pub fn router(state: AppState) -> Router {
         billing::stripe_webhook,
         billing::get_usage,
         billing::rebuild_usage,
+        beta::get_beta_dashboard,
+        beta::list_beta_feedback,
+        beta::create_beta_feedback,
+        beta::update_beta_feedback,
+        beta::list_ga_blockers,
+        beta::create_ga_blocker,
+        beta::update_ga_blocker,
+        beta::get_product_dashboard,
+        beta::upsert_beta_participant,
         organizations::list_organizations,
         organizations::create_organization,
         organizations::get_current_organization,
@@ -197,6 +209,18 @@ pub fn router(state: AppState) -> Router {
         billing::PlanResponse,
         billing::SubscriptionResponse,
         billing::UsageMetricResponse,
+        beta::BetaDashboardResponse,
+        beta::BetaFeedbackRequest,
+        beta::BetaFeedbackResponse,
+        beta::BetaGaBlockerRequest,
+        beta::BetaGaBlockerResponse,
+        beta::BetaOrganizationDashboardResponse,
+        beta::BetaParticipantRequest,
+        beta::BetaParticipantResponse,
+        beta::BetaProductDashboardResponse,
+        beta::BetaProductTotalsResponse,
+        beta::UpdateBetaFeedbackRequest,
+        beta::UpdateBetaGaBlockerRequest,
         organizations::AcceptInvitationRequest,
         organizations::CreateOrganizationRequest,
         organizations::CreatedInvitationResponse,
@@ -252,6 +276,7 @@ pub fn router(state: AppState) -> Router {
         (name = "system", description = "Phase-zero system endpoints"),
         (name = "auth", description = "Authentication and token management"),
         (name = "billing", description = "Plans, subscriptions, and usage quotas"),
+        (name = "beta", description = "Beta release feedback, dashboards, and GA readiness"),
         (name = "content", description = "Content type management"),
         (name = "entries", description = "Content entry management"),
         (name = "media", description = "Media library"),

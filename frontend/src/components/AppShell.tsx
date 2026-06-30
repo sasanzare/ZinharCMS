@@ -8,6 +8,7 @@ import {
   Layers3,
   LogOut,
   Menu,
+  Rocket,
   Settings,
   Workflow,
 } from "lucide-react";
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { labelKey: "app.nav.workflow", path: "/workflow", icon: Workflow },
   { labelKey: "app.nav.organization", path: "/organization", icon: Building2 },
   { labelKey: "app.nav.billing", path: "/billing", icon: CreditCard },
+  { labelKey: "app.nav.beta", path: "/beta", icon: Rocket },
   { labelKey: "app.nav.settings", path: "/settings", icon: Settings },
 ];
 

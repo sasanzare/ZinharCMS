@@ -19,6 +19,9 @@ pub const TENANT_RLS_TABLES: &[&str] = &[
     "audit_logs",
     "email_deliveries",
     "saas_alert_rules",
+    "beta_participants",
+    "beta_feedback",
+    "beta_ga_blockers",
 ];
 
 pub const PHASE8_LOAD_SMOKE_ENDPOINTS: &[&str] = &[
@@ -45,6 +48,8 @@ mod tests {
         include_str!("../../migrations/0012_v2_phase_seven_saas_ops.sql");
     const PHASE8_MIGRATION: &str =
         include_str!("../../migrations/0013_v2_phase_eight_hardening.sql");
+    const PHASE9_MIGRATION: &str =
+        include_str!("../../migrations/0014_v2_phase_nine_beta_release.sql");
 
     #[test]
     fn tenant_tables_have_forced_rls_coverage() {
@@ -53,6 +58,7 @@ mod tests {
             BILLING_MIGRATION,
             STRIPE_MIGRATION,
             SAAS_OPS_MIGRATION,
+            PHASE9_MIGRATION,
         ]
         .join("\n");
 
@@ -72,6 +78,7 @@ mod tests {
             RLS_MIGRATION,
             BILLING_MIGRATION,
             STRIPE_MIGRATION,
+            PHASE9_MIGRATION,
             SAAS_OPS_MIGRATION,
         ]
         .join("\n");
@@ -87,6 +94,16 @@ mod tests {
         assert!(PHASE8_MIGRATION.contains("CREATE INDEX IF NOT EXISTS"));
         assert!(!PHASE8_MIGRATION.contains("DROP TABLE"));
         assert!(!PHASE8_MIGRATION.contains("DROP COLUMN"));
+    }
+
+    #[test]
+    fn phase9_migration_adds_beta_release_tables() {
+        assert!(PHASE9_MIGRATION.contains("CREATE TABLE IF NOT EXISTS beta_participants"));
+        assert!(PHASE9_MIGRATION.contains("CREATE TABLE IF NOT EXISTS beta_feedback"));
+        assert!(PHASE9_MIGRATION.contains("CREATE TABLE IF NOT EXISTS beta_ga_blockers"));
+        assert!(PHASE9_MIGRATION.contains("ALTER TABLE beta_feedback FORCE ROW LEVEL SECURITY"));
+        assert!(!PHASE9_MIGRATION.contains("DROP TABLE"));
+        assert!(!PHASE9_MIGRATION.contains("DROP COLUMN"));
     }
 
     #[test]

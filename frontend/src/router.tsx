@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { RequireAuth } from "./components/RequireAuth";
 import { AuthPage } from "./pages/AuthPage";
+import { BetaPage } from "./pages/BetaPage";
 import { BillingPage } from "./pages/BillingPage";
 import { ContentTypesPage } from "./pages/ContentTypesPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: "organization", element: <OrganizationPage /> },
       { path: "workspace/:slug", element: <WorkspaceRedirectPage /> },
       { path: "billing", element: <BillingPage /> },
+      { path: "beta", element: <BetaPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
