@@ -240,14 +240,14 @@ export function BillingPage() {
           {plans.map((plan) => {
             const active = usage?.subscription.plan_slug === plan.slug;
             const paidPlan = plan.slug !== "free";
-            const stripeReady = !paidPlan || plan.stripe_checkout_available;
-            const disabled = active || !canManageBilling || actionLoading || !stripeReady;
+            const usesStripeCheckout = paidPlan && plan.stripe_checkout_available;
+            const disabled = active || !canManageBilling || actionLoading;
             const label = active
               ? t("billing.plans.current")
-              : !stripeReady
-                ? t("billing.plans.stripeNotConfigured")
+              : usesStripeCheckout
+                ? t("billing.plans.checkout")
                 : paidPlan
-                  ? t("billing.plans.checkout")
+                  ? t("billing.plans.change")
                   : t("billing.plans.switchFree");
             return (
               <article className={`plan-card ${active ? "plan-card--active" : ""}`} key={plan.id}>
@@ -271,9 +271,9 @@ export function BillingPage() {
                   <li>{t("billing.plans.api", { limit: plan.api_requests_limit < 0 ? t("billing.unlimited") : plan.api_requests_limit })}</li>
                 </ul>
                 <button
-                  className={active || !stripeReady ? "secondary-button" : "primary-button"}
+                  className={active ? "secondary-button" : "primary-button"}
                   type="button"
-                  onClick={() => void (paidPlan ? startCheckout(plan) : changePlan(plan))}
+                  onClick={() => void (usesStripeCheckout ? startCheckout(plan) : changePlan(plan))}
                   disabled={disabled}
                 >
                   {label}

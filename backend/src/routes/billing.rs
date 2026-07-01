@@ -322,9 +322,13 @@ async fn load_actor_email(
         .await
         .map_err(AppError::from)
 }
+fn checkout_available_for_plan(config: &Config, plan: &quota::PlanLimits) -> bool {
+    config.stripe_secret_key.is_some() && stripe_billing::price_id_for_plan(config, plan).is_some()
+}
+
 impl PlanResponse {
     fn from_plan(plan: quota::PlanLimits, config: &Config) -> Self {
-        let stripe_checkout_available = stripe_billing::price_id_for_plan(config, &plan).is_some();
+        let stripe_checkout_available = checkout_available_for_plan(config, &plan);
         Self {
             id: plan.id,
             slug: plan.slug,
@@ -408,5 +412,45 @@ impl From<stripe_billing::WebhookResult> for BillingWebhookResponse {
             status: result.status,
             already_processed: result.already_processed,
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+    use uuid::Uuid;
+
+    use super::checkout_available_for_plan;
+    use crate::config::Config;
+    use crate::services::quota::PlanLimits;
+
+    fn paid_plan(slug: &str) -> PlanLimits {
+        PlanLimits {
+            id: Uuid::nil(),
+            slug: slug.to_owned(),
+            name: slug.to_owned(),
+            description: String::new(),
+            price_monthly_cents: 2900,
+            member_limit: 10,
+            content_limit: 5000,
+            media_limit_mb: 51200,
+            api_requests_limit: 250000,
+            features: json!({}),
+            stripe_price_id: None,
+        }
+    }
+
+    #[test]
+    fn checkout_requires_secret_key_and_price_id() {
+        let mut config = Config::test_with_stripe_secret("whsec_test");
+        let plan = paid_plan("pro");
+
+        assert!(checkout_available_for_plan(&config, &plan));
+
+        config.stripe_secret_key = None;
+        assert!(!checkout_available_for_plan(&config, &plan));
+
+        config.stripe_secret_key = Some("sk_test_local".to_owned());
+        config.stripe_pro_price_id = None;
+        assert!(!checkout_available_for_plan(&config, &plan));
     }
 }

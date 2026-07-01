@@ -1,12 +1,12 @@
 # ZinharCMS
 
 ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
-This repository currently implements phases zero through nine from the project
+This repository currently implements phases zero through ten from the project
 proposal: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
-management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, and a React admin panel for those capabilities.
+management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, and a React admin panel for those capabilities.
 
 ## Phase Zero Scope
 
@@ -17,7 +17,7 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - `.github/workflows/`: initial backend and frontend CI.
 - `backend/migrations/`: database schema based on the proposal ERD.
 - `docs/`: architecture, API, and phase-zero notes.
-- Internationalization: typed frontend locale dictionaries for en and a-IR, persisted language selection, and RTL document direction support. See docs/I18N.md.
+- Internationalization: typed frontend locale dictionaries for en and fa-IR, persisted language selection, and RTL document direction support. See docs/I18N.md.
 
 ## Phase One Scope
 
@@ -81,6 +81,14 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Organization operations for invitations, workspace URLs, domains, rate limits, audit logs, email deliveries, and SaaS alerts.
 - Phase 8 hardening coverage for tenant isolation, billing webhook ordering, security headers, and production readiness checks.
 - Phase 9 beta release tooling for selected organizations, in-product feedback, product dashboarding, and GA blocker tracking.
+
+## V2 GA Scope
+
+- Phase 10 release notes, migration guide, admin guide, billing guide, operational runbook, and support/rollback plan.
+- GA release checklist for freeze, final migration, post-release monitoring, paid plan enablement, billing support, account access support, and rollback readiness.
+- `scripts/v2-ga-check.ps1` for release-candidate backend tests, frontend lint/build, and optional live health/readiness checks.
+- Backend static tests that keep the GA documentation set and release checklist from silently regressing.
+
 ## Quick Start
 
 Copy the environment template and start the local stack:
