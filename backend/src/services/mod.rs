@@ -6,6 +6,7 @@ pub mod ga_readiness;
 pub mod hardening;
 pub mod health;
 pub mod jwt;
+pub mod marketplace_policy;
 pub mod media_processing;
 pub mod password;
 pub mod quota;
