@@ -6,7 +6,7 @@ proposal: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
-management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, and the V3 Marketplace phase 0.1 policy foundation.
+management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, and the V3 Marketplace phase 0.2 readiness foundation.
 
 ## Phase Zero Scope
 
@@ -94,6 +94,12 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Product taxonomy for Component Pack, Design Template, Integration Plugin, Backend Extension, and Unsupported submissions.
 - Initial Marketplace review, approval, rejection, quarantine, moderation, and takedown policy.
 - Backend static tests that keep the phase 0.1 scope and policy documents from silently regressing.
+## V3 Marketplace Phase 0.2 Scope
+
+- V2 readiness audit for Marketplace dependencies on organizations, billing, RBAC, audit logs, and RLS.
+- Dependency matrix that fixes ownership, entitlement, permission, and audit decisions before domain modeling.
+- Gap list for plugin install, creator payment, Marketplace permissions, audit taxonomy, and operational runbooks.
+- Backend static tests that keep the phase 0.2 readiness audit and gap list from silently regressing.
 
 ## Quick Start
 
