@@ -47,6 +47,7 @@ import type {
   MarketplaceListingRequest,
   MarketplaceListingResponse,
   MarketplaceVersionSubmissionResponse,
+  MarketplaceValidationReportResponse,
   MediaListResponse,
   PageJson,
   PageListResponse,
@@ -345,6 +346,9 @@ changePlan: (payload: ChangePlanRequest) =>
         formData,
       });
     },
+    submissions: (listingId: string) =>
+      request<MarketplaceValidationReportResponse[]>(`/api/marketplace/listings/${listingId}/submissions`, { auth: true }),
+    reviewReports: () => request<MarketplaceValidationReportResponse[]>("/api/marketplace/review/reports", { auth: true }),
   },
   media: {
     list: (params: { mime_type?: string; page?: number; per_page?: number } = {}) =>

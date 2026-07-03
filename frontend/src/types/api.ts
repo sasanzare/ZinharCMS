@@ -624,6 +624,8 @@ export type MarketplaceCreatorStatus = "pending" | "approved" | "suspended" | "r
 export type MarketplaceProductType = "component_pack" | "design_template" | "integration_plugin" | "backend_extension";
 export type MarketplacePricingType = "free" | "paid" | "custom";
 export type MarketplaceListingStatus = "draft" | "submitted" | "approved" | "changes_requested" | "suspended" | "blocked" | "archived";
+export type MarketplaceValidationStatus = "pending" | "passed" | "warning" | "failed";
+export type MarketplaceSecurityRiskLevel = "unreviewed" | "low" | "medium" | "high" | "critical";
 
 export type MarketplaceCreatorRequest = {
   slug: string;
@@ -702,6 +704,10 @@ export type MarketplacePackageVersionResponse = {
   artifact_file_name: string;
   artifact_content_type: string;
   storage_metadata: JsonRecord;
+  validation_status: MarketplaceValidationStatus;
+  validation_report: JsonRecord;
+  security_risk_level: MarketplaceSecurityRiskLevel;
+  compatibility_report: JsonRecord;
   status: string;
   created_by: string | null;
   created_at: string;
@@ -726,4 +732,25 @@ export type MarketplaceSubmissionResponse = {
 export type MarketplaceVersionSubmissionResponse = {
   version: MarketplacePackageVersionResponse;
   submission: MarketplaceSubmissionResponse;
+};
+
+export type MarketplaceValidationReportResponse = {
+  listing_id: string;
+  listing_title: string;
+  listing_slug: string;
+  creator_id: string;
+  creator_display_name: string;
+  version_id: string;
+  version: string;
+  version_status: string;
+  validation_status: MarketplaceValidationStatus;
+  security_risk_level: MarketplaceSecurityRiskLevel;
+  validation_report: JsonRecord;
+  compatibility_report: JsonRecord;
+  submission_id: string;
+  review_status: string;
+  risk_level: MarketplaceSecurityRiskLevel;
+  review_notes: string | null;
+  submitted_at: string;
+  updated_at: string;
 };

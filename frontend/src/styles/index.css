@@ -730,6 +730,76 @@ input {
 .marketplace-listings-table .data-table {
   min-width: 720px;
 }
+
+.marketplace-report-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.marketplace-report-grid > * {
+  min-width: 0;
+}
+
+.validation-report-list {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.validation-report-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfcfc;
+}
+
+.validation-report-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.validation-report-card-header div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.validation-report-card-header strong,
+.validation-report-card-header span {
+  overflow-wrap: anywhere;
+}
+
+.validation-report-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.validation-report-json {
+  max-width: 100%;
+  min-width: 0;
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  margin: 0;
+  padding: 12px;
+  background: #f6faf9;
+  color: #102027;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .field-builder {
   display: grid;
   gap: 10px;
@@ -1709,5 +1779,10 @@ input {
 
   .beta-list-panel {
     grid-column: span 7;
+  }
+}
+@media (max-width: 760px) {
+  .marketplace-report-grid {
+    grid-template-columns: 1fr;
   }
 }

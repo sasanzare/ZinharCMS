@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, PackagePlus, RefreshCw, Save, Send, Store, Upload } from "lucide-react";
+import { BadgeCheck, FileCheck, PackagePlus, RefreshCw, Save, Send, ShieldAlert, Store, Upload } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
 import { ApiError, api } from "../services/api";
+import { useAppStore } from "../stores/useAppStore";
 import type {
   MarketplaceCreatorResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
   MarketplacePricingType,
   MarketplaceProductType,
+  MarketplaceValidationReportResponse,
 } from "../types/api";
 
 const PRODUCT_TYPES: MarketplaceProductType[] = [
@@ -82,6 +84,24 @@ function listingTone(status: string) {
   return "neutral";
 }
 
+function validationTone(status: string) {
+  if (status === "passed") return "success";
+  if (status === "warning" || status === "pending") return "warning";
+  if (status === "failed") return "danger";
+  return "neutral";
+}
+
+function riskTone(risk: string) {
+  if (risk === "low") return "success";
+  if (risk === "medium" || risk === "unreviewed") return "warning";
+  if (risk === "high" || risk === "critical") return "danger";
+  return "neutral";
+}
+
+function formatReportJson(value: unknown) {
+  return JSON.stringify(value, null, 2);
+}
+
 function screenshotsFromText(value: string) {
   return value
     .split(/\r?\n/)
@@ -107,12 +127,15 @@ function listingToDraft(listing: MarketplaceListingResponse): ListingDraft {
 
 export function MarketplacePage() {
   const { t } = useI18n();
+  const user = useAppStore((state) => state.user);
   const [creator, setCreator] = useState<MarketplaceCreatorResponse | null>(null);
   const [creatorDraft, setCreatorDraft] = useState<CreatorDraft>(defaultCreatorDraft);
   const [listings, setListings] = useState<MarketplaceListingResponse[]>([]);
   const [listingDraft, setListingDraft] = useState<ListingDraft>(defaultListingDraft);
   const [editingListingId, setEditingListingId] = useState<string | null>(null);
   const [selectedListingId, setSelectedListingId] = useState("");
+  const [submissionReports, setSubmissionReports] = useState<MarketplaceValidationReportResponse[]>([]);
+  const [reviewReports, setReviewReports] = useState<MarketplaceValidationReportResponse[]>([]);
   const [manifest, setManifest] = useState(defaultManifest);
   const [packageFile, setPackageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -121,6 +144,7 @@ export function MarketplacePage() {
   const [error, setError] = useState<string | null>(null);
 
   const approvedCreator = creator?.status === "approved";
+  const canReviewMarketplace = user?.role === "admin" || user?.role === "super_admin";
   const selectedListing = useMemo(
     () => listings.find((listing) => listing.id === selectedListingId) ?? null,
     [listings, selectedListingId],
@@ -157,6 +181,41 @@ export function MarketplacePage() {
   useEffect(() => {
     void loadMarketplace();
   }, [loadMarketplace]);
+
+  const loadSubmissionReports = useCallback(async function loadSubmissionReports() {
+    if (!selectedListingId) {
+      setSubmissionReports([]);
+      return;
+    }
+
+    try {
+      setSubmissionReports(await api.marketplace.submissions(selectedListingId));
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.reports")));
+    }
+  }, [selectedListingId, t]);
+
+  const loadReviewReports = useCallback(async function loadReviewReports() {
+    if (!canReviewMarketplace) {
+      setReviewReports([]);
+      return;
+    }
+
+    try {
+      setReviewReports(await api.marketplace.reviewReports());
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.reports")));
+    }
+  }, [canReviewMarketplace, t]);
+
+  useEffect(() => {
+    void loadSubmissionReports();
+  }, [loadSubmissionReports]);
+
+  useEffect(() => {
+    void loadReviewReports();
+  }, [loadReviewReports]);
+
   async function saveCreator() {
     setActionLoading(true);
     setMessage(null);
@@ -241,6 +300,8 @@ export function MarketplacePage() {
       setMessage(t("marketplace.message.versionSubmitted").replace("{version}", submitted.version.version));
       setPackageFile(null);
       setListings(await api.marketplace.listings());
+      await loadSubmissionReports();
+      await loadReviewReports();
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.error.upload")));
     } finally {
@@ -257,6 +318,32 @@ export function MarketplacePage() {
   function newListing() {
     setEditingListingId(null);
     setListingDraft(defaultListingDraft);
+  }
+
+  function renderReportCard(report: MarketplaceValidationReportResponse, includeListing: boolean) {
+    const installEligible = report.compatibility_report.install_eligible;
+    const installLabel = typeof installEligible === "boolean"
+      ? t(installEligible ? "marketplace.reports.installEligible" : "marketplace.reports.installBlocked")
+      : t("marketplace.reports.installUnknown");
+    const installTone = installEligible === false ? "danger" : installEligible === true ? "success" : "neutral";
+
+    return (
+      <article className="validation-report-card" key={report.submission_id}>
+        <div className="validation-report-card-header">
+          <div>
+            <strong>{includeListing ? `${report.listing_title} v${report.version}` : `v${report.version}`}</strong>
+            <span>{includeListing ? report.creator_display_name : new Date(report.submitted_at).toLocaleString()}</span>
+          </div>
+          <StatusBadge label={report.review_status} tone={listingTone(report.version_status)} />
+        </div>
+        <div className="validation-report-badges">
+          <StatusBadge label={`${t("marketplace.reports.validationStatus")}: ${report.validation_status}`} tone={validationTone(report.validation_status)} />
+          <StatusBadge label={`${t("marketplace.reports.securityRisk")}: ${report.security_risk_level}`} tone={riskTone(report.security_risk_level)} />
+          <StatusBadge label={installLabel} tone={installTone} />
+        </div>
+        <pre className="validation-report-json">{formatReportJson(report.validation_report)}</pre>
+      </article>
+    );
   }
 
   return (
@@ -471,6 +558,38 @@ export function MarketplacePage() {
             {t("marketplace.version.upload")}
           </button>
         </div>
+      </section>
+
+      <section className="two-column-workspace marketplace-report-grid">
+        <div className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>{t("marketplace.reports.creatorTitle")}</h2>
+              <span>{t("marketplace.reports.creatorDescription")}</span>
+            </div>
+            <FileCheck size={18} aria-hidden="true" />
+          </div>
+          <div className="validation-report-list padded">
+            {submissionReports.map((report) => renderReportCard(report, false))}
+            {submissionReports.length === 0 && <p className="empty-state">{t("marketplace.reports.empty")}</p>}
+          </div>
+        </div>
+
+        {canReviewMarketplace && (
+          <div className="panel">
+            <div className="panel-header">
+              <div>
+                <h2>{t("marketplace.reports.reviewerTitle")}</h2>
+                <span>{t("marketplace.reports.reviewerDescription")}</span>
+              </div>
+              <ShieldAlert size={18} aria-hidden="true" />
+            </div>
+            <div className="validation-report-list padded">
+              {reviewReports.map((report) => renderReportCard(report, true))}
+              {reviewReports.length === 0 && <p className="empty-state">{t("marketplace.reports.empty")}</p>}
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

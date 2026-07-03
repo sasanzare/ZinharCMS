@@ -12,6 +12,7 @@ pub mod marketplace_package;
 pub mod marketplace_policy;
 pub mod marketplace_readiness;
 pub mod marketplace_submission;
+pub mod marketplace_validation;
 pub mod media_processing;
 pub mod password;
 pub mod quota;

@@ -14,9 +14,7 @@ use uuid::Uuid;
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
-use crate::services::marketplace_manifest::{
-    MARKETPLACE_MANIFEST_SCHEMA_VERSION, validate_marketplace_manifest,
-};
+use crate::services::marketplace_manifest::MARKETPLACE_MANIFEST_SCHEMA_VERSION;
 use crate::services::marketplace_package::{
     marketplace_package_object_key, sha256_hex, validate_package_size,
 };
@@ -25,7 +23,8 @@ use crate::services::marketplace_submission::{
     validate_creator_profile, validate_creator_verification_status, validate_listing_for_review,
     validate_listing_review_input,
 };
-use crate::services::{audit, rbac};
+use crate::services::marketplace_validation::evaluate_marketplace_package;
+use crate::services::{audit, quota, rbac};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -54,6 +53,11 @@ pub fn router() -> Router<AppState> {
             "/api/marketplace/listings/{listing_id}/versions/upload",
             post(upload_listing_version),
         )
+        .route(
+            "/api/marketplace/listings/{listing_id}/submissions",
+            get(list_listing_submissions),
+        )
+        .route("/api/marketplace/review/reports", get(list_review_reports))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -145,6 +149,10 @@ pub struct PackageVersionResponse {
     pub artifact_file_name: String,
     pub artifact_content_type: String,
     pub storage_metadata: Value,
+    pub validation_status: String,
+    pub validation_report: Value,
+    pub security_risk_level: String,
+    pub compatibility_report: Value,
     pub status: String,
     pub created_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
@@ -171,6 +179,28 @@ pub struct MarketplaceSubmissionResponse {
 pub struct VersionSubmissionResponse {
     pub version: PackageVersionResponse,
     pub submission: MarketplaceSubmissionResponse,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct MarketplaceValidationReportResponse {
+    pub listing_id: Uuid,
+    pub listing_title: String,
+    pub listing_slug: String,
+    pub creator_id: Uuid,
+    pub creator_display_name: String,
+    pub version_id: Uuid,
+    pub version: String,
+    pub version_status: String,
+    pub validation_status: String,
+    pub security_risk_level: String,
+    pub validation_report: Value,
+    pub compatibility_report: Value,
+    pub submission_id: Uuid,
+    pub review_status: String,
+    pub risk_level: String,
+    pub review_notes: Option<String>,
+    pub submitted_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, FromRow)]
@@ -541,8 +571,11 @@ pub async fn upload_listing_version(
 
     let manifest =
         manifest.ok_or_else(|| AppError::Validation("manifest field is required".to_owned()))?;
-    validate_marketplace_manifest(&manifest)
-        .map_err(|error| AppError::Validation(error.to_string()))?;
+    if !manifest.is_object() {
+        return Err(AppError::Validation(
+            "manifest field must be a JSON object".to_owned(),
+        ));
+    }
     validate_manifest_matches_listing(&manifest, &row)?;
     let upload = upload.ok_or_else(|| AppError::Validation("file field is required".to_owned()))?;
     validate_package_size(upload.bytes.len() as u64)
@@ -558,17 +591,32 @@ pub async fn upload_listing_version(
             .map_err(|error| AppError::Validation(error.to_string()))?;
     persist_package_artifact(&state, &object_key, &upload.bytes).await?;
 
+    let organization_plan_slug = quota::load_subscription(&state.db, &tenant)
+        .await?
+        .plan_slug;
+    let validation_decision = evaluate_marketplace_package(
+        &manifest,
+        &upload.bytes,
+        &checksum,
+        &upload.filename,
+        &row.product_type,
+        &organization_plan_slug,
+    );
+    let validation_report = validation_decision.validation_report.clone();
+    let compatibility_report = validation_decision.compatibility_report.clone();
+    let listing_status = if validation_decision.version_status == "blocked" {
+        "blocked"
+    } else {
+        "submitted"
+    };
+
     let storage_metadata = json!({
         "uploaded_by": claims.sub,
-        "original_filename": upload.filename,
+        "original_filename": upload.filename.clone(),
         "storage": "local",
-        "source": "creator-portal"
-    });
-    let validation_report = json!({
-        "manifest": "valid",
-        "checksum": checksum,
-        "size_bytes": upload.bytes.len(),
-        "phase": "v3.2"
+        "source": "creator-portal",
+        "validation_status": validation_decision.validation_status.clone(),
+        "security_risk_level": validation_decision.security_risk_level.clone()
     });
 
     let mut tx = state.db.begin().await?;
@@ -577,12 +625,14 @@ pub async fn upload_listing_version(
         INSERT INTO marketplace_versions (
           listing_id, version, manifest_schema_version, manifest_json, artifact_object_key,
           artifact_sha256, artifact_size_bytes, artifact_file_name, artifact_content_type,
-          storage_metadata, status, created_by
+          storage_metadata, validation_status, validation_report, security_risk_level,
+          compatibility_report, status, created_by
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'submitted', $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING id, listing_id, version, manifest_schema_version, manifest_json,
                   artifact_object_key, artifact_sha256, artifact_size_bytes, artifact_file_name,
-                  artifact_content_type, storage_metadata, status, created_by, created_at, updated_at
+                  artifact_content_type, storage_metadata, validation_status, validation_report,
+                  security_risk_level, compatibility_report, status, created_by, created_at, updated_at
         "#,
     )
     .bind(listing_id)
@@ -595,6 +645,11 @@ pub async fn upload_listing_version(
     .bind(&upload.filename)
     .bind(&upload.content_type)
     .bind(&storage_metadata)
+    .bind(&validation_decision.validation_status)
+    .bind(&validation_report)
+    .bind(&validation_decision.security_risk_level)
+    .bind(&compatibility_report)
+    .bind(&validation_decision.version_status)
     .bind(claims.sub)
     .fetch_one(&mut *tx)
     .await?;
@@ -604,29 +659,37 @@ pub async fn upload_listing_version(
         INSERT INTO marketplace_submissions (
           version_id, submitted_by, review_status, risk_level, validation_report, metadata
         )
-        VALUES ($1, $2, 'queued', 'unreviewed', $3, $4)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, version_id, submitted_by, review_status, risk_level, review_notes,
                   validation_report, metadata, reviewed_by, reviewed_at, created_at, updated_at
         "#,
     )
     .bind(version.id)
     .bind(claims.sub)
+    .bind(&validation_decision.submission_review_status)
+    .bind(&validation_decision.security_risk_level)
     .bind(&validation_report)
-    .bind(json!({ "listing_id": listing_id, "creator_id": row.creator_id }))
+    .bind(json!({
+        "listing_id": listing_id,
+        "creator_id": row.creator_id,
+        "validation_status": validation_decision.validation_status.clone(),
+        "compatibility": compatibility_report.clone()
+    }))
     .fetch_one(&mut *tx)
     .await?;
 
     sqlx::query(
         r#"
         UPDATE marketplace_listings
-        SET status = 'submitted',
-            submitted_by = $2,
+        SET status = $2,
+            submitted_by = $3,
             submitted_at = COALESCE(submitted_at, now()),
             updated_at = now()
         WHERE id = $1
         "#,
     )
     .bind(listing_id)
+    .bind(listing_status)
     .bind(claims.sub)
     .execute(&mut *tx)
     .await?;
@@ -642,8 +705,11 @@ pub async fn upload_listing_version(
         json!({
             "listing_id": listing_id,
             "submission_id": submission.id,
-            "version": version.version,
-            "checksum": checksum
+            "version": version.version.clone(),
+            "checksum": checksum,
+            "validation_status": version.validation_status.clone(),
+            "security_risk_level": version.security_risk_level.clone(),
+            "version_status": version.status.clone()
         }),
     )
     .await?;
@@ -652,6 +718,87 @@ pub async fn upload_listing_version(
         version,
         submission,
     }))
+}
+
+pub async fn list_listing_submissions(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(listing_id): Path<Uuid>,
+) -> Result<Json<Vec<MarketplaceValidationReportResponse>>, AppError> {
+    let creator = require_creator_for_user(&state, claims.sub).await?;
+    let reports = sqlx::query_as::<_, MarketplaceValidationReportResponse>(
+        r#"
+        SELECT listing.id as listing_id,
+               listing.title as listing_title,
+               listing.slug as listing_slug,
+               creator.id as creator_id,
+               creator.display_name as creator_display_name,
+               version.id as version_id,
+               version.version,
+               version.status as version_status,
+               version.validation_status,
+               version.security_risk_level,
+               version.validation_report,
+               version.compatibility_report,
+               submission.id as submission_id,
+               submission.review_status,
+               submission.risk_level,
+               submission.review_notes,
+               submission.created_at as submitted_at,
+               submission.updated_at
+        FROM marketplace_submissions submission
+        JOIN marketplace_versions version ON version.id = submission.version_id
+        JOIN marketplace_listings listing ON listing.id = version.listing_id
+        JOIN marketplace_creators creator ON creator.id = listing.creator_id
+        WHERE listing.id = $1 AND listing.creator_id = $2
+        ORDER BY submission.created_at DESC
+        "#,
+    )
+    .bind(listing_id)
+    .bind(creator.id)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(reports))
+}
+
+pub async fn list_review_reports(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<Vec<MarketplaceValidationReportResponse>>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    let reports = sqlx::query_as::<_, MarketplaceValidationReportResponse>(
+        r#"
+        SELECT listing.id as listing_id,
+               listing.title as listing_title,
+               listing.slug as listing_slug,
+               creator.id as creator_id,
+               creator.display_name as creator_display_name,
+               version.id as version_id,
+               version.version,
+               version.status as version_status,
+               version.validation_status,
+               version.security_risk_level,
+               version.validation_report,
+               version.compatibility_report,
+               submission.id as submission_id,
+               submission.review_status,
+               submission.risk_level,
+               submission.review_notes,
+               submission.created_at as submitted_at,
+               submission.updated_at
+        FROM marketplace_submissions submission
+        JOIN marketplace_versions version ON version.id = submission.version_id
+        JOIN marketplace_listings listing ON listing.id = version.listing_id
+        JOIN marketplace_creators creator ON creator.id = listing.creator_id
+        ORDER BY submission.created_at DESC
+        LIMIT 100
+        "#,
+    )
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(reports))
 }
 
 async fn ensure_active_user(state: &AppState, user_id: Uuid) -> Result<(), AppError> {
@@ -848,7 +995,7 @@ fn listing_metadata(payload: &ListingRequest, screenshots: &[String]) -> Value {
         "price_cents": payload.price_cents,
         "license": payload.license.trim(),
         "support_url": normalize_optional_text(payload.support_url.clone()),
-        "phase": "v3.2"
+        "phase": "v3.3"
     })
 }
 
