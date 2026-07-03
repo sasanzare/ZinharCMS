@@ -4,6 +4,7 @@ pub mod billing;
 pub mod comments;
 pub mod content;
 pub mod delivery;
+pub mod marketplace;
 pub mod media;
 pub mod organizations;
 pub mod pages;
@@ -44,6 +45,7 @@ pub fn router(state: AppState) -> Router {
         .merge(beta::router())
         .merge(billing::router())
         .merge(media::router())
+        .merge(marketplace::router())
         .merge(organizations::tenant_router())
         .merge(pages::router())
         .merge(comments::router())

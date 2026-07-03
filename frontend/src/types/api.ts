@@ -619,3 +619,111 @@ export type PluginResponse = {
   created_at: string;
   updated_at: string;
 };
+
+export type MarketplaceCreatorStatus = "pending" | "approved" | "suspended" | "rejected";
+export type MarketplaceProductType = "component_pack" | "design_template" | "integration_plugin" | "backend_extension";
+export type MarketplacePricingType = "free" | "paid" | "custom";
+export type MarketplaceListingStatus = "draft" | "submitted" | "approved" | "changes_requested" | "suspended" | "blocked" | "archived";
+
+export type MarketplaceCreatorRequest = {
+  slug: string;
+  display_name: string;
+  bio?: string;
+  support_email?: string;
+};
+
+export type MarketplaceCreatorResponse = {
+  id: string;
+  user_id: string;
+  slug: string;
+  display_name: string;
+  bio: string | null;
+  status: MarketplaceCreatorStatus;
+  payout_status: string;
+  support_email: string | null;
+  verification_notes: string | null;
+  verified_by: string | null;
+  verified_at: string | null;
+  metadata: JsonRecord;
+  requested_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceCreatorStateResponse = {
+  creator: MarketplaceCreatorResponse | null;
+};
+
+export type MarketplaceListingRequest = {
+  product_type: MarketplaceProductType;
+  title: string;
+  slug: string;
+  summary: string;
+  description: string;
+  category: string;
+  pricing_type: MarketplacePricingType;
+  price_cents: number;
+  license: string;
+  support_url?: string;
+  screenshots: string[];
+};
+
+export type MarketplaceListingResponse = {
+  id: string;
+  creator_id: string;
+  product_type: MarketplaceProductType;
+  title: string;
+  slug: string;
+  summary: string;
+  description: string;
+  category: string;
+  status: MarketplaceListingStatus;
+  pricing_type: MarketplacePricingType;
+  price_cents: number;
+  license: string;
+  support_url: string | null;
+  screenshots: string[];
+  metadata: JsonRecord;
+  submitted_by: string | null;
+  submitted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplacePackageVersionResponse = {
+  id: string;
+  listing_id: string;
+  version: string;
+  manifest_schema_version: string;
+  manifest_json: JsonRecord;
+  artifact_object_key: string;
+  artifact_sha256: string;
+  artifact_size_bytes: number;
+  artifact_file_name: string;
+  artifact_content_type: string;
+  storage_metadata: JsonRecord;
+  status: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceSubmissionResponse = {
+  id: string;
+  version_id: string;
+  submitted_by: string | null;
+  review_status: string;
+  risk_level: string;
+  review_notes: string | null;
+  validation_report: JsonRecord;
+  metadata: JsonRecord;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceVersionSubmissionResponse = {
+  version: MarketplacePackageVersionResponse;
+  submission: MarketplaceSubmissionResponse;
+};

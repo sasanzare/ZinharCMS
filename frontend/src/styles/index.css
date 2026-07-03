@@ -703,6 +703,33 @@ input {
   line-height: 1.55;
 }
 
+.form-grid--inline {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.marketplace-page {
+  min-width: 0;
+}
+
+.marketplace-page .metric-grid > *,
+.marketplace-page .panel,
+.marketplace-workspace > * {
+  min-width: 0;
+}
+
+.marketplace-workspace {
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  gap: 18px;
+}
+
+.marketplace-listings-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.marketplace-listings-table .data-table {
+  min-width: 720px;
+}
 .field-builder {
   display: grid;
   gap: 10px;

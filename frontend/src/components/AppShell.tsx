@@ -10,6 +10,7 @@ import {
   Menu,
   Rocket,
   Settings,
+  Store,
   Workflow,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { labelKey: "app.nav.contentTypes", path: "/content-types", icon: Layers3 },
   { labelKey: "app.nav.entries", path: "/entries", icon: FileText },
   { labelKey: "app.nav.media", path: "/media", icon: Image },
+  { labelKey: "app.nav.marketplace", path: "/marketplace", icon: Store },
   { labelKey: "app.nav.pages", path: "/pages", icon: Workflow },
   { labelKey: "app.nav.workflow", path: "/workflow", icon: Workflow },
   { labelKey: "app.nav.organization", path: "/organization", icon: Building2 },

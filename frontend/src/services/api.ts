@@ -41,6 +41,12 @@ import type {
   OrganizationMembership,
   OrganizationWorkspaceResponse,
   MediaDetailResponse,
+  MarketplaceCreatorRequest,
+  MarketplaceCreatorStateResponse,
+  MarketplaceCreatorResponse,
+  MarketplaceListingRequest,
+  MarketplaceListingResponse,
+  MarketplaceVersionSubmissionResponse,
   MediaListResponse,
   PageJson,
   PageListResponse,
@@ -318,6 +324,28 @@ changePlan: (payload: ChangePlanRequest) =>
       request<ContentEntryResponse>(`/api/entries/${typeSlug}/${id}/restore`, { method: "POST", auth: true }),
   },
 
+  marketplace: {
+    creator: () => request<MarketplaceCreatorStateResponse>("/api/marketplace/creator", { auth: true }),
+    requestCreator: (payload: MarketplaceCreatorRequest) =>
+      request<MarketplaceCreatorResponse>("/api/marketplace/creator", { method: "POST", auth: true, body: payload }),
+    listings: () => request<MarketplaceListingResponse[]>("/api/marketplace/listings", { auth: true }),
+    createListing: (payload: MarketplaceListingRequest) =>
+      request<MarketplaceListingResponse>("/api/marketplace/listings", { method: "POST", auth: true, body: payload }),
+    updateListing: (listingId: string, payload: MarketplaceListingRequest) =>
+      request<MarketplaceListingResponse>(`/api/marketplace/listings/${listingId}`, { method: "PUT", auth: true, body: payload }),
+    submitListing: (listingId: string) =>
+      request<MarketplaceListingResponse>(`/api/marketplace/listings/${listingId}/submit`, { method: "POST", auth: true }),
+    uploadVersion: (listingId: string, file: File, manifest: string) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("manifest", manifest);
+      return request<MarketplaceVersionSubmissionResponse>(`/api/marketplace/listings/${listingId}/versions/upload`, {
+        method: "POST",
+        auth: true,
+        formData,
+      });
+    },
+  },
   media: {
     list: (params: { mime_type?: string; page?: number; per_page?: number } = {}) =>
       request<MediaListResponse>(`/api/media${query(params)}`, { auth: true }),

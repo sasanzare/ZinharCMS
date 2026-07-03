@@ -15,7 +15,7 @@ Phase 1 resolves the base schema and integrity gaps for `marketplace_installatio
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
 | Marketplace installation runtime API does not exist | P0 | Phase 1 added `marketplace_installations`; later phases must add tenant-aware install, disable, uninstall, update, and rollback APIs. | 6.1, 6.2, 6.3 |
-| Package upload and registry API do not exist | P0 | Phase 1 added package version schema and checksum rules; later phases must add upload, validation, and review submission APIs. | 2.4, 3.1 |
+| Package review validation pipeline is not implemented | P0 | Phase 2 added package upload, manifest validation, checksum generation, version rows, and submission rows; phase 3 must add deeper static validation and reviewer-visible reports. | 2.4, 3.1 |
 | Install compatibility enforcement is not implemented | P0 | Phase 1 stores manifest compatibility; later phases must enforce compatibility before catalog display and install. | 3.3, 6.1 |
 | Install rollback API is not implemented | P1 | Phase 1 added rollback version metadata; later phases must implement rollback execution and safety checks. | 6.3 |
 | Installed product lifecycle runtime events are not implemented | P0 | Phase 1 defined install statuses; later phases must implement install, disable, uninstall, update, rollback, suspend, and kill-switch actions. | 6.1, 6.2, 7.3 |
@@ -25,7 +25,7 @@ Phase 1 resolves the base schema and integrity gaps for `marketplace_installatio
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
-| Creator profile API does not exist | P0 | Phase 1 added creator table shape; later phases must add creator onboarding, verification, support contact updates, and payout eligibility workflows. | 2.1, 2.2 |
+| Creator payout and advanced profile operations do not exist | P0 | Phase 2 added creator request and verification APIs; later phases must add payout eligibility, provider onboarding, and advanced creator operations. | 2.1, 2.2 |
 | Marketplace purchase table does not exist | P1 | Add purchase records separate from organization subscriptions. | 9.2 |
 | Marketplace entitlement table does not exist | P1 | Add product entitlement linked to purchase, organization, listing, and version. | 9.2 |
 | Revenue split ledger does not exist | P1 | Add ledger rows for gross amount, platform commission, creator share, refunds, and settlement state. | 9.3 |

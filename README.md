@@ -2,11 +2,11 @@
 
 ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
 This repository currently implements phases zero through ten from the original project
-proposal plus V3 Marketplace phases 0.1 through 1: a runnable monorepo foundation, local infrastructure, CI, environment
+proposal plus V3 Marketplace phases 0.1 through 2: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
-management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, and the V3 Marketplace phase 1 foundation.
+management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, and the V3 Marketplace phase 2 creator submission workflow.
 
 ## Phase Zero Scope
 
@@ -111,6 +111,13 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Package artifact storage contract with object keys, SHA-256 checksum validation, size limits, metadata, and immutable approved artifacts.
 - Backend helpers and tests for manifest validation, package checksum/object-key rules, migration coverage, and tenant-owned installation RLS.
 
+## V3 Marketplace Phase 2 Scope
+
+- Creator profile request workflow with slug, display name, bio, support email, and pending verification status.
+- Creator verification states for pending, approved, suspended, and rejected Marketplace creators.
+- Listing submission metadata for product type, title, summary, description, category, screenshots, price, license, and support URL.
+- Package version upload API with manifest validation, SHA-256 checksum calculation, local artifact persistence, and review submission creation.
+- Admin panel Marketplace page for creator profile, listings, review submission, and package upload.
 ## Quick Start
 
 Copy the environment template and start the local stack:
