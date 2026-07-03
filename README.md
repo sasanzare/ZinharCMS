@@ -1,12 +1,12 @@
 # ZinharCMS
 
 ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
-This repository currently implements phases zero through ten from the project
-proposal: a runnable monorepo foundation, local infrastructure, CI, environment
+This repository currently implements phases zero through ten from the original project
+proposal plus V3 Marketplace phases 0.1 through 1: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
-management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, and the V3 Marketplace phase 0.2 readiness foundation.
+management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, and the V3 Marketplace phase 1 foundation.
 
 ## Phase Zero Scope
 
@@ -88,18 +88,28 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - GA release checklist for freeze, final migration, post-release monitoring, paid plan enablement, billing support, account access support, and rollback readiness.
 - `scripts/v2-ga-check.ps1` for release-candidate backend tests, frontend lint/build, and optional live health/readiness checks.
 - Backend static tests that keep the GA documentation set and release checklist from silently regressing.
+
 ## V3 Marketplace Phase 0.1 Scope
 
 - Marketplace scope lock for the first V3 implementation.
 - Product taxonomy for Component Pack, Design Template, Integration Plugin, Backend Extension, and Unsupported submissions.
 - Initial Marketplace review, approval, rejection, quarantine, moderation, and takedown policy.
 - Backend static tests that keep the phase 0.1 scope and policy documents from silently regressing.
+
 ## V3 Marketplace Phase 0.2 Scope
 
 - V2 readiness audit for Marketplace dependencies on organizations, billing, RBAC, audit logs, and RLS.
 - Dependency matrix that fixes ownership, entitlement, permission, and audit decisions before domain modeling.
 - Gap list for plugin install, creator payment, Marketplace permissions, audit taxonomy, and operational runbooks.
 - Backend static tests that keep the phase 0.2 readiness audit and gap list from silently regressing.
+
+## V3 Marketplace Phase 1 Scope
+
+- Marketplace domain model for Creator, Listing, Package, Version, Submission, Installation, and future Purchase.
+- Standard Marketplace manifest contract with required fields, supported product types, permissions, compatibility, entry points, and assets.
+- Base migration for `marketplace_creators`, `marketplace_listings`, `marketplace_versions`, `marketplace_submissions`, and `marketplace_installations`.
+- Package artifact storage contract with object keys, SHA-256 checksum validation, size limits, metadata, and immutable approved artifacts.
+- Backend helpers and tests for manifest validation, package checksum/object-key rules, migration coverage, and tenant-owned installation RLS.
 
 ## Quick Start
 

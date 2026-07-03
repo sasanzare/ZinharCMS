@@ -22,6 +22,7 @@ pub const TENANT_RLS_TABLES: &[&str] = &[
     "beta_participants",
     "beta_feedback",
     "beta_ga_blockers",
+    "marketplace_installations",
 ];
 
 pub const PHASE8_LOAD_SMOKE_ENDPOINTS: &[&str] = &[
@@ -50,6 +51,8 @@ mod tests {
         include_str!("../../migrations/0013_v2_phase_eight_hardening.sql");
     const PHASE9_MIGRATION: &str =
         include_str!("../../migrations/0014_v2_phase_nine_beta_release.sql");
+    const V3_MARKETPLACE_MIGRATION: &str =
+        include_str!("../../migrations/0015_v3_phase_one_marketplace_foundation.sql");
 
     #[test]
     fn tenant_tables_have_forced_rls_coverage() {
@@ -59,6 +62,7 @@ mod tests {
             STRIPE_MIGRATION,
             SAAS_OPS_MIGRATION,
             PHASE9_MIGRATION,
+            V3_MARKETPLACE_MIGRATION,
         ]
         .join("\n");
 

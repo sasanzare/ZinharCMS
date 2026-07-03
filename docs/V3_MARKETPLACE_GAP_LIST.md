@@ -6,22 +6,26 @@ This gap list is the actionable output of V3 phase 0.2. It records what V2 does 
 
 No critical V2 dependency remains ambiguous. The gaps below are known V3 implementation work, not blockers to phase 1.1 domain modeling.
 
+## Phase 1 Update
+
+Phase 1 resolves the base schema and integrity gaps for `marketplace_installations`, package versions, manifest metadata, package object keys, SHA-256 checksums, size limits, and tenant-owned installation RLS. Runtime install APIs, permission enforcement, paid purchases, entitlement, ledger, payout, and sandbox controls remain open for later V3 phases.
+
 ## Plugin Install Gaps
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
-| Marketplace installation table does not exist | P0 | Add `marketplace_installations` with `organization_id`, listing/version references, status, installed_by, permission snapshot, timestamps, and rollback metadata. | 1.1, 1.3, 6.1 |
-| Package/version registry does not exist | P0 | Add package, version, manifest, checksum, review state, and artifact storage model. | 1.1, 1.2, 1.4 |
-| Install compatibility is not modeled | P0 | Store minimum/maximum ZinharCMS version, product type compatibility, and organization plan gates. | 1.2, 3.3, 6.1 |
-| Install rollback state is not modeled | P1 | Store previous active version and rollback eligibility. | 6.3 |
-| Installed product lifecycle events are not defined | P0 | Define install, disable, uninstall, update, rollback, suspend, and kill-switch states. | 1.1, 6.1, 6.2, 7.3 |
-| Tenant-owned RLS policies for Marketplace tables do not exist | P0 | Add forced RLS for installation, purchase, entitlement, review, and organization-scoped product state tables. | 1.3 |
+| Marketplace installation runtime API does not exist | P0 | Phase 1 added `marketplace_installations`; later phases must add tenant-aware install, disable, uninstall, update, and rollback APIs. | 6.1, 6.2, 6.3 |
+| Package upload and registry API do not exist | P0 | Phase 1 added package version schema and checksum rules; later phases must add upload, validation, and review submission APIs. | 2.4, 3.1 |
+| Install compatibility enforcement is not implemented | P0 | Phase 1 stores manifest compatibility; later phases must enforce compatibility before catalog display and install. | 3.3, 6.1 |
+| Install rollback API is not implemented | P1 | Phase 1 added rollback version metadata; later phases must implement rollback execution and safety checks. | 6.3 |
+| Installed product lifecycle runtime events are not implemented | P0 | Phase 1 defined install statuses; later phases must implement install, disable, uninstall, update, rollback, suspend, and kill-switch actions. | 6.1, 6.2, 7.3 |
+| Tenant-owned RLS policies for later Marketplace tables do not exist | P0 | Phase 1 added forced RLS for installations; later purchase, entitlement, review, and organization-scoped product state tables must also use forced RLS. | 9.2, 10.1 |
 
 ## Creator Payment Gaps
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
-| Creator profile does not exist | P0 | Add creator profile, ownership, verification state, support contact, and payout eligibility. | 2.1, 2.2 |
+| Creator profile API does not exist | P0 | Phase 1 added creator table shape; later phases must add creator onboarding, verification, support contact updates, and payout eligibility workflows. | 2.1, 2.2 |
 | Marketplace purchase table does not exist | P1 | Add purchase records separate from organization subscriptions. | 9.2 |
 | Marketplace entitlement table does not exist | P1 | Add product entitlement linked to purchase, organization, listing, and version. | 9.2 |
 | Revenue split ledger does not exist | P1 | Add ledger rows for gross amount, platform commission, creator share, refunds, and settlement state. | 9.3 |
@@ -34,7 +38,7 @@ No critical V2 dependency remains ambiguous. The gaps below are known V3 impleme
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
 | Marketplace permission catalog does not exist | P0 | Define allowed permissions such as content read/write, page read/write, media read/write, webhook send, external network, and settings access. | 7.1 |
-| Install-time permission approval is not stored | P0 | Capture requested permissions, approved permissions, approver, approval time, and product version. | 7.1, 6.1 |
+| Install-time permission approval is not enforced by runtime | P0 | Phase 1 added installation permission snapshot fields; later phases must enforce approval before runtime actions. | 7.1, 6.1 |
 | Marketplace RBAC helpers do not exist | P0 | Add helpers for catalog browsing, free install, paid purchase, permission approval, creator submission, and platform moderation. | 7.1 |
 | Permission escalation on update is not modeled | P0 | Require reapproval when a new version asks for broader permissions. | 6.3, 7.1 |
 | Runtime permission enforcement is not implemented | P0 | Enforce approved permissions before product runtime actions. | 7.2, 8.1, 8.3 |
