@@ -754,3 +754,43 @@ export type MarketplaceValidationReportResponse = {
   submitted_at: string;
   updated_at: string;
 };
+
+export type MarketplaceReviewDecision = "approve" | "reject" | "request_changes";
+
+export type MarketplaceModerationAction =
+  | "suspend_listing"
+  | "unpublish_version"
+  | "emergency_block";
+
+export type MarketplaceReviewDecisionRequest = {
+  decision: MarketplaceReviewDecision;
+  internal_comment?: string;
+  creator_message?: string;
+};
+
+export type MarketplaceModerationRequest = {
+  action: MarketplaceModerationAction;
+  version_id?: string;
+  reason: string;
+  internal_comment?: string;
+  creator_message?: string;
+};
+
+export type MarketplaceReviewEventResponse = {
+  id: string;
+  submission_id: string | null;
+  listing_id: string;
+  listing_title: string;
+  version_id: string | null;
+  version: string | null;
+  actor_id: string | null;
+  actor_email: string | null;
+  action: string;
+  previous_status: string | null;
+  next_status: string;
+  internal_comment: string | null;
+  creator_message: string | null;
+  reason: string;
+  metadata: JsonRecord;
+  created_at: string;
+};

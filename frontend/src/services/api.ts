@@ -46,6 +46,9 @@ import type {
   MarketplaceCreatorResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
+  MarketplaceModerationRequest,
+  MarketplaceReviewDecisionRequest,
+  MarketplaceReviewEventResponse,
   MarketplaceVersionSubmissionResponse,
   MarketplaceValidationReportResponse,
   MediaListResponse,
@@ -348,7 +351,21 @@ changePlan: (payload: ChangePlanRequest) =>
     },
     submissions: (listingId: string) =>
       request<MarketplaceValidationReportResponse[]>(`/api/marketplace/listings/${listingId}/submissions`, { auth: true }),
+    reviewQueue: () => request<MarketplaceValidationReportResponse[]>("/api/marketplace/review/queue", { auth: true }),
     reviewReports: () => request<MarketplaceValidationReportResponse[]>("/api/marketplace/review/reports", { auth: true }),
+    reviewEvents: () => request<MarketplaceReviewEventResponse[]>("/api/marketplace/review/events", { auth: true }),
+    reviewDecision: (submissionId: string, payload: MarketplaceReviewDecisionRequest) =>
+      request<MarketplaceReviewEventResponse>(`/api/marketplace/review/submissions/${submissionId}`, {
+        method: "PATCH",
+        auth: true,
+        body: payload,
+      }),
+    moderateListing: (listingId: string, payload: MarketplaceModerationRequest) =>
+      request<MarketplaceReviewEventResponse>(`/api/marketplace/review/listings/${listingId}/moderation`, {
+        method: "POST",
+        auth: true,
+        body: payload,
+      }),
   },
   media: {
     list: (params: { mime_type?: string; page?: number; per_page?: number } = {}) =>

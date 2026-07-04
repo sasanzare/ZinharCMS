@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, FileCheck, PackagePlus, RefreshCw, Save, Send, ShieldAlert, Store, Upload } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CheckCircle2, FileCheck, MessageSquare, PackagePlus, RefreshCw, Save, Send, ShieldAlert, Store, Upload, XCircle } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
@@ -9,8 +9,12 @@ import type {
   MarketplaceCreatorResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
+  MarketplaceModerationAction,
+  MarketplaceModerationRequest,
   MarketplacePricingType,
   MarketplaceProductType,
+  MarketplaceReviewDecision,
+  MarketplaceReviewEventResponse,
   MarketplaceValidationReportResponse,
 } from "../types/api";
 
@@ -66,6 +70,14 @@ const defaultManifest = JSON.stringify(
 type CreatorDraft = typeof defaultCreatorDraft;
 type ListingDraft = typeof defaultListingDraft;
 
+const defaultReviewDraft = {
+  internal_comment: "",
+  creator_message: "",
+  reason: "",
+};
+
+type ReviewDraft = typeof defaultReviewDraft;
+
 function apiMessage(caught: unknown, fallback: string) {
   return caught instanceof ApiError ? caught.message : fallback;
 }
@@ -96,6 +108,25 @@ function riskTone(risk: string) {
   if (risk === "medium" || risk === "unreviewed") return "warning";
   if (risk === "high" || risk === "critical") return "danger";
   return "neutral";
+}
+
+function eventTone(action: string) {
+  if (action === "approve") return "success";
+  if (action === "request_changes" || action === "suspend_listing" || action === "unpublish_version") return "warning";
+  if (action === "reject" || action === "emergency_block") return "danger";
+  return "neutral";
+}
+
+function cleanOptional(value: string) {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function canApproveReport(report: MarketplaceValidationReportResponse) {
+  return report.version_status !== "blocked"
+    && report.validation_status !== "failed"
+    && report.security_risk_level !== "high"
+    && report.security_risk_level !== "critical";
 }
 
 function formatReportJson(value: unknown) {
@@ -136,6 +167,8 @@ export function MarketplacePage() {
   const [selectedListingId, setSelectedListingId] = useState("");
   const [submissionReports, setSubmissionReports] = useState<MarketplaceValidationReportResponse[]>([]);
   const [reviewReports, setReviewReports] = useState<MarketplaceValidationReportResponse[]>([]);
+  const [reviewEvents, setReviewEvents] = useState<MarketplaceReviewEventResponse[]>([]);
+  const [reviewDrafts, setReviewDrafts] = useState<Record<string, ReviewDraft>>({});
   const [manifest, setManifest] = useState(defaultManifest);
   const [packageFile, setPackageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -202,9 +235,22 @@ export function MarketplacePage() {
     }
 
     try {
-      setReviewReports(await api.marketplace.reviewReports());
+      setReviewReports(await api.marketplace.reviewQueue());
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.error.reports")));
+    }
+  }, [canReviewMarketplace, t]);
+
+  const loadReviewEvents = useCallback(async function loadReviewEvents() {
+    if (!canReviewMarketplace) {
+      setReviewEvents([]);
+      return;
+    }
+
+    try {
+      setReviewEvents(await api.marketplace.reviewEvents());
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.events")));
     }
   }, [canReviewMarketplace, t]);
 
@@ -215,6 +261,10 @@ export function MarketplacePage() {
   useEffect(() => {
     void loadReviewReports();
   }, [loadReviewReports]);
+
+  useEffect(() => {
+    void loadReviewEvents();
+  }, [loadReviewEvents]);
 
   async function saveCreator() {
     setActionLoading(true);
@@ -302,6 +352,7 @@ export function MarketplacePage() {
       setListings(await api.marketplace.listings());
       await loadSubmissionReports();
       await loadReviewReports();
+      await loadReviewEvents();
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.error.upload")));
     } finally {
@@ -320,12 +371,97 @@ export function MarketplacePage() {
     setListingDraft(defaultListingDraft);
   }
 
+  function reviewDraftFor(reportId: string) {
+    return reviewDrafts[reportId] ?? defaultReviewDraft;
+  }
+
+  function updateReviewDraft(reportId: string, patch: Partial<ReviewDraft>) {
+    setReviewDrafts((current) => ({
+      ...current,
+      [reportId]: {
+        ...defaultReviewDraft,
+        ...current[reportId],
+        ...patch,
+      },
+    }));
+  }
+
+  function clearReviewDraft(reportId: string) {
+    setReviewDrafts((current) => {
+      const next = { ...current };
+      delete next[reportId];
+      return next;
+    });
+  }
+
+  async function refreshReviewSurfaces() {
+    setListings(await api.marketplace.listings());
+    await loadSubmissionReports();
+    await loadReviewReports();
+    await loadReviewEvents();
+  }
+
+  async function decideSubmission(report: MarketplaceValidationReportResponse, decision: MarketplaceReviewDecision) {
+    const draft = reviewDraftFor(report.submission_id);
+    setActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      await api.marketplace.reviewDecision(report.submission_id, {
+        decision,
+        internal_comment: cleanOptional(draft.internal_comment),
+        creator_message: cleanOptional(draft.creator_message),
+      });
+      clearReviewDraft(report.submission_id);
+      setMessage(t("marketplace.review.decisionSaved"));
+      await refreshReviewSurfaces();
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.reviewAction")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function moderateListing(report: MarketplaceValidationReportResponse, action: MarketplaceModerationAction) {
+    const draft = reviewDraftFor(report.submission_id);
+    const reason = cleanOptional(draft.reason);
+    if (!reason) {
+      setError(t("marketplace.error.reasonRequired"));
+      return;
+    }
+
+    const payload: MarketplaceModerationRequest = {
+      action,
+      reason,
+      internal_comment: cleanOptional(draft.internal_comment),
+      creator_message: cleanOptional(draft.creator_message),
+    };
+    if (action === "unpublish_version") {
+      payload.version_id = report.version_id;
+    }
+
+    setActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      await api.marketplace.moderateListing(report.listing_id, payload);
+      clearReviewDraft(report.submission_id);
+      setMessage(t("marketplace.review.moderationSaved"));
+      await refreshReviewSurfaces();
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.moderation")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
   function renderReportCard(report: MarketplaceValidationReportResponse, includeListing: boolean) {
     const installEligible = report.compatibility_report.install_eligible;
     const installLabel = typeof installEligible === "boolean"
       ? t(installEligible ? "marketplace.reports.installEligible" : "marketplace.reports.installBlocked")
       : t("marketplace.reports.installUnknown");
     const installTone = installEligible === false ? "danger" : installEligible === true ? "success" : "neutral";
+    const draft = reviewDraftFor(report.submission_id);
+    const approvalEnabled = canApproveReport(report);
 
     return (
       <article className="validation-report-card" key={report.submission_id}>
@@ -342,6 +478,65 @@ export function MarketplacePage() {
           <StatusBadge label={installLabel} tone={installTone} />
         </div>
         <pre className="validation-report-json">{formatReportJson(report.validation_report)}</pre>
+
+        {includeListing && canReviewMarketplace && (
+          <div className="marketplace-review-controls">
+            <div className="review-field-grid">
+              <label>
+                {t("marketplace.review.internalComment")}
+                <textarea
+                  rows={2}
+                  value={draft.internal_comment}
+                  onChange={(event) => updateReviewDraft(report.submission_id, { internal_comment: event.target.value })}
+                />
+              </label>
+              <label>
+                {t("marketplace.review.creatorMessage")}
+                <textarea
+                  rows={2}
+                  value={draft.creator_message}
+                  onChange={(event) => updateReviewDraft(report.submission_id, { creator_message: event.target.value })}
+                />
+              </label>
+            </div>
+            <div className="review-action-row">
+              <button className="primary-button" type="button" onClick={() => decideSubmission(report, "approve")} disabled={!approvalEnabled || actionLoading}>
+                <CheckCircle2 size={16} aria-hidden="true" />
+                {t("marketplace.review.approve")}
+              </button>
+              <button className="secondary-button" type="button" onClick={() => decideSubmission(report, "request_changes")} disabled={actionLoading}>
+                <MessageSquare size={16} aria-hidden="true" />
+                {t("marketplace.review.requestChanges")}
+              </button>
+              <button className="secondary-button button-danger" type="button" onClick={() => decideSubmission(report, "reject")} disabled={actionLoading}>
+                <XCircle size={16} aria-hidden="true" />
+                {t("marketplace.review.reject")}
+              </button>
+            </div>
+            {!approvalEnabled && <span className="review-note">{t("marketplace.review.approvalBlocked")}</span>}
+            <label className="review-reason-field">
+              {t("marketplace.review.moderationReason")}
+              <input
+                value={draft.reason}
+                onChange={(event) => updateReviewDraft(report.submission_id, { reason: event.target.value })}
+              />
+            </label>
+            <div className="review-action-row moderation-actions">
+              <button className="secondary-button" type="button" onClick={() => moderateListing(report, "suspend_listing")} disabled={actionLoading}>
+                <AlertTriangle size={16} aria-hidden="true" />
+                {t("marketplace.review.suspendListing")}
+              </button>
+              <button className="secondary-button" type="button" onClick={() => moderateListing(report, "unpublish_version")} disabled={actionLoading}>
+                <ShieldAlert size={16} aria-hidden="true" />
+                {t("marketplace.review.unpublishVersion")}
+              </button>
+              <button className="secondary-button button-danger" type="button" onClick={() => moderateListing(report, "emergency_block")} disabled={actionLoading}>
+                <ShieldAlert size={16} aria-hidden="true" />
+                {t("marketplace.review.emergencyBlock")}
+              </button>
+            </div>
+          </div>
+        )}
       </article>
     );
   }
@@ -591,6 +786,35 @@ export function MarketplacePage() {
           </div>
         )}
       </section>
+
+      {canReviewMarketplace && (
+        <section className="panel marketplace-review-events">
+          <div className="panel-header">
+            <div>
+              <h2>{t("marketplace.review.eventsTitle")}</h2>
+              <span>{t("marketplace.review.eventsDescription")}</span>
+            </div>
+            <button className="secondary-button" type="button" onClick={loadReviewEvents} disabled={actionLoading}>
+              <RefreshCw size={16} aria-hidden="true" />
+              {t("common.refresh")}
+            </button>
+          </div>
+          <div className="review-event-list padded">
+            {reviewEvents.map((event) => (
+              <article className="review-event-card" key={event.id}>
+                <div>
+                  <strong>{event.listing_title}{event.version ? ` v${event.version}` : ""}</strong>
+                  <span>{new Date(event.created_at).toLocaleString()}</span>
+                </div>
+                <StatusBadge label={event.action} tone={eventTone(event.action)} />
+                <p>{event.reason}</p>
+                <small>{event.actor_email ?? t("marketplace.review.unknownActor")} - {event.previous_status ?? "-"} {"->"} {event.next_status}</small>
+              </article>
+            ))}
+            {reviewEvents.length === 0 && <p className="empty-state">{t("marketplace.review.noEvents")}</p>}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

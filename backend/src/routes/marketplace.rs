@@ -18,6 +18,10 @@ use crate::services::marketplace_manifest::MARKETPLACE_MANIFEST_SCHEMA_VERSION;
 use crate::services::marketplace_package::{
     marketplace_package_object_key, sha256_hex, validate_package_size,
 };
+use crate::services::marketplace_review::{
+    MODERATION_EMERGENCY_BLOCK, MODERATION_SUSPEND_LISTING, MODERATION_UNPUBLISH_VERSION,
+    validate_moderation_action, validate_review_decision,
+};
 use crate::services::marketplace_submission::{
     ListingReviewInput, normalize_optional_text, sanitize_screenshot_urls,
     validate_creator_profile, validate_creator_verification_status, validate_listing_for_review,
@@ -57,7 +61,17 @@ pub fn router() -> Router<AppState> {
             "/api/marketplace/listings/{listing_id}/submissions",
             get(list_listing_submissions),
         )
+        .route("/api/marketplace/review/queue", get(list_review_queue))
+        .route("/api/marketplace/review/events", get(list_review_events))
         .route("/api/marketplace/review/reports", get(list_review_reports))
+        .route(
+            "/api/marketplace/review/submissions/{submission_id}",
+            patch(review_submission),
+        )
+        .route(
+            "/api/marketplace/review/listings/{listing_id}/moderation",
+            post(moderate_listing),
+        )
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -201,6 +215,76 @@ pub struct MarketplaceValidationReportResponse {
     pub review_notes: Option<String>,
     pub submitted_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ReviewDecisionRequest {
+    pub decision: String,
+    pub internal_comment: Option<String>,
+    pub creator_message: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ModerationRequest {
+    pub action: String,
+    pub version_id: Option<Uuid>,
+    pub reason: String,
+    pub internal_comment: Option<String>,
+    pub creator_message: Option<String>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct MarketplaceReviewEventResponse {
+    pub id: Uuid,
+    pub submission_id: Option<Uuid>,
+    pub listing_id: Uuid,
+    pub listing_title: String,
+    pub version_id: Option<Uuid>,
+    pub version: Option<String>,
+    pub actor_id: Option<Uuid>,
+    pub actor_email: Option<String>,
+    pub action: String,
+    pub previous_status: Option<String>,
+    pub next_status: String,
+    pub internal_comment: Option<String>,
+    pub creator_message: Option<String>,
+    pub reason: String,
+    pub metadata: Value,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow)]
+struct ReviewContextRow {
+    submission_id: Uuid,
+    listing_id: Uuid,
+    version_id: Uuid,
+    review_status: String,
+    version_status: String,
+    listing_status: String,
+    validation_status: String,
+    security_risk_level: String,
+}
+
+#[derive(Debug, FromRow)]
+struct ListingModerationRow {
+    listing_id: Uuid,
+    listing_status: String,
+}
+
+#[derive(Debug, FromRow)]
+struct VersionModerationRow {
+    version_id: Uuid,
+    version_status: String,
+}
+
+#[derive(Debug, FromRow)]
+struct ApprovedVersionCountRow {
+    approved_versions: i64,
+}
+
+#[derive(Debug, FromRow)]
+struct InsertedReviewEventRow {
+    id: Uuid,
 }
 
 #[derive(Debug, FromRow)]
@@ -762,6 +846,404 @@ pub async fn list_listing_submissions(
     Ok(Json(reports))
 }
 
+pub async fn list_review_queue(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<Vec<MarketplaceValidationReportResponse>>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    let reports = sqlx::query_as::<_, MarketplaceValidationReportResponse>(
+        r#"
+        SELECT listing.id as listing_id,
+               listing.title as listing_title,
+               listing.slug as listing_slug,
+               creator.id as creator_id,
+               creator.display_name as creator_display_name,
+               version.id as version_id,
+               version.version,
+               version.status as version_status,
+               version.validation_status,
+               version.security_risk_level,
+               version.validation_report,
+               version.compatibility_report,
+               submission.id as submission_id,
+               submission.review_status,
+               submission.risk_level,
+               submission.review_notes,
+               submission.created_at as submitted_at,
+               submission.updated_at
+        FROM marketplace_submissions submission
+        JOIN marketplace_versions version ON version.id = submission.version_id
+        JOIN marketplace_listings listing ON listing.id = version.listing_id
+        JOIN marketplace_creators creator ON creator.id = listing.creator_id
+        WHERE submission.review_status IN ('queued', 'validating', 'blocked')
+           OR listing.status = 'submitted'
+        ORDER BY CASE submission.review_status
+                   WHEN 'blocked' THEN 0
+                   WHEN 'queued' THEN 1
+                   WHEN 'validating' THEN 2
+                   ELSE 3
+                 END,
+                 submission.created_at ASC
+        LIMIT 100
+        "#,
+    )
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(reports))
+}
+
+pub async fn review_submission(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(submission_id): Path<Uuid>,
+    Json(payload): Json<ReviewDecisionRequest>,
+) -> Result<Json<MarketplaceReviewEventResponse>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    let context = sqlx::query_as::<_, ReviewContextRow>(
+        r#"
+        SELECT submission.id as submission_id,
+               listing.id as listing_id,
+               version.id as version_id,
+               submission.review_status,
+               version.status as version_status,
+               listing.status as listing_status,
+               version.validation_status,
+               version.security_risk_level
+        FROM marketplace_submissions submission
+        JOIN marketplace_versions version ON version.id = submission.version_id
+        JOIN marketplace_listings listing ON listing.id = version.listing_id
+        WHERE submission.id = $1
+        "#,
+    )
+    .bind(submission_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    let transition = validate_review_decision(
+        &payload.decision,
+        &context.version_status,
+        &context.validation_status,
+        &context.security_risk_level,
+    )?;
+    let internal_comment = normalize_optional_text(payload.internal_comment);
+    let creator_message = normalize_optional_text(payload.creator_message);
+    let reason = review_reason(
+        payload.decision.trim(),
+        internal_comment.as_deref(),
+        creator_message.as_deref(),
+    );
+    let decision = payload.decision.trim().to_owned();
+    let metadata = json!({
+        "phase": "v3.4",
+        "decision": decision,
+        "previous": {
+            "submission_status": context.review_status,
+            "version_status": context.version_status,
+            "listing_status": context.listing_status
+        },
+        "next": {
+            "submission_status": transition.submission_status,
+            "version_status": transition.version_status,
+            "listing_status": transition.listing_status
+        }
+    });
+
+    let mut tx = state.db.begin().await?;
+    sqlx::query(
+        r#"
+        UPDATE marketplace_submissions
+        SET review_status = $2,
+            review_notes = $3,
+            reviewed_by = $4,
+            reviewed_at = now(),
+            metadata = metadata || $5::jsonb,
+            updated_at = now()
+        WHERE id = $1
+        "#,
+    )
+    .bind(context.submission_id)
+    .bind(transition.submission_status)
+    .bind(creator_message.as_deref())
+    .bind(claims.sub)
+    .bind(&metadata)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query("UPDATE marketplace_versions SET status = $2, updated_at = now() WHERE id = $1")
+        .bind(context.version_id)
+        .bind(transition.version_status)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query("UPDATE marketplace_listings SET status = $2, updated_at = now() WHERE id = $1")
+        .bind(context.listing_id)
+        .bind(transition.listing_status)
+        .execute(&mut *tx)
+        .await?;
+
+    let event_id = sqlx::query_as::<_, InsertedReviewEventRow>(
+        r#"
+        INSERT INTO marketplace_review_events (
+          submission_id, listing_id, version_id, actor_id, action, previous_status, next_status,
+          internal_comment, creator_message, reason, metadata
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING id
+        "#,
+    )
+    .bind(context.submission_id)
+    .bind(context.listing_id)
+    .bind(context.version_id)
+    .bind(claims.sub)
+    .bind(&decision)
+    .bind(&context.review_status)
+    .bind(transition.submission_status)
+    .bind(internal_comment.as_deref())
+    .bind(creator_message.as_deref())
+    .bind(&reason)
+    .bind(&metadata)
+    .fetch_one(&mut *tx)
+    .await?
+    .id;
+
+    tx.commit().await?;
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "marketplace.review.decision",
+        "marketplace_submission",
+        Some(context.submission_id),
+        json!({
+            "listing_id": context.listing_id,
+            "version_id": context.version_id,
+            "event_id": event_id,
+            "decision": decision,
+            "next_status": transition.submission_status
+        }),
+    )
+    .await?;
+
+    Ok(Json(load_review_event(&state, event_id).await?))
+}
+
+pub async fn moderate_listing(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(listing_id): Path<Uuid>,
+    Json(payload): Json<ModerationRequest>,
+) -> Result<Json<MarketplaceReviewEventResponse>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    validate_moderation_action(
+        &payload.action,
+        &payload.reason,
+        payload.version_id.is_some(),
+    )?;
+    let reason = payload.reason.trim().to_owned();
+    let internal_comment = normalize_optional_text(payload.internal_comment);
+    let creator_message = normalize_optional_text(payload.creator_message);
+    let action = payload.action.trim().to_owned();
+    let listing = sqlx::query_as::<_, ListingModerationRow>(
+        r#"
+        SELECT id as listing_id, status as listing_status
+        FROM marketplace_listings
+        WHERE id = $1
+        "#,
+    )
+    .bind(listing_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    let mut tx = state.db.begin().await?;
+    let (event_version_id, previous_status, next_status) = match action.as_str() {
+        MODERATION_SUSPEND_LISTING => {
+            let metadata = moderation_metadata(
+                &action,
+                &reason,
+                internal_comment.as_deref(),
+                creator_message.as_deref(),
+            );
+            sqlx::query(
+                r#"
+                UPDATE marketplace_listings
+                SET status = 'suspended', metadata = metadata || $2::jsonb, updated_at = now()
+                WHERE id = $1
+                "#,
+            )
+            .bind(listing.listing_id)
+            .bind(&metadata)
+            .execute(&mut *tx)
+            .await?;
+            (None, listing.listing_status.clone(), "suspended".to_owned())
+        }
+        MODERATION_UNPUBLISH_VERSION => {
+            let version_id = payload.version_id.expect("validated version id");
+            let version = sqlx::query_as::<_, VersionModerationRow>(
+                r#"
+                SELECT id as version_id, status as version_status
+                FROM marketplace_versions
+                WHERE id = $1 AND listing_id = $2
+                "#,
+            )
+            .bind(version_id)
+            .bind(listing.listing_id)
+            .fetch_one(&mut *tx)
+            .await?;
+
+            sqlx::query("UPDATE marketplace_versions SET status = 'deprecated', updated_at = now() WHERE id = $1")
+                .bind(version.version_id)
+                .execute(&mut *tx)
+                .await?;
+
+            let approved = sqlx::query_as::<_, ApprovedVersionCountRow>(
+                r#"
+                SELECT COUNT(*)::BIGINT as approved_versions
+                FROM marketplace_versions
+                WHERE listing_id = $1 AND status = 'approved'
+                "#,
+            )
+            .bind(listing.listing_id)
+            .fetch_one(&mut *tx)
+            .await?;
+            let listing_status = if approved.approved_versions > 0 {
+                "approved"
+            } else {
+                "changes_requested"
+            };
+            let metadata = moderation_metadata(
+                &action,
+                &reason,
+                internal_comment.as_deref(),
+                creator_message.as_deref(),
+            );
+            sqlx::query(
+                r#"
+                UPDATE marketplace_listings
+                SET status = $2, metadata = metadata || $3::jsonb, updated_at = now()
+                WHERE id = $1
+                "#,
+            )
+            .bind(listing.listing_id)
+            .bind(listing_status)
+            .bind(&metadata)
+            .execute(&mut *tx)
+            .await?;
+            (
+                Some(version.version_id),
+                version.version_status,
+                "deprecated".to_owned(),
+            )
+        }
+        MODERATION_EMERGENCY_BLOCK => {
+            let metadata = moderation_metadata(
+                &action,
+                &reason,
+                internal_comment.as_deref(),
+                creator_message.as_deref(),
+            );
+            sqlx::query(
+                r#"
+                UPDATE marketplace_listings
+                SET status = 'blocked', metadata = metadata || $2::jsonb, updated_at = now()
+                WHERE id = $1
+                "#,
+            )
+            .bind(listing.listing_id)
+            .bind(&metadata)
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query(
+                r#"
+                UPDATE marketplace_versions
+                SET status = 'blocked', updated_at = now()
+                WHERE listing_id = $1 AND status IN ('submitted', 'validating', 'approved')
+                "#,
+            )
+            .bind(listing.listing_id)
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query(
+                r#"
+                UPDATE marketplace_installations
+                SET status = 'blocked', updated_at = now()
+                WHERE listing_id = $1 AND status <> 'uninstalled'
+                "#,
+            )
+            .bind(listing.listing_id)
+            .execute(&mut *tx)
+            .await?;
+            (None, listing.listing_status.clone(), "blocked".to_owned())
+        }
+        _ => unreachable!("validated moderation action"),
+    };
+
+    let metadata = json!({
+        "phase": "v3.4",
+        "action": action,
+        "reason": reason,
+        "version_id": event_version_id
+    });
+    let event_id = sqlx::query_as::<_, InsertedReviewEventRow>(
+        r#"
+        INSERT INTO marketplace_review_events (
+          submission_id, listing_id, version_id, actor_id, action, previous_status, next_status,
+          internal_comment, creator_message, reason, metadata
+        )
+        VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id
+        "#,
+    )
+    .bind(listing.listing_id)
+    .bind(event_version_id)
+    .bind(claims.sub)
+    .bind(&action)
+    .bind(previous_status)
+    .bind(&next_status)
+    .bind(internal_comment.as_deref())
+    .bind(creator_message.as_deref())
+    .bind(&reason)
+    .bind(&metadata)
+    .fetch_one(&mut *tx)
+    .await?
+    .id;
+
+    tx.commit().await?;
+
+    audit::record(
+        &state.db,
+        &tenant,
+        "marketplace.moderation.action",
+        "marketplace_listing",
+        Some(listing.listing_id),
+        json!({
+            "event_id": event_id,
+            "action": action,
+            "version_id": event_version_id,
+            "next_status": next_status
+        }),
+    )
+    .await?;
+
+    Ok(Json(load_review_event(&state, event_id).await?))
+}
+
+pub async fn list_review_events(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<Vec<MarketplaceReviewEventResponse>>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    let events = sqlx::query_as::<_, MarketplaceReviewEventResponse>(&review_event_select_sql(
+        "ORDER BY event.created_at DESC LIMIT 100",
+    ))
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(events))
+}
+
 pub async fn list_review_reports(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -799,6 +1281,82 @@ pub async fn list_review_reports(
     .await?;
 
     Ok(Json(reports))
+}
+
+async fn load_review_event(
+    state: &AppState,
+    event_id: Uuid,
+) -> Result<MarketplaceReviewEventResponse, AppError> {
+    sqlx::query_as::<_, MarketplaceReviewEventResponse>(&review_event_select_sql(
+        "WHERE event.id = $1",
+    ))
+    .bind(event_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(AppError::from)
+}
+
+fn review_event_select_sql(where_clause: &str) -> String {
+    format!(
+        r#"
+        SELECT event.id,
+               event.submission_id,
+               event.listing_id,
+               listing.title as listing_title,
+               event.version_id,
+               version.version,
+               event.actor_id,
+               users.email as actor_email,
+               event.action,
+               event.previous_status,
+               event.next_status,
+               event.internal_comment,
+               event.creator_message,
+               event.reason,
+               event.metadata,
+               event.created_at
+        FROM marketplace_review_events event
+        JOIN marketplace_listings listing ON listing.id = event.listing_id
+        LEFT JOIN marketplace_versions version ON version.id = event.version_id
+        LEFT JOIN users ON users.id = event.actor_id
+        {where_clause}
+        "#
+    )
+}
+
+fn review_reason(
+    decision: &str,
+    internal_comment: Option<&str>,
+    creator_message: Option<&str>,
+) -> String {
+    creator_message
+        .or(internal_comment)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+        .unwrap_or_else(|| match decision {
+            "approve" => "Approved for Marketplace publication".to_owned(),
+            "reject" => "Rejected during Marketplace review".to_owned(),
+            "request_changes" => "Changes requested by Marketplace review".to_owned(),
+            _ => "Marketplace review decision".to_owned(),
+        })
+}
+
+fn moderation_metadata(
+    action: &str,
+    reason: &str,
+    internal_comment: Option<&str>,
+    creator_message: Option<&str>,
+) -> Value {
+    json!({
+        "phase": "v3.4",
+        "moderation": {
+            "action": action,
+            "reason": reason,
+            "internal_comment": internal_comment,
+            "creator_message": creator_message
+        }
+    })
 }
 
 async fn ensure_active_user(state: &AppState, user_id: Uuid) -> Result<(), AppError> {

@@ -2,11 +2,11 @@
 
 ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
 This repository currently implements phases zero through ten from the original project
-proposal plus V3 Marketplace phases 0.1 through 3: a runnable monorepo foundation, local infrastructure, CI, environment
+proposal plus V3 Marketplace phases 0.1 through 4: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
-management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, and the V3 Marketplace phase 3 package validation, security scan, and compatibility workflow.
+management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, and the V3 Marketplace phase 4 review, decision, and moderation workflow.
 
 ## Phase Zero Scope
 
@@ -126,6 +126,15 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Compatibility reports for ZinharCMS version bounds, required Marketplace features, required plan, and machine-readable install eligibility.
 - Validation report persistence on package versions and review submissions.
 - Creator-facing and reviewer-facing Marketplace report APIs plus admin UI report panels.
+
+## V3 Marketplace Phase 4 Scope
+
+- Admin-only review queue for queued, validating, blocked, and submitted Marketplace submissions.
+- Review decision flow for approve, reject, and request changes with internal comments and creator-facing messages.
+- Append-only Marketplace review event log plus audit log entries for every decision.
+- Moderation and takedown actions for listing suspension, version unpublish, and emergency blocking.
+- Admin UI controls for review decisions, moderation actions, and recent event history.
+
 ## Quick Start
 
 Copy the environment template and start the local stack:

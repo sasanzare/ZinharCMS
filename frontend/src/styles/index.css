@@ -20,6 +20,14 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
@@ -130,7 +138,10 @@ input {
 .app-shell {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
+  width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .app-shell--collapsed {
@@ -215,6 +226,8 @@ input {
 .workspace {
   display: flex;
   min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   flex-direction: column;
 }
 
@@ -223,6 +236,8 @@ input {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 72px;
   padding: 14px 24px;
   border-bottom: 1px solid #dde4e4;
@@ -246,7 +261,10 @@ input {
 
 .topbar-status {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -289,6 +307,8 @@ input {
 
 .content-area {
   width: min(1440px, 100%);
+  max-width: 100%;
+  min-width: 0;
   margin: 0 auto;
   padding: 24px;
 }
@@ -708,17 +728,24 @@ input {
 }
 
 .marketplace-page {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  overflow-x: hidden;
 }
 
+.marketplace-page .metric-grid,
 .marketplace-page .metric-grid > *,
 .marketplace-page .panel,
+.marketplace-page .toolbar,
 .marketplace-workspace > * {
   min-width: 0;
+  max-width: 100%;
 }
 
 .marketplace-workspace {
   grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  width: 100%;
   gap: 18px;
 }
 
@@ -728,11 +755,12 @@ input {
 }
 
 .marketplace-listings-table .data-table {
-  min-width: 720px;
+  min-width: min(720px, 100%);
 }
 
 .marketplace-report-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
   gap: 18px;
 }
 
@@ -799,6 +827,111 @@ input {
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.marketplace-review-controls {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border-top: 1px solid #dce7e4;
+  padding-top: 12px;
+}
+
+.review-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.review-field-grid label,
+.review-reason-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #45565d;
+  font-size: 0.92rem;
+}
+
+.review-field-grid textarea,
+.review-reason-field input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #cfdad8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #1d282d;
+  background: #ffffff;
+}
+
+.review-field-grid textarea {
+  resize: vertical;
+}
+
+.review-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.review-action-row button {
+  flex: 1 1 150px;
+  min-width: 0;
+  white-space: normal;
+}
+
+.secondary-button.button-danger {
+  border-color: #efc7c7;
+  color: #8a1717;
+  background: #fff7f7;
+}
+
+.review-note {
+  color: #7a5a00;
+  font-size: 0.86rem;
+}
+
+.review-event-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.review-event-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: start;
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfcfc;
+}
+
+.review-event-card div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.review-event-card strong,
+.review-event-card span,
+.review-event-card p,
+.review-event-card small {
+  overflow-wrap: anywhere;
+}
+
+.review-event-card p,
+.review-event-card small {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.review-event-card span,
+.review-event-card small {
+  color: #5f7077;
 }
 .field-builder {
   display: grid;
@@ -1484,8 +1617,9 @@ input {
 
 .organization-switcher {
   display: inline-flex;
-  min-width: min(240px, 34vw);
-  max-width: 280px;
+  min-width: 0;
+  max-width: min(280px, 100%);
+  flex: 1 1 210px;
   min-height: 38px;
   align-items: center;
   gap: 8px;
@@ -1782,7 +1916,12 @@ input {
   }
 }
 @media (max-width: 760px) {
-  .marketplace-report-grid {
+  .marketplace-report-grid,
+  .review-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-event-card {
     grid-template-columns: 1fr;
   }
 }

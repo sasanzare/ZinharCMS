@@ -14,12 +14,16 @@ Phase 1 resolves the base schema and integrity gaps for `marketplace_installatio
 
 Phase 3 resolves the package validation pipeline gap for uploaded versions. Static validation, initial security scanning, and compatibility reporting now run during version upload, persist reports on `marketplace_versions` and `marketplace_submissions`, and expose creator/reviewer report APIs. Runtime install enforcement, catalog filtering, and reviewer approval decisions remain open for later phases.
 
+## Phase 4 Update
+
+Phase 4 resolves the initial human review and moderation workflow gap. Reviewers can open queue items, approve, reject, request changes, suspend listings, unpublish versions, and emergency block products. Later phases still need public catalog visibility, install runtime enforcement, abuse reporting, and full incident runbooks.
+
 ## Plugin Install Gaps
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
 | Marketplace installation runtime API does not exist | P0 | Phase 1 added `marketplace_installations`; later phases must add tenant-aware install, disable, uninstall, update, and rollback APIs. | 6.1, 6.2, 6.3 |
-| Reviewer approval and publication workflow is not implemented | P0 | Phase 3 added static validation, initial security scan, compatibility reports, and creator/reviewer report visibility; later phases must add reviewer decisions, publication, and catalog visibility controls. | 3.1, 4.1 |
+| Public catalog visibility is not implemented | P0 | Phase 4 added reviewer decisions and moderation statuses; later phases must expose only approved, compatible listings through catalog APIs and UI. | 4.1, 5.1 |
 | Install compatibility enforcement is not implemented | P0 | Phase 3 stores machine-readable compatibility and `install_eligible`; later phases must enforce it in catalog display and install APIs. | 3.3, 6.1 |
 | Install rollback API is not implemented | P1 | Phase 1 added rollback version metadata; later phases must implement rollback execution and safety checks. | 6.3 |
 | Installed product lifecycle runtime events are not implemented | P0 | Phase 1 defined install statuses; later phases must implement install, disable, uninstall, update, rollback, suspend, and kill-switch actions. | 6.1, 6.2, 7.3 |
@@ -53,8 +57,8 @@ Phase 3 resolves the package validation pipeline gap for uploaded versions. Stat
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
 | Marketplace audit action taxonomy does not exist | P0 | Reserve action names for submission, review, install, update, rollback, purchase, payout, report abuse, takedown, and kill switch. | 1.1, 4.2, 6.1 |
-| Platform-level Marketplace audit view does not exist | P1 | Add reviewer/admin view across creators and listings. | 4.1, 11.2 |
-| Marketplace incident runbook does not exist | P1 | Add support flow for malicious product, broken install, refund, dispute, and emergency block. | 15.1 |
+| Platform-level Marketplace audit view is partial | P1 | Phase 4 adds review event logs and audit records; later analytics must aggregate creators, listings, decisions, reports, and blocked packages. | 4.1, 11.2 |
+| Marketplace incident runbook does not exist | P1 | Phase 4 adds emergency block primitives; later documentation must define support flow for malicious product, broken install, refund, dispute, and emergency block. | 15.1 |
 
 ## Go/No-Go For Phase 1.1
 
