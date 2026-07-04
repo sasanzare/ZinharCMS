@@ -692,6 +692,56 @@ export type MarketplaceListingResponse = {
   updated_at: string;
 };
 
+export type MarketplaceCatalogItemResponse = {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string;
+  category: string;
+  product_type: MarketplaceProductType;
+  pricing_type: MarketplacePricingType;
+  price_cents: number;
+  creator_display_name: string;
+  latest_version_id: string;
+  latest_version: string;
+  badge: string;
+  rating_average: number;
+  rating_count: number;
+  active_installations: number;
+  compatibility_report: JsonRecord;
+  permissions: JsonValue;
+  screenshots: JsonValue;
+  support_url: string | null;
+  updated_at: string;
+};
+
+export type MarketplaceCatalogVersionResponse = {
+  id: string;
+  version: string;
+  compatibility_report: JsonRecord;
+  permissions: JsonValue;
+  changelog: JsonValue;
+  created_at: string;
+};
+
+export type MarketplaceCatalogReviewResponse = {
+  author: string;
+  rating: number;
+  body: string;
+  created_at: string | null;
+};
+
+export type MarketplaceCatalogDetailResponse = {
+  item: MarketplaceCatalogItemResponse;
+  description: string;
+  license: string;
+  support_url: string | null;
+  screenshots: JsonValue;
+  permissions: JsonValue;
+  changelog: JsonValue;
+  versions: MarketplaceCatalogVersionResponse[];
+  reviews: MarketplaceCatalogReviewResponse[];
+};
 export type MarketplacePackageVersionResponse = {
   id: string;
   listing_id: string;

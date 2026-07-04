@@ -758,6 +758,232 @@ input {
   min-width: min(720px, 100%);
 }
 
+.marketplace-catalog-panel,
+.marketplace-catalog-detail {
+  min-width: 0;
+}
+
+.marketplace-catalog-body {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.marketplace-catalog-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.8fr) repeat(3, minmax(140px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+  min-width: 0;
+}
+
+.marketplace-catalog-controls label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #45565d;
+  font-size: 0.92rem;
+}
+
+.marketplace-catalog-controls input,
+.marketplace-catalog-controls select {
+  width: 100%;
+  min-width: 0;
+}
+
+.marketplace-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+.catalog-product-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fbfdfc;
+}
+
+.catalog-product-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.catalog-product-heading div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.catalog-product-heading h3 {
+  margin: 0;
+  color: #102027;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.catalog-product-heading span,
+.catalog-product-card p,
+.catalog-product-meta span,
+.catalog-detail-copy p,
+.catalog-detail-facts a {
+  overflow-wrap: anywhere;
+}
+
+.catalog-product-heading strong {
+  white-space: nowrap;
+}
+
+.catalog-product-card p {
+  margin: 0;
+  color: #586a72;
+  line-height: 1.5;
+}
+
+.catalog-product-meta,
+.catalog-permission-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.catalog-product-meta span,
+.catalog-permission-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  border-radius: 999px;
+  background: #edf4f2;
+  color: #33464d;
+  padding: 5px 9px;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.catalog-empty-state {
+  grid-column: 1 / -1;
+}
+
+.catalog-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.75fr);
+  gap: 18px;
+  min-width: 0;
+}
+
+.catalog-detail-main,
+.catalog-detail-side,
+.catalog-detail-copy,
+.catalog-version-list {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.catalog-detail-copy h3,
+.catalog-detail-side h3 {
+  margin: 0;
+  color: #102027;
+  font-size: 1rem;
+}
+
+.catalog-detail-copy p {
+  margin: 0;
+  color: #45565d;
+  line-height: 1.6;
+}
+
+.catalog-detail-side {
+  align-content: start;
+  border-left: 1px solid #dce7e4;
+  padding-left: 18px;
+}
+
+[dir="rtl"] .catalog-detail-side {
+  border-right: 1px solid #dce7e4;
+  border-left: 0;
+  padding-right: 18px;
+  padding-left: 0;
+}
+
+.catalog-permission-row--detail span {
+  background: #e0f3ee;
+  color: #116755;
+}
+
+.catalog-detail-facts {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr);
+  gap: 8px 12px;
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdfc;
+}
+
+.catalog-detail-facts span {
+  color: #657178;
+  font-size: 0.84rem;
+}
+
+.catalog-detail-facts strong,
+.catalog-detail-facts a {
+  min-width: 0;
+  color: #102027;
+  font-size: 0.9rem;
+}
+
+.catalog-version-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fbfdfc;
+}
+
+.catalog-version-list span,
+.catalog-version-list strong {
+  overflow-wrap: anywhere;
+}
+
+.catalog-screenshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.catalog-screenshot-grid a {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  background: #eef4f2;
+  aspect-ratio: 16 / 9;
+}
+
+.catalog-screenshot-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .marketplace-report-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;

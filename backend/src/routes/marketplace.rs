@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use axum::extract::{Extension, Multipart, Path, State};
+use axum::extract::{Extension, Multipart, Path, Query, State};
 use axum::routing::{get, patch, post, put};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
@@ -14,6 +14,7 @@ use uuid::Uuid;
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
+use crate::services::marketplace_catalog::{catalog_compatibility_report, is_catalog_compatible};
 use crate::services::marketplace_manifest::MARKETPLACE_MANIFEST_SCHEMA_VERSION;
 use crate::services::marketplace_package::{
     marketplace_package_object_key, sha256_hex, validate_package_size,
@@ -33,6 +34,11 @@ use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/api/marketplace/catalog", get(list_catalog))
+        .route(
+            "/api/marketplace/catalog/{listing_slug}",
+            get(get_catalog_listing),
+        )
         .route(
             "/api/marketplace/creator",
             get(get_creator).post(request_creator),
@@ -217,6 +223,99 @@ pub struct MarketplaceValidationReportResponse {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Deserialize, Default, ToSchema)]
+pub struct CatalogQuery {
+    pub search: Option<String>,
+    pub category: Option<String>,
+    pub product_type: Option<String>,
+    pub pricing_type: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MarketplaceCatalogItemResponse {
+    pub id: Uuid,
+    pub title: String,
+    pub slug: String,
+    pub summary: String,
+    pub category: String,
+    pub product_type: String,
+    pub pricing_type: String,
+    pub price_cents: i32,
+    pub creator_display_name: String,
+    pub latest_version_id: Uuid,
+    pub latest_version: String,
+    pub badge: String,
+    pub rating_average: f64,
+    pub rating_count: i64,
+    pub active_installations: i64,
+    pub compatibility_report: Value,
+    pub permissions: Value,
+    pub screenshots: Value,
+    pub support_url: Option<String>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MarketplaceCatalogVersionResponse {
+    pub id: Uuid,
+    pub version: String,
+    pub compatibility_report: Value,
+    pub permissions: Value,
+    pub changelog: Value,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MarketplaceCatalogReviewResponse {
+    pub author: String,
+    pub rating: i32,
+    pub body: String,
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MarketplaceCatalogDetailResponse {
+    pub item: MarketplaceCatalogItemResponse,
+    pub description: String,
+    pub license: String,
+    pub support_url: Option<String>,
+    pub screenshots: Value,
+    pub permissions: Value,
+    pub changelog: Value,
+    pub versions: Vec<MarketplaceCatalogVersionResponse>,
+    pub reviews: Vec<MarketplaceCatalogReviewResponse>,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct MarketplaceCatalogRow {
+    id: Uuid,
+    title: String,
+    slug: String,
+    summary: String,
+    description: String,
+    category: String,
+    product_type: String,
+    pricing_type: String,
+    price_cents: i32,
+    license: String,
+    support_url: Option<String>,
+    screenshots: Value,
+    creator_display_name: String,
+    version_id: Uuid,
+    version: String,
+    manifest_json: Value,
+    active_installations: i64,
+    updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow)]
+struct MarketplaceCatalogVersionRow {
+    id: Uuid,
+    version: String,
+    manifest_json: Value,
+    created_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ReviewDecisionRequest {
     pub decision: String,
@@ -317,6 +416,174 @@ struct IncomingPackageUpload {
     bytes: Vec<u8>,
 }
 
+pub async fn list_catalog(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Query(query): Query<CatalogQuery>,
+) -> Result<Json<Vec<MarketplaceCatalogItemResponse>>, AppError> {
+    let plan = quota::load_current_plan(&state.db, &tenant).await?;
+    let search = clean_query_param(query.search);
+    let category = clean_query_param(query.category);
+    let product_type = clean_query_param(query.product_type);
+    let pricing_type = clean_query_param(query.pricing_type);
+
+    let rows = sqlx::query_as::<_, MarketplaceCatalogRow>(
+        r#"
+        SELECT listing.id,
+               listing.title,
+               listing.slug,
+               listing.summary,
+               listing.description,
+               listing.category,
+               listing.product_type,
+               listing.pricing_type,
+               listing.price_cents,
+               listing.license,
+               listing.support_url,
+               listing.screenshots,
+               creator.display_name as creator_display_name,
+               version.id as version_id,
+               version.version,
+               version.manifest_json,
+               COALESCE(installs.active_installations, 0)::BIGINT as active_installations,
+               listing.updated_at
+        FROM marketplace_listings listing
+        JOIN marketplace_creators creator ON creator.id = listing.creator_id
+        JOIN LATERAL (
+            SELECT id, version, manifest_json, created_at
+            FROM marketplace_versions version
+            WHERE version.listing_id = listing.id
+              AND version.status = 'approved'
+              AND version.validation_status IN ('passed', 'warning')
+              AND version.security_risk_level IN ('low', 'medium')
+            ORDER BY version.created_at DESC
+            LIMIT 1
+        ) version ON true
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*)::BIGINT as active_installations
+            FROM marketplace_installations installation
+            WHERE installation.listing_id = listing.id
+              AND installation.status = 'active'
+        ) installs ON true
+        WHERE listing.status = 'approved'
+          AND ($1::text IS NULL
+               OR listing.title ILIKE ('%' || $1 || '%')
+               OR listing.summary ILIKE ('%' || $1 || '%')
+               OR listing.category ILIKE ('%' || $1 || '%')
+               OR listing.slug ILIKE ('%' || $1 || '%')
+               OR creator.display_name ILIKE ('%' || $1 || '%'))
+          AND ($2::text IS NULL OR listing.category = $2)
+          AND ($3::text IS NULL OR listing.product_type = $3)
+          AND ($4::text IS NULL OR listing.pricing_type = $4)
+        ORDER BY active_installations DESC, listing.updated_at DESC
+        LIMIT 100
+        "#,
+    )
+    .bind(search.as_deref())
+    .bind(category.as_deref())
+    .bind(product_type.as_deref())
+    .bind(pricing_type.as_deref())
+    .fetch_all(&state.db)
+    .await?;
+
+    let items = rows
+        .iter()
+        .filter_map(|row| catalog_item_from_row(row, &plan.slug))
+        .collect();
+
+    Ok(Json(items))
+}
+
+pub async fn get_catalog_listing(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(listing_slug): Path<String>,
+) -> Result<Json<MarketplaceCatalogDetailResponse>, AppError> {
+    let slug = listing_slug.trim().to_ascii_lowercase();
+    if slug.is_empty() {
+        return Err(AppError::BadRequest("listing slug is required".to_owned()));
+    }
+
+    let plan = quota::load_current_plan(&state.db, &tenant).await?;
+    let row = sqlx::query_as::<_, MarketplaceCatalogRow>(
+        r#"
+        SELECT listing.id,
+               listing.title,
+               listing.slug,
+               listing.summary,
+               listing.description,
+               listing.category,
+               listing.product_type,
+               listing.pricing_type,
+               listing.price_cents,
+               listing.license,
+               listing.support_url,
+               listing.screenshots,
+               creator.display_name as creator_display_name,
+               version.id as version_id,
+               version.version,
+               version.manifest_json,
+               COALESCE(installs.active_installations, 0)::BIGINT as active_installations,
+               listing.updated_at
+        FROM marketplace_listings listing
+        JOIN marketplace_creators creator ON creator.id = listing.creator_id
+        JOIN LATERAL (
+            SELECT id, version, manifest_json, created_at
+            FROM marketplace_versions version
+            WHERE version.listing_id = listing.id
+              AND version.status = 'approved'
+              AND version.validation_status IN ('passed', 'warning')
+              AND version.security_risk_level IN ('low', 'medium')
+            ORDER BY version.created_at DESC
+            LIMIT 1
+        ) version ON true
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*)::BIGINT as active_installations
+            FROM marketplace_installations installation
+            WHERE installation.listing_id = listing.id
+              AND installation.status = 'active'
+        ) installs ON true
+        WHERE listing.status = 'approved'
+          AND listing.slug = $1
+        "#,
+    )
+    .bind(&slug)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("catalog listing not found".to_owned()))?;
+
+    let item = catalog_item_from_row(&row, &plan.slug)
+        .ok_or_else(|| AppError::NotFound("catalog listing not found".to_owned()))?;
+    let versions = sqlx::query_as::<_, MarketplaceCatalogVersionRow>(
+        r#"
+        SELECT id, version, manifest_json, created_at
+        FROM marketplace_versions
+        WHERE listing_id = $1
+          AND status = 'approved'
+          AND validation_status IN ('passed', 'warning')
+          AND security_risk_level IN ('low', 'medium')
+        ORDER BY created_at DESC
+        "#,
+    )
+    .bind(row.id)
+    .fetch_all(&state.db)
+    .await?
+    .iter()
+    .filter_map(|version| catalog_version_from_row(version, &plan.slug))
+    .collect::<Vec<_>>();
+
+    Ok(Json(MarketplaceCatalogDetailResponse {
+        description: row.description,
+        license: row.license,
+        support_url: row.support_url.clone(),
+        screenshots: row.screenshots.clone(),
+        permissions: item.permissions.clone(),
+        changelog: manifest_value(&row.manifest_json, "changelog"),
+        versions,
+        reviews: Vec::new(),
+        item,
+    }))
+}
 pub async fn get_creator(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -1494,6 +1761,76 @@ fn listing_select_sql(where_clause: &str) -> String {
     )
 }
 
+fn clean_query_param(value: Option<String>) -> Option<String> {
+    value
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
+}
+
+fn catalog_item_from_row(
+    row: &MarketplaceCatalogRow,
+    plan_slug: &str,
+) -> Option<MarketplaceCatalogItemResponse> {
+    let compatibility_report = catalog_compatibility_report(&row.manifest_json, plan_slug);
+    if !is_catalog_compatible(&compatibility_report) {
+        return None;
+    }
+
+    Some(MarketplaceCatalogItemResponse {
+        id: row.id,
+        title: row.title.clone(),
+        slug: row.slug.clone(),
+        summary: row.summary.clone(),
+        category: row.category.clone(),
+        product_type: row.product_type.clone(),
+        pricing_type: row.pricing_type.clone(),
+        price_cents: row.price_cents,
+        creator_display_name: row.creator_display_name.clone(),
+        latest_version_id: row.version_id,
+        latest_version: row.version.clone(),
+        badge: "Compatible".to_owned(),
+        rating_average: 0.0,
+        rating_count: 0,
+        active_installations: row.active_installations,
+        compatibility_report,
+        permissions: manifest_array(&row.manifest_json, "permissions"),
+        screenshots: row.screenshots.clone(),
+        support_url: row.support_url.clone(),
+        updated_at: row.updated_at,
+    })
+}
+
+fn catalog_version_from_row(
+    row: &MarketplaceCatalogVersionRow,
+    plan_slug: &str,
+) -> Option<MarketplaceCatalogVersionResponse> {
+    let compatibility_report = catalog_compatibility_report(&row.manifest_json, plan_slug);
+    if !is_catalog_compatible(&compatibility_report) {
+        return None;
+    }
+
+    Some(MarketplaceCatalogVersionResponse {
+        id: row.id,
+        version: row.version.clone(),
+        compatibility_report,
+        permissions: manifest_array(&row.manifest_json, "permissions"),
+        changelog: manifest_value(&row.manifest_json, "changelog"),
+        created_at: row.created_at,
+    })
+}
+
+fn manifest_array(manifest: &Value, key: &str) -> Value {
+    manifest
+        .get(key)
+        .and_then(Value::as_array)
+        .cloned()
+        .map(Value::Array)
+        .unwrap_or_else(|| json!([]))
+}
+
+fn manifest_value(manifest: &Value, key: &str) -> Value {
+    manifest.get(key).cloned().unwrap_or_else(|| json!([]))
+}
 fn validate_listing_payload(
     payload: &ListingRequest,
     screenshots: &[String],

@@ -17,14 +17,17 @@ Phase 3 resolves the package validation pipeline gap for uploaded versions. Stat
 ## Phase 4 Update
 
 Phase 4 resolves the initial human review and moderation workflow gap. Reviewers can open queue items, approve, reject, request changes, suspend listings, unpublish versions, and emergency block products. Later phases still need public catalog visibility, install runtime enforcement, abuse reporting, and full incident runbooks.
+## Phase 5 Update
+
+Phase 5 resolves the public catalog visibility and catalog compatibility filtering gaps. The catalog API and admin UI now expose only approved, safe, install-eligible products for the active organization, with search, filters, and listing details that show permissions before install. Later phases still need install runtime APIs, permission approval enforcement, abuse reporting, and full incident runbooks.
 
 ## Plugin Install Gaps
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
 | Marketplace installation runtime API does not exist | P0 | Phase 1 added `marketplace_installations`; later phases must add tenant-aware install, disable, uninstall, update, and rollback APIs. | 6.1, 6.2, 6.3 |
-| Public catalog visibility is not implemented | P0 | Phase 4 added reviewer decisions and moderation statuses; later phases must expose only approved, compatible listings through catalog APIs and UI. | 4.1, 5.1 |
-| Install compatibility enforcement is not implemented | P0 | Phase 3 stores machine-readable compatibility and `install_eligible`; later phases must enforce it in catalog display and install APIs. | 3.3, 6.1 |
+| Catalog install action is not implemented | P0 | Phase 5 exposes only approved, compatible listings through catalog APIs and UI; later phases must connect install actions to tenant-aware runtime APIs. | 6.1, 6.2 |
+| Install compatibility enforcement is incomplete | P0 | Phase 5 enforces `install_eligible` for catalog display; phase 6 must enforce the same contract at install time. | 6.1 |
 | Install rollback API is not implemented | P1 | Phase 1 added rollback version metadata; later phases must implement rollback execution and safety checks. | 6.3 |
 | Installed product lifecycle runtime events are not implemented | P0 | Phase 1 defined install statuses; later phases must implement install, disable, uninstall, update, rollback, suspend, and kill-switch actions. | 6.1, 6.2, 7.3 |
 | Tenant-owned RLS policies for later Marketplace tables do not exist | P0 | Phase 1 added forced RLS for installations; later purchase, entitlement, review, and organization-scoped product state tables must also use forced RLS. | 9.2, 10.1 |

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BadgeCheck, CheckCircle2, FileCheck, MessageSquare, PackagePlus, RefreshCw, Save, Send, ShieldAlert, Store, Upload, XCircle } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CheckCircle2, Eye, FileCheck, MessageSquare, PackagePlus, RefreshCw, Save, Search, Send, ShieldAlert, Star, Store, Tag, Upload, XCircle } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
 import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import type {
+  JsonValue,
+  MarketplaceCatalogDetailResponse,
+  MarketplaceCatalogItemResponse,
   MarketplaceCreatorResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
@@ -25,6 +28,13 @@ const PRODUCT_TYPES: MarketplaceProductType[] = [
   "backend_extension",
 ];
 const PRICING_TYPES: MarketplacePricingType[] = ["free", "paid", "custom"];
+
+const defaultCatalogFilters = {
+  search: "",
+  category: "",
+  product_type: "" as "" | MarketplaceProductType,
+  pricing_type: "" as "" | MarketplacePricingType,
+};
 
 const defaultCreatorDraft = {
   slug: "",
@@ -69,6 +79,7 @@ const defaultManifest = JSON.stringify(
 
 type CreatorDraft = typeof defaultCreatorDraft;
 type ListingDraft = typeof defaultListingDraft;
+type CatalogFilterDraft = typeof defaultCatalogFilters;
 
 const defaultReviewDraft = {
   internal_comment: "",
@@ -156,6 +167,27 @@ function listingToDraft(listing: MarketplaceListingResponse): ListingDraft {
   };
 }
 
+function stringListFromValue(value: JsonValue | unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") return item;
+      if (item === null || item === undefined) return "";
+      return JSON.stringify(item);
+    })
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function catalogQuery(filters: CatalogFilterDraft) {
+  return {
+    search: cleanOptional(filters.search),
+    category: cleanOptional(filters.category),
+    product_type: filters.product_type || undefined,
+    pricing_type: filters.pricing_type || undefined,
+  };
+}
+
 export function MarketplacePage() {
   const { t } = useI18n();
   const user = useAppStore((state) => state.user);
@@ -169,9 +201,13 @@ export function MarketplacePage() {
   const [reviewReports, setReviewReports] = useState<MarketplaceValidationReportResponse[]>([]);
   const [reviewEvents, setReviewEvents] = useState<MarketplaceReviewEventResponse[]>([]);
   const [reviewDrafts, setReviewDrafts] = useState<Record<string, ReviewDraft>>({});
+  const [catalogFilters, setCatalogFilters] = useState<CatalogFilterDraft>(defaultCatalogFilters);
+  const [catalogItems, setCatalogItems] = useState<MarketplaceCatalogItemResponse[]>([]);
+  const [catalogDetail, setCatalogDetail] = useState<MarketplaceCatalogDetailResponse | null>(null);
   const [manifest, setManifest] = useState(defaultManifest);
   const [packageFile, setPackageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +218,28 @@ export function MarketplacePage() {
     () => listings.find((listing) => listing.id === selectedListingId) ?? null,
     [listings, selectedListingId],
   );
+  const catalogCategories = useMemo(
+    () => Array.from(new Set(catalogItems.map((item) => item.category).filter(Boolean))).sort(),
+    [catalogItems],
+  );
+
+  function catalogPriceLabel(item: MarketplaceCatalogItemResponse) {
+    if (item.pricing_type === "custom") return t("marketplace.catalog.customPrice");
+    if (item.price_cents <= 0) return t("marketplace.catalog.free");
+    return `$${(item.price_cents / 100).toFixed(2)}`;
+  }
+
+  const loadCatalog = useCallback(async function loadCatalog() {
+    setCatalogLoading(true);
+    setError(null);
+    try {
+      setCatalogItems(await api.marketplace.catalog(catalogQuery(catalogFilters)));
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.catalog")));
+    } finally {
+      setCatalogLoading(false);
+    }
+  }, [catalogFilters, t]);
 
   const loadMarketplace = useCallback(async function loadMarketplace() {
     setLoading(true);
@@ -214,6 +272,10 @@ export function MarketplacePage() {
   useEffect(() => {
     void loadMarketplace();
   }, [loadMarketplace]);
+
+  useEffect(() => {
+    void loadCatalog();
+  }, [loadCatalog]);
 
   const loadSubmissionReports = useCallback(async function loadSubmissionReports() {
     if (!selectedListingId) {
@@ -265,6 +327,26 @@ export function MarketplacePage() {
   useEffect(() => {
     void loadReviewEvents();
   }, [loadReviewEvents]);
+
+  async function refreshMarketplace() {
+    await Promise.all([loadMarketplace(), loadCatalog()]);
+  }
+
+  async function openCatalogDetail(item: MarketplaceCatalogItemResponse) {
+    setCatalogLoading(true);
+    setError(null);
+    try {
+      setCatalogDetail(await api.marketplace.catalogDetail(item.slug));
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.catalog")));
+    } finally {
+      setCatalogLoading(false);
+    }
+  }
+
+  function resetCatalogFilters() {
+    setCatalogFilters(defaultCatalogFilters);
+  }
 
   async function saveCreator() {
     setActionLoading(true);
@@ -544,7 +626,7 @@ export function MarketplacePage() {
   return (
     <div className="page-stack marketplace-page">
       <div className="toolbar toolbar--end">
-        <button className="secondary-button" type="button" onClick={loadMarketplace} disabled={loading}>
+        <button className="secondary-button" type="button" onClick={() => void refreshMarketplace()} disabled={loading || catalogLoading}>
           <RefreshCw size={16} aria-hidden="true" />
           {t("marketplace.refresh")}
         </button>
@@ -570,6 +652,165 @@ export function MarketplacePage() {
           <strong>{approvedCreator ? t("common.enabled") : t("common.disabled")}</strong>
         </div>
       </section>
+
+      <section className="panel marketplace-catalog-panel">
+        <div className="panel-header">
+          <div>
+            <h2>{t("marketplace.catalog.title")}</h2>
+            <span>{t("marketplace.catalog.description")}</span>
+          </div>
+          <StatusBadge label={`${catalogItems.length}`} tone="neutral" />
+        </div>
+        <div className="padded marketplace-catalog-body">
+          <div className="marketplace-catalog-controls">
+            <label>
+              {t("marketplace.catalog.search")}
+              <div className="input-with-icon">
+                <Search size={16} aria-hidden="true" />
+                <input value={catalogFilters.search} onChange={(event) => setCatalogFilters({ ...catalogFilters, search: event.target.value })} />
+              </div>
+            </label>
+            <label>
+              {t("marketplace.catalog.categoryFilter")}
+              <input list="marketplace-catalog-categories" value={catalogFilters.category} onChange={(event) => setCatalogFilters({ ...catalogFilters, category: event.target.value })} />
+              <datalist id="marketplace-catalog-categories">
+                {catalogCategories.map((category) => <option key={category} value={category} />)}
+              </datalist>
+            </label>
+            <label>
+              {t("marketplace.catalog.productTypeFilter")}
+              <select value={catalogFilters.product_type} onChange={(event) => setCatalogFilters({ ...catalogFilters, product_type: event.target.value as CatalogFilterDraft["product_type"] })}>
+                <option value="">{t("marketplace.catalog.allTypes")}</option>
+                {PRODUCT_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </label>
+            <label>
+              {t("marketplace.catalog.pricingFilter")}
+              <select value={catalogFilters.pricing_type} onChange={(event) => setCatalogFilters({ ...catalogFilters, pricing_type: event.target.value as CatalogFilterDraft["pricing_type"] })}>
+                <option value="">{t("marketplace.catalog.allPricing")}</option>
+                {PRICING_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </label>
+            <button className="secondary-button" type="button" onClick={resetCatalogFilters} disabled={catalogLoading}>
+              {t("marketplace.catalog.resetFilters")}
+            </button>
+          </div>
+
+          <div className="marketplace-catalog-grid">
+            {catalogItems.map((item) => {
+              const permissions = stringListFromValue(item.permissions);
+              return (
+                <article className="catalog-product-card" key={item.id}>
+                  <div className="catalog-product-heading">
+                    <div>
+                      <h3>{item.title}</h3>
+                      <span>{item.creator_display_name}</span>
+                    </div>
+                    <strong>{catalogPriceLabel(item)}</strong>
+                  </div>
+                  <p>{item.summary}</p>
+                  <div className="catalog-product-meta">
+                    <StatusBadge label={item.badge} tone="success" />
+                    <span><Tag size={14} aria-hidden="true" />{item.category}</span>
+                    <span>{item.product_type}</span>
+                    <span>{t("marketplace.catalog.version")}: {item.latest_version}</span>
+                    <span>{t("marketplace.catalog.activeInstalls")}: {item.active_installations.toLocaleString()}</span>
+                    <span><Star size={14} aria-hidden="true" />{item.rating_count > 0 ? item.rating_average.toFixed(1) : t("marketplace.catalog.noReviews")}</span>
+                  </div>
+                  <div className="catalog-permission-row" aria-label={t("marketplace.catalog.permissions")}>
+                    {permissions.slice(0, 3).map((permission) => <span key={permission}>{permission}</span>)}
+                    {permissions.length === 0 && <span>{t("marketplace.catalog.noPermissions")}</span>}
+                    {permissions.length > 3 && <span>+{permissions.length - 3}</span>}
+                  </div>
+                  <button className="secondary-button" type="button" onClick={() => void openCatalogDetail(item)} disabled={catalogLoading}>
+                    <Eye size={16} aria-hidden="true" />
+                    {t("marketplace.catalog.viewDetails")}
+                  </button>
+                </article>
+              );
+            })}
+            {catalogItems.length === 0 && <p className="empty-state catalog-empty-state">{t("marketplace.catalog.empty")}</p>}
+          </div>
+        </div>
+      </section>
+
+      {catalogDetail && (
+        <section className="panel marketplace-catalog-detail">
+          <div className="panel-header">
+            <div>
+              <h2>{catalogDetail.item.title}</h2>
+              <span>{catalogDetail.item.summary}</span>
+            </div>
+            <StatusBadge label={catalogDetail.item.badge} tone="success" />
+          </div>
+          <div className="padded catalog-detail-layout">
+            <div className="catalog-detail-main">
+              <div className="catalog-detail-copy">
+                <h3>{t("common.description")}</h3>
+                <p>{catalogDetail.description}</p>
+              </div>
+              <div className="catalog-detail-copy">
+                <h3>{t("marketplace.catalog.changelog")}</h3>
+                <pre className="validation-report-json">{formatReportJson(catalogDetail.changelog)}</pre>
+              </div>
+              <div className="catalog-detail-copy">
+                <h3>{t("marketplace.catalog.screenshots")}</h3>
+                <div className="catalog-screenshot-grid">
+                  {stringListFromValue(catalogDetail.screenshots).map((url) => (
+                    <a key={url} href={url} target="_blank" rel="noreferrer">
+                      <img src={url} alt="" />
+                    </a>
+                  ))}
+                  {stringListFromValue(catalogDetail.screenshots).length === 0 && <span>{t("marketplace.catalog.noScreenshots")}</span>}
+                </div>
+              </div>
+            </div>
+            <aside className="catalog-detail-side">
+              <div>
+                <h3>{t("marketplace.catalog.permissions")}</h3>
+                <div className="catalog-permission-row catalog-permission-row--detail">
+                  {stringListFromValue(catalogDetail.permissions).map((permission) => <span key={permission}>{permission}</span>)}
+                  {stringListFromValue(catalogDetail.permissions).length === 0 && <span>{t("marketplace.catalog.noPermissions")}</span>}
+                </div>
+              </div>
+              <div className="catalog-detail-facts">
+                <span>{t("marketplace.catalog.creator")}</span>
+                <strong>{catalogDetail.item.creator_display_name}</strong>
+                <span>{t("marketplace.catalog.license")}</span>
+                <strong>{catalogDetail.license}</strong>
+                <span>{t("marketplace.catalog.support")}</span>
+                {catalogDetail.support_url ? <a href={catalogDetail.support_url} target="_blank" rel="noreferrer">{catalogDetail.support_url}</a> : <strong>-</strong>}
+              </div>
+              <div>
+                <h3>{t("marketplace.catalog.versions")}</h3>
+                <div className="catalog-version-list">
+                  {catalogDetail.versions.map((version) => (
+                    <article key={version.id}>
+                      <strong>v{version.version}</strong>
+                      <span>{new Date(version.created_at).toLocaleDateString()}</span>
+                    </article>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3>{t("marketplace.catalog.reviews")}</h3>
+                <div className="catalog-version-list">
+                  {catalogDetail.reviews.map((review) => (
+                    <article key={`${review.author}-${review.created_at ?? review.rating}`}>
+                      <strong>{review.author} - {review.rating}/5</strong>
+                      <span>{review.body}</span>
+                    </article>
+                  ))}
+                  {catalogDetail.reviews.length === 0 && <p className="empty-state">{t("marketplace.catalog.noReviews")}</p>}
+                </div>
+              </div>
+              <button className="secondary-button" type="button" disabled>
+                {t("marketplace.catalog.installDeferred")}
+              </button>
+            </aside>
+          </div>
+        </section>
+      )}
 
       <section className="two-column-workspace marketplace-workspace">
         <div className="panel">

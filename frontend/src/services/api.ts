@@ -41,6 +41,8 @@ import type {
   OrganizationMembership,
   OrganizationWorkspaceResponse,
   MediaDetailResponse,
+  MarketplaceCatalogDetailResponse,
+  MarketplaceCatalogItemResponse,
   MarketplaceCreatorRequest,
   MarketplaceCreatorStateResponse,
   MarketplaceCreatorResponse,
@@ -333,6 +335,10 @@ changePlan: (payload: ChangePlanRequest) =>
     requestCreator: (payload: MarketplaceCreatorRequest) =>
       request<MarketplaceCreatorResponse>("/api/marketplace/creator", { method: "POST", auth: true, body: payload }),
     listings: () => request<MarketplaceListingResponse[]>("/api/marketplace/listings", { auth: true }),
+    catalog: (params: { search?: string; category?: string; product_type?: string; pricing_type?: string } = {}) =>
+      request<MarketplaceCatalogItemResponse[]>(`/api/marketplace/catalog${query(params)}`, { auth: true }),
+    catalogDetail: (listingSlug: string) =>
+      request<MarketplaceCatalogDetailResponse>(`/api/marketplace/catalog/${encodeURIComponent(listingSlug)}`, { auth: true }),
     createListing: (payload: MarketplaceListingRequest) =>
       request<MarketplaceListingResponse>("/api/marketplace/listings", { method: "POST", auth: true, body: payload }),
     updateListing: (listingId: string, payload: MarketplaceListingRequest) =>
