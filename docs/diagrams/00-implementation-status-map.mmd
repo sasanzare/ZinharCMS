@@ -1,0 +1,177 @@
+%% Evidence: docs/diagrams/REPOSITORY_INVENTORY.md
+%% Evidence: docs/diagrams/ARCHITECTURE_AUDIT.md
+%% Evidence: docs/diagrams/AMBIGUITIES.md
+flowchart TD
+  subgraph foundation_group["Foundation"]
+    foundation["Foundation [IMPLEMENTED]<br/>config, Docker Compose, CI, health/readiness"]
+    api_docs["API documentation [CONFLICT] AMB-022<br/>docs/API.md and OpenAPI are stale for V2/V3"]
+  end
+
+  subgraph core_cms_group["Core CMS"]
+    content_types["Content types [IMPLEMENTED]<br/>tenant-scoped schema CRUD"]
+    entries["Entries [IMPLEMENTED]<br/>dynamic forms, validation, workflow states"]
+    media["Media [IMPLEMENTED]<br/>local uploads and image variants"]
+    uploads_access["/uploads access [PARTIAL] AMB-021<br/>tenant metadata, public static file URLs"]
+  end
+
+  subgraph page_builder_group["Page Builder"]
+    page_builder["Page Builder [IMPLEMENTED] AMB-001<br/>visual canvas, blocks, props editor"]
+    page_versions["Page versions [IMPLEMENTED]<br/>version create/list/restore"]
+    live_preview["Live preview [PARTIAL] AMB-020<br/>in-process WebSocket broadcast"]
+  end
+
+  subgraph delivery_webhooks_group["Delivery and Webhooks"]
+    delivery_api["Delivery API [IMPLEMENTED]<br/>published content, pages, sitemap, robots"]
+    redis_cache["Redis caching [PARTIAL] AMB-012<br/>delivery fallback, rate-limit dependency"]
+    webhooks["Webhooks [PARTIAL] AMB-011<br/>async dispatch and delivery log, no durable retry worker"]
+  end
+
+  subgraph workflow_plugins_group["Workflow and Plugins"]
+    workflow["Workflow [IMPLEMENTED]<br/>entry/page review transitions"]
+    comments["Comments [IMPLEMENTED]<br/>entity comments and resolve/reopen"]
+    plugins["Plugins [PARTIAL] AMB-006<br/>built-in executable hooks only"]
+  end
+
+  subgraph security_group["Security"]
+    auth["Authentication [IMPLEMENTED]<br/>login, refresh, logout, me"]
+    global_rbac["Global RBAC [PARTIAL] AMB-004<br/>global roles, limited user-role admin"]
+    security_hardening["Security hardening [IMPLEMENTED]<br/>headers, throttling, sanitization, MIME checks"]
+    rls["RLS [IMPLEMENTED] AMB-013<br/>forced RLS on tenant-owned tables"]
+  end
+
+  subgraph frontend_group["Frontend Admin"]
+    frontend_admin["Frontend Admin [IMPLEMENTED]<br/>React admin pages and API client"]
+    localization["Localization [PARTIAL]<br/>English/Persian frontend i18n and RTL"]
+  end
+
+  subgraph tenancy_group["Organizations and Tenancy"]
+    organizations["Organizations [IMPLEMENTED]<br/>workspaces, members, domains"]
+    memberships["Membership and invitations [IMPLEMENTED]<br/>roles, invites, acceptance"]
+    tenant_middleware["Tenant middleware [IMPLEMENTED] AMB-003<br/>X-Organization-Id plus active membership"]
+    super_admin["Super admin tenant access [IMPLEMENTED] AMB-005<br/>requires org context unless explicit service bypass"]
+  end
+
+  subgraph billing_group["Billing and Quotas"]
+    billing_plans["Billing plans [IMPLEMENTED]<br/>Free, Pro, Enterprise/manual changes"]
+    stripe_subscriptions["Stripe subscriptions [PARTIAL] AMB-018 AMB-019<br/>checkout, portal, idempotent ordered webhooks"]
+    quotas["Quotas [IMPLEMENTED]<br/>members, content, media, API requests"]
+  end
+
+  subgraph saas_ops_group["SaaS Operations"]
+    audit_logs["Audit logs [IMPLEMENTED]<br/>tenant-sensitive action history"]
+    email_deliveries["Email deliveries [IMPLEMENTED] AMB-010<br/>log, disabled, webhook provider modes"]
+    saas_alerts["SaaS alerts [PARTIAL]<br/>rules and listing, no execution engine"]
+  end
+
+  subgraph beta_ga_group["Beta and GA"]
+    beta_feedback["Beta feedback [IMPLEMENTED]<br/>participants, feedback, blockers"]
+    ga_readiness["GA readiness [IMPLEMENTED]<br/>docs, runbooks, static checks"]
+  end
+
+  subgraph marketplace_foundation_group["Marketplace Foundation"]
+    marketplace_creators["Marketplace creators [IMPLEMENTED]<br/>creator profile and verification state"]
+    marketplace_listing_schema["Marketplace listing schema [IMPLEMENTED]<br/>listing/version/package tables"]
+    marketplace_storage["Package storage [IMPLEMENTED] AMB-002<br/>local filesystem object keys"]
+  end
+
+  subgraph creator_submission_group["Creator Submission"]
+    creator_profile["Creator profile [IMPLEMENTED]<br/>seller identity for submissions"]
+    listing_submission["Listing submission [IMPLEMENTED]<br/>draft listing metadata and submit action"]
+  end
+
+  subgraph validation_group["Validation"]
+    package_validation["Package validation [IMPLEMENTED]<br/>manifest, checksum, size, compatibility reports"]
+    package_immutability["Package immutability [IMPLEMENTED] AMB-014<br/>DB-enforced artifact immutability"]
+    artifact_cleanup["Artifact cleanup [DECISION REQUIRED] AMB-015<br/>no automatic cleanup evidence after failure"]
+  end
+
+  subgraph review_group["Review and Moderation"]
+    internal_review["Internal review [PARTIAL] AMB-017<br/>review events implemented, customer reviews placeholder"]
+    moderation["Moderation [IMPLEMENTED]<br/>suspend, unpublish, emergency block"]
+    review_restoration["Appeal/restoration [DECISION REQUIRED] AMB-016<br/>no restore or appeal flow found"]
+  end
+
+  subgraph catalog_group["Catalog"]
+    catalog["Marketplace catalog [IMPLEMENTED] AMB-003<br/>authenticated tenant-aware catalog"]
+    compatibility["Compatibility [IMPLEMENTED]<br/>install eligibility reports"]
+  end
+
+  subgraph installation_group["Installation"]
+    installation["Installation [PARTIAL] AMB-007<br/>table, counts, emergency block updates; no install API"]
+  end
+
+  subgraph purchase_group["Purchase"]
+    purchase["Purchase [PLANNED] AMB-008<br/>pricing metadata only, no purchase table/API"]
+  end
+
+  subgraph payout_group["Creator Payout"]
+    payout["Creator payout [PLANNED] AMB-009<br/>payout_status only, no payout ledger/provider"]
+  end
+
+  foundation --> auth
+  foundation --> frontend_admin
+  foundation --> api_docs
+  auth --> global_rbac
+  auth --> tenant_middleware
+  organizations --> memberships
+  memberships --> tenant_middleware
+  global_rbac --> super_admin
+  tenant_middleware --> content_types
+  tenant_middleware --> entries
+  tenant_middleware --> media
+  tenant_middleware --> page_builder
+  tenant_middleware --> workflow
+  tenant_middleware --> billing_plans
+  tenant_middleware --> catalog
+  rls --> content_types
+  rls --> entries
+  rls --> media
+  rls --> installation
+  content_types --> entries
+  media --> uploads_access
+  page_builder --> page_versions
+  page_builder --> live_preview
+  entries --> delivery_api
+  page_versions --> delivery_api
+  delivery_api --> redis_cache
+  entries --> workflow
+  workflow --> comments
+  entries --> plugins
+  entries --> webhooks
+  page_versions --> webhooks
+  frontend_admin --> localization
+  frontend_admin --> organizations
+  frontend_admin --> catalog
+  billing_plans --> quotas
+  stripe_subscriptions --> billing_plans
+  quotas --> tenant_middleware
+  audit_logs --> organizations
+  email_deliveries --> memberships
+  saas_alerts --> organizations
+  beta_feedback --> ga_readiness
+  marketplace_creators --> creator_profile
+  marketplace_listing_schema --> listing_submission
+  marketplace_storage --> package_validation
+  listing_submission --> package_validation
+  package_validation --> package_immutability
+  package_validation --> artifact_cleanup
+  package_validation --> internal_review
+  internal_review --> moderation
+  moderation --> installation
+  internal_review --> catalog
+  review_restoration -. decision .-> internal_review
+  catalog --> compatibility
+  compatibility --> installation
+  catalog -. future paid listing .-> purchase
+  purchase -. future revenue .-> payout
+
+  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility implemented
+  class global_rbac,uploads_access,live_preview,redis_cache,webhooks,plugins,localization,stripe_subscriptions,saas_alerts,internal_review,installation partial
+  class purchase,payout planned
+  class api_docs conflict
+  class artifact_cleanup,review_restoration decision
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
+  classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111
+  classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray: 2 4,color:#111
+  classDef conflict fill:#ffecec,stroke:#b3261e,stroke-width:3px,stroke-dasharray: 8 3,color:#111
+  classDef decision fill:#fff0f6,stroke:#9b1b5a,stroke-width:3px,stroke-dasharray: 8 2 2 2,color:#111
