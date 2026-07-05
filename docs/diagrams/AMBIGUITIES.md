@@ -378,6 +378,39 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future API and route diagrams.
 
+## AMB-023
+
+- ID: AMB-023
+- Domain: Marketplace Actors and RBAC
+- Exact question: Are Marketplace reviewer and Marketplace moderator implemented as dedicated roles?
+- Documentation claim: `docs/V3_PHASE_FOUR.md` describes internal Marketplace reviewers and moderation actions.
+- Implementation evidence: `backend/src/routes/marketplace.rs` gates review queue, review decisions, review events, review reports, and moderation with `rbac::require_any(&claims, &[rbac::ADMIN])`.
+- Database evidence: `backend/migrations/0018_v3_phase_four_review_moderation.sql` stores `marketplace_review_events.actor_id`, but no reviewer or moderator role table/enum was found.
+- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` renders reviewer and moderation controls in the Marketplace page, but frontend routing does not create backend security roles.
+- Test evidence: No test was found for dedicated Marketplace reviewer or moderator roles.
+- Conflict or missing information: Product wording names reviewer and moderator actors, while backend authorization currently uses global administrator checks.
+- Safest interpretation: Treat Marketplace reviewer and moderator as operational actor labels backed by the global `admin` role, not separate RBAC roles.
+- Representation to use in diagrams: Use `Marketplace reviewer [IMPLEMENTED] AMB-023` and `Marketplace moderator [IMPLEMENTED] AMB-023` with notes that both are implemented through global admin checks.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `02-system-context.mmd`, future RBAC and Marketplace review diagrams.
+
+## AMB-024
+
+- ID: AMB-024
+- Domain: Beta and Support Operations Actors
+- Exact question: Is beta/support operation implemented as a dedicated support role?
+- Documentation claim: `docs/V2_PHASE_NINE.md` and `docs/V2_PHASE_TEN.md` describe beta, support, and GA operational workflows.
+- Implementation evidence: `backend/src/routes/beta.rs` allows organization admin/editor roles to update tenant beta feedback and blockers, while product dashboard and participant updates require global `admin` through `rbac::require_any(&claims, &[rbac::ADMIN])`.
+- Database evidence: `backend/migrations/0014_v2_phase_nine_beta_release.sql` creates `beta_participants`, `beta_feedback`, and `beta_ga_blockers`, but no support role or operator table was found.
+- Frontend evidence: `frontend/src/pages/BetaPage.tsx` exposes beta feedback, blockers, participants, and product dashboard through the React admin app.
+- Test evidence: No test was found for a dedicated beta operator or support operator role.
+- Conflict or missing information: Operational docs mention support activities, but implementation maps those activities to existing global and organization roles.
+- Safest interpretation: Treat beta/support operator as an operational actor implemented by global admin for product-level operations and organization admin/editor for tenant triage.
+- Representation to use in diagrams: Use `Beta or support operator [IMPLEMENTED] AMB-024` with role mapping in the label; do not draw a separate support role.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `02-system-context.mmd`, future operations and RBAC diagrams.
 ## Step 2 Report
 
 - Ambiguities added: 22
@@ -385,4 +418,11 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Decision-required items: AMB-015, AMB-016
 - Diagram conventions established: See `docs/diagrams/DIAGRAM_CONVENTIONS.md`
 - Files created or modified in this step: `docs/diagrams/AMBIGUITIES.md`, `docs/diagrams/DIAGRAM_CONVENTIONS.md`, `docs/diagrams/00-implementation-status-map.mmd`, `docs/diagrams/ARCHITECTURE_AUDIT.md`
+- Production behavior changed: No
+
+## Step 3 Update
+
+- Ambiguities added in step 3: AMB-023, AMB-024
+- Total ambiguity entries after step 3: 24
+- Actor or boundary conflicts newly recorded: Marketplace reviewer/moderator role mapping; beta/support operator role mapping
 - Production behavior changed: No

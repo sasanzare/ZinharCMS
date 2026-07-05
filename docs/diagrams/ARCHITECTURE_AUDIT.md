@@ -93,6 +93,8 @@ Status values:
 | AMB-020 | Live Preview | Live preview is in-process WebSocket broadcast; do not draw cross-node pub/sub. |
 | AMB-021 | Static Uploads | Media metadata is tenant-owned, but `/uploads` static file bytes are publicly served by path. |
 | AMB-022 | API Documentation | API docs/OpenAPI are incomplete for V2/V3; route code is the source of truth. |
+| AMB-023 | Marketplace Actors and RBAC | Marketplace reviewer/moderator are operational actors backed by global admin checks, not dedicated roles. |
+| AMB-024 | Beta and Support Operations Actors | Beta/support operation maps to global admin and organization admin/editor roles, not a separate support role. |
 ## Background Tasks And Queue Finding
 
 No durable background task or queue worker was found in the inspected code. Webhook

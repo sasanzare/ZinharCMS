@@ -1,0 +1,136 @@
+%% Evidence: backend/src/services/rbac.rs
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/routes/beta.rs
+%% Evidence: backend/src/routes/webhooks.rs
+%% Evidence: backend/src/config.rs
+%% Evidence: frontend/src/router.tsx
+%% Evidence: frontend/src/components/AppShell.tsx
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0011_v2_phase_six_stripe_billing.sql
+%% Evidence: backend/migrations/0012_v2_phase_seven_saas_ops.sql
+%% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+%% Evidence: docs/diagrams/AMBIGUITIES.md
+flowchart TD
+  subgraph global_actors["Global actors"]
+    platform_super_admin["Platform super administrator [IMPLEMENTED]<br/>global role super_admin"]
+    global_admin["Global administrator [IMPLEMENTED]<br/>global role admin"]
+    global_editor["Editor [IMPLEMENTED]<br/>global role editor"]
+    global_author["Author [IMPLEMENTED]<br/>global role author"]
+    global_viewer["Viewer [IMPLEMENTED]<br/>global role viewer"]
+  end
+
+  subgraph org_actors["Organization actors"]
+    org_owner["Organization owner [IMPLEMENTED]<br/>organization role owner"]
+    org_admin["Organization administrator [IMPLEMENTED]<br/>organization role admin"]
+    org_editor["Organization editor [IMPLEMENTED]<br/>organization role editor"]
+    org_author["Organization author [IMPLEMENTED]<br/>organization role author"]
+    org_viewer["Organization viewer [IMPLEMENTED]<br/>organization role viewer"]
+    org_billing_manager["Organization billing manager [IMPLEMENTED]<br/>organization role billing_manager"]
+  end
+
+  subgraph marketplace_actors["Marketplace actors"]
+    marketplace_creator["Marketplace creator [IMPLEMENTED]<br/>authenticated user with creator profile"]
+    marketplace_reviewer["Marketplace reviewer [IMPLEMENTED] AMB-023<br/>implemented through global admin checks"]
+    marketplace_moderator["Marketplace moderator [IMPLEMENTED] AMB-023<br/>implemented through global admin checks"]
+    tenant_catalog_consumer["Authenticated tenant catalog consumer [IMPLEMENTED] AMB-003<br/>uses auth and X-Organization-Id"]
+  end
+
+  subgraph ops_actors["Operations and consumer actors"]
+    beta_support_operator["Beta or support operator [IMPLEMENTED] AMB-024<br/>global admin for product beta, org admin/editor for tenant triage"]
+    consumer_app["Consumer website/application [EXTERNAL]<br/>calls public delivery endpoints"]
+    anonymous_delivery_consumer["Anonymous delivery consumer [IMPLEMENTED]<br/>allowed on /api/v1 delivery routes"]
+    preview_browser["WebSocket preview client [IMPLEMENTED] AMB-020<br/>browser client for /api/preview/{page_id}"]
+  end
+
+  subgraph primary_systems["Verified ZinharCMS systems"]
+    react_admin["React admin application [IMPLEMENTED]<br/>frontend/src router and admin pages"]
+    axum_backend["Axum backend [IMPLEMENTED]<br/>route composition, middleware, services"]
+    delivery_api["Delivery API [IMPLEMENTED]<br/>/api/v1/content, pages, settings, navigation, sitemap, robots"]
+    tenant_api["Tenant admin API [IMPLEMENTED]<br/>auth plus tenant middleware"]
+    marketplace_api["Marketplace API [PARTIAL]<br/>catalog, creator, submission, validation, review, moderation"]
+    billing_api["Billing API [PARTIAL]<br/>plans, subscription, checkout, portal, usage"]
+    beta_api["Beta API [IMPLEMENTED]<br/>feedback, blockers, participants, product dashboard"]
+    preview_api["Preview WebSocket API [PARTIAL] AMB-020<br/>in-process broadcast"]
+  end
+
+  subgraph data_systems["Verified data and storage systems"]
+    postgres["PostgreSQL [IMPLEMENTED]<br/>schema, tenant data, audit, billing, marketplace"]
+    redis["Redis [PARTIAL] AMB-012<br/>delivery cache and rate limiting"]
+    cms_uploads["CMS upload storage [IMPLEMENTED] AMB-002 AMB-021<br/>local filesystem uploads"]
+    marketplace_artifacts["Marketplace artifact storage [IMPLEMENTED] AMB-002<br/>local filesystem package artifacts"]
+  end
+
+  subgraph external_systems["Verified external systems"]
+    stripe["Stripe [EXTERNAL]<br/>subscription checkout, portal, inbound webhook"]
+    email_integration["Email integration [EXTERNAL] AMB-010<br/>configured as log, disabled, or webhook; no named provider"]
+    webhook_consumers["External webhook consumers [EXTERNAL]<br/>receive signed CMS delivery events"]
+  end
+
+  platform_super_admin --> react_admin
+  global_admin --> react_admin
+  global_editor --> react_admin
+  global_author --> react_admin
+  global_viewer --> react_admin
+  org_owner --> react_admin
+  org_admin --> react_admin
+  org_editor --> react_admin
+  org_author --> react_admin
+  org_viewer --> react_admin
+  org_billing_manager --> react_admin
+  marketplace_creator --> react_admin
+  marketplace_reviewer --> react_admin
+  marketplace_moderator --> react_admin
+  tenant_catalog_consumer --> react_admin
+  beta_support_operator --> react_admin
+
+  react_admin --> axum_backend
+  react_admin --> tenant_api
+  react_admin --> marketplace_api
+  react_admin --> billing_api
+  react_admin --> beta_api
+  preview_browser --> preview_api
+  preview_api --> axum_backend
+
+  consumer_app --> delivery_api
+  anonymous_delivery_consumer --> delivery_api
+  delivery_api --> axum_backend
+
+  org_owner -. manages organizations .-> tenant_api
+  org_admin -. manages organizations .-> tenant_api
+  org_owner -. manages billing .-> billing_api
+  org_admin -. manages billing .-> billing_api
+  org_billing_manager -. manages billing .-> billing_api
+  marketplace_creator -. submits products .-> marketplace_api
+  marketplace_reviewer -. reviews products .-> marketplace_api
+  marketplace_moderator -. moderates products .-> marketplace_api
+  tenant_catalog_consumer -. browses tenant catalog .-> marketplace_api
+  beta_support_operator -. manages beta/support workflows .-> beta_api
+
+  axum_backend --> postgres
+  axum_backend --> redis
+  axum_backend --> cms_uploads
+  axum_backend --> marketplace_artifacts
+  tenant_api --> axum_backend
+  marketplace_api --> axum_backend
+  billing_api --> axum_backend
+  beta_api --> axum_backend
+
+  billing_api --> stripe
+  stripe -. inbound webhook .-> axum_backend
+  axum_backend --> email_integration
+  axum_backend --> webhook_consumers
+
+  class platform_super_admin,global_admin,global_editor,global_author,global_viewer,org_owner,org_admin,org_editor,org_author,org_viewer,org_billing_manager,marketplace_creator,marketplace_reviewer,marketplace_moderator,tenant_catalog_consumer,beta_support_operator,anonymous_delivery_consumer implemented
+  class react_admin,axum_backend,delivery_api,tenant_api,beta_api,postgres,cms_uploads,marketplace_artifacts implemented
+  class marketplace_api,billing_api,preview_api,redis partial
+  class consumer_app,stripe,email_integration,webhook_consumers external
+  class preview_browser external
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
+  classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111
+  classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111
