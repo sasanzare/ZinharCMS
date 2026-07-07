@@ -1,0 +1,155 @@
+flowchart TD
+%% Evidence: docker-compose.prod.yml
+%% Evidence: backend/Dockerfile.prod
+%% Evidence: frontend/Dockerfile.prod
+%% Evidence: frontend/nginx.conf
+%% Evidence: .env.example
+%% Evidence: env.example
+%% Evidence: backend/src/main.rs
+%% Evidence: backend/src/config.rs
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/state.rs
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: .github/workflows/backend-ci.yml
+%% Evidence: .github/workflows/frontend-ci.yml
+%% Evidence: docs/V2_OPERATIONS_RUNBOOK.md
+%% Evidence: docs/V2_MIGRATION_GUIDE.md
+%% Evidence: docs/diagrams/AMBIGUITIES.md
+
+subgraph ci_support["CI and operational support"]
+    backend_ci["Backend CI [IMPLEMENTED]\nRust stable, fmt, clippy, tests with PostgreSQL and Redis service containers"]
+    frontend_ci["Frontend CI [IMPLEMENTED]\nNode 22, npm install, lint, typecheck, tests, build"]
+    runbook["Operations runbook [PARTIAL]\nManual deployment order, backup reminder, health/readiness checks, rollback guidance"]
+    no_deploy_pipeline["Deployment automation [DOCUMENTED ONLY]\nNo GitHub Actions deployment job found"]
+end
+
+subgraph prod_compose["docker-compose.prod.yml services"]
+    frontend_prod["frontend service [IMPLEMENTED]\nBuilds frontend/Dockerfile.prod; exposes host 5173 -> container 80"]
+    backend_prod["backend service [IMPLEMENTED]\nBuilds backend/Dockerfile.prod; exposes host 8080 -> container 8080"]
+    postgres_prod["postgres service [IMPLEMENTED]\npostgres:16-alpine; no host port published"]
+    redis_prod["redis service [IMPLEMENTED]\nredis:7-alpine appendonly yes; no host port published"]
+end
+
+subgraph frontend_container["Frontend container internals"]
+    nginx_static["Nginx static SPA serving [IMPLEMENTED]\nnginx:1.27-alpine; try_files to index.html; long cache for /assets"]
+    vite_api_build_arg["VITE_API_URL build argument [IMPLEMENTED]\nBrowser JavaScript calls this backend URL directly"]
+    no_api_proxy["API proxy in frontend Nginx [DECISION REQUIRED]\nnginx.conf serves files only and does not proxy /api"]
+end
+
+subgraph backend_container["Backend container internals"]
+    backend_binary["/app/cms-backend [IMPLEMENTED]\nDebian slim runtime, non-root cms user"]
+    startup_migrations["Startup migrations [IMPLEMENTED]\ndb::run_migrations executes before serving requests; AMB-030"]
+    default_admin_seed["Default admin seed [IMPLEMENTED]\nSeeds only when users table is empty"]
+    app_checks["Application checks [IMPLEMENTED]\nGET /health and GET /ready exist in Axum"]
+    backend_compose_health["Backend Compose healthcheck [PARTIAL]\n/health and /ready exist but are not wired into docker-compose.prod.yml; AMB-029"]
+end
+
+subgraph prod_data["Persistent data and storage"]
+    postgres_volume["postgres_data volume [IMPLEMENTED]\nMounted at /var/lib/postgresql/data"]
+    redis_volume["redis_data volume [IMPLEMENTED]\nMounted at /data; Redis AOF enabled"]
+    uploads_volume["uploads volume [IMPLEMENTED]\nMounted at /app/uploads"]
+    cms_uploads["CMS uploads [IMPLEMENTED]\nMedia files and generated image variants on local filesystem; AMB-002"]
+    marketplace_artifacts["Marketplace artifacts [IMPLEMENTED]\nPackage artifacts share uploads volume with logical object keys; AMB-002"]
+end
+
+subgraph health_dependencies["Health checks and startup dependencies"]
+    postgres_health["PostgreSQL healthcheck [IMPLEMENTED]\npg_isready"]
+    redis_health["Redis healthcheck [IMPLEMENTED]\nredis-cli ping"]
+    backend_depends["Backend depends_on [IMPLEMENTED]\nWaits for postgres and redis service_healthy"]
+    frontend_depends["Frontend depends_on [PARTIAL]\nDepends on backend start only, not backend health"]
+end
+
+subgraph env_categories["Production environment categories"]
+    env_database["Database and cache env [IMPLEMENTED]\nDATABASE_URL, REDIS_URL"]
+    env_auth["Auth and security env [IMPLEMENTED]\nJWT_SECRET, token expiry, CORS_ORIGIN"]
+    env_storage["Upload env [IMPLEMENTED]\nUPLOAD_DIR=/app/uploads, MAX_UPLOAD_SIZE"]
+    env_billing["Billing env [PARTIAL]\nStripe secret, webhook secret, price ids, success/cancel/portal URLs"]
+    env_email["Email env [IMPLEMENTED]\nEMAIL_PROVIDER log/disabled/webhook, EMAIL_FROM, EMAIL_WEBHOOK_URL"]
+    env_runtime["Runtime env [IMPLEMENTED]\nRUST_LOG and PORT=8080"]
+end
+
+subgraph external_connectivity["External connectivity"]
+    browser["Browser [EXTERNAL]\nLoads frontend from host port 5173"]
+    stripe["Stripe [EXTERNAL]\nCheckout, portal, and inbound billing webhooks"]
+    email_webhook["Email webhook endpoint [EXTERNAL]\nUsed only when EMAIL_PROVIDER=webhook; AMB-010"]
+    webhook_receivers["External webhook consumers [EXTERNAL]\nReceive signed CMS event POSTs; AMB-011"]
+end
+
+subgraph deployment_decisions["Deployment limitations and decisions"]
+    tls_decision["TLS termination and public reverse proxy [DECISION REQUIRED]\nNo repo evidence for Traefik, cloud load balancer, or TLS-enabled reverse proxy; AMB-028"]
+    preview_scaling["Live preview horizontal scaling [PARTIAL]\nPreview channels are in-memory per backend process; AMB-020"]
+    filesystem_scaling["Multiple backend replicas with local uploads [DECISION REQUIRED]\nLocal uploads volume must be shared/backed up or replaced by object storage; AMB-002"]
+    migration_coordination["Migration coordination for replicas [DECISION REQUIRED]\nBackend runs migrations at startup; no separate migration job or lock strategy documented; AMB-030"]
+    db_backup_strategy["Database backup automation [DECISION REQUIRED]\nRunbook says take backup, but Compose/Docker/CI do not implement backups; AMB-031"]
+    artifact_backup_strategy["Upload and artifact backup automation [DECISION REQUIRED]\nNo automated backup for uploads volume or Marketplace artifacts; AMB-031"]
+    redis_backup_assumption["Redis persistence and backup [PARTIAL]\nAOF and redis_data volume exist; backup/restore process is not implemented; AMB-031"]
+end
+
+frontend_prod -->|"contains"| nginx_static
+frontend_prod -->|"build arg"| vite_api_build_arg
+frontend_prod -.->|"does not contain"| no_api_proxy
+backend_prod -->|"contains"| backend_binary
+backend_binary -->|"runs before listening"| startup_migrations
+backend_binary -->|"runs after migrations when users table is empty"| default_admin_seed
+backend_binary -->|"serves"| app_checks
+backend_prod -.->|"missing compose healthcheck"| backend_compose_health
+
+postgres_prod -->|"stores data"| postgres_volume
+redis_prod -->|"stores data"| redis_volume
+backend_prod -->|"mounts"| uploads_volume
+uploads_volume -->|"contains"| cms_uploads
+uploads_volume -->|"contains"| marketplace_artifacts
+
+postgres_prod -->|"container health"| postgres_health
+redis_prod -->|"container health"| redis_health
+backend_depends -->|"depends_on service_healthy"| postgres_health
+backend_depends -->|"depends_on service_healthy"| redis_health
+backend_depends -->|"starts"| backend_prod
+frontend_depends -->|"depends_on backend start"| backend_prod
+frontend_depends -->|"starts"| frontend_prod
+
+env_database -->|"configures"| backend_prod
+env_auth -->|"configures"| backend_prod
+env_storage -->|"configures"| backend_prod
+env_billing -->|"configures"| backend_prod
+env_email -->|"configures"| backend_prod
+env_runtime -->|"configures"| backend_prod
+vite_api_build_arg -->|"compiled into frontend assets"| nginx_static
+
+browser -->|"HTTP to exposed host port 5173 unless external TLS is added"| frontend_prod
+browser -->|"HTTP or HTTPS JSON to VITE_API_URL; routing is external decision"| backend_prod
+backend_prod -->|"PostgreSQL protocol on compose network"| postgres_prod
+backend_prod -->|"Redis protocol on compose network"| redis_prod
+backend_prod -->|"filesystem read/write"| uploads_volume
+backend_prod -->|"HTTPS/JSON checkout and portal calls"| stripe
+stripe -->|"Stripe webhook to exposed backend route"| backend_prod
+backend_prod -->|"HTTPS/JSON when webhook email provider is configured"| email_webhook
+backend_prod -->|"Signed outbound webhook POST"| webhook_receivers
+
+backend_ci -->|"validates before deploy, but does not deploy"| no_deploy_pipeline
+frontend_ci -->|"validates before deploy, but does not deploy"| no_deploy_pipeline
+runbook -->|"manual backup and rollback guidance"| db_backup_strategy
+runbook -->|"manual media backup prerequisite"| artifact_backup_strategy
+
+backend_prod -.->|"scaling limitation"| preview_scaling
+backend_prod -.->|"storage limitation"| filesystem_scaling
+backend_prod -.->|"startup limitation"| migration_coordination
+frontend_prod -.->|"TLS/proxy not implemented here"| tls_decision
+
+classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
+classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111
+classDef documented fill:#f5f0ff,stroke:#6a4fb3,stroke-width:2px,stroke-dasharray: 2 4,color:#111
+classDef decision fill:#fff0f6,stroke:#9b1b5a,stroke-width:3px,stroke-dasharray: 8 2 2 2,color:#111
+classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111
+classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111
+classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111
+classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111
+
+class frontend_prod,nginx_static,vite_api_build_arg frontend
+class backend_prod,backend_binary,startup_migrations,default_admin_seed,app_checks backend
+class postgres_prod,redis_prod,postgres_volume,redis_volume,uploads_volume,cms_uploads,marketplace_artifacts data
+class postgres_health,redis_health,backend_depends,env_database,env_auth,env_storage,env_runtime,backend_ci,frontend_ci implemented
+class runbook,env_billing,env_email,frontend_depends,backend_compose_health,preview_scaling,redis_backup_assumption partial
+class no_deploy_pipeline documented
+class tls_decision,no_api_proxy,filesystem_scaling,migration_coordination,db_backup_strategy,artifact_backup_strategy decision
+class browser,stripe,email_webhook,webhook_receivers external

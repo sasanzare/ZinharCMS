@@ -1,0 +1,91 @@
+flowchart TD
+%% Evidence: docker-compose.yml
+%% Evidence: package.json
+%% Evidence: .env.example
+%% Evidence: env.example
+%% Evidence: backend/Dockerfile
+%% Evidence: frontend/Dockerfile
+%% Evidence: backend/src/main.rs
+%% Evidence: backend/src/config.rs
+%% Evidence: frontend/package.json
+%% Evidence: frontend/vite.config.ts
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: docs/diagrams/AMBIGUITIES.md
+
+subgraph developer_host["Developer workstation"]
+    dev_infra_cmd["Development infra command [IMPLEMENTED]\nnpm run dev:infra or docker compose up -d postgres redis pgadmin"]
+    dev_root_cmd["Root dev command [PARTIAL]\nnpm run dev calls docker compose up --build; current Compose defines infra only"]
+    backend_cmd["Backend command [IMPLEMENTED]\ncargo run --manifest-path backend/Cargo.toml"]
+    frontend_cmd["Frontend command [IMPLEMENTED]\nnpm --prefix frontend run dev"]
+    backend_local["Local backend process [IMPLEMENTED]\nRust/Axum binds 0.0.0.0:8080 from PORT"]
+    frontend_local["Vite dev server [IMPLEMENTED]\nReact 19 app on host 0.0.0.0:5173"]
+    local_env["Local environment [IMPLEMENTED]\nDATABASE_URL localhost:5432; REDIS_URL localhost:6379; CORS_ORIGIN localhost:5173; VITE_API_URL localhost:8080"]
+    local_uploads["Local upload directory [IMPLEMENTED]\nUPLOAD_DIR defaults to ./uploads; media and Marketplace artifacts share local filesystem; AMB-002"]
+    startup_migrations["Backend startup migrations [IMPLEMENTED]\ndb::run_migrations runs before server bind"]
+    default_admin_seed["Default admin seed [IMPLEMENTED]\nadmin@example.com / password123 when users table is empty"]
+end
+
+subgraph dev_compose["docker-compose.yml development services"]
+    postgres_dev["postgres [IMPLEMENTED]\npostgres:16-alpine; host 5432 -> container 5432"]
+    redis_dev["redis [IMPLEMENTED]\nredis:7-alpine; host 6379 -> container 6379"]
+    pgadmin_dev["pgAdmin [IMPLEMENTED]\ndpage/pgadmin4; host 5050 -> container 80"]
+    postgres_health["PostgreSQL healthcheck [IMPLEMENTED]\npg_isready -U cms_user -d cms_dev"]
+    redis_health["Redis healthcheck [IMPLEMENTED]\nredis-cli ping"]
+    postgres_volume["postgres_data named volume [IMPLEMENTED]\n/var/lib/postgresql/data"]
+    redis_volume["redis_data named volume [IMPLEMENTED]\n/data"]
+end
+
+subgraph not_in_dev_compose["Not launched by docker-compose.yml"]
+    backend_outside_compose["Backend service [IMPLEMENTED]\nOutside docker-compose.yml; started by cargo command or backend Dockerfile manually"]
+    frontend_outside_compose["Frontend service [IMPLEMENTED]\nOutside docker-compose.yml; started by Vite command or frontend Dockerfile manually"]
+end
+
+dev_root_cmd -->|"starts current Compose services"| postgres_dev
+dev_root_cmd -->|"starts current Compose services"| redis_dev
+dev_root_cmd -->|"starts current Compose services"| pgadmin_dev
+
+dev_infra_cmd -->|"starts exactly these services"| postgres_dev
+dev_infra_cmd -->|"starts exactly these services"| redis_dev
+dev_infra_cmd -->|"starts exactly these services"| pgadmin_dev
+
+postgres_dev -->|"writes data"| postgres_volume
+redis_dev -->|"writes data"| redis_volume
+postgres_dev -->|"container health"| postgres_health
+redis_dev -->|"container health"| redis_health
+pgadmin_dev -->|"depends_on postgres service_healthy"| postgres_dev
+
+backend_cmd -->|"starts local process"| backend_local
+frontend_cmd -->|"starts local dev server"| frontend_local
+backend_outside_compose -.->|"not defined in docker-compose.yml"| backend_local
+frontend_outside_compose -.->|"not defined in docker-compose.yml"| frontend_local
+
+local_env -->|"configures"| backend_local
+local_env -->|"build/runtime API base"| frontend_local
+backend_local -->|"PostgreSQL protocol to localhost:5432"| postgres_dev
+backend_local -->|"Redis protocol to localhost:6379"| redis_dev
+backend_local -->|"filesystem write/read"| local_uploads
+backend_local -->|"runs before listening"| startup_migrations
+backend_local -->|"runs after migrations when users table is empty"| default_admin_seed
+startup_migrations -->|"SQLx migrations against cms_dev"| postgres_dev
+default_admin_seed -->|"inserts user, role, and default organization membership"| postgres_dev
+
+frontend_local -->|"HTTP/JSON to VITE_API_URL http://localhost:8080"| backend_local
+frontend_local -->|"credentialed cookie requests and bearer token requests"| backend_local
+frontend_local -->|"multipart HTTP for uploads"| backend_local
+frontend_local -->|"WebSocket preview request"| backend_local
+
+pgadmin_dev -->|"PostgreSQL admin connection inside compose network"| postgres_dev
+
+classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
+classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111
+classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111
+classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111
+classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111
+classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111
+
+class dev_infra_cmd,backend_cmd,frontend_cmd,local_env,startup_migrations,default_admin_seed implemented
+class dev_root_cmd partial
+class backend_local,backend_outside_compose backend
+class frontend_local,frontend_outside_compose frontend
+class postgres_dev,redis_dev,pgadmin_dev,postgres_health,redis_health implemented
+class postgres_volume,redis_volume,local_uploads data

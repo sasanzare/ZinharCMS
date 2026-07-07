@@ -36,7 +36,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[IMPLEMENTED] Local filesystem storage`; do not draw S3, CDN, or external object storage.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future media, package, deployment, and marketplace diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, `05-local-development-runtime.mmd`, `06-production-deployment.mmd`, future media, package, deployment, and marketplace diagrams.
 
 ## AMB-003
 
@@ -172,7 +172,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[IMPLEMENTED] log/webhook email delivery`; do not draw SMTP or hosted email provider unless configured as external webhook.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future SaaS operations and organization diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, `06-production-deployment.mmd`, future SaaS operations and organization diagrams.
 
 ## AMB-011
 
@@ -189,7 +189,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[PARTIAL] async dispatch, no durable queue/retry worker`; do not invent a queue or worker.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future webhook and operations diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, `06-production-deployment.mmd`, future webhook and operations diagrams.
 
 ## AMB-012
 
@@ -206,7 +206,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[PARTIAL] Redis fallback for cache only`; show rate limiting as dependent on Redis.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future delivery, security, and deployment diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, `05-local-development-runtime.mmd`, `06-production-deployment.mmd`, future delivery, security, and deployment diagrams.
 
 ## AMB-013
 
@@ -342,7 +342,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[PARTIAL] in-process WebSocket broadcast`; do not draw Redis pub/sub, queue, or external broker.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, future page builder and deployment diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `06-production-deployment.mmd`, future page builder and deployment diagrams.
 
 ## AMB-021
 
@@ -359,7 +359,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[PARTIAL] tenant metadata, public static file URLs`; do not draw auth/RLS checks for static file bytes.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future media, security, and deployment diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, `05-local-development-runtime.mmd`, `06-production-deployment.mmd`, future media, security, and deployment diagrams.
 
 ## AMB-022
 
@@ -491,4 +491,77 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Updated ambiguity records used by `04-container-architecture.mmd`: AMB-002, AMB-003, AMB-010, AMB-011, AMB-012, and AMB-021.
 - No new ambiguity IDs were required for this step; existing records cover Marketplace catalog accessibility, object storage, email delivery, webhook execution, Redis fallback, and static upload security.
 - Representation decision: show only implemented containers, same-process backend modules, local filesystem storage, and verified external integrations; keep S3, CDN, separate API gateway, durable queue or worker, and durable preview broker as documented-only exclusions.
+- Production behavior changed: No.
+## AMB-028
+
+- ID: AMB-028
+- Domain: Production Network Edge
+- Exact question: Is TLS termination or reverse proxying implemented by the repository deployment files?
+- Documentation claim: Operational docs describe deployment and health checks, but do not define a concrete TLS or reverse-proxy component.
+- Implementation evidence: `docker-compose.prod.yml` exposes backend port `8080:8080` and frontend port `5173:80`; `frontend/nginx.conf` serves static SPA files and does not proxy API traffic or configure TLS.
+- Database evidence: Not applicable.
+- Frontend evidence: `frontend/src/services/api.ts` uses `VITE_API_URL` as the browser API base URL; API routing is not provided by the frontend Nginx configuration.
+- Test evidence: No deployment or TLS integration test was found.
+- Conflict or missing information: Public HTTPS entrypoint, certificate management, and reverse proxy routing are not represented in the repository.
+- Safest interpretation: Treat TLS termination and public reverse proxying as a deployment decision outside the current repo.
+- Representation to use in diagrams: Use `[DECISION REQUIRED]` for TLS/reverse proxy; do not invent Nginx reverse proxy, Traefik, cloud load balancer, or API gateway.
+- Confidence: HIGH
+- Status: DECISION_REQUIRED
+- Affected diagram files: `06-production-deployment.mmd`, future deployment and operations diagrams.
+
+## AMB-029
+
+- ID: AMB-029
+- Domain: Production Health Checks
+- Exact question: Are backend and frontend health checks wired into production Compose?
+- Documentation claim: The runbook says to run `/health` and `/ready` checks during deployment.
+- Implementation evidence: `backend/src/routes/mod.rs` exposes `/health` and `/ready`, but `docker-compose.prod.yml` defines health checks only for PostgreSQL and Redis. The frontend service has no healthcheck in Compose.
+- Database evidence: Not applicable.
+- Frontend evidence: `frontend/nginx.conf` serves the SPA but does not expose a dedicated health endpoint.
+- Test evidence: CI runs backend and frontend tests, but no Compose healthcheck test was found.
+- Conflict or missing information: Application readiness endpoints exist, but container orchestration does not consume them.
+- Safest interpretation: Treat app checks as implemented and Compose-level backend/frontend health checks as not configured.
+- Representation to use in diagrams: Use `[PARTIAL]` for health checks and show missing backend/frontend Compose healthcheck separately.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `06-production-deployment.mmd`, future operations diagrams.
+
+## AMB-030
+
+- ID: AMB-030
+- Domain: Migration Execution
+- Exact question: Is production migration execution coordinated separately from backend startup?
+- Documentation claim: The runbook lists database backup, migration deployment, then backend deployment as separate operational steps.
+- Implementation evidence: `backend/src/main.rs` calls `db::run_migrations(&db)` during backend startup before binding the server; no separate migration job, script, or Compose one-shot migration service was found.
+- Database evidence: SQLx migration history is tracked by `_sqlx_migrations`, but this does not define deployment orchestration.
+- Frontend evidence: Not applicable.
+- Test evidence: Backend CI runs tests against PostgreSQL, but no multi-replica migration coordination test was found.
+- Conflict or missing information: Startup migrations are implemented for a single backend startup path, while production rollout sequencing remains operational.
+- Safest interpretation: Treat startup migration execution as implemented, and multi-replica migration coordination as a deployment decision.
+- Representation to use in diagrams: Use `[IMPLEMENTED]` for startup migrations and `[DECISION REQUIRED]` for separate migration job or multi-replica rollout coordination.
+- Confidence: HIGH
+- Status: DECISION_REQUIRED
+- Affected diagram files: `05-local-development-runtime.mmd`, `06-production-deployment.mmd`, future deployment diagrams.
+
+## AMB-031
+
+- ID: AMB-031
+- Domain: Backup and Restore
+- Exact question: Is backup automation implemented for database, Redis, uploads, and Marketplace artifacts?
+- Documentation claim: `docs/V2_OPERATIONS_RUNBOOK.md` and `docs/V2_MIGRATION_GUIDE.md` require database and uploaded media backups before release or migration.
+- Implementation evidence: `docker-compose.prod.yml` defines named volumes for PostgreSQL, Redis, and uploads, but no backup sidecar, scheduled job, CI workflow, or artifact backup command was found.
+- Database evidence: Not applicable beyond PostgreSQL data stored in `postgres_data`.
+- Frontend evidence: Not applicable.
+- Test evidence: No backup or restore test was found.
+- Conflict or missing information: Backup is operationally required by docs, but not automated in repository deployment files.
+- Safest interpretation: Treat backup and restore as manual/operational responsibilities until automation is added.
+- Representation to use in diagrams: Use `[DECISION REQUIRED]` for database, Redis, upload, and Marketplace artifact backup automation.
+- Confidence: HIGH
+- Status: DECISION_REQUIRED
+- Affected diagram files: `06-production-deployment.mmd`, future operations and storage diagrams.
+## Step 6 Deployment Runtime Update
+
+- Ambiguities added in step 6: AMB-028, AMB-029, AMB-030, AMB-031.
+- Existing ambiguity records linked to deployment diagrams: AMB-002, AMB-010, AMB-011, AMB-012, AMB-020, and AMB-021.
+- Deployment decisions newly recorded: TLS/reverse proxy, backend/frontend Compose health checks, migration coordination for multi-replica rollout, and backup automation for database/cache/uploads/artifacts.
 - Production behavior changed: No.
