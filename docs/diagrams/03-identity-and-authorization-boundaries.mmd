@@ -1,0 +1,172 @@
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/middleware/auth.rs
+%% Evidence: backend/src/services/jwt.rs
+%% Evidence: backend/src/services/password.rs
+%% Evidence: backend/src/services/security.rs
+%% Evidence: backend/src/services/rbac.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/src/routes/organizations.rs
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/routes/beta.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/routes/plugins.rs
+%% Evidence: frontend/src/components/RequireAuth.tsx
+%% Evidence: frontend/src/components/AppShell.tsx
+%% Evidence: frontend/src/stores/useAppStore.ts
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0002_seed_foundation_data.sql
+%% Evidence: backend/migrations/0003_phase_one_core.sql
+%% Evidence: backend/migrations/0007_phase_seven_security.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+%% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/migrations/0016_v3_phase_two_creator_submission.sql
+%% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+%% Evidence: docs/diagrams/AMBIGUITIES.md
+flowchart TD
+  subgraph global_identity["Global identity"]
+    user_account["User account [IMPLEMENTED]<br/>users row, is_active"]
+    password_credential["Password credential [IMPLEMENTED]<br/>Argon2 password_hash"]
+    failed_login["Failed-login tracking [IMPLEMENTED]<br/>login_attempts by IP/email"]
+    global_role_assignment["Global role assignment [IMPLEMENTED]<br/>user_roles -> roles"]
+    global_roles["Exact global roles [IMPLEMENTED]<br/>super_admin, admin, editor, author, viewer"]
+    role_permissions_array["roles.permissions array [PARTIAL] AMB-025<br/>stored in DB, not runtime permission engine"]
+    access_token["Access token [IMPLEMENTED]<br/>HS256 JWT with sub, role, exp, iat"]
+    refresh_record["Refresh token database record [IMPLEMENTED]<br/>refresh_tokens token_hash, expires_at, revoked_at"]
+    refresh_cookie["Refresh cookie [IMPLEMENTED]<br/>zinhar_refresh_token HttpOnly SameSite=Lax Path=/api/auth"]
+  end
+
+  subgraph auth_enforcement["Authentication enforcement"]
+    auth_routes["Auth routes [IMPLEMENTED]<br/>register, login, refresh, logout, me"]
+    password_service["Password service [SERVICE]<br/>hash_password and verify_password"]
+    jwt_service["JWT service [SERVICE]<br/>sign and verify access tokens, hash refresh tokens"]
+    auth_middleware["Auth middleware [MIDDLEWARE]<br/>Authorization Bearer or preview query token"]
+    protected_routes["Protected backend routes [MIDDLEWARE]<br/>/api/auth/me, logout, plugins, org list, beta product APIs"]
+  end
+
+  subgraph org_identity["Organization identity"]
+    organization["Organization [IMPLEMENTED]<br/>status: active, suspended, deleted"]
+    membership["Organization membership [IMPLEMENTED]<br/>organization_members"]
+    membership_status["Membership status [IMPLEMENTED]<br/>active, invited, suspended"]
+    org_role["Organization role [IMPLEMENTED]<br/>owner, admin, editor, author, viewer, billing_manager"]
+    invitation["Invitation [IMPLEMENTED]<br/>pending, accepted, revoked, expired"]
+    selected_org["Selected organization [FRONTEND ONLY]<br/>localStorage activeOrganizationId"]
+    org_header["X-Organization-Id [MIDDLEWARE]<br/>sent by frontend API client"]
+    tenant_context["Tenant context [MIDDLEWARE]<br/>active org plus active membership role"]
+    tenant_rls["Tenant RLS [SQL/RLS]<br/>app_rls_tenant_matches plus tenant context"]
+    role_mapping["Initial role mapping [SQL]<br/>global super_admin -> owner, admin -> admin, editor -> editor, viewer -> viewer, else author"]
+  end
+
+  subgraph marketplace_identity["Marketplace identity"]
+    marketplace_user["User [IMPLEMENTED]<br/>same global user account"]
+    creator_profile["Creator profile [IMPLEMENTED]<br/>status: pending, approved, suspended, rejected"]
+    creator_listing["Creator-owned listing [IMPLEMENTED]<br/>listing.creator_id checked against creator user"]
+    reviewer_privilege["Reviewer privilege [IMPLEMENTED] AMB-023<br/>global admin check, no dedicated reviewer role"]
+    moderator_privilege["Moderator privilege [IMPLEMENTED] AMB-023<br/>global admin check, no dedicated moderator role"]
+    org_installation["Organization-owned installation [PARTIAL] AMB-007 AMB-027<br/>marketplace_installations table with RLS, no install API"]
+    install_permission_snapshot["Installation permission snapshot [PARTIAL] AMB-027<br/>permissions_json and approval fields, no runtime approval enforcement found"]
+  end
+
+  subgraph frontend_controls["Frontend controls"]
+    require_auth["RequireAuth [FRONTEND ONLY] AMB-026<br/>redirects without stored access token"]
+    nav_visibility["Navigation visibility [FRONTEND ONLY] AMB-026<br/>AppShell renders all nav items for authenticated users"]
+    frontend_button_gates["Button/section gating [FRONTEND ONLY] AMB-026<br/>billing, organization, beta, marketplace review UI checks"]
+  end
+
+  subgraph permission_boundaries["Permission boundaries by domain"]
+    global_admin_boundary["Global administration [HANDLER/SERVICE]<br/>rbac::require_any; super_admin bypasses global role checks"]
+    plugin_boundary["Plugin management [HANDLER]<br/>global admin through plugin manager checks"]
+    organization_boundary["Organization management [HANDLER + MIDDLEWARE + SQL/RLS]<br/>owner/admin rules over tenant context"]
+    invitation_boundary["Invitations [HANDLER + SQL]<br/>owner required for owner invites, admin for other roles"]
+    domain_boundary["Domains [HANDLER + SQL/RLS]<br/>organization owner/admin through require_org_admin"]
+    billing_boundary["Billing [HANDLER + MIDDLEWARE + SQL/RLS]<br/>owner, admin, billing_manager"]
+    content_boundary["Content operations [HANDLER + MIDDLEWARE + SQL/RLS]<br/>org admin/editor/author by operation"]
+    workflow_boundary["Workflow transitions [HANDLER + SERVICE]<br/>org admin/editor reviewer plus workflow service"]
+    creator_verification_boundary["Creator verification [HANDLER]<br/>global admin"]
+    listing_creation_boundary["Listing creation [HANDLER + SQL]<br/>authenticated creator profile ownership"]
+    review_decision_boundary["Review decisions [HANDLER + SERVICE]<br/>global admin plus review validation service"]
+    moderation_boundary["Moderation [HANDLER + SERVICE + SQL]<br/>global admin plus moderation service and table updates"]
+    catalog_boundary["Catalog access [MIDDLEWARE] AMB-003<br/>authenticated tenant catalog, not anonymous"]
+    installation_boundary["Installation records [SQL/RLS + NOT FOUND] AMB-027<br/>RLS table exists; install-time authorization route not found"]
+    beta_boundary["Beta and GA operations [HANDLER] AMB-024<br/>org admin/editor for tenant triage, global admin for product dashboard"]
+  end
+
+  user_account --> password_credential
+  user_account --> global_role_assignment
+  global_role_assignment --> global_roles
+  global_role_assignment --> role_permissions_array
+  auth_routes -- "SERVICE" --> password_service
+  auth_routes -- "SERVICE" --> jwt_service
+  auth_routes -- "SQL" --> refresh_record
+  auth_routes -- "COOKIE" --> refresh_cookie
+  auth_routes -- "SQL" --> failed_login
+  jwt_service --> access_token
+  refresh_cookie --> auth_routes
+  refresh_record --> auth_routes
+  access_token --> auth_middleware
+  auth_middleware --> protected_routes
+
+  user_account --> membership
+  organization --> membership
+  membership --> membership_status
+  membership --> org_role
+  organization --> invitation
+  global_roles -. "initial default-org mapping only" .-> role_mapping
+  role_mapping --> membership
+  selected_org --> org_header
+  org_header --> tenant_context
+  access_token --> tenant_context
+  tenant_context --> tenant_rls
+  membership_status --> tenant_context
+  org_role --> tenant_context
+
+  marketplace_user --> creator_profile
+  user_account --> marketplace_user
+  creator_profile --> creator_listing
+  global_roles --> reviewer_privilege
+  global_roles --> moderator_privilege
+  organization --> org_installation
+  org_installation --> install_permission_snapshot
+  tenant_rls --> org_installation
+
+  require_auth -. "UX only" .-> nav_visibility
+  nav_visibility -. "UX only" .-> frontend_button_gates
+  frontend_button_gates -. "not authoritative" .-> permission_boundaries
+
+  global_roles --> global_admin_boundary
+  global_roles --> plugin_boundary
+  org_role --> organization_boundary
+  org_role --> invitation_boundary
+  org_role --> domain_boundary
+  org_role --> billing_boundary
+  org_role --> content_boundary
+  org_role --> workflow_boundary
+  global_roles --> creator_verification_boundary
+  creator_profile --> listing_creation_boundary
+  reviewer_privilege --> review_decision_boundary
+  moderator_privilege --> moderation_boundary
+  tenant_context --> catalog_boundary
+  tenant_context --> installation_boundary
+  org_role --> beta_boundary
+  global_roles --> beta_boundary
+
+  auth_middleware --> global_admin_boundary
+  tenant_context --> organization_boundary
+  tenant_context --> billing_boundary
+  tenant_context --> content_boundary
+  tenant_context --> workflow_boundary
+  tenant_context --> catalog_boundary
+  tenant_context --> beta_boundary
+  tenant_rls --> organization_boundary
+  tenant_rls --> billing_boundary
+  tenant_rls --> content_boundary
+  tenant_rls --> installation_boundary
+
+  class user_account,password_credential,failed_login,global_role_assignment,global_roles,access_token,refresh_record,refresh_cookie,auth_routes,password_service,jwt_service,auth_middleware,protected_routes,organization,membership,membership_status,org_role,invitation,org_header,tenant_context,tenant_rls,role_mapping,marketplace_user,creator_profile,creator_listing,reviewer_privilege,moderator_privilege,global_admin_boundary,plugin_boundary,organization_boundary,invitation_boundary,domain_boundary,billing_boundary,content_boundary,workflow_boundary,creator_verification_boundary,listing_creation_boundary,review_decision_boundary,moderation_boundary,catalog_boundary,beta_boundary implemented
+  class role_permissions_array,org_installation,install_permission_snapshot,installation_boundary partial
+  class selected_org,require_auth,nav_visibility,frontend_button_gates frontend
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
+  classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111
+  classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,stroke-dasharray: 3 3,color:#111
