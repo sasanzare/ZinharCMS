@@ -36,7 +36,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[IMPLEMENTED] Local filesystem storage`; do not draw S3, CDN, or external object storage.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, future media, package, deployment, and marketplace diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future media, package, deployment, and marketplace diagrams.
 
 ## AMB-003
 
@@ -53,7 +53,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[IMPLEMENTED] tenant-aware catalog`; do not draw a public anonymous catalog route.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, future marketplace catalog and tenant-routing diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future marketplace catalog and tenant-routing diagrams.
 
 ## AMB-004
 
@@ -172,7 +172,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[IMPLEMENTED] log/webhook email delivery`; do not draw SMTP or hosted email provider unless configured as external webhook.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, future SaaS operations and organization diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future SaaS operations and organization diagrams.
 
 ## AMB-011
 
@@ -189,7 +189,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[PARTIAL] async dispatch, no durable queue/retry worker`; do not invent a queue or worker.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, future webhook and operations diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future webhook and operations diagrams.
 
 ## AMB-012
 
@@ -206,7 +206,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[PARTIAL] Redis fallback for cache only`; show rate limiting as dependent on Redis.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, future delivery, security, and deployment diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future delivery, security, and deployment diagrams.
 
 ## AMB-013
 
@@ -359,7 +359,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[PARTIAL] tenant metadata, public static file URLs`; do not draw auth/RLS checks for static file bytes.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, future media, security, and deployment diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future media, security, and deployment diagrams.
 
 ## AMB-022
 
@@ -411,6 +411,58 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `02-system-context.mmd`, future operations and RBAC diagrams.
+
+## AMB-025
+
+- ID: AMB-025
+- Domain: RBAC Permission Model
+- Exact question: Are `roles.permissions` arrays the runtime authorization engine?
+- Documentation claim: Foundation migrations seed role permission arrays for global roles.
+- Implementation evidence: `backend/src/services/rbac.rs` authorizes through hard-coded role constants and helper functions; route handlers call role helper functions rather than querying `roles.permissions`.
+- Database evidence: `backend/migrations/0001_initial_schema.sql` defines `roles.permissions`; `backend/migrations/0002_seed_foundation_data.sql` and `backend/migrations/0003_phase_one_core.sql` seed permission arrays.
+- Frontend evidence: `frontend/src/stores/useAppStore.ts` and page code use role strings from the current user or membership, not permission arrays.
+- Test evidence: `backend/src/services/rbac.rs` tests role-helper behavior; no test was found for dynamic permission-array evaluation.
+- Conflict or missing information: Permission arrays exist in the database, but runtime authorization is role-helper based.
+- Safest interpretation: Diagram authorization boundaries as hard-coded role helper checks; treat `roles.permissions` as stored metadata, not the authoritative runtime permission engine.
+- Representation to use in diagrams: Use `roles.permissions array [PARTIAL] AMB-025` and connect runtime permissions to RBAC helper/service nodes.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `03-identity-and-authorization-boundaries.mmd`, future RBAC diagrams.
+
+## AMB-026
+
+- ID: AMB-026
+- Domain: Frontend Authorization Controls
+- Exact question: Are `RequireAuth`, navigation visibility, and disabled buttons authoritative security boundaries?
+- Documentation claim: Frontend routes and pages include auth guards and role-based UI checks.
+- Implementation evidence: `frontend/src/components/RequireAuth.tsx` only checks a stored access token; `frontend/src/components/AppShell.tsx` renders all navigation items for authenticated users; page-level booleans hide or disable selected actions.
+- Database evidence: No database enforcement is created by frontend guards.
+- Frontend evidence: `frontend/src/pages/BillingPage.tsx`, `OrganizationPage.tsx`, `BetaPage.tsx`, and `MarketplacePage.tsx` compute UI booleans from stored user and organization membership state.
+- Test evidence: No frontend guard test was found that proves backend authorization; backend route handlers and middleware remain the authoritative checks.
+- Conflict or missing information: UI role checks can improve ergonomics, but they do not protect backend APIs.
+- Safest interpretation: Treat frontend guards and navigation as UX-only controls.
+- Representation to use in diagrams: Use `[FRONTEND ONLY] AMB-026`; connect frontend-only nodes with dashed non-authoritative edges to backend permission boundaries.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `03-identity-and-authorization-boundaries.mmd`, future frontend and security diagrams.
+
+## AMB-027
+
+- ID: AMB-027
+- Domain: Marketplace Installation Authorization
+- Exact question: Are install-time permission approval and installation runtime authorization implemented?
+- Documentation claim: V3 gap documentation says Marketplace install runtime, permission approval enforcement, and runtime permission enforcement are future work.
+- Implementation evidence: `backend/src/routes/marketplace.rs` exposes catalog, creator, listing, version, review, and moderation routes; no install/uninstall/update route was found. Moderation can update existing installation rows during emergency block.
+- Database evidence: `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql` creates `marketplace_installations` with `permissions_json`, `permission_approved_by`, `permission_approved_at`, status values, and forced RLS policies.
+- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` displays catalog compatibility and an install-deferred message; no install action is wired to an API call.
+- Test evidence: No install-time authorization, permission approval, or runtime permission enforcement test was found.
+- Conflict or missing information: Installation authorization fields exist in schema, but runtime authorization behavior is not implemented.
+- Safest interpretation: Treat Marketplace installation authorization as partial schema/RLS only until install APIs and permission enforcement exist.
+- Representation to use in diagrams: Use `[PARTIAL] AMB-027` for installation records and `[NOT FOUND]` for install-time authorization route/enforcement.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `03-identity-and-authorization-boundaries.mmd`, future Marketplace install and permission diagrams.
+
 ## Step 2 Report
 
 - Ambiguities added: 22
@@ -426,3 +478,17 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Total ambiguity entries after step 3: 24
 - Actor or boundary conflicts newly recorded: Marketplace reviewer/moderator role mapping; beta/support operator role mapping
 - Production behavior changed: No
+
+## Step 4 Update
+
+- Ambiguities added in step 4: AMB-025, AMB-026, AMB-027
+- Total ambiguity entries after step 4: 27
+- Authorization gaps newly recorded: `roles.permissions` is metadata rather than runtime permission engine; frontend controls are UX-only; Marketplace install-time permission enforcement is not implemented.
+- Production behavior changed: No
+
+## Step 5 Container Architecture Update
+
+- Updated ambiguity records used by `04-container-architecture.mmd`: AMB-002, AMB-003, AMB-010, AMB-011, AMB-012, and AMB-021.
+- No new ambiguity IDs were required for this step; existing records cover Marketplace catalog accessibility, object storage, email delivery, webhook execution, Redis fallback, and static upload security.
+- Representation decision: show only implemented containers, same-process backend modules, local filesystem storage, and verified external integrations; keep S3, CDN, separate API gateway, durable queue or worker, and durable preview broker as documented-only exclusions.
+- Production behavior changed: No.

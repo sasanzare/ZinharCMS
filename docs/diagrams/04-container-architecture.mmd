@@ -1,0 +1,145 @@
+flowchart TD
+%% Evidence: docker-compose.prod.yml
+%% Evidence: docker-compose.yml
+%% Evidence: frontend/package.json
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: backend/Cargo.toml
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/routes/media.rs
+%% Evidence: backend/src/services/cache.rs
+%% Evidence: backend/src/services/rate_limit.rs
+%% Evidence: backend/src/services/webhooks.rs
+%% Evidence: backend/src/services/email.rs
+%% Evidence: backend/src/config.rs
+%% Evidence: backend/src/state.rs
+%% Evidence: docs/diagrams/AMBIGUITIES.md
+
+subgraph external_actors["Actors and external clients"]
+    browser["Browser [EXTERNAL]\nRuns admin UI and requests public assets"]
+    consumer_app["Consumer website or application [EXTERNAL]\nCalls public Delivery API when content is published"]
+end
+
+subgraph deployed_containers["Deployed containers"]
+    frontend_container["frontend container [IMPLEMENTED]\nNginx-served React build in prod; Vite dev app locally"]
+    backend_container["backend container [IMPLEMENTED]\nRust/Axum modular monolith on port 8080"]
+    postgres_container["postgres container [IMPLEMENTED]\nPostgreSQL 16"]
+    redis_container["redis container [IMPLEMENTED]\nRedis 7"]
+end
+
+subgraph frontend_runtime["Browser-side application"]
+    react_admin["React 19 / Vite admin application [IMPLEMENTED]\nUses local access token, refresh cookie, and active organization id"]
+end
+
+subgraph backend_process["Logical modules inside the Rust/Axum backend process - not microservices"]
+    public_system_endpoints["Public system endpoints [IMPLEMENTED]\n/, /health, /ready, /openapi.json"]
+    public_auth_endpoints["Public auth endpoints [IMPLEMENTED]\n/api/auth/register, /login, /refresh"]
+    public_stripe_webhook["Public Stripe billing webhook [IMPLEMENTED]\n/api/billing/stripe/webhook"]
+    authenticated_management_api["Authenticated management API [IMPLEMENTED]\nAuth middleware only: /api/auth/me, /logout, plugins, global/org workspace APIs"]
+    tenant_management_api["Tenant-aware management API [IMPLEMENTED]\nTenant middleware: content, pages, media, comments, webhooks, billing, organizations"]
+    marketplace_catalog["Marketplace catalog boundary [IMPLEMENTED]\nTenant-aware /api/marketplace/catalog, not anonymous public catalog; AMB-003"]
+    marketplace_submission["Marketplace creator submission APIs [IMPLEMENTED]\nCreator profile, listing, version upload, validation, review, moderation"]
+    delivery_api["Public Delivery API [IMPLEMENTED]\n/api/v1/content, pages, settings, navigation, sitemap, robots"]
+    live_preview["WebSocket live preview [PARTIAL]\n/api/preview/{page_id}; in-memory channel per page; AMB-020"]
+    preview_memory["In-memory preview channels [PARTIAL]\nHashMap keyed by page id with broadcast senders in backend state"]
+    static_uploads["Static /uploads serving [PARTIAL]\nServeDir exposes file bytes by path; metadata APIs remain tenant-protected; AMB-021"]
+end
+
+subgraph data_stores["Data stores"]
+    postgres_db["PostgreSQL database [IMPLEMENTED]\nSQLx pool, migrations, constraints, RLS policies"]
+    redis_store["Redis [PARTIAL]\nDelivery cache fallback only; rate limit and readiness depend on Redis; AMB-012"]
+end
+
+subgraph filesystem_storage["Filesystem storage"]
+    cms_media_storage["Local CMS media storage [IMPLEMENTED]\nUPLOAD_DIR organization folders and image variants; AMB-002"]
+    marketplace_package_storage["Local Marketplace package storage [IMPLEMENTED]\nPackage artifacts under UPLOAD_DIR with logical object keys; AMB-002"]
+end
+
+subgraph external_services["External services"]
+    stripe_service["Stripe [PARTIAL]\nBilling checkout, portal, and inbound webhook lifecycle"]
+    email_integration["Email integration [IMPLEMENTED]\nProvider modes: log, disabled, webhook; no named SMTP/SES provider; AMB-010"]
+    webhook_consumers["External webhook consumers [IMPLEMENTED]\nReceive signed outbound event POSTs"]
+end
+
+subgraph planned_infrastructure["Planned or unverified infrastructure excluded from implemented runtime"]
+    s3_storage["S3-compatible object storage [DOCUMENTED ONLY]\nNo runtime provider code found"]
+    cdn_edge["CDN for uploads/packages [DOCUMENTED ONLY]\nNo CDN integration found"]
+    api_gateway["Separate API gateway deployment [DOCUMENTED ONLY]\nAxum is the backend app, not a standalone gateway"]
+    queue_worker["Durable queue or worker [DOCUMENTED ONLY]\nWebhook dispatch uses transient tokio tasks; AMB-011"]
+    preview_broker["Durable preview broker or pub/sub [DOCUMENTED ONLY]\nLive preview channels are in process; AMB-020"]
+end
+
+browser -->|"HTTPS static assets"| frontend_container
+frontend_container -->|"Served JavaScript bundle"| react_admin
+browser -->|"Runs"| react_admin
+
+react_admin -->|"HTTPS/JSON"| public_system_endpoints
+react_admin -->|"HTTPS/JSON + credentialed refresh cookie"| public_auth_endpoints
+react_admin -->|"HTTPS/JSON + Bearer token"| authenticated_management_api
+react_admin -->|"HTTPS/JSON + Bearer token + X-Organization-Id"| tenant_management_api
+react_admin -->|"Multipart HTTP + Bearer token + X-Organization-Id"| tenant_management_api
+react_admin -->|"WebSocket + tenant context"| live_preview
+
+consumer_app -->|"HTTPS/JSON anonymous public content"| delivery_api
+consumer_app -->|"HTTPS static file GET"| static_uploads
+browser -->|"HTTPS static file GET"| static_uploads
+
+backend_container -->|"Same deployed process contains"| public_system_endpoints
+backend_container -->|"Same deployed process contains"| public_auth_endpoints
+backend_container -->|"Same deployed process contains"| public_stripe_webhook
+backend_container -->|"Same deployed process contains"| authenticated_management_api
+backend_container -->|"Same deployed process contains"| tenant_management_api
+backend_container -->|"Same deployed process contains"| delivery_api
+backend_container -->|"Same deployed process contains"| live_preview
+backend_container -->|"Same deployed process contains"| static_uploads
+
+postgres_container -->|"Provides"| postgres_db
+redis_container -->|"Provides"| redis_store
+
+public_auth_endpoints -->|"PostgreSQL protocol via SQLx"| postgres_db
+authenticated_management_api -->|"PostgreSQL protocol via SQLx"| postgres_db
+tenant_management_api -->|"PostgreSQL protocol via SQLx + RLS helpers"| postgres_db
+marketplace_submission -->|"PostgreSQL protocol via SQLx"| postgres_db
+marketplace_catalog -->|"PostgreSQL protocol via SQLx"| postgres_db
+delivery_api -->|"PostgreSQL protocol via SQLx fallback source"| postgres_db
+public_stripe_webhook -->|"PostgreSQL protocol via SQLx"| postgres_db
+
+delivery_api -->|"Redis protocol for cache"| redis_store
+delivery_api -.->|"Falls back to PostgreSQL fetch when Redis cache connect/get fails"| postgres_db
+tenant_management_api -->|"Redis protocol for rate limiting; no proven fallback"| redis_store
+public_system_endpoints -->|"Redis protocol for readiness check"| redis_store
+
+tenant_management_api -->|"Includes route group"| marketplace_catalog
+tenant_management_api -->|"Includes route group"| marketplace_submission
+tenant_management_api -->|"Filesystem write/read for media uploads"| cms_media_storage
+marketplace_submission -->|"Filesystem write/read for package upload"| marketplace_package_storage
+static_uploads -->|"Filesystem read"| cms_media_storage
+static_uploads -->|"Filesystem read when artifact URL is exposed"| marketplace_package_storage
+
+live_preview -->|"Broadcast through backend memory"| preview_memory
+
+tenant_management_api -->|"HTTPS/JSON to checkout and portal APIs"| stripe_service
+stripe_service -->|"Stripe webhook"| public_stripe_webhook
+tenant_management_api -->|"HTTPS/JSON webhook provider or local log/disabled mode"| email_integration
+tenant_management_api -->|"Signed outbound webhook: X-CMS-Signature"| webhook_consumers
+
+classDef implemented fill:#e8f7f1,stroke:#146b5a,color:#063c33,stroke-width:1px
+classDef partial fill:#fff7df,stroke:#9a6a00,color:#3d2900,stroke-width:1px
+classDef documented fill:#f7e8e8,stroke:#9b3333,color:#4a0f0f,stroke-width:1px,stroke-dasharray: 5 4
+classDef external fill:#eef1f6,stroke:#4d5b6b,color:#17212f,stroke-width:1px
+classDef data fill:#e7f0ff,stroke:#275b9f,color:#102c52,stroke-width:1px
+classDef filesystem fill:#f2ecff,stroke:#60469a,color:#241548,stroke-width:1px
+classDef backend fill:#eefaf9,stroke:#0f766e,color:#042f2e,stroke-width:2px
+classDef frontend fill:#f0f7ff,stroke:#2563eb,color:#0f2d5c,stroke-width:1px
+
+class frontend_container,react_admin frontend
+class backend_container,public_system_endpoints,public_auth_endpoints,public_stripe_webhook,authenticated_management_api,tenant_management_api,marketplace_catalog,marketplace_submission,delivery_api implemented
+class live_preview,preview_memory,static_uploads,redis_store,stripe_service partial
+class postgres_db,postgres_container,redis_container data
+class cms_media_storage,marketplace_package_storage filesystem
+class browser,consumer_app,email_integration,webhook_consumers external
+class s3_storage,cdn_edge,api_gateway,queue_worker,preview_broker documented
