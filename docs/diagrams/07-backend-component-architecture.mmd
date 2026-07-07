@@ -1,0 +1,341 @@
+flowchart LR
+%% Evidence: backend/src/lib.rs
+%% Evidence: backend/src/main.rs
+%% Evidence: backend/src/config.rs
+%% Evidence: backend/src/db/mod.rs
+%% Evidence: backend/src/state.rs
+%% Evidence: backend/src/error.rs
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/routes/content.rs
+%% Evidence: backend/src/routes/media.rs
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/routes/comments.rs
+%% Evidence: backend/src/routes/plugins.rs
+%% Evidence: backend/src/routes/webhooks.rs
+%% Evidence: backend/src/routes/organizations.rs
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/routes/beta.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/middleware/auth.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/middleware/security.rs
+%% Evidence: backend/src/services/mod.rs
+%% Evidence: backend/src/services/password.rs
+%% Evidence: backend/src/services/jwt.rs
+%% Evidence: backend/src/services/rbac.rs
+%% Evidence: backend/src/services/rate_limit.rs
+%% Evidence: backend/src/services/security.rs
+%% Evidence: backend/src/services/entry_validation.rs
+%% Evidence: backend/src/services/media_processing.rs
+%% Evidence: backend/src/services/cache.rs
+%% Evidence: backend/src/services/workflow.rs
+%% Evidence: backend/src/services/webhooks.rs
+%% Evidence: backend/src/services/audit.rs
+%% Evidence: backend/src/services/email.rs
+%% Evidence: backend/src/services/quota.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/src/services/stripe_billing.rs
+%% Evidence: backend/src/services/health.rs
+%% Evidence: backend/src/services/hardening.rs
+%% Evidence: backend/src/services/ga_readiness.rs
+%% Evidence: backend/src/services/marketplace_domain.rs
+%% Evidence: backend/src/services/marketplace_manifest.rs
+%% Evidence: backend/src/services/marketplace_package.rs
+%% Evidence: backend/src/services/marketplace_validation.rs
+%% Evidence: backend/src/services/marketplace_submission.rs
+%% Evidence: backend/src/services/marketplace_review.rs
+%% Evidence: backend/src/services/marketplace_policy.rs
+%% Evidence: backend/src/services/marketplace_readiness.rs
+%% Evidence: backend/src/services/marketplace_catalog.rs
+%% Evidence: backend/src/plugins/mod.rs
+%% Evidence: backend/src/plugins/seo.rs
+%% Evidence: backend/src/models/user.rs
+%% Evidence: backend/src/models/content.rs
+%% Evidence: backend/src/models/media.rs
+%% Evidence: backend/src/models/page.rs
+%% Evidence: backend/src/models/organization.rs
+
+subgraph bootstrap_state["Bootstrap and state"]
+    main_boot["main.rs [IMPLEMENTED]\nTokio bootstrap, layers, bind, graceful shutdown"]
+    config_loader["Config loader [IMPLEMENTED]\nConfig::from_env from DATABASE_URL, REDIS_URL, JWT, CORS, Stripe, email, upload env"]
+    tracing_init["Logging/tracing init [IMPLEMENTED]\ntracing_subscriber with EnvFilter"]
+    pg_pool["PostgreSQL pool [IMPLEMENTED]\ndb::connect_lazy SQLx PgPool max 10"]
+    migration_runner["Migration runner [IMPLEMENTED]\ndb::run_migrations before server bind"]
+    admin_seed["Default administrator seeding [IMPLEMENTED]\nadmin@example.com only when users table is empty"]
+    org_member_seed["Default organization membership seeding [IMPLEMENTED]\nattach_default_organization_membership maps global role to org role"]
+    redis_client["Redis client [IMPLEMENTED]\nredis::Client from REDIS_URL"]
+    app_state["AppState [IMPLEMENTED]\nArc<Config>, PgPool, Redis client, preview channels"]
+    preview_channels["Page preview broadcast channels [PARTIAL]\nIn-memory HashMap page id to broadcast sender"]
+    graceful_shutdown["Graceful shutdown [IMPLEMENTED]\nCtrl+C and Unix terminate signal"]
+end
+
+subgraph routing["Route modules and root composition"]
+    lib_app["lib::app [IMPLEMENTED]\nDelegates to routes::router"]
+    root_router["Root router [IMPLEMENTED]\n/, /health, /ready, /openapi.json, auth public, billing webhook, delivery, protected stacks, /uploads"]
+    auth_routes["Auth routes [IMPLEMENTED]\nregister, login, refresh, logout, me"]
+    content_routes["Content routes [IMPLEMENTED]\ncontent types, entries, workflow transitions"]
+    media_routes["Media routes [IMPLEMENTED]\nmedia list/upload/update/delete/detail"]
+    page_routes["Page routes [IMPLEMENTED]\npages, versions, component registry, live preview"]
+    delivery_routes["Delivery routes [IMPLEMENTED]\n/api/v1 public content, pages, settings, navigation, sitemap, robots"]
+    comment_routes["Comment routes [IMPLEMENTED]\nentity comments resolve/reopen/delete"]
+    plugin_routes["Plugin routes [IMPLEMENTED]\nplugin list/detail/update"]
+    webhook_routes["Webhook routes [IMPLEMENTED]\nsubscriptions, deliveries, test dispatch"]
+    organization_routes["Organization routes [IMPLEMENTED]\nworkspaces, members, invites, domains, rate limits, logs, email deliveries"]
+    billing_routes["Billing routes [IMPLEMENTED]\nplans, subscription, checkout, portal, usage, Stripe webhook"]
+    beta_routes["Beta routes [IMPLEMENTED]\nfeedback, blockers, participants, product dashboard"]
+    marketplace_routes["Marketplace routes [IMPLEMENTED]\ncatalog, creators, listings, package upload, validation, review, moderation"]
+    static_uploads["Static /uploads [PARTIAL]\nServeDir from upload_dir; file bytes do not hit route services"]
+end
+
+subgraph middleware_layers["Middleware and HTTP layers"]
+    auth_mw["Authentication middleware [IMPLEMENTED]\nBearer token or preview query token -> Claims"]
+    tenant_mw["Tenant middleware [IMPLEMENTED]\nX-Organization-Id or preview query organization_id -> TenantContext"]
+    security_headers["Security headers [IMPLEMENTED]\nsecurity_headers middleware"]
+    cors_layer["CORS layer [IMPLEMENTED]\nConfigured origin, credentials, auth/content/org headers"]
+    request_id_layer["Request ID layer [IMPLEMENTED]\nSet and propagate x-request-id"]
+    tracing_layer["HTTP tracing layer [IMPLEMENTED]\nTraceLayer for HTTP"]
+    compression_layer["Compression layer [IMPLEMENTED]\nCompressionLayer"]
+    timeout_layer["Timeout layer [IMPLEMENTED]\n30 second request timeout"]
+    body_limit["Body size limits [IMPLEMENTED]\nDefaultBodyLimit max upload size plus buffer on tenant stack"]
+end
+
+subgraph core_services["Core services"]
+    password_service["Password service [IMPLEMENTED]\nArgon2 hash and verify"]
+    jwt_service["JWT service [IMPLEMENTED]\nAccess token sign/verify for Claims"]
+    rbac_service["RBAC service [IMPLEMENTED]\nGlobal and organization role helper checks"]
+    rate_limit_service["Rate limiting service [IMPLEMENTED]\nRedis counters plus DB-loaded org settings"]
+    security_service["Security service [IMPLEMENTED]\nLogin attempts, client IP, entry/rich-text sanitization"]
+    entry_validation_service["Entry validation service [IMPLEMENTED]\nField schema parsing, slug, entry data validation"]
+    media_processing_service["Media processing service [IMPLEMENTED]\nImage variants and supported image mime checks"]
+    cache_service["Cache service [IMPLEMENTED]\nRedis get/set/invalidate with fetch fallback"]
+    workflow_service["Workflow service [IMPLEMENTED]\nStatus enum and transition checks"]
+    webhooks_service["Webhooks service [PARTIAL]\nHMAC signing, transient tokio spawn dispatch, delivery logging"]
+    audit_service["Audit service [IMPLEMENTED]\nTenant and organization audit log writes"]
+    email_service["Email service [IMPLEMENTED]\nInvitation and billing email delivery log/webhook modes"]
+    quota_service["Quota service [IMPLEMENTED]\nPlans, subscriptions, usage counters, capacity checks"]
+    rls_service["RLS service [IMPLEMENTED]\nTenant, organization, and bypass connection helpers"]
+    stripe_service["Stripe billing service [IMPLEMENTED]\nCheckout, portal, webhook idempotency, subscription sync"]
+    health_service["Health helper [PARTIAL]\nDependencyCheck factory; root readiness checks query dependencies directly"]
+    hardening_service["Hardening checks [PARTIAL]\nRLS/load-smoke constants and migration tests; no route caller found"]
+    ga_readiness_service["GA readiness checks [PARTIAL]\nGA docs and release check manifests; no route caller found"]
+end
+
+subgraph marketplace_services["Marketplace services"]
+    mp_domain_service["Marketplace domain [PARTIAL]\nSchema/readiness assertions for marketplace tables"]
+    mp_manifest_service["Marketplace manifest [IMPLEMENTED]\nManifest schema, product type and semver validation"]
+    mp_package_service["Marketplace package [IMPLEMENTED]\nPackage size, checksum, object key helpers"]
+    mp_validation_service["Marketplace validation [IMPLEMENTED]\nStatic package, manifest, security, compatibility reports"]
+    mp_submission_service["Marketplace submission [IMPLEMENTED]\nCreator/listing form validation and status rules"]
+    mp_review_service["Marketplace review [IMPLEMENTED]\nReview decision and moderation action validation"]
+    mp_policy_service["Marketplace policy [PARTIAL]\nPolicy doc/taxonomy acceptance checks; no route caller found"]
+    mp_readiness_service["Marketplace readiness [PARTIAL]\nV2 dependency/gap doc acceptance checks; no route caller found"]
+    mp_catalog_service["Marketplace catalog [IMPLEMENTED]\nCompatibility filter for catalog listing/version responses"]
+end
+
+subgraph plugins_models["Plugin and model modules"]
+    plugin_runtime["Plugin runtime [PARTIAL]\nBuilt-in plugin hooks only; no external plugin sandbox"]
+    seo_plugin["SEO auto plugin [IMPLEMENTED]\nBuilt-in SeoAutoPlugin"]
+    models_module["Models module [PARTIAL]\nuser, content, media, page, organization structs; no crate::models imports found"]
+    error_module["AppError module [IMPLEMENTED]\nShared HTTP and service error mapping"]
+end
+
+subgraph data_external["Data stores, filesystem, and external APIs"]
+    postgres_db["PostgreSQL [IMPLEMENTED]\nSQLx queries, migrations, RLS policies"]
+    redis_store["Redis [IMPLEMENTED]\nDelivery cache and tenant rate-limit counters"]
+    upload_fs["Local filesystem uploads [IMPLEMENTED]\nCMS media, image variants, Marketplace packages under UPLOAD_DIR"]
+    stripe_api["Stripe API [EXTERNAL]\nCheckout, customer portal, subscription webhooks"]
+    email_webhook_api["Email webhook provider [EXTERNAL]\nOnly when EMAIL_PROVIDER=webhook"]
+    outbound_webhook_receivers["External webhook consumers [EXTERNAL]\nSigned CMS event delivery"]
+end
+
+subgraph abstraction_notes["Abstraction boundaries found"]
+    direct_route_sql["Direct route-to-database behavior [IMPLEMENTED]\nMost route handlers issue SQLx queries directly instead of repository classes"]
+    route_business_logic["Route-owned business workflows [PARTIAL]\nMarketplace review/upload and organization membership flows combine validation, SQL, audit, and filesystem work in route handlers"]
+    no_queue_worker["No queue or worker [PARTIAL]\nWebhook dispatch uses tokio::spawn and logs delivery; no durable worker module"]
+end
+
+main_boot --> config_loader
+main_boot --> tracing_init
+config_loader --> pg_pool
+pg_pool --> migration_runner
+migration_runner --> admin_seed
+admin_seed --> org_member_seed
+config_loader --> redis_client
+config_loader --> app_state
+pg_pool --> app_state
+redis_client --> app_state
+app_state --> preview_channels
+main_boot --> graceful_shutdown
+main_boot --> lib_app
+lib_app --> root_router
+app_state --> root_router
+
+root_router --> auth_routes
+root_router --> content_routes
+root_router --> media_routes
+root_router --> page_routes
+root_router --> delivery_routes
+root_router --> comment_routes
+root_router --> plugin_routes
+root_router --> webhook_routes
+root_router --> organization_routes
+root_router --> billing_routes
+root_router --> beta_routes
+root_router --> marketplace_routes
+root_router --> static_uploads
+
+root_router --> auth_mw
+root_router --> tenant_mw
+main_boot --> security_headers
+main_boot --> cors_layer
+main_boot --> request_id_layer
+main_boot --> tracing_layer
+main_boot --> compression_layer
+main_boot --> timeout_layer
+root_router --> body_limit
+
+auth_mw --> jwt_service
+tenant_mw --> jwt_service
+tenant_mw --> rate_limit_service
+tenant_mw --> quota_service
+tenant_mw --> postgres_db
+
+auth_routes --> password_service
+auth_routes --> jwt_service
+auth_routes --> rbac_service
+auth_routes --> security_service
+content_routes --> entry_validation_service
+content_routes --> security_service
+content_routes --> workflow_service
+content_routes --> webhooks_service
+content_routes --> audit_service
+content_routes --> quota_service
+content_routes --> rls_service
+content_routes --> plugin_runtime
+media_routes --> media_processing_service
+media_routes --> audit_service
+media_routes --> quota_service
+media_routes --> rbac_service
+media_routes --> rls_service
+page_routes --> entry_validation_service
+page_routes --> workflow_service
+page_routes --> webhooks_service
+page_routes --> audit_service
+page_routes --> quota_service
+page_routes --> rbac_service
+page_routes --> rls_service
+page_routes --> preview_channels
+delivery_routes --> cache_service
+delivery_routes --> entry_validation_service
+delivery_routes --> rls_service
+comment_routes --> rbac_service
+comment_routes --> rls_service
+plugin_routes --> rbac_service
+webhook_routes --> webhooks_service
+webhook_routes --> rbac_service
+webhook_routes --> rls_service
+organization_routes --> audit_service
+organization_routes --> email_service
+organization_routes --> jwt_service
+organization_routes --> quota_service
+organization_routes --> rbac_service
+organization_routes --> rls_service
+billing_routes --> audit_service
+billing_routes --> email_service
+billing_routes --> quota_service
+billing_routes --> rbac_service
+billing_routes --> stripe_service
+beta_routes --> audit_service
+beta_routes --> quota_service
+beta_routes --> rbac_service
+beta_routes --> rls_service
+marketplace_routes --> mp_catalog_service
+marketplace_routes --> mp_manifest_service
+marketplace_routes --> mp_package_service
+marketplace_routes --> mp_validation_service
+marketplace_routes --> mp_submission_service
+marketplace_routes --> mp_review_service
+marketplace_routes --> audit_service
+marketplace_routes --> quota_service
+marketplace_routes --> rbac_service
+
+plugin_runtime --> seo_plugin
+plugin_runtime --> postgres_db
+
+mp_catalog_service --> mp_manifest_service
+mp_catalog_service --> mp_validation_service
+mp_package_service --> mp_manifest_service
+mp_validation_service --> mp_manifest_service
+mp_validation_service --> mp_package_service
+mp_submission_service --> mp_manifest_service
+
+audit_service --> rls_service
+email_service --> rls_service
+quota_service --> rls_service
+rate_limit_service --> rls_service
+stripe_service --> audit_service
+stripe_service --> quota_service
+stripe_service --> rls_service
+webhooks_service --> jwt_service
+webhooks_service --> rls_service
+security_service --> entry_validation_service
+
+rls_service --> postgres_db
+audit_service --> postgres_db
+email_service --> postgres_db
+quota_service --> postgres_db
+rate_limit_service --> postgres_db
+security_service --> postgres_db
+stripe_service --> postgres_db
+webhooks_service --> postgres_db
+cache_service --> redis_store
+rate_limit_service --> redis_store
+delivery_routes --> redis_store
+root_router --> postgres_db
+root_router --> redis_store
+media_routes --> upload_fs
+media_processing_service --> upload_fs
+marketplace_routes --> upload_fs
+static_uploads --> upload_fs
+stripe_service --> stripe_api
+email_service --> email_webhook_api
+webhooks_service --> outbound_webhook_receivers
+
+auth_routes --> direct_route_sql
+content_routes --> direct_route_sql
+media_routes --> direct_route_sql
+page_routes --> direct_route_sql
+delivery_routes --> direct_route_sql
+comment_routes --> direct_route_sql
+plugin_routes --> direct_route_sql
+webhook_routes --> direct_route_sql
+organization_routes --> direct_route_sql
+billing_routes --> direct_route_sql
+beta_routes --> direct_route_sql
+marketplace_routes --> direct_route_sql
+direct_route_sql --> postgres_db
+marketplace_routes --> route_business_logic
+organization_routes --> route_business_logic
+webhooks_service --> no_queue_worker
+
+error_module -.-> root_router
+error_module -.-> audit_service
+
+classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
+classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111
+classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111
+classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111
+classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111
+classDef note fill:#f6f6f6,stroke:#555,stroke-width:2px,stroke-dasharray: 4 3,color:#111
+
+class main_boot,config_loader,tracing_init,pg_pool,migration_runner,admin_seed,org_member_seed,redis_client,app_state,graceful_shutdown implemented
+class preview_channels,webhooks_service,health_service,hardening_service,ga_readiness_service,mp_domain_service,mp_policy_service,mp_readiness_service,plugin_runtime,models_module,no_queue_worker partial
+class lib_app,root_router,auth_routes,content_routes,media_routes,page_routes,delivery_routes,comment_routes,plugin_routes,webhook_routes,organization_routes,billing_routes,beta_routes,marketplace_routes,static_uploads backend
+class auth_mw,tenant_mw,security_headers,cors_layer,request_id_layer,tracing_layer,compression_layer,timeout_layer,body_limit backend
+class password_service,jwt_service,rbac_service,rate_limit_service,security_service,entry_validation_service,media_processing_service,cache_service,workflow_service,audit_service,email_service,quota_service,rls_service,stripe_service implemented
+class mp_manifest_service,mp_package_service,mp_validation_service,mp_submission_service,mp_review_service,mp_catalog_service,seo_plugin,error_module implemented
+class postgres_db,redis_store,upload_fs data
+class stripe_api,email_webhook_api,outbound_webhook_receivers external
+class direct_route_sql,route_business_logic note
