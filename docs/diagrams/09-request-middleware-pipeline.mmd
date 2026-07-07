@@ -1,0 +1,197 @@
+sequenceDiagram
+%% Evidence: backend/src/main.rs
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/routes/media.rs
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/middleware/auth.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/middleware/security.rs
+%% Evidence: backend/src/services/security.rs
+%% Evidence: backend/src/services/rate_limit.rs
+%% Evidence: backend/src/services/quota.rs
+%% Evidence: backend/src/error.rs
+
+actor Client as Browser/client
+participant Router as Axum router matching
+participant Trace as TraceLayer
+participant SetReq as SetRequestIdLayer
+participant PropReq as PropagateRequestIdLayer
+participant Cors as CorsLayer
+participant Compress as CompressionLayer
+participant SecHeaders as security_headers middleware
+participant Timeout as TimeoutLayer 30s
+participant BodyLimit as DefaultBodyLimit on tenant stack
+participant AuthMW as auth_middleware
+participant TenantMW as tenant_middleware
+participant Handler as Handler/extractor
+participant Service as Service/helper
+participant Pg as PostgreSQL
+participant Redis as Redis
+participant Fs as Filesystem/uploads
+participant ErrorMap as AppError/HTTP status mapping
+
+Note over Router,Timeout: For matched routes, Axum selects the route service, then the Tower stack runs effectively as Trace, SetRequestId, PropagateRequestId, CORS, Compression, security headers, Timeout, then route-stack middleware.
+Note over BodyLimit,TenantMW: Tenant routes have a configured body limit and tenant middleware. The limit is configured on the tenant stack and enforced when body extractors read request bodies.
+
+rect rgb(238, 247, 255)
+    Note over Client,ErrorMap: Variant 1 - public health/readiness request
+    Client->>Router: GET /health or /ready
+    Router->>Trace: matched public system route
+    Trace->>SetReq: enter traced request
+    SetReq->>PropReq: generate x-request-id if absent
+    PropReq->>Cors: propagate x-request-id on response
+    Cors->>Compress: apply configured CORS policy
+    Compress->>SecHeaders: response compression wrapper
+    SecHeaders->>Timeout: add security headers after inner response
+    Timeout->>Handler: run health/readiness handler
+    alt GET /ready
+        Handler->>Pg: SELECT 1 readiness probe
+        Handler->>Redis: Redis connection and PING
+    else GET /health
+        Handler-->>Timeout: liveness JSON
+    end
+    Handler-->>Client: JSON response or AppError mapped status
+end
+
+rect rgb(238, 255, 242)
+    Note over Client,ErrorMap: Variant 2 - public login request
+    Client->>Router: POST /api/auth/login with JSON body and client IP/connect info
+    Router->>Trace: matched auth::public_router route
+    Trace->>SetReq: trace request
+    SetReq->>PropReq: request id
+    PropReq->>Cors: credentialed CORS allowed for configured origin
+    Cors->>Compress: response compression wrapper
+    Compress->>SecHeaders: security headers wrapper
+    SecHeaders->>Timeout: timeout applies
+    Timeout->>Handler: login handler reads JSON body
+    Handler->>Service: security::client_ip and require_login_allowed
+    Service->>Pg: failed-login tracking query
+    Handler->>Pg: load user and refresh-token rows
+    Handler->>Service: password::verify_password and jwt::issue_access_token
+    Handler->>Pg: insert refresh token record
+    Handler-->>Client: JSON auth response plus Set-Cookie zinhar_refresh_token HttpOnly SameSite=Lax
+end
+
+rect rgb(250, 248, 255)
+    Note over Client,ErrorMap: Variant 3 - auth-only request
+    Client->>Router: GET /api/auth/me or /api/plugins with Authorization: Bearer token
+    Router->>Trace: matched protected router route
+    Trace->>SetReq: trace request
+    SetReq->>PropReq: request id
+    PropReq->>Cors: CORS and credentials
+    Cors->>Compress: compression wrapper
+    Compress->>SecHeaders: security headers wrapper
+    SecHeaders->>Timeout: timeout applies
+    Timeout->>AuthMW: route_layer auth_middleware
+    AuthMW->>Service: jwt::verify_access_token
+    Service-->>AuthMW: Claims extension
+    AuthMW->>Handler: continue with Claims
+    Handler->>Service: RBAC helpers where route requires role checks
+    Handler->>Pg: direct SQLx reads/writes as needed
+    Handler-->>Client: JSON or AppError mapped status
+end
+
+rect rgb(255, 252, 238)
+    Note over Client,ErrorMap: Variant 4 - tenant-aware request
+    Client->>Router: GET /api/pages with Authorization: Bearer token and X-Organization-Id
+    Router->>Trace: matched tenant-protected route
+    Trace->>SetReq: trace request
+    SetReq->>PropReq: request id
+    PropReq->>Cors: CORS allows Authorization, Content-Type, X-Organization-Id
+    Cors->>Compress: compression wrapper
+    Compress->>SecHeaders: security headers wrapper
+    SecHeaders->>Timeout: timeout applies
+    Timeout->>BodyLimit: tenant stack body-limit configuration
+    BodyLimit->>TenantMW: tenant_middleware
+    TenantMW->>Service: jwt::verify_access_token when Claims absent
+    TenantMW->>Pg: load active organization membership
+    TenantMW->>Service: rate_limit::check_and_record_request
+    Service->>Redis: org/user rate-limit counters
+    Service->>Pg: load organization rate-limit settings
+    TenantMW->>Service: quota::check_and_record_api_request unless quota-exempt path
+    Service->>Pg: usage counter update
+    TenantMW-->>Handler: add Claims and TenantContext extensions
+    Handler->>Service: RBAC/RLS/workflow/audit helpers as applicable
+    Service->>Pg: tenant-scoped SQLx queries
+    Handler-->>Client: JSON or AppError mapped status
+end
+
+rect rgb(255, 244, 238)
+    Note over Client,ErrorMap: Variant 5 - multipart upload
+    Client->>Router: POST /api/media/upload multipart/form-data with Bearer token and X-Organization-Id
+    Router->>Trace: matched tenant media route
+    Trace->>SetReq: trace request
+    SetReq->>PropReq: request id
+    PropReq->>Cors: CORS
+    Cors->>Compress: compression wrapper
+    Compress->>SecHeaders: security headers wrapper
+    SecHeaders->>Timeout: timeout applies
+    Timeout->>BodyLimit: configure max upload size plus buffer
+    BodyLimit->>TenantMW: tenant auth, rate limit, quota API request
+    TenantMW->>Handler: upload_media handler
+    Handler->>BodyLimit: Multipart extractor reads body under configured limit
+    Handler->>Service: quota::ensure_media_capacity
+    Service->>Pg: media quota check
+    Handler->>Fs: create upload directories and write original file
+    Handler->>Service: media_processing::process_image_variants when image
+    Service->>Fs: write generated variants
+    Handler->>Pg: insert media and variants metadata
+    Handler-->>Client: media JSON or mapped upload error
+end
+
+rect rgb(245, 245, 245)
+    Note over Client,ErrorMap: Variant 6 - static upload request
+    Client->>Router: GET /uploads/{organization_id}/...
+    Router->>Trace: matched ServeDir static service
+    Trace->>SetReq: trace request
+    SetReq->>PropReq: request id
+    PropReq->>Cors: CORS layer still applies
+    Cors->>Compress: compression wrapper
+    Compress->>SecHeaders: security headers wrapper
+    SecHeaders->>Timeout: timeout applies
+    Timeout->>Handler: ServeDir static file service
+    Handler->>Fs: read file from upload_dir
+    Handler-->>Client: file bytes or static-file error; no auth_middleware or tenant_middleware
+end
+
+rect rgb(238, 250, 255)
+    Note over Client,ErrorMap: Variant 7 - WebSocket live preview
+    Client->>Router: GET /api/preview/{page_id}?access_token=...&organization_id=...
+    Router->>Trace: matched tenant pages preview route
+    Trace->>SetReq: trace request
+    SetReq->>PropReq: request id
+    PropReq->>Cors: CORS layer for upgrade request
+    Cors->>Compress: compression wrapper
+    Compress->>SecHeaders: security headers wrapper
+    SecHeaders->>Timeout: timeout applies to upgrade request
+    Timeout->>BodyLimit: tenant stack body-limit configuration
+    BodyLimit->>TenantMW: tenant_middleware
+    TenantMW->>Service: jwt::verify_access_token from query token when bearer is absent
+    TenantMW->>Pg: load active organization membership from query organization_id
+    TenantMW-->>Handler: TenantContext extension
+    Handler-->>Client: 101 Switching Protocols
+    Handler->>Service: in-memory page preview broadcast channel
+    Handler->>Pg: load initial page JSON for tenant
+    Service-->>Client: WebSocket preview messages
+end
+
+rect rgb(255, 238, 245)
+    Note over Client,ErrorMap: Variant 8 - Stripe webhook request
+    Client->>Router: POST /api/billing/stripe/webhook with Stripe-Signature and raw body
+    Router->>Trace: matched billing::public_router route
+    Trace->>SetReq: trace request
+    SetReq->>PropReq: request id
+    PropReq->>Cors: CORS layer applies, but route is public integration endpoint
+    Cors->>Compress: compression wrapper
+    Compress->>SecHeaders: security headers wrapper
+    SecHeaders->>Timeout: timeout applies
+    Timeout->>Handler: stripe_webhook handler reads Bytes body and headers
+    Handler->>Service: stripe_billing::handle_webhook verifies signature and idempotency
+    Service->>Pg: billing_events, subscriptions, plans, audit logs
+    Handler-->>Client: webhook result JSON or AppError mapped status
+end
+
+Note over ErrorMap,Client: AppError implements IntoResponse and maps Unauthorized, Forbidden, NotFound, BadRequest, Validation, Conflict, TooManyRequests, ServiceUnavailable, and Internal errors to JSON HTTP responses.

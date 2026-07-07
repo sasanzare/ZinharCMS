@@ -53,7 +53,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[IMPLEMENTED] tenant-aware catalog`; do not draw a public anonymous catalog route.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, future marketplace catalog and tenant-routing diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, `08-route-boundaries.mmd`, `09-request-middleware-pipeline.mmd`, future marketplace catalog and tenant-routing diagrams.
 
 ## AMB-004
 
@@ -359,7 +359,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use `[PARTIAL] tenant metadata, public static file URLs`; do not draw auth/RLS checks for static file bytes.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, `05-local-development-runtime.mmd`, `06-production-deployment.mmd`, future media, security, and deployment diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `04-container-architecture.mmd`, `05-local-development-runtime.mmd`, `06-production-deployment.mmd`, `08-route-boundaries.mmd`, `09-request-middleware-pipeline.mmd`, future media, security, and deployment diagrams.
 
 ## AMB-022
 
@@ -376,7 +376,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Representation to use in diagrams: Use backend route code as API boundary evidence and mark API docs as `[CONFLICT]` where stale.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, future API and route diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `08-route-boundaries.mmd`, `09-request-middleware-pipeline.mmd`, future API and route diagrams.
 
 ## AMB-023
 
@@ -564,4 +564,10 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Ambiguities added in step 6: AMB-028, AMB-029, AMB-030, AMB-031.
 - Existing ambiguity records linked to deployment diagrams: AMB-002, AMB-010, AMB-011, AMB-012, AMB-020, and AMB-021.
 - Deployment decisions newly recorded: TLS/reverse proxy, backend/frontend Compose health checks, migration coordination for multi-replica rollout, and backup automation for database/cache/uploads/artifacts.
+- Production behavior changed: No.
+## Step 8 Route Boundary Update
+
+- Updated ambiguity records used by `08-route-boundaries.mmd` and `09-request-middleware-pipeline.mmd`: AMB-003, AMB-021, and AMB-022.
+- Boundary conflicts represented: Marketplace catalog is tenant-protected despite public-catalog wording; `/uploads` file bytes are public static serving by path; API documentation is incomplete for V2/V3 route coverage.
+- Effective middleware representation: matched route service first, then global Tower route layers in effective order, followed by auth-only or tenant route-stack middleware where applicable.
 - Production behavior changed: No.
