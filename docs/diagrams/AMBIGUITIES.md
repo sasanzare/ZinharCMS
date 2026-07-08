@@ -971,3 +971,179 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Ambiguities added in step 13: AMB-046, AMB-047, AMB-048, AMB-049, AMB-050, AMB-051, AMB-052, AMB-053.
 - Data model decisions represented: global roles are distinct from organization membership roles; workspace URLs are computed from `organizations.slug`; default organization is a slug-based seeded convention; accepted invitation user id is not persisted; organization ownership is stored directly on tenant-owned records after migration 0008, with selected child rows deriving organization_id through triggers.
 - Production behavior changed: No.
+
+## AMB-054
+
+- ID: AMB-054
+- Domain: Stripe Event Ordering
+- Exact question: Is Stripe webhook ordering enforced when older subscription events arrive after newer ones?
+- Documentation claim: Billing hardening documentation describes Stripe lifecycle handling and event ordering.
+- Implementation evidence: `backend/src/services/stripe_billing.rs` stores `provider_event_created_at` and applies subscription updates through an upsert that only updates existing subscriptions when the stored event timestamp is null, the incoming timestamp is null, or the incoming timestamp is newer or equal.
+- Database evidence: `backend/migrations/0013_v2_phase_eight_hardening.sql` adds `provider_event_created_at` to `organization_subscriptions` and `billing_events`, plus `idx_billing_events_provider_created`.
+- Frontend evidence: `frontend/src/pages/BillingPage.tsx` displays current subscription state but does not participate in webhook ordering.
+- Test evidence: `backend/src/services/stripe_billing.rs` includes tests for reading Stripe event timestamps and rejecting older subscription events.
+- Conflict or missing information: Events without a Stripe-created timestamp can still pass the ordering guard.
+- Safest interpretation: Treat event ordering as implemented for timestamped Stripe events, with a fallback path for missing timestamps.
+- Representation to use in diagrams: Mark Stripe ordering as `[IMPLEMENTED]` with a note that null timestamps are accepted.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future billing lifecycle diagrams.
+
+## AMB-055
+
+- ID: AMB-055
+- Domain: Stripe Idempotency
+- Exact question: Are duplicate Stripe webhook deliveries idempotently handled?
+- Documentation claim: Billing documentation describes Stripe webhook processing.
+- Implementation evidence: `backend/src/services/stripe_billing.rs` inserts `billing_events` and returns `already_processed` when the provider event id already exists.
+- Database evidence: `backend/migrations/0011_v2_phase_six_stripe_billing.sql` defines `billing_events_provider_event_unique UNIQUE (provider, provider_event_id)`.
+- Frontend evidence: No frontend behavior affects Stripe webhook idempotency.
+- Test evidence: Stripe webhook tests cover signature behavior; idempotency is directly represented by the SQL conflict path.
+- Conflict or missing information: There is no separate replay-attempt table.
+- Safest interpretation: Treat idempotency as implemented at the billing event row level.
+- Representation to use in diagrams: Show unique `(provider, provider_event_id)` on `billing_events`; do not invent a separate Stripe event table.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future billing lifecycle diagrams.
+
+## AMB-056
+
+- ID: AMB-056
+- Domain: Subscription Source Of Truth
+- Exact question: Is Stripe or local state authoritative for organization subscription state?
+- Documentation claim: Billing documentation describes manual plan changes until Stripe billing is fully configured, and later Stripe lifecycle handling.
+- Implementation evidence: `backend/src/routes/billing.rs` supports manual plan changes through `quota::change_plan` and Stripe checkout/portal/webhook routes. `backend/src/services/quota.rs` writes `provider = 'manual'`; `backend/src/services/stripe_billing.rs` writes `provider = 'stripe'` on customer creation and webhook subscription updates.
+- Database evidence: `organization_subscriptions` stores one local row per organization with `provider`, Stripe customer/subscription identifiers, local plan id, local status, current period, cancellation flag, and event timestamp.
+- Frontend evidence: `frontend/src/pages/BillingPage.tsx` shows plan cards and Stripe availability, but it reads the local subscription API as the displayed state.
+- Test evidence: Billing and Stripe service tests cover price availability, status mapping, and event ordering.
+- Conflict or missing information: Manual plan changes and Stripe webhook updates can both mutate the same local subscription row.
+- Safest interpretation: Treat `organization_subscriptions` as the local read model; Stripe is an external source for Stripe-managed rows, while manual changes remain supported.
+- Representation to use in diagrams: Show local subscription state separately from Stripe-owned identifiers.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future billing lifecycle diagrams.
+
+## AMB-057
+
+- ID: AMB-057
+- Domain: Missing Stripe Customer
+- Exact question: Is a Stripe customer required before billing portal access, and where is it stored?
+- Documentation claim: Billing documentation describes checkout and customer portal capabilities.
+- Implementation evidence: `backend/src/services/stripe_billing.rs` creates a Stripe customer during checkout setup when needed, stores the id on `organization_subscriptions.provider_customer_id`, and rejects portal creation when the customer id is missing.
+- Database evidence: `organization_subscriptions.provider_customer_id` is nullable; no `billing_customers` table exists in migrations `0010` through `0014`.
+- Frontend evidence: `frontend/src/pages/BillingPage.tsx` calls billing APIs and reports errors returned by the backend.
+- Test evidence: No dedicated missing-customer portal test was found.
+- Conflict or missing information: There is no persisted local billing customer entity beyond the nullable Stripe customer id.
+- Safest interpretation: Treat billing customer persistence as partial: Stripe owns the customer, and the local system stores only the provider id on the subscription row.
+- Representation to use in diagrams: Do not create a `billing_customers` entity; annotate `provider_customer_id` as the local reference.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`.
+
+## AMB-058
+
+- ID: AMB-058
+- Domain: Stripe Webhook Replay
+- Exact question: Can failed or ignored Stripe webhook events be replayed from an application endpoint?
+- Documentation claim: Operational billing documentation refers to webhook handling and hardening.
+- Implementation evidence: `backend/src/routes/billing.rs` exposes only `/api/billing/stripe/webhook`; `backend/src/services/stripe_billing.rs` marks events as `processed`, `ignored`, or `failed`, and duplicate provider event ids return `already_processed`.
+- Database evidence: `billing_events` stores status, payload, error, processed timestamp, and provider event timestamp, but no replay counter or replay request table.
+- Frontend evidence: No webhook replay UI was found in billing pages.
+- Test evidence: No replay-specific test was found.
+- Conflict or missing information: Failed event payloads are retained, but no implemented replay workflow was found.
+- Safest interpretation: Treat webhook replay as operationally inspectable through stored events but not implemented as an application workflow.
+- Representation to use in diagrams: Show stored `billing_events`; mark replay as not represented by a table or route.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future operations diagrams.
+
+## AMB-059
+
+- ID: AMB-059
+- Domain: Quota Rebuild And Stored Usage
+- Exact question: Which usage metrics are derived from live records and which are stored counters?
+- Documentation claim: Billing documentation describes usage counters and rebuildable quota data.
+- Implementation evidence: `backend/src/services/quota.rs` rebuilds `members`, `content_records`, and `media_bytes` from live tables on usage summary/rebuild, while API requests are incremented into `usage_counters`.
+- Database evidence: `usage_counters` stores monthly `(organization_id, period_start, metric, value)` rows with a supported metric check and `rebuilt_at`.
+- Frontend evidence: `frontend/src/pages/BillingPage.tsx` displays usage returned by `/api/billing/usage` and offers rebuild controls.
+- Test evidence: Quota tests cover exceeded downgrade behavior and unlimited-plan calculations; no immutable usage ledger test was found.
+- Conflict or missing information: There is no separate append-only usage event ledger.
+- Safest interpretation: Treat `usage_counters` as a monthly counter table; members/content/media are rebuildable snapshots, and API requests are incremental counters.
+- Representation to use in diagrams: Draw source tables for derived metrics and represent `usage_counters` as stored monthly counters.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future quota lifecycle diagrams.
+
+## AMB-060
+
+- ID: AMB-060
+- Domain: Plan Downgrade Enforcement
+- Exact question: Does changing to a lower plan remediate existing over-limit data?
+- Documentation claim: Billing and quota documentation describes plan limits and quota enforcement.
+- Implementation evidence: `backend/src/services/quota.rs` changes the plan row and capacity checks compute remaining quota; tests show an exceeded downgraded plan clamps remaining usage to zero. No deletion, archival, or remediation workflow was found.
+- Database evidence: `plans` stores limits and `organization_subscriptions` points to the active plan; no downgrade remediation table exists.
+- Frontend evidence: `frontend/src/pages/BillingPage.tsx` displays exceeded quota state but does not implement automatic remediation.
+- Test evidence: `quota.rs` tests cover exceeded usage after downgrade.
+- Conflict or missing information: Existing data can remain over the new plan limit; enforcement appears to block future capacity rather than mutate existing records.
+- Safest interpretation: Treat downgrade enforcement as forward-looking quota checks, not automatic data remediation.
+- Representation to use in diagrams: Show limits on `plans` and `usage_counters`; do not imply downgrade cleanup entities.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future quota lifecycle diagrams.
+
+## AMB-061
+
+- ID: AMB-061
+- Domain: Failed Payment Lifecycle
+- Exact question: Is failed payment handling a full lifecycle with dunning, suspension, and recovery, or only subscription status mapping?
+- Documentation claim: Billing documentation describes Stripe subscription lifecycle.
+- Implementation evidence: `backend/src/services/stripe_billing.rs` maps Stripe `past_due` and `unpaid` to local `past_due`. `backend/src/routes/billing.rs` records billing audit events and sends billing notification email on manual change; no dunning workflow or automatic suspension route was found.
+- Database evidence: `organization_subscriptions.status` includes `past_due`, and `billing_events.status` can be `failed`, but no failed-payment lifecycle table exists.
+- Frontend evidence: `frontend/src/pages/BillingPage.tsx` displays subscription status and usage but has no dunning workflow.
+- Test evidence: Stripe status mapping tests cover `past_due` and `unpaid`.
+- Conflict or missing information: Processing failures and payment failures are represented differently, and there is no separate payment failure entity.
+- Safest interpretation: Treat failed payment support as partial subscription-status handling.
+- Representation to use in diagrams: Show `past_due` status and `billing_events`; do not invent dunning or suspension entities.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future billing lifecycle diagrams.
+
+## AMB-062
+
+- ID: AMB-062
+- Domain: Beta Graduation
+- Exact question: Is beta graduation recorded as an event or only as participant status?
+- Documentation claim: Beta and GA documentation describes graduation and readiness activities.
+- Implementation evidence: `backend/src/routes/beta.rs` upserts `beta_participants.status` and sets onboarding/check-in timestamps; product dashboard metrics are derived from participant, feedback, blocker, billing event, and email delivery rows.
+- Database evidence: `beta_participants.status` includes `graduated`; no beta graduation event table or release-readiness table exists in migration `0014`.
+- Frontend evidence: `frontend/src/pages/BetaPage.tsx` displays beta dashboards and participant/feedback/blocker data through backend APIs.
+- Test evidence: Beta route tests cover validation and query shape, not a graduation event lifecycle.
+- Conflict or missing information: Graduation is durable as status but not as a separate auditable lifecycle entity.
+- Safest interpretation: Treat beta graduation as a participant status transition plus audit logs when route handlers record actions.
+- Representation to use in diagrams: Show `beta_participants.status = graduated`; do not create a graduation table.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future beta lifecycle diagrams.
+
+## AMB-063
+
+- ID: AMB-063
+- Domain: GA Blocker Closure
+- Exact question: Does resolving or deferring a GA blocker persist closure metadata such as closed-by or resolved-at?
+- Documentation claim: GA readiness documentation describes blockers and closure.
+- Implementation evidence: `backend/src/routes/beta.rs` updates blocker `priority`, `status`, `owner`, and `due_at`, and records audit metadata for changes; no resolved-at, closed-by, or close-reason fields are handled.
+- Database evidence: `beta_ga_blockers` stores `status`, `owner`, `due_at`, timestamps, and JSON metadata; no dedicated closure columns exist.
+- Frontend evidence: `frontend/src/pages/BetaPage.tsx` consumes blocker APIs but has no separate closure metadata model.
+- Test evidence: No GA blocker closure lifecycle test was found.
+- Conflict or missing information: Closure intent is captured by status values `resolved` and `deferred`, while closure metadata is not first-class.
+- Safest interpretation: Treat closure as status-only unless callers manually include context in metadata or audit logs.
+- Representation to use in diagrams: Show blocker status values and omit closure columns.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `18-billing-operations-beta-data-model.mmd`, future GA readiness diagrams.
+
+## Step 14 Billing Operations Beta Data Model Update
+
+- Ambiguities added in step 14: AMB-054, AMB-055, AMB-056, AMB-057, AMB-058, AMB-059, AMB-060, AMB-061, AMB-062, AMB-063.
+- Data model decisions represented: billing customer storage is limited to Stripe-owned identifiers on `organization_subscriptions`; Stripe idempotency is implemented by the unique provider event key; event ordering is timestamp-based when Stripe created timestamps are present; usage is a mix of rebuildable snapshots and stored API request counters; product metrics and release readiness are derived runtime/reporting concepts, not persisted tables.
+- Production behavior changed: No.

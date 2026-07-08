@@ -1,0 +1,231 @@
+erDiagram
+    %% Evidence: backend/migrations/0010_v2_phase_five_billing_quota.sql
+    %% Evidence: backend/migrations/0011_v2_phase_six_stripe_billing.sql
+    %% Evidence: backend/migrations/0012_v2_phase_seven_saas_ops.sql
+    %% Evidence: backend/migrations/0013_v2_phase_eight_hardening.sql
+    %% Evidence: backend/migrations/0014_v2_phase_nine_beta_release.sql
+    %% Evidence: backend/src/routes/billing.rs
+    %% Evidence: backend/src/routes/beta.rs
+    %% Evidence: backend/src/services/quota.rs
+    %% Evidence: backend/src/services/stripe_billing.rs
+    %% Evidence: backend/src/services/email.rs
+    %% Evidence: backend/src/services/audit.rs
+    %% Evidence: backend/src/services/rate_limit.rs
+    %% [IMPLEMENTED] Billing, operations, and beta records are stored in PostgreSQL tenant-owned tables.
+    %% [PARTIAL] Billing customers are stored as Stripe-owned identifiers on organization_subscriptions, not in a billing_customers table.
+    %% [PARTIAL] Product metrics and release readiness are derived from operational tables and route queries; no product_metrics or release_readiness tables exist.
+    %% [PARTIAL] Rate-limit configuration is stored in PostgreSQL, while runtime request counters use Redis and are not persisted here.
+    %% [PARTIAL] Checkout sessions, portal sessions, purchases, and payouts are Stripe/external concepts; no local tables exist in migrations 0010 through 0014.
+
+    organizations {
+        UUID id PK
+        TEXT name
+        TEXT slug UK "UNIQUE workspace identifier"
+        organization_status status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    users {
+        UUID id PK
+        CITEXT email "global user email"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    plans {
+        UUID id PK
+        TEXT slug UK "UNIQUE CHECK slug format"
+        TEXT name
+        TEXT description
+        INTEGER price_monthly_cents
+        INTEGER member_limit "CHECK >= -1; -1 means unlimited"
+        INTEGER content_limit "CHECK >= -1; -1 means unlimited"
+        INTEGER media_limit_mb "CHECK >= -1; -1 means unlimited"
+        INTEGER api_requests_limit "CHECK >= -1; -1 means unlimited"
+        JSONB features "CHECK jsonb object"
+        BOOLEAN is_active
+        INTEGER sort_order
+        TEXT stripe_product_id "Stripe-owned product id"
+        TEXT stripe_price_id "Stripe-owned price id; partial UNIQUE when not null"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    organization_subscriptions {
+        UUID organization_id PK, FK "REFERENCES organizations(id) ON DELETE CASCADE"
+        UUID plan_id FK
+        organization_subscription_status status "ENUM trialing active past_due canceled incomplete"
+        TEXT provider "manual or stripe; CHECK not empty"
+        TEXT provider_customer_id "Stripe customer id; nullable"
+        TEXT provider_subscription_id "Stripe subscription id; nullable"
+        TIMESTAMPTZ current_period_start
+        TIMESTAMPTZ current_period_end
+        BOOLEAN cancel_at_period_end
+        TIMESTAMPTZ provider_event_created_at "Stripe event ordering guard"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    billing_events {
+        UUID id PK
+        TEXT provider "DEFAULT stripe; CHECK not empty"
+        TEXT provider_event_id "Stripe event id; UNIQUE with provider"
+        TEXT event_type
+        UUID organization_id FK "nullable ON DELETE SET NULL"
+        TEXT status "CHECK processing processed failed ignored"
+        JSONB payload "CHECK jsonb object"
+        TEXT error
+        TIMESTAMPTZ processed_at
+        TIMESTAMPTZ provider_event_created_at "Stripe top-level created timestamp"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    usage_counters {
+        UUID id PK
+        UUID organization_id FK
+        DATE period_start "CHECK month start"
+        TEXT metric "CHECK members content_records media_bytes api_requests; UNIQUE organization_id period_start metric"
+        BIGINT value "CHECK non-negative"
+        TIMESTAMPTZ rebuilt_at
+        TIMESTAMPTZ updated_at
+    }
+
+    organization_rate_limits {
+        UUID organization_id PK, FK "REFERENCES organizations(id) ON DELETE CASCADE"
+        INTEGER requests_per_minute "CHECK positive"
+        INTEGER user_requests_per_minute "CHECK positive"
+        INTEGER burst "CHECK positive"
+        UUID updated_by FK "nullable ON DELETE SET NULL"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    audit_logs {
+        UUID id PK
+        UUID organization_id FK
+        UUID actor_id FK "nullable ON DELETE SET NULL"
+        TEXT action "CHECK not empty"
+        TEXT entity_type "CHECK not empty"
+        UUID entity_id
+        JSONB metadata "CHECK jsonb object"
+        TIMESTAMPTZ created_at
+    }
+
+    email_deliveries {
+        UUID id PK
+        UUID organization_id FK "nullable ON DELETE SET NULL"
+        CITEXT recipient_email "CHECK not empty"
+        TEXT template "CHECK not empty"
+        TEXT subject "CHECK not empty"
+        TEXT provider "DEFAULT log; CHECK not empty"
+        TEXT status "CHECK pending sent failed skipped"
+        TEXT provider_message_id
+        JSONB payload "CHECK jsonb object"
+        TEXT error
+        TIMESTAMPTZ sent_at
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    saas_alert_rules {
+        UUID id PK
+        UUID organization_id FK
+        TEXT alert_key "CHECK not empty; UNIQUE with organization_id"
+        TEXT severity "CHECK info warning critical"
+        BOOLEAN is_enabled
+        JSONB config "CHECK jsonb object"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    beta_participants {
+        UUID organization_id PK, FK "REFERENCES organizations(id) ON DELETE CASCADE"
+        TEXT cohort_label "DEFAULT private-beta"
+        TEXT contact_name
+        CITEXT contact_email
+        TEXT status "CHECK candidate invited onboarding active paused graduated rejected"
+        TIMESTAMPTZ onboarded_at
+        TIMESTAMPTZ last_check_in_at
+        TEXT notes
+        JSONB metadata "CHECK jsonb object"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    beta_feedback {
+        UUID id PK
+        UUID organization_id FK
+        UUID submitted_by FK "nullable ON DELETE SET NULL"
+        TEXT category "CHECK bug ux billing performance tenant_isolation onboarding other"
+        TEXT severity "CHECK low medium high critical"
+        TEXT status "CHECK open triaged planned fixed closed"
+        TEXT title "CHECK not empty"
+        TEXT description "CHECK not empty"
+        TEXT page_url
+        JSONB metadata "CHECK jsonb object"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    beta_ga_blockers {
+        UUID id PK
+        UUID organization_id FK
+        UUID feedback_id FK "nullable ON DELETE SET NULL"
+        TEXT priority "CHECK p0 p1 p2 p3"
+        TEXT area "CHECK not empty"
+        TEXT title "CHECK not empty"
+        TEXT status "CHECK open in_progress blocked resolved deferred"
+        TEXT owner
+        DATE due_at
+        JSONB metadata "CHECK jsonb object"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    organization_members {
+        UUID organization_id FK
+        UUID user_id FK
+        organization_member_status status "derived members metric counts active members"
+        organization_role role
+    }
+
+    content_entries {
+        UUID organization_id FK
+        UUID content_type_id FK
+        TEXT status "derived content_records metric"
+    }
+
+    pages {
+        UUID organization_id FK
+        TEXT slug
+        TEXT status "derived content_records metric"
+    }
+
+    media {
+        UUID organization_id FK
+        TEXT url
+        BIGINT size "derived media_bytes metric"
+    }
+
+    organizations ||--|| organization_subscriptions : "has current local subscription"
+    plans ||--o{ organization_subscriptions : "selected by subscription"
+    organizations ||--o{ usage_counters : "stores monthly counters"
+    organizations ||--o| organization_rate_limits : "has optional config"
+    users |o--o| organization_rate_limits : "nullable updated_by"
+    organizations ||--o{ audit_logs : "records tenant actions"
+    users |o--o{ audit_logs : "nullable actor_id"
+    organizations |o--o{ billing_events : "nullable billing event owner"
+    organizations |o--o{ email_deliveries : "nullable delivery owner"
+    organizations ||--o{ saas_alert_rules : "has alert rules"
+    organizations ||--o| beta_participants : "optional beta profile per org"
+    organizations ||--o{ beta_feedback : "collects feedback"
+    users |o--o{ beta_feedback : "nullable submitted_by"
+    organizations ||--o{ beta_ga_blockers : "tracks blockers"
+    beta_feedback |o--o{ beta_ga_blockers : "optional feedback source"
+    organizations ||--o{ organization_members : "usage source members"
+    users ||--o{ organization_members : "member user"
+    organizations ||--o{ content_entries : "usage source entries"
+    organizations ||--o{ pages : "usage source pages"
+    organizations ||--o{ media : "usage source media bytes"
