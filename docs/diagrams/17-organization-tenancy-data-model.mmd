@@ -1,0 +1,311 @@
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+%% Evidence: backend/migrations/0010_v2_phase_five_billing_quota.sql
+%% Evidence: backend/migrations/0011_v2_phase_six_stripe_billing.sql
+%% Evidence: backend/migrations/0012_v2_phase_seven_saas_ops.sql
+%% Evidence: backend/migrations/0014_v2_phase_nine_beta_release.sql
+%% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/src/routes/organizations.rs
+%% Evidence: backend/src/models/organization.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/src/services/rbac.rs
+%% Evidence: backend/src/services/quota.rs
+%% Evidence: backend/src/services/rate_limit.rs
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/main.rs
+%% Evidence: frontend/src/pages/OrganizationPage.tsx
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: frontend/src/stores/useAppStore.ts
+%% Evidence: frontend/src/types/api.ts
+%% [IMPLEMENTED] Organization identity is separated from global user roles.
+%% [IMPLEMENTED] Tenant selection uses X-Organization-Id or preview query parameters, then loads an active organization_members row.
+%% [IMPLEMENTED] Workspace identity is organizations.slug and a computed /workspace/{slug} URL. There is no workspace_urls table.
+%% [IMPLEMENTED] Most CMS records store organization_id directly after migration 0008; some child rows also derive it from parent rows through triggers.
+%% [PARTIAL] organization_status and organization_member_status include suspended/deleted/invited values, but current organization routes mostly create, update, delete, revoke, accept, leave, and transfer ownership.
+%% [PARTIAL] organization_invitations stores token_hash and accepted_at, but not accepted_user_id. The accepting user is matched at runtime by lower(users.email) = lower(invitation.email).
+%% [PARTIAL] organization_domains stores verification_token, status, and verified_at, but no verification endpoint was found.
+%% [PARTIAL] Last-owner protection is enforced in organization route code, not as a SQL constraint.
+erDiagram
+  users {
+    UUID id PK "0001 identity table"
+    CITEXT email UK "0001 unique, case-insensitive user email"
+    TEXT name "0001 NOT NULL"
+    BOOLEAN is_active "0001 default TRUE"
+    TIMESTAMPTZ created_at "0001 default now()"
+    TIMESTAMPTZ updated_at "0001 default now()"
+  }
+
+  roles {
+    UUID id PK "0001 global role table"
+    TEXT name UK "0001 global roles: super_admin, admin, editor, author, viewer"
+    TEXT_ARRAY permissions "0001 global permissions array"
+  }
+
+  user_roles {
+    UUID user_id PK "0001 FK users(id) ON DELETE CASCADE"
+    UUID role_id PK "0001 FK roles(id) ON DELETE CASCADE"
+    TIMESTAMPTZ assigned_at "0001 default now()"
+  }
+
+  organizations {
+    UUID id PK "0008 default gen_random_uuid()"
+    TEXT name "0008 NOT NULL; organizations_name_not_empty"
+    TEXT slug UK "0008 UNIQUE; workspace identifier; default slug is default"
+    organization_status status "0008 active, suspended, deleted; route loading requires active"
+    UUID owner_id FK "0008 users(id) ON DELETE SET NULL"
+    JSONB settings "0008 object; organization settings JSON"
+    TIMESTAMPTZ created_at "0008 default now()"
+    TIMESTAMPTZ updated_at "0008 default now()"
+  }
+
+  organization_members {
+    UUID organization_id PK "0008 FK organizations(id) ON DELETE CASCADE"
+    UUID user_id PK "0008 FK users(id) ON DELETE CASCADE"
+    organization_member_role role "0008 owner, admin, editor, author, viewer, billing_manager"
+    organization_member_status status "0008 active, invited, suspended"
+    UUID invited_by FK "0008 users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ joined_at "0008 nullable"
+    TIMESTAMPTZ created_at "0008 default now(); idx_organization_members_user"
+    TIMESTAMPTZ updated_at "0008 default now(); idx_organization_members_org_role"
+  }
+
+  organization_invitations {
+    UUID id PK "0008 default gen_random_uuid()"
+    UUID organization_id FK "0008 organizations(id) ON DELETE CASCADE"
+    CITEXT email "0008 invitation target email; normalized to lowercase in route"
+    organization_member_role role "0008 invitation role"
+    TEXT token_hash UK "0008 unique token hash; raw token returned only on create"
+    UUID invited_by FK "0008 users(id) ON DELETE SET NULL"
+    organization_invitation_status status "0008 pending, accepted, revoked, expired"
+    TIMESTAMPTZ expires_at "0008 NOT NULL; route TTL is 7 days"
+    TIMESTAMPTZ accepted_at "0008 nullable; accepted user id is not persisted"
+    TIMESTAMPTZ created_at "0008 default now(); idx_organization_invitations_org"
+    TIMESTAMPTZ updated_at "0008 default now()"
+  }
+
+  organization_domains {
+    UUID id PK "0012 default gen_random_uuid()"
+    UUID organization_id FK "0012 organizations(id) ON DELETE CASCADE"
+    TEXT domain "0012 lower-domain unique index idx_organization_domains_domain_lower"
+    TEXT status "0012 pending, verified, rejected"
+    BOOLEAN is_primary "0012 one primary domain per organization by partial unique index"
+    TEXT verification_token "0012 generated token"
+    TIMESTAMPTZ verified_at "0012 nullable"
+    UUID created_by FK "0012 users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ created_at "0012 default now(); idx_organization_domains_org"
+    TIMESTAMPTZ updated_at "0012 default now()"
+  }
+
+  organization_rate_limits {
+    UUID organization_id PK "0012 organizations(id) ON DELETE CASCADE"
+    INTEGER requests_per_minute "0012 default 600; positive"
+    INTEGER user_requests_per_minute "0012 default 120; positive"
+    INTEGER burst "0012 default 120; non-negative"
+    UUID updated_by FK "0012 users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ created_at "0012 default now()"
+    TIMESTAMPTZ updated_at "0012 default now()"
+  }
+
+  audit_logs {
+    UUID id PK "0012 default gen_random_uuid()"
+    UUID organization_id FK "0012 organizations(id) ON DELETE CASCADE"
+    UUID actor_id FK "0012 users(id) ON DELETE SET NULL"
+    TEXT action "0012 not empty; e.g. organization.member.remove"
+    TEXT entity_type "0012 not empty"
+    UUID entity_id "0012 nullable"
+    JSONB metadata "0012 object"
+    TIMESTAMPTZ created_at "0012 default now(); idx_audit_logs_org_created"
+  }
+
+  email_deliveries {
+    UUID id PK "0012 default gen_random_uuid()"
+    UUID organization_id FK "0012 nullable; organizations(id) ON DELETE SET NULL"
+    TEXT recipient_email "0012 NOT NULL"
+    TEXT template "0012 NOT NULL"
+    TEXT subject "0012 NOT NULL"
+    TEXT provider "0012 default log"
+    TEXT status "0012 pending, sent, failed, skipped"
+    TEXT provider_message_id "0012 nullable"
+    JSONB payload "0012 object"
+    TEXT error "0012 nullable"
+    TIMESTAMPTZ sent_at "0012 nullable"
+    TIMESTAMPTZ created_at "0012 default now(); idx_email_deliveries_org_created"
+    TIMESTAMPTZ updated_at "0012 default now()"
+  }
+
+  saas_alert_rules {
+    UUID id PK "0012 default gen_random_uuid()"
+    UUID organization_id FK "0012 organizations(id) ON DELETE CASCADE"
+    TEXT alert_key "0012 NOT NULL; UNIQUE organization_id, alert_key"
+    TEXT severity "0012 info, warning, critical"
+    BOOLEAN is_enabled "0012 default TRUE"
+    JSONB config "0012 object"
+    TIMESTAMPTZ created_at "0012 default now()"
+    TIMESTAMPTZ updated_at "0012 default now(); idx_saas_alert_rules_org"
+  }
+
+  plans {
+    UUID id PK "0010 plan catalog"
+    TEXT slug UK "0010 free, pro, enterprise"
+    TEXT name "0010 NOT NULL"
+    INTEGER member_limit "0010 -1 means unlimited"
+    INTEGER content_limit "0010 -1 means unlimited"
+    INTEGER media_limit_mb "0010 -1 means unlimited"
+    INTEGER api_requests_limit "0010 -1 means unlimited"
+  }
+
+  organization_subscriptions {
+    UUID organization_id PK "0010 organizations(id) ON DELETE CASCADE"
+    UUID plan_id FK "0010 plans(id)"
+    organization_subscription_status status "0010 trialing, active, past_due, canceled, incomplete"
+    TEXT provider "0010 default manual; later stripe provider data"
+    TEXT provider_customer_id "0010 nullable"
+    TEXT provider_subscription_id "0010 nullable"
+    TIMESTAMPTZ current_period_start "0010 default month start"
+    TIMESTAMPTZ current_period_end "0010 default next month"
+    BOOLEAN cancel_at_period_end "0010 default FALSE"
+  }
+
+  usage_counters {
+    UUID id PK "0010 default gen_random_uuid()"
+    UUID organization_id FK "0010 organizations(id) ON DELETE CASCADE"
+    DATE period_start "0010 month start"
+    TEXT metric "0010 members, content_records, media_bytes, api_requests"
+    BIGINT value "0010 non-negative"
+    TIMESTAMPTZ rebuilt_at "0010 nullable"
+    TIMESTAMPTZ updated_at "0010 default now(); UNIQUE organization_id, period_start, metric"
+  }
+
+  billing_events {
+    UUID id PK "0011 default gen_random_uuid()"
+    TEXT provider "0011 default stripe"
+    TEXT provider_event_id "0011 UNIQUE with provider"
+    TEXT event_type "0011 NOT NULL"
+    UUID organization_id FK "0011 nullable; organizations(id) ON DELETE SET NULL"
+    TEXT status "0011 processing, processed, failed, ignored"
+    JSONB payload "0011 object"
+    TEXT error "0011 nullable"
+    TIMESTAMPTZ processed_at "0011 nullable"
+    TIMESTAMPTZ created_at "0011 default now(); idx_billing_events_organization"
+    TIMESTAMPTZ updated_at "0011 default now()"
+  }
+
+  content_types {
+    UUID id PK "0001 CMS table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership; UNIQUE organization_id, slug"
+  }
+
+  content_entries {
+    UUID id PK "0001 CMS table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership; trigger may derive from content_types"
+  }
+
+  pages {
+    UUID id PK "0001 page table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership; UNIQUE organization_id, slug"
+  }
+
+  page_versions {
+    UUID id PK "0001 page snapshot table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership; trigger derives from pages"
+  }
+
+  component_registry {
+    UUID id PK "0001 component table; organization_id added 0008"
+    UUID organization_id FK "0008 nullable for system components; custom requires organization_id"
+    BOOLEAN is_system "0001 system components bypass tenant select"
+  }
+
+  media {
+    UUID id PK "0001 media table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership"
+  }
+
+  media_variants {
+    UUID id PK "0001 variant table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership; trigger derives from media"
+  }
+
+  comments {
+    UUID id PK "0006 comment table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership; trigger derives from page or entry"
+  }
+
+  webhooks {
+    UUID id PK "0005 webhook table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership"
+  }
+
+  webhook_deliveries {
+    UUID id PK "0005 delivery log table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership; trigger derives from webhooks"
+  }
+
+  public_settings {
+    UUID organization_id PK "0008 part of composite PK organization_id,key"
+    TEXT key PK "0005 public setting key"
+  }
+
+  navigation_items {
+    UUID id PK "0005 navigation table; organization_id added 0008"
+    UUID organization_id FK "0008 direct tenant ownership"
+  }
+
+  beta_participants {
+    UUID organization_id PK "0014 organizations(id) ON DELETE CASCADE"
+  }
+
+  beta_feedback {
+    UUID id PK "0014 beta feedback"
+    UUID organization_id FK "0014 direct tenant ownership"
+  }
+
+  beta_ga_blockers {
+    UUID id PK "0014 GA blocker"
+    UUID organization_id FK "0014 direct tenant ownership"
+  }
+
+  marketplace_installations {
+    UUID id PK "0015 marketplace installation"
+    UUID organization_id FK "0015 organizations(id) ON DELETE CASCADE"
+  }
+
+  users ||--o{ user_roles : "global role assignment"
+  roles ||--o{ user_roles : "global roles are separate from organization roles"
+  users |o--o{ organizations : "owner_id SET NULL"
+  organizations ||--o{ organization_members : "membership rows; active rows define tenant access"
+  users ||--o{ organization_members : "member user_id CASCADE"
+  users |o--o{ organization_members : "invited_by SET NULL"
+  organizations ||--o{ organization_invitations : "invitation rows CASCADE"
+  users |o--o{ organization_invitations : "invited_by SET NULL"
+  users |o..o{ organization_invitations : "application-only accepted user matched by email; no accepted_user_id"
+  organizations ||--o{ organization_domains : "custom domains; one primary partial unique index"
+  users |o--o{ organization_domains : "created_by SET NULL"
+  organizations ||--|| organization_rate_limits : "one row per organization"
+  users |o--o| organization_rate_limits : "updated_by SET NULL"
+  organizations ||--o{ audit_logs : "organization audit trail CASCADE"
+  users |o--o{ audit_logs : "actor_id SET NULL"
+  organizations |o--o{ email_deliveries : "organization_id nullable; SET NULL on organization delete"
+  organizations ||--o{ saas_alert_rules : "organization alert rules CASCADE"
+  organizations ||--|| organization_subscriptions : "usage/billing reference CASCADE"
+  plans ||--o{ organization_subscriptions : "plan_id"
+  organizations ||--o{ usage_counters : "monthly quota counters; UNIQUE organization_id, period_start, metric"
+  organizations |o--o{ billing_events : "nullable billing event organization_id SET NULL"
+  organizations ||--o{ content_types : "direct tenant ownership"
+  organizations ||--o{ content_entries : "direct tenant ownership"
+  organizations ||--o{ pages : "direct tenant ownership"
+  organizations ||--o{ page_versions : "direct tenant ownership plus parent trigger"
+  organizations |o--o{ component_registry : "NULL for system, tenant id for custom"
+  organizations ||--o{ media : "direct tenant ownership"
+  organizations ||--o{ media_variants : "direct tenant ownership plus parent trigger"
+  organizations ||--o{ comments : "direct tenant ownership plus polymorphic parent trigger"
+  organizations ||--o{ webhooks : "direct tenant ownership"
+  organizations ||--o{ webhook_deliveries : "direct tenant ownership plus parent trigger"
+  organizations ||--o{ public_settings : "composite tenant key"
+  organizations ||--o{ navigation_items : "direct tenant ownership"
+  organizations ||--|| beta_participants : "one beta participant profile per organization"
+  organizations ||--o{ beta_feedback : "tenant-owned beta feedback"
+  organizations ||--o{ beta_ga_blockers : "tenant-owned GA blockers"
+  organizations ||--o{ marketplace_installations : "tenant-owned installations"

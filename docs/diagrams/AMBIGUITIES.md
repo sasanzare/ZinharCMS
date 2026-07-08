@@ -829,3 +829,145 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Existing ambiguity reused: AMB-034 covers navigation storage and now also applies to `16-media-delivery-webhook-data-model.mmd`.
 - Data model decisions represented: page versions are complete snapshots; restore-from is not persisted; component references inside `page_json` are stable string keys without SQL FKs; media file cleanup is handler-level; webhook retry state is not modeled; delivery cache is Redis-only.
 - Production behavior changed: No.
+
+## AMB-046
+
+- ID: AMB-046
+- Domain: Default Organization
+- Exact question: Is the default organization a durable schema concept or an application convention around the slug `default`?
+- Documentation claim: V2 documentation describes a default organization for migrated and seeded data.
+- Implementation evidence: `backend/src/main.rs` and `backend/src/routes/auth.rs` attach seeded and newly registered users to the organization with slug `default`. Auth responses choose `default_organization_id` by preferring an active membership whose slug is `default`, otherwise the first active membership.
+- Database evidence: `backend/migrations/0008_v2_phase_one_organizations.sql` inserts `organizations(name, slug, status) VALUES ('Default Organization', 'default', 'active')` and defines `app_default_organization_id()` by selecting the row with slug `default`. No `is_default` column or immutable default-row constraint exists.
+- Frontend evidence: `frontend/src/stores/useAppStore.ts` selects the backend-provided default organization id when starting a session, then persists `zinhar.active_organization_id`.
+- Test evidence: No database test was found that enforces a single immutable default organization beyond the unique slug constraint.
+- Conflict or missing information: The default organization is real data and real runtime behavior, but it is not a separate schema primitive.
+- Safest interpretation: Treat default organization behavior as a slug-based convention backed by a seeded organization row.
+- Representation to use in diagrams: Show `organizations.slug UNIQUE` and comments for `app_default_organization_id()`; do not invent an `is_default` column.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `17-organization-tenancy-data-model.mmd`, future tenancy bootstrap diagrams.
+
+## AMB-047
+
+- ID: AMB-047
+- Domain: Membership Suspension And Removal
+- Exact question: Are organization members suspended, soft-removed, or physically deleted by current organization APIs?
+- Documentation claim: Organization membership docs mention membership statuses and tenant access.
+- Implementation evidence: `backend/src/routes/organizations.rs` removes and leaves organizations with `DELETE FROM organization_members`; role changes update `role`, not `status`. `backend/src/middleware/tenant.rs` grants tenant access only for `om.status = 'active'`.
+- Database evidence: `backend/migrations/0008_v2_phase_one_organizations.sql` defines `organization_member_status` as `active`, `invited`, `suspended`, but no removed status and no database rule requiring suspended rows to be used instead of deletion.
+- Frontend evidence: `frontend/src/pages/OrganizationPage.tsx` exposes remove/leave controls and displays status, but no suspend/unsuspend control was found.
+- Test evidence: `backend/src/services/rbac.rs` tests role permission matrices; no membership suspension/removal lifecycle test was found.
+- Conflict or missing information: The enum supports suspended/invited states, while current member removal behavior deletes rows.
+- Safest interpretation: Treat active membership as the authoritative tenant-access row; represent suspension as schema-supported but not surfaced by current organization routes.
+- Representation to use in diagrams: Show all enum values and note that route removal is physical deletion, not a persisted removed status.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `17-organization-tenancy-data-model.mmd`, future organization lifecycle diagrams.
+
+## AMB-048
+
+- ID: AMB-048
+- Domain: Invitation Reuse And Acceptance
+- Exact question: Can invitations be reused, and is the accepting user persisted on the invitation row?
+- Documentation claim: Invitation documentation describes pending, accepted, revoked, and expired invitation states.
+- Implementation evidence: `backend/src/routes/organizations.rs` creates invitations with a 7 day TTL, stores only `token_hash`, and upserts pending invitations for the same organization/email by replacing role, token hash, inviter, and expiration. Accepting an invitation matches `lower(users.email)` to `lower(invitation.email)`, creates or updates `organization_members`, then sets `status = accepted` and `accepted_at = now()`.
+- Database evidence: `backend/migrations/0008_v2_phase_one_organizations.sql` has `token_hash TEXT NOT NULL UNIQUE`, partial unique index `idx_organization_invitations_pending_email` on `(organization_id, email) WHERE status = 'pending'`, and no `accepted_by` or `accepted_user_id` column.
+- Frontend evidence: `frontend/src/pages/OrganizationPage.tsx` displays the raw token only immediately after creation via the returned accept path, then accepts by token.
+- Test evidence: No invitation reuse or accepted-user persistence test was found.
+- Conflict or missing information: Acceptance is durable through status and accepted timestamp, but the accepting user id is not stored on the invitation itself.
+- Safest interpretation: Treat pending invitations as reusable per organization/email until accepted, revoked, or expired; accepted user linkage is application-only through email at accept time.
+- Representation to use in diagrams: Show `accepted_at`, omit accepted-user FK, and draw a dashed application-only relationship from users to invitations by email.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `17-organization-tenancy-data-model.mmd`, future invitation lifecycle diagrams.
+
+## AMB-049
+
+- ID: AMB-049
+- Domain: Invitation Email Case Sensitivity
+- Exact question: Is invitation email uniqueness and acceptance case-sensitive?
+- Documentation claim: Invitation docs describe inviting by email.
+- Implementation evidence: `backend/src/routes/organizations.rs` normalizes invitation email to lowercase on create and uses `lower(u.email::text) = lower(invitation.email::text)` on accept.
+- Database evidence: `backend/migrations/0008_v2_phase_one_organizations.sql` stores invitation email as `CITEXT` and adds a partial unique index on `(organization_id, email)` for pending invitations.
+- Frontend evidence: `frontend/src/pages/OrganizationPage.tsx` accepts free-form email text and relies on backend validation/normalization.
+- Test evidence: No case-sensitivity test for invitation emails was found.
+- Conflict or missing information: The implementation strongly indicates case-insensitive behavior, but no explicit test proves it.
+- Safest interpretation: Treat pending invitation uniqueness and accept matching as case-insensitive.
+- Representation to use in diagrams: Mark `organization_invitations.email CITEXT` and mention lowercase normalization in comments.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `17-organization-tenancy-data-model.mmd`.
+
+## AMB-050
+
+- ID: AMB-050
+- Domain: Workspace Slug And URL
+- Exact question: Is workspace access stored in a separate table or derived from `organizations.slug`?
+- Documentation claim: Organization workspace docs describe workspace URLs and slugs.
+- Implementation evidence: `backend/src/routes/organizations.rs` returns `workspace_url(app_base_url, tenant.organization_slug)` as `{base}/workspace/{slug}`. `frontend/src/pages/WorkspaceRedirectPage.tsx` switches the active organization by matching the route slug against memberships.
+- Database evidence: `backend/migrations/0008_v2_phase_one_organizations.sql` defines `organizations.slug TEXT NOT NULL UNIQUE` with slug-format check. No workspace URL table exists in migrations `0001` through `0018`.
+- Frontend evidence: `frontend/src/pages/OrganizationPage.tsx` displays and copies `workspace.workspace_url`; `frontend/src/stores/useAppStore.ts` persists only the selected organization id.
+- Test evidence: No workspace URL persistence test was found.
+- Conflict or missing information: Workspace URL is a real API response but a computed value, not a persisted model.
+- Safest interpretation: Treat workspace identity as the globally unique organization slug plus a computed route URL.
+- Representation to use in diagrams: Show `organizations.slug UNIQUE` as the workspace identifier and avoid inventing a workspace table.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `17-organization-tenancy-data-model.mmd`, future frontend routing diagrams.
+
+## AMB-051
+
+- ID: AMB-051
+- Domain: Domain Verification Process
+- Exact question: Is custom-domain verification implemented as a full lifecycle, or only stored as pending verification metadata?
+- Documentation claim: SaaS operations documentation describes custom domains and verification.
+- Implementation evidence: `backend/src/routes/organizations.rs` implements list, create, and delete domain endpoints. Domain creation inserts `status = pending`, `verification_token`, `is_primary`, and `created_by`; no verify endpoint or background verification job was found.
+- Database evidence: `backend/migrations/0012_v2_phase_seven_saas_ops.sql` defines `organization_domains.status` values `pending`, `verified`, `rejected`, `verification_token`, and `verified_at`, plus unique lower-domain and primary-domain indexes.
+- Frontend evidence: `frontend/src/pages/OrganizationPage.tsx` displays the verification token and status, and can add/delete domains, but has no verify action.
+- Test evidence: No custom-domain verification test was found.
+- Conflict or missing information: Schema supports verification states, but runtime verification transition is not implemented in current routes.
+- Safest interpretation: Treat domain verification as metadata-ready and partially implemented.
+- Representation to use in diagrams: Show verification columns and mark lifecycle verification as `[PARTIAL]`.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `17-organization-tenancy-data-model.mmd`, future SaaS operations diagrams.
+
+## AMB-052
+
+- ID: AMB-052
+- Domain: Organization Deletion Behavior
+- Exact question: Is organization deletion a soft-status transition, physical deletion, or not exposed by current APIs?
+- Documentation claim: Organization docs mention active, suspended, and deleted organization states.
+- Implementation evidence: `backend/src/routes/organizations.rs` loads and updates active organizations, but no route was found to set `organizations.status` to suspended/deleted or physically delete an organization.
+- Database evidence: `backend/migrations/0008_v2_phase_one_organizations.sql` defines `organization_status` as `active`, `suspended`, `deleted`. Most tenant-owned records reference `organizations(id) ON DELETE CASCADE`, while `email_deliveries` and `billing_events` use nullable `organization_id` with `ON DELETE SET NULL`.
+- Frontend evidence: `frontend/src/pages/OrganizationPage.tsx` supports create, update, leave, member management, domains, rate limits, audit logs, email deliveries, and alerts, but not organization delete/suspend.
+- Test evidence: No organization deletion lifecycle test was found.
+- Conflict or missing information: Schema supports statuses and FK delete behavior, but current product API does not expose organization deletion/suspension.
+- Safest interpretation: Represent SQL cascade/delete semantics separately from application-level organization lifecycle, which is currently not surfaced.
+- Representation to use in diagrams: Show status enum and FK delete actions; do not imply an implemented delete organization workflow.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `17-organization-tenancy-data-model.mmd`, future organization lifecycle diagrams.
+
+## AMB-053
+
+- ID: AMB-053
+- Domain: Last Owner Protection
+- Exact question: Is last-owner protection enforced by the database or only by organization route handlers?
+- Documentation claim: Ownership documentation implies an organization should retain an owner.
+- Implementation evidence: `backend/src/routes/organizations.rs` calls `ensure_not_last_owner` before downgrading/removing/leaving as the last active owner, and `transfer_organization_ownership` updates membership roles and `organizations.owner_id`.
+- Database evidence: `backend/migrations/0008_v2_phase_one_organizations.sql` has `organizations.owner_id REFERENCES users(id) ON DELETE SET NULL` and `organization_members.role`, but no partial unique owner constraint, no minimum-owner constraint, and no trigger preventing direct SQL changes that remove all active owners.
+- Frontend evidence: `frontend/src/pages/OrganizationPage.tsx` disables last-owner removal/downgrade controls based on active owner count, but this is a UX guard.
+- Test evidence: No last-owner database or route test was found.
+- Conflict or missing information: Route and UI protect the common path, but SQL does not enforce the invariant.
+- Safest interpretation: Treat last-owner protection as application-enforced behavior.
+- Representation to use in diagrams: Mark last-owner protection in comments as handler/UX enforced, not a database constraint.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `17-organization-tenancy-data-model.mmd`, future authorization and organization lifecycle diagrams.
+
+## Step 13 Organization Tenancy Data Model Update
+
+- Ambiguities added in step 13: AMB-046, AMB-047, AMB-048, AMB-049, AMB-050, AMB-051, AMB-052, AMB-053.
+- Data model decisions represented: global roles are distinct from organization membership roles; workspace URLs are computed from `organizations.slug`; default organization is a slug-based seeded convention; accepted invitation user id is not persisted; organization ownership is stored directly on tenant-owned records after migration 0008, with selected child rows deriving organization_id through triggers.
+- Production behavior changed: No.
