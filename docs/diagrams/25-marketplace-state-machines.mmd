@@ -1,0 +1,181 @@
+stateDiagram-v2
+%% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/migrations/0016_v3_phase_two_creator_submission.sql
+%% Evidence: backend/migrations/0017_v3_phase_three_validation_pipeline.sql
+%% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/services/marketplace_submission.rs
+%% Evidence: backend/src/services/marketplace_validation.rs
+%% Evidence: backend/src/services/marketplace_review.rs
+%% Evidence: frontend/src/pages/MarketplacePage.tsx
+
+state "Creator Lifecycle [IMPLEMENTED]" as MarketplaceCreatorLifecycle {
+  state "No Creator Profile" as CreatorNone
+  state "Pending\nstatus=pending" as CreatorPending
+  state "Approved\nstatus=approved" as CreatorApproved
+  state "Suspended\nstatus=suspended" as CreatorSuspended
+  state "Rejected\nstatus=rejected" as CreatorRejected
+
+  [*] --> CreatorNone
+  CreatorNone --> CreatorPending : POST /api/marketplace/creator; validate profile, create row, requested_at now
+  CreatorPending --> CreatorPending : PATCH /api/marketplace/creators/{creator_id}/verification; global super_admin/admin sets status pending
+  CreatorPending --> CreatorApproved : PATCH verification; global super_admin/admin approves, verified_by and verified_at set
+  CreatorPending --> CreatorSuspended : PATCH verification; global super_admin/admin suspends
+  CreatorPending --> CreatorRejected : PATCH verification; global super_admin/admin rejects
+  CreatorApproved --> CreatorPending : PATCH verification; global super_admin/admin sets status pending
+  CreatorApproved --> CreatorSuspended : PATCH verification; global super_admin/admin suspends
+  CreatorApproved --> CreatorRejected : PATCH verification; global super_admin/admin rejects
+  CreatorSuspended --> CreatorPending : PATCH verification; global super_admin/admin sets status pending
+  CreatorSuspended --> CreatorApproved : PATCH verification; global super_admin/admin approves
+  CreatorSuspended --> CreatorRejected : PATCH verification; global super_admin/admin rejects
+  CreatorRejected --> CreatorPending : POST /api/marketplace/creator; profile update resets rejected creator to pending
+  CreatorRejected --> CreatorApproved : PATCH verification; global super_admin/admin approves
+  CreatorApproved --> CreatorApproved : create listing, submit listing, or upload version allowed by creator_can_submit_public_products
+
+  note right of CreatorPending
+    Final creator status values are pending, approved, suspended, and rejected.
+    Earlier migration values draft, pending_verification, and verified are migrated away.
+  end note
+}
+
+state "Listing Lifecycle [IMPLEMENTED WITH GAPS]" as MarketplaceListingLifecycle {
+  state "Draft\nstatus=draft" as ListingDraft
+  state "Submitted\nstatus=submitted" as ListingSubmitted
+  state "Approved\nstatus=approved" as ListingApproved
+  state "Changes Requested\nstatus=changes_requested" as ListingChangesRequested
+  state "Suspended\nstatus=suspended" as ListingSuspended
+  state "Blocked\nstatus=blocked" as ListingBlocked
+  state "Archived\nstatus=archived\n[SCHEMA ONLY]" as ListingArchived
+
+  [*] --> ListingDraft : POST /api/marketplace/listings; creator profile exists, listing payload valid
+  ListingDraft --> ListingDraft : PUT /api/marketplace/listings/{listing_id}; only draft or changes_requested editable
+  ListingChangesRequested --> ListingChangesRequested : PUT /api/marketplace/listings/{listing_id}; only draft or changes_requested editable
+  ListingDraft --> ListingSubmitted : POST /api/marketplace/listings/{listing_id}/submit or /versions/upload; approved creator and complete metadata
+  ListingChangesRequested --> ListingSubmitted : POST /submit or POST /versions/upload; approved creator and complete metadata
+  ListingDraft --> ListingBlocked : POST /api/marketplace/listings/{listing_id}/versions/upload; validation failed or high/critical security risk
+  ListingSubmitted --> ListingApproved : PATCH /api/marketplace/review/submissions/{submission_id}; decision approve
+  ListingSubmitted --> ListingChangesRequested : PATCH review; decision reject or request_changes
+  ListingApproved --> ListingChangesRequested : POST moderation unpublish_version; no other approved versions remain
+  ListingApproved --> ListingApproved : POST moderation unpublish_version; at least one approved version remains
+  ListingApproved --> ListingSuspended : POST /api/marketplace/review/listings/{listing_id}/moderation; action suspend_listing
+  ListingSubmitted --> ListingSuspended : moderation suspend_listing
+  ListingChangesRequested --> ListingSuspended : moderation suspend_listing
+  ListingApproved --> ListingBlocked : moderation emergency_block
+  ListingSubmitted --> ListingBlocked : upload validation blocked or moderation emergency_block
+  ListingChangesRequested --> ListingBlocked : upload validation blocked or moderation emergency_block
+  ListingSuspended --> ListingBlocked : moderation emergency_block
+
+  note right of ListingSubmitted
+    Backend submit and upload routes do not check the current listing status.
+    They validate creator ownership, approved creator status, and listing metadata.
+    Therefore diagrams show common product paths and mark other status preconditions as a gap.
+  end note
+}
+
+state "Version Package Lifecycle [IMPLEMENTED WITH SCHEMA-ONLY VALUES]" as MarketplaceVersionLifecycle {
+  state "Draft\nstatus=draft\n[SCHEMA DEFAULT ONLY]" as VersionDraft
+  state "Uploading Package\ntransient request" as VersionUploading
+  state "Validating\nstatus=validating\n[SCHEMA ONLY]" as VersionValidating
+  state "Submitted\nstatus=submitted" as VersionSubmitted
+  state "Approved\nstatus=approved" as VersionApproved
+  state "Rejected\nstatus=rejected" as VersionRejected
+  state "Blocked\nstatus=blocked" as VersionBlocked
+  state "Deprecated\nstatus=deprecated" as VersionDeprecated
+  state "Validation Pending\nvalidation_status=pending\n[SCHEMA DEFAULT ONLY]" as ValidationPending
+  state "Validation Passed\nvalidation_status=passed" as ValidationPassed
+  state "Validation Warning\nvalidation_status=warning" as ValidationWarning
+  state "Validation Failed\nvalidation_status=failed" as ValidationFailed
+
+  [*] --> VersionUploading : POST /api/marketplace/listings/{listing_id}/versions/upload; multipart manifest and zip
+  VersionUploading --> ValidationPassed : static validation has no errors or warnings; security risk not high/critical
+  VersionUploading --> ValidationWarning : static validation warnings; security risk not high/critical
+  VersionUploading --> ValidationFailed : validation errors or high/critical security risk
+  ValidationPassed --> VersionSubmitted : insert marketplace_versions status submitted, submission review_status queued
+  ValidationWarning --> VersionSubmitted : insert status submitted, submission review_status queued
+  ValidationFailed --> VersionBlocked : insert status blocked, submission review_status blocked
+  VersionSubmitted --> VersionApproved : review decision approve; validation not failed and risk not high/critical
+  VersionSubmitted --> VersionRejected : review decision reject or request_changes
+  VersionBlocked --> VersionRejected : review decision reject or request_changes allowed; approve is rejected by service validation
+  VersionApproved --> VersionDeprecated : moderation action unpublish_version
+  VersionSubmitted --> VersionBlocked : moderation emergency_block
+  VersionValidating --> VersionBlocked : moderation emergency_block can block validating rows if they exist
+  VersionApproved --> VersionBlocked : moderation emergency_block
+
+  note right of VersionDraft
+    The table has draft and validating status values,
+    but upload currently performs validation synchronously and inserts submitted or blocked.
+    No route was found that persists draft or validating package versions.
+  end note
+}
+
+state "Submission Review Lifecycle [IMPLEMENTED WITH SCHEMA-ONLY VALUES]" as MarketplaceSubmissionLifecycle {
+  state "Queued\nreview_status=queued" as SubmissionQueued
+  state "Validating\nreview_status=validating\n[SCHEMA ONLY]" as SubmissionValidating
+  state "Blocked\nreview_status=blocked" as SubmissionBlocked
+  state "Changes Requested\nreview_status=changes_requested" as SubmissionChangesRequested
+  state "Approved\nreview_status=approved" as SubmissionApproved
+  state "Rejected\nreview_status=rejected" as SubmissionRejected
+  state "Canceled\nreview_status=canceled\n[SCHEMA ONLY]" as SubmissionCanceled
+
+  [*] --> SubmissionQueued : package upload passes validation; submission row created
+  [*] --> SubmissionBlocked : package upload has validation failure or high/critical security risk
+  SubmissionQueued --> SubmissionApproved : PATCH /api/marketplace/review/submissions/{submission_id}; decision approve
+  SubmissionQueued --> SubmissionRejected : review decision reject
+  SubmissionQueued --> SubmissionChangesRequested : review decision request_changes
+  SubmissionBlocked --> SubmissionRejected : review decision reject
+  SubmissionBlocked --> SubmissionChangesRequested : review decision request_changes
+  SubmissionValidating --> SubmissionApproved : possible only if a validating row exists; no route found that sets validating
+
+  note right of SubmissionQueued
+    There is no submission review_status named submitted.
+    Submission to review is represented by queued or blocked rows.
+    No route was found that sets validating or canceled.
+  end note
+}
+
+state "Installation Lifecycle [PARTIAL - DATABASE FOUNDATION ONLY]" as MarketplaceInstallationLifecycle {
+  state "Active\nstatus=active" as InstallationActive
+  state "Disabled\nstatus=disabled" as InstallationDisabled
+  state "Uninstalled\nstatus=uninstalled" as InstallationUninstalled
+  state "Rollback Pending\nstatus=rollback_pending" as InstallationRollbackPending
+  state "Blocked\nstatus=blocked" as InstallationBlocked
+
+  [*] --> InstallationActive : schema default only; no install endpoint found
+  InstallationActive --> InstallationBlocked : moderation emergency_block updates existing non-uninstalled installations
+  InstallationDisabled --> InstallationBlocked : moderation emergency_block updates existing non-uninstalled installations
+  InstallationRollbackPending --> InstallationBlocked : moderation emergency_block updates existing non-uninstalled installations
+
+  note right of InstallationActive
+    The marketplace_installations table and RLS policies exist.
+    No executable install, disable, uninstall, rollback, purchase, or payout API was found.
+    The frontend catalog shows install as deferred.
+  end note
+}
+
+state "Moderation Lifecycle [IMPLEMENTED PARTIAL]" as MarketplaceModerationLifecycle {
+  state "Review Event Recorded" as ModerationEventRecorded
+  state "Listing Suspended" as ModerationListingSuspended
+  state "Version Deprecated" as ModerationVersionDeprecated
+  state "Emergency Blocked" as ModerationEmergencyBlocked
+  state "Restoration\n[NOT FOUND]" as ModerationRestorationMissing
+
+  [*] --> ModerationListingSuspended : action suspend_listing; listing status suspended, review event action suspend_listing
+  ModerationListingSuspended --> ModerationEventRecorded : marketplace_review_events row and audit event
+  [*] --> ModerationVersionDeprecated : action unpublish_version; version status deprecated, listing recalculated approved or changes_requested
+  ModerationVersionDeprecated --> ModerationEventRecorded : marketplace_review_events row and audit event
+  [*] --> ModerationEmergencyBlocked : action emergency_block; listing blocked, submitted/validating/approved versions blocked, non-uninstalled installations blocked
+  ModerationEmergencyBlocked --> ModerationEventRecorded : marketplace_review_events row and audit event
+  ModerationEventRecorded --> ModerationRestorationMissing : no restore/reactivate moderation route found
+}
+
+state "Catalog Publication [IMPLEMENTED READ PATH]" as MarketplaceCatalogPublication {
+  state "Catalog Eligible" as CatalogEligible
+  state "Catalog Hidden" as CatalogHidden
+
+  VersionApproved --> CatalogEligible : listing status approved and version validation_status passed or warning
+  ListingApproved --> CatalogEligible : catalog query requires listing.status approved
+  ListingSuspended --> CatalogHidden : catalog query filters out non-approved listings
+  ListingBlocked --> CatalogHidden : catalog query filters out non-approved listings
+  VersionBlocked --> CatalogHidden : catalog query excludes blocked versions
+  VersionDeprecated --> CatalogHidden : catalog query requires approved version
+}

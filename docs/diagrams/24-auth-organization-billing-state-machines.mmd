@@ -1,0 +1,155 @@
+stateDiagram-v2
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0007_phase_seven_security.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0010_v2_phase_five_billing_quota.sql
+%% Evidence: backend/migrations/0011_v2_phase_six_stripe_billing.sql
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/services/jwt.rs
+%% Evidence: backend/src/services/security.rs
+%% Evidence: backend/src/routes/organizations.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/services/quota.rs
+%% Evidence: backend/src/services/stripe_billing.rs
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: frontend/src/pages/OrganizationPage.tsx
+%% Evidence: frontend/src/pages/BillingPage.tsx
+
+state "Authentication Session [IMPLEMENTED]" as AuthenticationSession {
+  state "Unauthenticated" as AuthUnauthenticated
+  state "Registered User" as AuthRegistered
+  state "Login Attempt" as AuthLoginAttempt
+  state "Login Failure Recorded" as AuthLoginFailure
+  state "Rate Limited\nTooManyRequests" as AuthRateLimited
+  state "Access Token Issued\nJWT exp only" as AuthAccessTokenIssued
+  state "Access Token Expired\nnot stored" as AuthAccessTokenExpired
+  state "Refresh Token Stored\nrefresh_tokens row" as AuthRefreshStored
+  state "Refresh Cookie Issued\nHttpOnly SameSite=Lax" as AuthRefreshCookie
+  state "Refresh Rotation Requested" as AuthRefreshRequested
+  state "Old Refresh Revoked\nrevoked_at set" as AuthOldRefreshRevoked
+  state "Invalid Refresh\nnot found or revoked" as AuthInvalidRefresh
+  state "Expired Refresh\nexpires_at <= now" as AuthExpiredRefresh
+  state "Replay Handling\nold token reused" as AuthReplay
+  state "Logout\nrefresh revoked if present" as AuthLogout
+
+  [*] --> AuthUnauthenticated
+  AuthUnauthenticated --> AuthRegistered : POST /api/auth/register; validate input, hash password, create user role, attach default organization membership
+  AuthRegistered --> AuthAccessTokenIssued : issue_auth_response; sign JWT with jwt_access_expiry
+  AuthUnauthenticated --> AuthLoginAttempt : POST /api/auth/login; require_login_allowed checks failed attempts by IP window
+  AuthLoginAttempt --> AuthRateLimited : failed_count at or above configured max; no credential check
+  AuthLoginAttempt --> AuthLoginFailure : unknown user or password mismatch; insert login_attempts succeeded=false
+  AuthLoginFailure --> AuthUnauthenticated : 401 invalid email or password
+  AuthLoginAttempt --> AuthAccessTokenIssued : valid active user and password; insert login_attempts succeeded=true
+  AuthAccessTokenIssued --> AuthRefreshStored : INSERT refresh_tokens token_hash, expires_at; refresh lifetime stored in database
+  AuthRefreshStored --> AuthRefreshCookie : Set-Cookie zinhar_refresh_token; response body omits refresh_token
+  AuthAccessTokenIssued --> AuthAccessTokenExpired : JWT exp reached; backend rejects bearer token as token expired
+  AuthRefreshStored --> AuthRefreshRequested : POST /api/auth/refresh; cookie or JSON refresh token
+  AuthRefreshRequested --> AuthOldRefreshRevoked : token_hash found, revoked_at is null, refresh not expired, user active; UPDATE revoked_at=now
+  AuthOldRefreshRevoked --> AuthAccessTokenIssued : issue replacement access token and new refresh_tokens row
+  AuthOldRefreshRevoked --> AuthReplay : old token submitted again after rotation
+  AuthReplay --> AuthInvalidRefresh : WHERE revoked_at IS NULL fails; 401 invalid refresh token
+  AuthRefreshRequested --> AuthInvalidRefresh : missing, unknown, revoked, or inactive-user token; 401 invalid refresh token
+  AuthRefreshRequested --> AuthExpiredRefresh : existing token is past expires_at; 401 invalid refresh token
+  AuthRefreshStored --> AuthLogout : POST /api/auth/logout; requires bearer token, optional refresh token from cookie/body
+  AuthLogout --> AuthUnauthenticated : revoke matching refresh row if present and clear refresh cookie
+
+  note right of AuthAccessTokenIssued
+    Access tokens are signed JWTs and are not database rows.
+    Refresh tokens are hashed database rows with expires_at and optional revoked_at.
+    There is no token family or replacement pointer column.
+  end note
+}
+
+state "Organization Invitation And Membership [IMPLEMENTED WITH SCHEMA-ONLY GAPS]" as OrganizationMembershipLifecycle {
+  state "Organization Active\norganization_status=active" as OrgActive
+  state "Organization Suspended\norganization_status=suspended\n[SCHEMA ONLY]" as OrgSuspended
+  state "Organization Deleted\norganization_status=deleted\n[SCHEMA ONLY]" as OrgDeleted
+  state "Invitation Pending\norganization_invitation_status=pending" as InvitePending
+  state "Invitation Accepted\norganization_invitation_status=accepted" as InviteAccepted
+  state "Invitation Revoked\norganization_invitation_status=revoked" as InviteRevoked
+  state "Invitation Expired\norganization_invitation_status=expired" as InviteExpired
+  state "Membership Active\norganization_member_status=active" as MemberActive
+  state "Membership Invited\norganization_member_status=invited\n[SCHEMA ONLY]" as MemberInvited
+  state "Membership Suspended\norganization_member_status=suspended\n[SCHEMA ONLY]" as MemberSuspended
+  state "Membership Removed\nrow deleted" as MemberRemoved
+  state "Workspace Selected\nlocalStorage active org" as WorkspaceSelected
+  state "Tenant Context Established\nX-Organization-Id accepted" as TenantContextReady
+  state "Tenant Context Denied" as TenantContextDenied
+
+  [*] --> OrgActive : create organization or default organization seed; status active
+  OrgActive --> MemberActive : create organization; owner membership active; default subscription seeded
+  OrgActive --> InvitePending : POST /api/organizations/current/invitations; role owner/admin, quota member capacity, token_hash, expires_at
+  InvitePending --> InviteAccepted : POST /api/organization-invitations/accept; pending token, expires_at > now, email matches active user
+  InviteAccepted --> MemberActive : upsert organization_members status active, role from invitation, joined_at set
+  InvitePending --> InviteRevoked : DELETE /api/organizations/current/invitations/{invitation_id}; only pending invitations
+  InvitePending --> InviteExpired : list invitations calls expire_pending_invitations; pending and expires_at <= now
+  MemberActive --> MemberActive : PATCH member role or transfer ownership; status remains active
+  MemberActive --> MemberRemoved : DELETE member or POST /leave; row deleted, last owner protected
+  MemberActive --> WorkspaceSelected : frontend stores zinhar.active_organization_id
+  WorkspaceSelected --> TenantContextReady : request sends X-Organization-Id; tenant middleware finds active org and active membership
+  WorkspaceSelected --> TenantContextDenied : missing/invalid header, inactive organization, inactive membership, or non-member user
+  OrgSuspended --> TenantContextDenied : tenant middleware requires organization_status=active
+  OrgDeleted --> TenantContextDenied : tenant middleware requires organization_status=active
+  MemberSuspended --> TenantContextDenied : tenant middleware requires organization_member_status=active
+  MemberInvited --> TenantContextDenied : tenant middleware requires organization_member_status=active
+
+  note right of MemberSuspended
+    The enum includes invited and suspended membership statuses,
+    but current routes create, activate, update roles, or delete rows.
+    No route was found that sets invited or suspended on organization_members.
+  end note
+}
+
+state "Billing Subscription [IMPLEMENTED WITH STRIPE PARTIALS]" as BillingSubscriptionLifecycle {
+  state "No Subscription\ntransient before default seed" as BillingNone
+  state "Active\norganization_subscription_status=active" as BillingActive
+  state "Trialing\norganization_subscription_status=trialing" as BillingTrialing
+  state "Past Due\norganization_subscription_status=past_due" as BillingPastDue
+  state "Incomplete\norganization_subscription_status=incomplete" as BillingIncomplete
+  state "Canceled\norganization_subscription_status=canceled" as BillingCanceled
+  state "Checkout Created\nStripe session, no local subscription update yet" as BillingCheckoutCreated
+  state "Plan Changed\nmanual provider active" as BillingPlanChanged
+  state "Cancellation Scheduled\ncancel_at_period_end=true" as BillingCancellationScheduled
+  state "Quota Enforced\nplan limits applied" as BillingQuotaEnforced
+  state "Free Plan Fallback\ncurrent plan resolves to free" as BillingFreeFallback
+  state "Billing Event Processing\nbilling_events.status=processing" as BillingEventProcessing
+  state "Billing Event Processed\nbilling_events.status=processed" as BillingEventProcessed
+  state "Billing Event Ignored\nbilling_events.status=ignored" as BillingEventIgnored
+  state "Billing Event Failed\nbilling_events.status=failed" as BillingEventFailed
+  state "Duplicate Stripe Event\nAPI result already_processed" as BillingDuplicate
+  state "Stale Stripe Event\nolder provider_event_created_at ignored" as BillingStale
+
+  [*] --> BillingNone
+  BillingNone --> BillingActive : organization create or ensure_default_subscription; free plan, provider manual
+  BillingActive --> BillingPlanChanged : PUT /api/billing/subscription; role owner/admin/billing_manager, plan slug valid
+  BillingPlanChanged --> BillingActive : upsert organization_subscriptions status active, provider manual, cancel_at_period_end=false
+  BillingActive --> BillingCheckoutCreated : POST /api/billing/checkout; Stripe checkout session returned, audit recorded
+  BillingCheckoutCreated --> BillingEventProcessing : Stripe webhook checkout.session.completed; insert billing_events processing
+  BillingEventProcessing --> BillingActive : checkout.session.completed processed; provider stripe, plan from metadata, status active
+  BillingEventProcessing --> BillingTrialing : customer.subscription.updated; Stripe trialing maps to trialing
+  BillingEventProcessing --> BillingActive : customer.subscription.updated; Stripe active maps to active
+  BillingEventProcessing --> BillingPastDue : customer.subscription.updated; Stripe past_due or unpaid maps to past_due
+  BillingEventProcessing --> BillingIncomplete : customer.subscription.updated; unknown/incomplete Stripe status maps to incomplete
+  BillingEventProcessing --> BillingCanceled : customer.subscription.deleted or Stripe canceled maps to canceled
+  BillingTrialing --> BillingCancellationScheduled : subscription event has cancel_at_period_end=true
+  BillingActive --> BillingCancellationScheduled : subscription event has cancel_at_period_end=true
+  BillingPastDue --> BillingCancellationScheduled : subscription event has cancel_at_period_end=true
+  BillingEventProcessing --> BillingEventProcessed : recognized event applied
+  BillingEventProcessing --> BillingEventIgnored : unrecognized event or stale subscription event
+  BillingEventProcessing --> BillingEventFailed : validation or processing error, event row updated failed
+  BillingEventProcessing --> BillingStale : provider_event_created_at older than stored subscription timestamp
+  BillingStale --> BillingEventIgnored : local subscription row not changed
+  [*] --> BillingDuplicate : Stripe webhook with existing provider/provider_event_id; ON CONFLICT DO NOTHING
+  BillingDuplicate --> [*] : response status already_processed; no new billing_events row
+  BillingTrialing --> BillingQuotaEnforced : load_current_plan accepts trialing
+  BillingActive --> BillingQuotaEnforced : load_current_plan accepts active
+  BillingPastDue --> BillingQuotaEnforced : load_current_plan accepts past_due
+  BillingIncomplete --> BillingFreeFallback : load_current_plan does not accept incomplete
+  BillingCanceled --> BillingFreeFallback : load_current_plan does not accept canceled
+
+  note right of BillingPastDue
+    unpaid is a Stripe input status, not an internal enum value.
+    The service maps Stripe unpaid to organization_subscription_status=past_due.
+  end note
+}
