@@ -1,0 +1,117 @@
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0002_seed_foundation_data.sql
+%% Evidence: backend/migrations/0003_phase_one_core.sql
+%% Evidence: backend/migrations/0007_phase_seven_security.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0012_v2_phase_seven_saas_ops.sql
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/services/jwt.rs
+%% Evidence: backend/src/services/password.rs
+%% Evidence: backend/src/services/security.rs
+%% Evidence: backend/src/services/audit.rs
+%% [IMPLEMENTED] Final schema is migration-authoritative through 0018.
+%% Access tokens are signed JWTs from backend/src/services/jwt.rs and are not database rows.
+%% Refresh-token rotation is implemented in backend/src/routes/auth.rs by revoking the used refresh_tokens row and inserting a new row.
+%% refresh_tokens has no token_family, replaced_by_token_id, or last_used_at column in the current schema.
+%% login_attempts stores per-attempt records; failed-login counters are computed by query, not stored as counters.
+erDiagram
+  users {
+    UUID id PK "0001 default gen_random_uuid()"
+    CITEXT email UK "0001 NOT NULL UNIQUE; idx_users_email"
+    TEXT password_hash "0001 NOT NULL; Argon2 hash"
+    TEXT name "0001 NOT NULL"
+    TEXT avatar_url "0001 nullable"
+    BOOLEAN is_active "0001 NOT NULL DEFAULT TRUE"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0001 NOT NULL DEFAULT now()"
+  }
+
+  roles {
+    UUID id PK "0001 default gen_random_uuid()"
+    TEXT name UK "0001 NOT NULL UNIQUE; seeded super_admin, admin, editor, author, viewer"
+    TEXT_ARRAY permissions "0001 NOT NULL DEFAULT empty array; metadata, not dynamic runtime engine"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0001 NOT NULL DEFAULT now()"
+  }
+
+  user_roles {
+    UUID user_id PK, FK "0001 REFERENCES users(id) ON DELETE CASCADE"
+    UUID role_id PK, FK "0001 REFERENCES roles(id) ON DELETE CASCADE; idx_user_roles_role_id"
+    TIMESTAMPTZ assigned_at "0001 NOT NULL DEFAULT now()"
+  }
+
+  refresh_tokens {
+    UUID id PK "0001 default gen_random_uuid()"
+    UUID user_id FK "0001 NOT NULL REFERENCES users(id) ON DELETE CASCADE; idx_refresh_tokens_user_id"
+    TEXT token_hash UK "0001 NOT NULL UNIQUE; SHA-256 hash of refresh token"
+    TIMESTAMPTZ expires_at "0001 NOT NULL"
+    TIMESTAMPTZ revoked_at "0001 nullable; set during refresh or logout"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now()"
+  }
+
+  login_attempts {
+    UUID id PK "0007 default gen_random_uuid()"
+    CITEXT email "0007 NOT NULL; no FK to users"
+    TEXT ip_address "0007 NOT NULL"
+    BOOLEAN succeeded "0007 NOT NULL DEFAULT FALSE"
+    TIMESTAMPTZ attempted_at "0007 NOT NULL DEFAULT now()"
+  }
+
+  organizations {
+    UUID id PK "0008 default gen_random_uuid()"
+    TEXT name "0008 NOT NULL; organizations_name_not_empty"
+    TEXT slug UK "0008 NOT NULL UNIQUE; organizations_slug_format"
+    organization_status status "0008 active, suspended, deleted; DEFAULT active"
+    UUID owner_id FK "0008 REFERENCES users(id) ON DELETE SET NULL"
+    JSONB settings "0008 NOT NULL DEFAULT object; organizations_settings_object"
+    TIMESTAMPTZ created_at "0008 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0008 NOT NULL DEFAULT now()"
+  }
+
+  organization_members {
+    UUID organization_id PK, FK "0008 REFERENCES organizations(id) ON DELETE CASCADE"
+    UUID user_id PK, FK "0008 REFERENCES users(id) ON DELETE CASCADE; idx_organization_members_user"
+    organization_member_role role "0008 owner, admin, editor, author, viewer, billing_manager"
+    organization_member_status status "0008 active, invited, suspended; DEFAULT active"
+    UUID invited_by FK "0008 REFERENCES users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ joined_at "0008 nullable"
+    TIMESTAMPTZ created_at "0008 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0008 NOT NULL DEFAULT now()"
+  }
+
+  organization_invitations {
+    UUID id PK "0008 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL REFERENCES organizations(id) ON DELETE CASCADE"
+    CITEXT email "0008 NOT NULL; organization_invitations_email_not_empty"
+    organization_member_role role "0008 DEFAULT viewer"
+    TEXT token_hash UK "0008 NOT NULL UNIQUE"
+    UUID invited_by FK "0008 REFERENCES users(id) ON DELETE SET NULL"
+    organization_invitation_status status "0008 pending, accepted, revoked, expired; DEFAULT pending"
+    TIMESTAMPTZ expires_at "0008 NOT NULL"
+    TIMESTAMPTZ accepted_at "0008 nullable"
+    TIMESTAMPTZ created_at "0008 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0008 NOT NULL DEFAULT now()"
+  }
+
+  audit_logs {
+    UUID id PK "0012 default gen_random_uuid()"
+    UUID organization_id FK "0012 NOT NULL REFERENCES organizations(id) ON DELETE CASCADE; RLS tenant-owned"
+    UUID actor_id FK "0012 REFERENCES users(id) ON DELETE SET NULL; idx_audit_logs_actor"
+    TEXT action "0012 NOT NULL; audit_logs_action_not_empty"
+    TEXT entity_type "0012 NOT NULL; audit_logs_entity_type_not_empty"
+    UUID entity_id "0012 nullable polymorphic entity id"
+    JSONB metadata "0012 NOT NULL DEFAULT object; audit_logs_metadata_object"
+    TIMESTAMPTZ created_at "0012 NOT NULL DEFAULT now(); idx_audit_logs_org_created"
+  }
+
+  users ||--o{ user_roles : "user_id CASCADE"
+  roles ||--o{ user_roles : "role_id CASCADE"
+  users ||--o{ refresh_tokens : "user_id CASCADE"
+  users |o--o{ organizations : "owner_id SET NULL"
+  organizations ||--o{ organization_members : "organization_id CASCADE"
+  users ||--o{ organization_members : "user_id CASCADE"
+  users |o--o{ organization_members : "invited_by SET NULL"
+  organizations ||--o{ organization_invitations : "organization_id CASCADE"
+  users |o--o{ organization_invitations : "invited_by SET NULL"
+  organizations ||--o{ audit_logs : "organization_id CASCADE"
+  users |o--o{ audit_logs : "actor_id SET NULL"

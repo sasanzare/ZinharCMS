@@ -595,3 +595,111 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Audit updated: Localization row now references incomplete UI translation coverage and content/API localization limits.
 - State/API decisions represented: refresh is method-only in the frontend with no automatic interceptor; `X-Organization-Id` is added for `auth: true` requests when an active organization exists; delivery and Stripe webhook routes remain outside admin-page API flow.
 - Production behavior changed: No.
+
+## AMB-033
+
+- ID: AMB-033
+- Domain: Settings Tenancy
+- Exact question: Are public settings global, or are they scoped per organization in the final schema?
+- Documentation claim: Delivery documentation describes public settings as a delivery API surface, and early schema creates `public_settings` with `key` as the primary key.
+- Implementation evidence: `backend/src/routes/delivery.rs` reads settings for the default public organization and filters by `organization_id` and `is_public = TRUE`.
+- Database evidence: `backend/migrations/0005_phase_five_delivery_api.sql` creates `public_settings(key, value, is_public, updated_at)`. `backend/migrations/0008_v2_phase_one_organizations.sql` adds `organization_id`, sets it NOT NULL, adds `public_settings_organization_id_fkey`, drops the key-only primary key, and creates `PRIMARY KEY (organization_id, key)`. `backend/migrations/0009_v2_phase_three_rls.sql` enables forced tenant RLS.
+- Frontend evidence: No dedicated admin settings editor for `public_settings` was found in the current React pages.
+- Test evidence: No dedicated settings tenancy test was found.
+- Conflict or missing information: Early schema and delivery naming can look global, but later migrations make settings tenant-owned.
+- Safest interpretation: Treat `public_settings` as tenant-scoped data with public delivery exposure for the selected delivery organization.
+- Representation to use in diagrams: Use `public_settings.organization_id` as part of the primary key and mark settings tenancy as `[IMPLEMENTED]`.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `14-core-content-data-model.mmd`, future delivery and tenant data diagrams.
+
+## AMB-034
+
+- ID: AMB-034
+- Domain: Navigation Implementation
+- Exact question: Is navigation a real database-backed feature or only a delivery/documentation concept?
+- Documentation claim: Delivery documentation describes navigation output.
+- Implementation evidence: `backend/src/routes/delivery.rs` exposes `/api/v1/navigation` and queries `navigation_items` by `organization_id`, `is_public`, optional `locale`, and ordering.
+- Database evidence: `backend/migrations/0005_phase_five_delivery_api.sql` creates `navigation_items` with `parent_id`, `position`, `locale`, and `is_public`. `backend/migrations/0008_v2_phase_one_organizations.sql` adds tenant ownership, and `backend/migrations/0009_v2_phase_three_rls.sql` forces RLS.
+- Frontend evidence: No current admin UI for editing `navigation_items` was found in the inspected pages.
+- Test evidence: No dedicated navigation management test was found.
+- Conflict or missing information: Navigation storage and delivery are implemented, but management UI/runtime mutation endpoints are not evident.
+- Safest interpretation: Treat navigation as implemented for storage and delivery, with management tooling not represented unless future code adds it.
+- Representation to use in diagrams: Use `[IMPLEMENTED]` for the `navigation_items` table and delivery read path, and avoid drawing a navigation editor.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `14-core-content-data-model.mmd`, future delivery API diagrams.
+
+## AMB-035
+
+- ID: AMB-035
+- Domain: Slug Uniqueness Scope
+- Exact question: Are content slugs globally unique, tenant-scoped, or only application-level values?
+- Documentation claim: Early schema uses unique slugs for content types and pages; V2 documentation introduces tenant isolation.
+- Implementation evidence: `backend/src/routes/content.rs` queries `content_types` by `(organization_id, slug)` and delivery resolves entries by `content_entries.data ->> 'slug'` without a SQL uniqueness constraint.
+- Database evidence: `backend/migrations/0001_initial_schema.sql` creates `content_types.slug UNIQUE` and `pages.slug UNIQUE`; `backend/migrations/0008_v2_phase_one_organizations.sql` drops those global unique constraints and adds `content_types_organization_slug_unique` and `pages_organization_slug_unique`. No SQL unique constraint exists for `content_entries.data ->> 'slug'`.
+- Frontend evidence: Entry forms store dynamic field data, including optional slug fields, inside JSON data rather than a dedicated entry slug column.
+- Test evidence: No test was found proving entry JSON slug uniqueness.
+- Conflict or missing information: Content type and page slug uniqueness is SQL-enforced per organization; entry slugs are delivery/application conventions.
+- Safest interpretation: Diagram content type slug as tenant-scoped unique and entry JSON slug as not SQL-enforced.
+- Representation to use in diagrams: Use `[IMPLEMENTED] UNIQUE (organization_id, slug)` for `content_types`; note JSON `data.slug` as an unenforced assumption.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `14-core-content-data-model.mmd`, future delivery and content diagrams.
+
+## AMB-036
+
+- ID: AMB-036
+- Domain: Status Storage Type
+- Exact question: Are status fields stored as PostgreSQL enums or text with check constraints?
+- Documentation claim: Workflow documentation uses named statuses but does not always distinguish SQL enum from text checks.
+- Implementation evidence: `backend/src/services/workflow.rs` models core content workflow as `WorkflowStatus` with `draft`, `pending_review`, `published`, and `archived`.
+- Database evidence: `backend/migrations/0001_initial_schema.sql` creates `content_status` and `page_status` enums. `backend/migrations/0006_phase_six_workflow_collaboration.sql` adds `pending_review` to both. Later V2/V3 status fields such as beta, billing events, and Marketplace statuses are mostly `TEXT` columns with check constraints.
+- Frontend evidence: Frontend pages display status strings returned by API responses.
+- Test evidence: Workflow service tests cover core transition behavior, not every text status check.
+- Conflict or missing information: A status label alone does not prove enum storage.
+- Safest interpretation: Treat `content_entries.status` as `content_status`; treat later non-core status columns as text with SQL checks unless a migration creates an enum.
+- Representation to use in diagrams: Copy the exact SQL type for each included table and list enum values only where enum types exist.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `14-core-content-data-model.mmd`, future workflow and Marketplace data diagrams.
+
+## AMB-037
+
+- ID: AMB-037
+- Domain: Ownership Delete Behavior
+- Exact question: Does deleting a user delete authored content, or are ownership references preserved as nullable metadata?
+- Documentation claim: Product docs describe author/owner relationships but do not define all delete actions.
+- Implementation evidence: Route code records `created_by`, `author_id`, `owner_id`, `invited_by`, and `actor_id` as metadata references and depends on organization membership for active access.
+- Database evidence: `backend/migrations/0001_initial_schema.sql` uses `ON DELETE SET NULL` for `content_types.created_by`, `content_entries.author_id`, and other user-owned references; `backend/migrations/0008_v2_phase_one_organizations.sql` uses `ON DELETE CASCADE` for tenant-owned rows through `organization_id`; `backend/migrations/0012_v2_phase_seven_saas_ops.sql` uses `audit_logs.actor_id REFERENCES users(id) ON DELETE SET NULL`.
+- Frontend evidence: Admin pages display user/account and organization context but do not define delete semantics.
+- Test evidence: No broad delete-behavior test matrix was found.
+- Conflict or missing information: Ownership labels can imply cascade from user, but SQL generally preserves content and nulls user metadata.
+- Safest interpretation: Organization deletion cascades tenant-owned data; user deletion cascades join/token rows and nulls authored/actor metadata for content/audit records.
+- Representation to use in diagrams: Put delete action in relationship labels and avoid implying user-owned content cascade unless SQL says `ON DELETE CASCADE`.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `13-identity-auth-data-model.mmd`, `14-core-content-data-model.mmd`, future organization and audit diagrams.
+
+## AMB-038
+
+- ID: AMB-038
+- Domain: Application Constraints Not Enforced In SQL
+- Exact question: Which content rules are enforced by Rust code rather than SQL constraints?
+- Documentation claim: Content modeling documentation describes field types, validation, workflow, entry slugs, and delivery filters as CMS behavior.
+- Implementation evidence: `backend/src/services/entry_validation.rs` validates supported field types, required fields, value types, slug format, numeric ranges, and references. `backend/src/services/security.rs` sanitizes rich text. `backend/src/services/workflow.rs` enforces transition rules. `backend/src/routes/delivery.rs` treats `content_entries.data ->> 'slug'` and `content_entries.data ->> 'locale'` as delivery conventions.
+- Database evidence: `backend/migrations/0001_initial_schema.sql` enforces JSON object shape and `version > 0`, but does not enforce dynamic field schemas, field-level required values, JSON slug uniqueness, JSON locale values, or workflow transition paths.
+- Frontend evidence: Dynamic form and content pages shape data according to content type definitions, but frontend controls are not database constraints.
+- Test evidence: Unit tests cover selected validation, sanitization, and workflow helpers, but no SQL constraint exists for those application-level rules.
+- Conflict or missing information: Some content rules are real runtime behavior but not encoded in final SQL schema.
+- Safest interpretation: Show only SQL-enforced constraints as schema constraints; document Rust-enforced rules as application constraints.
+- Representation to use in diagrams: Use comments for application-level validation and avoid modeling JSON fields as relational columns.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `14-core-content-data-model.mmd`, future content validation and delivery diagrams.
+
+## Step 11 Identity And Core Content Data Model Update
+
+- Ambiguities added in step 11: AMB-033, AMB-034, AMB-035, AMB-036, AMB-037, AMB-038.
+- Schema decisions represented: access tokens are not database entities; refresh tokens rotate by row revocation plus new insert; settings and navigation are tenant-owned after migration 0008; content type slugs are tenant-scoped; entry JSON slugs are not SQL-unique.
+- Production behavior changed: No.

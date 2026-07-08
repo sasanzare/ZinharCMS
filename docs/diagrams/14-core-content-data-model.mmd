@@ -1,0 +1,78 @@
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0005_phase_five_delivery_api.sql
+%% Evidence: backend/migrations/0006_phase_six_workflow_collaboration.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+%% Evidence: backend/src/routes/content.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/services/entry_validation.rs
+%% Evidence: backend/src/services/workflow.rs
+%% [IMPLEMENTED] Core content schema is tenant-owned after migration 0008 and RLS-protected after migration 0009.
+%% content_status final enum: draft, pending_review, published, archived. Created in 0001; pending_review added in 0006.
+%% page_status also exists for pages, but pages/page_versions are page-builder tables and are intentionally outside this core-content ERD.
+%% Entry field-schema validation, data-field typing, JSON data.slug uniqueness, delivery locale semantics, and workflow transition rules are application constraints, not SQL constraints.
+erDiagram
+  organizations {
+    UUID id PK "0008 tenant owner table"
+    TEXT slug UK "0008 global UNIQUE organization workspace slug"
+    organization_status status "0008 active, suspended, deleted"
+  }
+
+  users {
+    UUID id PK "0001 identity owner reference"
+    CITEXT email UK "0001 unique account email"
+  }
+
+  content_types {
+    UUID id PK "0001 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL DEFAULT app_default_organization_id(); REFERENCES organizations(id) ON DELETE CASCADE"
+    TEXT name "0001 NOT NULL; application validates non-empty"
+    TEXT slug "0001 NOT NULL; content_types_slug_format"
+    JSONB fields "0001 NOT NULL DEFAULT object; content_types_fields_object"
+    UUID created_by FK "0001 REFERENCES users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now(); idx_content_types_organization_created"
+    TIMESTAMPTZ updated_at "0001 NOT NULL DEFAULT now()"
+  }
+
+  content_entries {
+    UUID id PK "0001 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL REFERENCES organizations(id) ON DELETE CASCADE; trigger set_content_entry_organization_id"
+    UUID type_id FK "0001 NOT NULL REFERENCES content_types(id) ON DELETE CASCADE"
+    JSONB data "0001 NOT NULL DEFAULT object; content_entries_data_object; idx_content_entries_data_gin"
+    content_status status "0001 DEFAULT draft; 0006 adds pending_review"
+    INTEGER version "0001 NOT NULL DEFAULT 1; content_entries_version_positive"
+    UUID author_id FK "0001 REFERENCES users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ published_at "0001 nullable; set by workflow publish"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0001 NOT NULL DEFAULT now(); idx_content_entries_org_updated"
+  }
+
+  public_settings {
+    UUID organization_id PK, FK "0008 REFERENCES organizations(id) ON DELETE CASCADE; RLS tenant-owned"
+    TEXT key PK "0005 key; public_settings_key_format; PK changed from key to organization_id,key in 0008"
+    JSONB value "0005 NOT NULL"
+    BOOLEAN is_public "0005 NOT NULL DEFAULT TRUE"
+    TIMESTAMPTZ updated_at "0005 NOT NULL DEFAULT now()"
+  }
+
+  navigation_items {
+    UUID id PK "0005 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL DEFAULT app_default_organization_id(); REFERENCES organizations(id) ON DELETE CASCADE"
+    TEXT label "0005 NOT NULL; navigation_label_not_empty"
+    TEXT url "0005 NOT NULL; navigation_url_not_empty"
+    UUID parent_id FK "0005 REFERENCES navigation_items(id) ON DELETE CASCADE"
+    INTEGER position "0005 NOT NULL DEFAULT 0"
+    TEXT locale "0005 NOT NULL DEFAULT fa; navigation_locale_format"
+    BOOLEAN is_public "0005 NOT NULL DEFAULT TRUE"
+    TIMESTAMPTZ created_at "0005 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0005 NOT NULL DEFAULT now()"
+  }
+
+  organizations ||--o{ content_types : "organization_id CASCADE"
+  users |o--o{ content_types : "created_by SET NULL"
+  content_types ||--o{ content_entries : "type_id CASCADE"
+  organizations ||--o{ content_entries : "organization_id CASCADE"
+  users |o--o{ content_entries : "author_id SET NULL"
+  organizations ||--o{ public_settings : "organization_id CASCADE"
+  organizations ||--o{ navigation_items : "organization_id CASCADE"
+  navigation_items |o--o{ navigation_items : "parent_id CASCADE"
