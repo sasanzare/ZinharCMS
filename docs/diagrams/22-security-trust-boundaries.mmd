@@ -1,0 +1,123 @@
+flowchart TD
+%% Evidence: backend/src/main.rs
+%% Evidence: backend/src/middleware/auth.rs
+%% Evidence: backend/src/middleware/security.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/routes/media.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/services/entry_validation.rs
+%% Evidence: backend/src/services/jwt.rs
+%% Evidence: backend/src/services/marketplace_manifest.rs
+%% Evidence: backend/src/services/marketplace_package.rs
+%% Evidence: backend/src/services/marketplace_validation.rs
+%% Evidence: backend/src/services/password.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/src/services/security.rs
+%% Evidence: backend/src/services/stripe_billing.rs
+%% Evidence: backend/src/services/webhooks.rs
+%% Evidence: frontend/src/stores/useAppStore.ts
+
+subgraph browser_zone["Browser Boundary"]
+  browser_storage["Browser localStorage [IMPLEMENTED]<br/>access token, optional refresh fallback, user, organizations, active organization"]
+  refresh_cookie["Refresh cookie [IMPLEMENTED]<br/>zinhar_refresh_token; HttpOnly; SameSite=Lax; Path=/api/auth; Secure when configured"]
+  untrusted_inputs["Untrusted browser input [IMPLEMENTED]<br/>JSON forms, rich text, multipart files, ZIP packages, webhook URLs"]
+  frontend_guards["Frontend guards and navigation hiding [PARTIAL]<br/>RequireAuth and role-visible controls are UX only"]
+end
+
+subgraph ingress_boundary["HTTP Ingress And Middleware Boundary"]
+  cors["Credentialed CORS [IMPLEMENTED]<br/>configured origin, Authorization, Content-Type, X-Organization-Id"]
+  request_id["Request ID and tracing [IMPLEMENTED]<br/>x-request-id propagation and trace layer"]
+  timeout["Request timeout [IMPLEMENTED]<br/>Tower timeout returns 408"]
+  headers["Security headers and CSP [IMPLEMENTED]<br/>CSP, nosniff, same-origin referrer, DENY frame options, permissions policy"]
+  body_limit["Body-size boundary [IMPLEMENTED]<br/>tenant routes use DefaultBodyLimit<br/>media and Marketplace package sizes are checked again"]
+end
+
+subgraph auth_boundary["Authentication Boundary"]
+  password_hash["Password hashing [IMPLEMENTED]<br/>Argon2 verify and hash"]
+  login_limit["Login rate limiting [IMPLEMENTED]<br/>login_attempts table; IP-based failed-attempt window"]
+  access_token["Access token verification [IMPLEMENTED]<br/>Bearer JWT checked by auth and tenant middleware"]
+  refresh_rotation["Refresh-token rotation [IMPLEMENTED]<br/>server stores refresh token hashes<br/>old token revoked on refresh"]
+end
+
+subgraph validation_boundary["Validation Boundary"]
+  schema_validation["Content schema and entry validation [IMPLEMENTED]<br/>field schemas, required fields, types, slug rules"]
+  richtext_sanitize["Rich-text sanitization [IMPLEMENTED]<br/>dangerous blocks removed; unsupported tags and attributes stripped"]
+  page_json_validation["Page JSON validation [IMPLEMENTED]<br/>layout object, depth, node count, component key allowlist, metadata types"]
+  media_validation["Media upload validation [IMPLEMENTED]<br/>MIME allowlist, file-signature detection, declared/detected type match"]
+  package_validation["Marketplace package validation [IMPLEMENTED]<br/>manifest schema, product type, permissions, size, checksum, object key"]
+  zip_validation["ZIP path and security scan [IMPLEMENTED]<br/>relative UTF-8 paths only; no unsafe segments; forbidden secrets and executable artifacts flagged"]
+  webhook_ssrf["Webhook URL SSRF validation [IMPLEMENTED]<br/>http/https only; no credentials; localhost/private/link-local hosts rejected"]
+  stripe_signature["Stripe signature verification [IMPLEMENTED]<br/>HMAC SHA-256 with timestamp tolerance"]
+end
+
+subgraph authorization_boundary["Authorization And Tenant Boundary"]
+  auth_middleware["Backend auth middleware [IMPLEMENTED]<br/>authoritative JWT boundary for auth-only routes"]
+  tenant_middleware["Tenant middleware [IMPLEMENTED]<br/>X-Organization-Id, active membership, rate limit, API quota"]
+  rbac_checks["RBAC checks [IMPLEMENTED]<br/>global role and organization-role service checks in handlers"]
+  rls_policies["PostgreSQL RLS [IMPLEMENTED]<br/>forced policies on tenant-owned tables"]
+  bypass_tx["Explicit RLS bypass [PARTIAL] AMB-005<br/>only service code using begin_bypass_transaction sets rls_bypass=true"]
+end
+
+subgraph persistence_boundary["Persistence Boundary"]
+  postgres["PostgreSQL [IMPLEMENTED]<br/>users, tokens, tenant data, audit logs, Marketplace metadata"]
+  redis["Redis [IMPLEMENTED]<br/>delivery cache and rate-limit counters<br/>cache fallback exists only for delivery cache"]
+  local_uploads["Local CMS upload storage [IMPLEMENTED]<br/>media files and variants under upload_dir"]
+  local_artifacts["Local Marketplace artifact storage [DECISION REQUIRED] AMB-002 AMB-015<br/>packages stored under upload_dir by object key<br/>cleanup after validation/persistence failure is not proven"]
+  audit_logs["Audit logs [IMPLEMENTED]<br/>sensitive organization, billing, and Marketplace actions"]
+end
+
+subgraph external_boundary["External Network Boundary"]
+  webhook_hmac["Outbound webhook signing [IMPLEMENTED]<br/>X-CMS-Signature HMAC over JSON payload"]
+  webhook_receiver["External webhook consumer [EXTERNAL]<br/>receives signed events over HTTP"]
+  stripe_api["Stripe API and webhooks [EXTERNAL]<br/>checkout, portal, inbound signed events"]
+  email_integration["Email integration [PARTIAL]<br/>delivery records with log/disabled/webhook provider modes; no specific provider assumed"]
+end
+
+subgraph decision_risks["Decision-Required Trust Boundary Risks"]
+  static_uploads["Static /uploads [DECISION REQUIRED] AMB-021<br/>ServeDir exposes upload_dir by path; DB RLS does not authorize file bytes"]
+  local_replica_risk["Local filesystem scaling risk [DECISION REQUIRED] AMB-002<br/>multiple backend replicas need shared uploads/artifacts or object storage decision"]
+  marketplace_runtime["Marketplace executable runtime [PLANNED] AMB-006<br/>packages are validated and reviewed, but executable plugin sandbox/runtime is not implemented"]
+end
+
+untrusted_inputs --> cors --> request_id --> timeout --> headers --> body_limit
+body_limit --> auth_middleware
+browser_storage --> access_token --> auth_middleware
+refresh_cookie --> refresh_rotation
+untrusted_inputs --> login_limit --> password_hash
+auth_middleware --> tenant_middleware --> rbac_checks --> rls_policies --> postgres
+tenant_middleware --> redis
+untrusted_inputs --> schema_validation --> postgres
+untrusted_inputs --> richtext_sanitize --> postgres
+untrusted_inputs --> page_json_validation --> postgres
+untrusted_inputs --> media_validation --> local_uploads
+untrusted_inputs --> package_validation --> zip_validation --> local_artifacts
+untrusted_inputs --> webhook_ssrf --> webhook_hmac --> webhook_receiver
+stripe_api --> stripe_signature --> bypass_tx --> postgres
+rbac_checks --> audit_logs --> postgres
+rls_policies --> audit_logs
+local_uploads -.-> static_uploads
+local_artifacts -.-> static_uploads
+frontend_guards -.-> auth_middleware
+local_uploads -.-> local_replica_risk
+local_artifacts -.-> local_replica_risk
+package_validation -.-> marketplace_runtime
+
+classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
+classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray: 2 4,color:#111;
+classDef decision fill:#fff0f6,stroke:#9b1b5a,stroke-width:3px,stroke-dasharray: 8 2 2 2,color:#111;
+classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
+classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
+classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111;
+classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111;
+
+class browser_storage,refresh_cookie,untrusted_inputs,frontend_guards frontend;
+class cors,request_id,timeout,headers,body_limit,password_hash,login_limit,access_token,refresh_rotation,schema_validation,richtext_sanitize,page_json_validation,media_validation,package_validation,zip_validation,webhook_ssrf,stripe_signature,auth_middleware,tenant_middleware,rbac_checks,rls_policies,bypass_tx,webhook_hmac backend;
+class postgres,redis,local_uploads,local_artifacts,audit_logs data;
+class webhook_receiver,stripe_api,email_integration external;
+class static_uploads,local_replica_risk decision;
+class marketplace_runtime planned;
+class frontend_guards,bypass_tx,email_integration partial;

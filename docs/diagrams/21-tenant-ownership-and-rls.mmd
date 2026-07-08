@@ -1,0 +1,81 @@
+flowchart TD
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+%% Evidence: backend/migrations/0010_v2_phase_five_billing_quota.sql
+%% Evidence: backend/migrations/0011_v2_phase_six_stripe_billing.sql
+%% Evidence: backend/migrations/0012_v2_phase_seven_saas_ops.sql
+%% Evidence: backend/migrations/0014_v2_phase_nine_beta_release.sql
+%% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/src/routes/mod.rs
+
+subgraph tenant_request_path["Tenant Request Path [IMPLEMENTED]"]
+  client["Admin/API client [IMPLEMENTED]<br/>Bearer access token"]
+  claims["User resolution [IMPLEMENTED]<br/>JWT claims from auth middleware or tenant middleware"]
+  org_header["Organization selector [IMPLEMENTED]<br/>X-Organization-Id header<br/>preview sockets may use organization_id query"]
+  membership["Membership lookup [IMPLEMENTED]<br/>organizations join organization_members"]
+  active_check["Active tenant check [IMPLEMENTED]<br/>organization status active<br/>membership status active"]
+  tenant_context["TenantContext extension [IMPLEMENTED]<br/>organization_id, user_id, org role"]
+  limiter["Tenant rate and API quota checks [IMPLEMENTED]<br/>billing routes are API-quota exempt"]
+  handler["Tenant route handler [IMPLEMENTED]<br/>content, media, pages, billing, beta, webhooks, marketplace"]
+  rls_service["RLS helper [IMPLEMENTED]<br/>tenant_connection or begin_tenant_transaction"]
+  session_context["PostgreSQL session context [IMPLEMENTED]<br/>zinhar.organization_id<br/>zinhar.user_id<br/>zinhar.rls_bypass=false"]
+  pg_policy["Forced PostgreSQL RLS policy [IMPLEMENTED]<br/>app_rls_tenant_matches or table-specific policy"]
+  scoped_rows["Tenant-scoped rows [IMPLEMENTED]<br/>cross-tenant rows rejected by PostgreSQL"]
+end
+
+client --> claims --> org_header --> membership --> active_check --> tenant_context --> limiter --> handler --> rls_service --> session_context --> pg_policy --> scoped_rows
+
+subgraph rls_tables["RLS-Protected Ownership Groups [IMPLEMENTED]"]
+  core_direct["Direct organization_id CMS tables [IMPLEMENTED]<br/>content_types, pages, media, webhooks<br/>public_settings, navigation_items"]
+  core_derived["Derived organization_id CMS tables [IMPLEMENTED]<br/>content_entries, page_versions, media_variants<br/>comments, webhook_deliveries<br/>triggers copy parent organization_id"]
+  components["component_registry [IMPLEMENTED]<br/>system rows selectable across tenants<br/>custom rows are tenant-owned and writable only by tenant"]
+  billing_quota["Billing and quota tenant tables [IMPLEMENTED]<br/>organization_subscriptions, usage_counters"]
+  ops_beta["Operations and beta tenant tables [IMPLEMENTED]<br/>organization_domains, organization_rate_limits<br/>audit_logs, saas_alert_rules<br/>beta_participants, beta_feedback, beta_ga_blockers"]
+  nullable_org["Nullable organization event tables [IMPLEMENTED]<br/>billing_events, email_deliveries<br/>tenant select/delete require non-null organization_id<br/>insert/update allow null or tenant match"]
+  installs["marketplace_installations [IMPLEMENTED]<br/>organization-owned Marketplace installation records"]
+end
+
+pg_policy --> core_direct
+pg_policy --> core_derived
+pg_policy --> components
+pg_policy --> billing_quota
+pg_policy --> ops_beta
+pg_policy --> nullable_org
+pg_policy --> installs
+
+subgraph rls_exceptions["Tenant Isolation Exceptions And Non-RLS Boundaries"]
+  public_system["Public system routes [IMPLEMENTED]<br/>/, /health, /ready, /openapi.json<br/>no tenant context"]
+  public_auth["Public auth routes [IMPLEMENTED]<br/>register, login, refresh<br/>global identity tables, no organization ownership"]
+  delivery["Public Delivery API [IMPLEMENTED]<br/>resolves organization and uses organization_connection<br/>RLS applies to published CMS data"]
+  stripe_webhook["Stripe webhook [IMPLEMENTED]<br/>public route with signature verification<br/>uses explicit RLS bypass transaction"]
+  static_uploads["Static /uploads [DECISION REQUIRED] AMB-021<br/>filesystem bytes served by path<br/>database RLS does not protect file access"]
+  global_tables["Global/application-filtered tables [PARTIAL] AMB-013<br/>users, roles, user_roles, refresh_tokens, login_attempts<br/>plans, cms_plugins, organizations, organization_members, organization_invitations"]
+  marketplace_platform["Marketplace platform entities [PARTIAL] AMB-003 AMB-013<br/>marketplace_creators, listings, versions, submissions, review_events<br/>no organization_id RLS; handlers filter by creator, admin checks, status, and catalog compatibility"]
+  catalog["Marketplace catalog [IMPLEMENTED] AMB-003<br/>mounted inside tenant middleware<br/>not a public router boundary"]
+  super_admin["Super-admin tenant behavior [PARTIAL] AMB-005<br/>global role does not automatically bypass tenant middleware<br/>only rls::begin_bypass_transaction sets zinhar.rls_bypass=true"]
+end
+
+public_system -.-> handler
+public_auth -.-> global_tables
+delivery -.-> session_context
+stripe_webhook -.-> pg_policy
+static_uploads -.-> client
+handler -.-> global_tables
+handler -.-> marketplace_platform
+catalog --> marketplace_platform
+super_admin -.-> stripe_webhook
+
+classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
+classDef decision fill:#fff0f6,stroke:#9b1b5a,stroke-width:3px,stroke-dasharray: 8 2 2 2,color:#111;
+classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
+classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111;
+classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111;
+
+class client frontend;
+class claims,org_header,membership,active_check,tenant_context,limiter,handler,rls_service,session_context,public_system,public_auth,delivery,stripe_webhook,catalog,super_admin backend;
+class pg_policy,scoped_rows,core_direct,core_derived,components,billing_quota,ops_beta,nullable_org,installs,global_tables,marketplace_platform data;
+class static_uploads decision;
+class global_tables,marketplace_platform,super_admin partial;
