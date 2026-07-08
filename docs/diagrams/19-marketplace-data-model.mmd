@@ -1,0 +1,179 @@
+erDiagram
+    %% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+    %% Evidence: backend/migrations/0016_v3_phase_two_creator_submission.sql
+    %% Evidence: backend/migrations/0017_v3_phase_three_validation_pipeline.sql
+    %% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+    %% Evidence: backend/src/routes/marketplace.rs
+    %% Evidence: backend/src/services/marketplace_manifest.rs
+    %% Evidence: backend/src/services/marketplace_package.rs
+    %% Evidence: backend/src/services/marketplace_submission.rs
+    %% Evidence: backend/src/services/marketplace_validation.rs
+    %% Evidence: backend/src/services/marketplace_review.rs
+    %% Evidence: frontend/src/pages/MarketplacePage.tsx
+    %% Evidence: docs/V3_MARKETPLACE_DOMAIN_MODEL.md
+    %% Evidence: docs/V3_MARKETPLACE_GAP_LIST.md
+    %% [IMPLEMENTED] Creator, listing, version, submission, installation schema, internal review events, validation reports, and moderation state are persisted.
+    %% [PARTIAL] marketplace_installations exists and emergency_block updates it, but no install/disable/uninstall/update/rollback route exists.
+    %% [PARTIAL] Package metadata is stored on marketplace_versions; there is no package table.
+    %% [PARTIAL] Moderation uses marketplace_review_events plus listing/version/installation status updates; there is no separate moderation table.
+    %% [PLANNED] Purchase, entitlement, creator payout ledger, and customer ratings are documented but no tables exist.
+
+    users {
+        UUID id PK
+        CITEXT email UK "global user email"
+        TEXT status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    organizations {
+        UUID id PK
+        TEXT slug UK "organization workspace slug"
+        TEXT name
+        organization_status status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    marketplace_creators {
+        UUID id PK
+        UUID user_id FK "UNIQUE REFERENCES users(id) ON DELETE CASCADE"
+        TEXT slug "lower(slug) UNIQUE; slug format CHECK"
+        TEXT display_name "CHECK not empty"
+        TEXT bio
+        TEXT status "CHECK pending approved suspended rejected"
+        TEXT payout_status "CHECK not_configured pending verified restricted"
+        TEXT support_email
+        JSONB metadata "CHECK jsonb object"
+        TIMESTAMPTZ requested_at
+        TEXT verification_notes
+        UUID verified_by FK "nullable REFERENCES users(id) ON DELETE SET NULL"
+        TIMESTAMPTZ verified_at
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    marketplace_listings {
+        UUID id PK
+        UUID creator_id FK "REFERENCES marketplace_creators(id) ON DELETE CASCADE"
+        TEXT product_type "CHECK component_pack design_template integration_plugin backend_extension"
+        TEXT title "CHECK not empty"
+        TEXT slug "lower(slug) UNIQUE; slug format CHECK"
+        TEXT summary "CHECK not empty"
+        TEXT description
+        TEXT category "CHECK not empty"
+        TEXT status "CHECK draft submitted approved changes_requested suspended blocked archived"
+        TEXT pricing_type "CHECK free paid custom"
+        INTEGER price_cents "CHECK non-negative"
+        TEXT license
+        TEXT support_url
+        TEXT icon_asset_key
+        JSONB screenshots "CHECK jsonb array"
+        UUID submitted_by FK "nullable REFERENCES users(id) ON DELETE SET NULL"
+        TIMESTAMPTZ submitted_at
+        JSONB metadata "CHECK jsonb object"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    marketplace_versions {
+        UUID id PK
+        UUID listing_id FK "REFERENCES marketplace_listings(id) ON DELETE CASCADE"
+        TEXT version "semver CHECK; UNIQUE with listing_id"
+        TEXT manifest_schema_version "CHECK equals 2026-07"
+        JSONB manifest_json "CHECK required manifest fields"
+        TEXT artifact_object_key "UNIQUE; local logical object key"
+        TEXT artifact_sha256 "64 lowercase hex CHECK"
+        BIGINT artifact_size_bytes "CHECK 1..52428800"
+        TEXT artifact_file_name "CHECK not empty"
+        TEXT artifact_content_type
+        JSONB storage_metadata "CHECK jsonb object; storage local"
+        TEXT status "CHECK draft submitted validating approved rejected blocked deprecated"
+        UUID created_by FK "nullable REFERENCES users(id) ON DELETE SET NULL"
+        TEXT validation_status "CHECK pending passed warning failed"
+        JSONB validation_report "CHECK jsonb object"
+        TEXT security_risk_level "CHECK unreviewed low medium high critical"
+        JSONB compatibility_report "CHECK jsonb object"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    marketplace_submissions {
+        UUID id PK
+        UUID version_id FK "REFERENCES marketplace_versions(id) ON DELETE CASCADE"
+        UUID submitted_by FK "nullable REFERENCES users(id) ON DELETE SET NULL"
+        TEXT review_status "CHECK queued validating changes_requested approved rejected blocked canceled"
+        TEXT risk_level "CHECK unreviewed low medium high critical"
+        TEXT review_notes
+        JSONB validation_report "CHECK jsonb object"
+        JSONB metadata "CHECK jsonb object"
+        UUID reviewed_by FK "nullable REFERENCES users(id) ON DELETE SET NULL"
+        TIMESTAMPTZ reviewed_at
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    marketplace_installations {
+        UUID id PK
+        UUID organization_id FK "tenant-owned REFERENCES organizations(id) ON DELETE CASCADE"
+        UUID listing_id FK "REFERENCES marketplace_listings(id) ON DELETE CASCADE"
+        UUID version_id FK "REFERENCES marketplace_versions(id) ON DELETE RESTRICT"
+        UUID installed_by FK "nullable REFERENCES users(id) ON DELETE SET NULL"
+        TEXT status "CHECK active disabled uninstalled rollback_pending blocked"
+        JSONB permissions_json "CHECK jsonb array"
+        UUID permission_approved_by FK "nullable REFERENCES users(id) ON DELETE SET NULL"
+        TIMESTAMPTZ permission_approved_at
+        UUID rollback_version_id FK "nullable REFERENCES marketplace_versions(id) ON DELETE SET NULL"
+        JSONB metadata "CHECK jsonb object"
+        TIMESTAMPTZ installed_at
+        TIMESTAMPTZ updated_at
+    }
+
+    marketplace_review_events {
+        UUID id PK
+        UUID submission_id FK "nullable REFERENCES marketplace_submissions(id) ON DELETE SET NULL"
+        UUID listing_id FK "REFERENCES marketplace_listings(id) ON DELETE CASCADE"
+        UUID version_id FK "nullable REFERENCES marketplace_versions(id) ON DELETE SET NULL"
+        UUID actor_id FK "nullable REFERENCES users(id) ON DELETE SET NULL"
+        TEXT action "CHECK approve reject request_changes suspend_listing unpublish_version emergency_block"
+        TEXT previous_status
+        TEXT next_status
+        TEXT internal_comment
+        TEXT creator_message
+        TEXT reason "CHECK not empty"
+        JSONB metadata "CHECK jsonb object"
+        TIMESTAMPTZ created_at
+    }
+
+    audit_logs {
+        UUID id PK
+        UUID organization_id FK "tenant audit context"
+        UUID actor_id FK "nullable actor"
+        TEXT action "marketplace.* action names"
+        TEXT entity_type "marketplace_creator listing version submission"
+        UUID entity_id "application-level reference"
+        JSONB metadata
+        TIMESTAMPTZ created_at
+    }
+
+    users ||--o| marketplace_creators : "creator user ownership"
+    users |o--o{ marketplace_creators : "verified_by"
+    marketplace_creators ||--o{ marketplace_listings : "creates listings"
+    users |o--o{ marketplace_listings : "submitted_by"
+    marketplace_listings ||--o{ marketplace_versions : "has package versions"
+    users |o--o{ marketplace_versions : "created_by"
+    marketplace_versions ||--o{ marketplace_submissions : "submitted for review"
+    users |o--o{ marketplace_submissions : "submitted_by"
+    users |o--o{ marketplace_submissions : "reviewed_by"
+    organizations ||--o{ marketplace_installations : "organization-owned install state"
+    marketplace_listings ||--o{ marketplace_installations : "installed listing"
+    marketplace_versions ||--o{ marketplace_installations : "installed version"
+    marketplace_versions |o--o{ marketplace_installations : "rollback_version_id"
+    users |o--o{ marketplace_installations : "installed_by"
+    users |o--o{ marketplace_installations : "permission_approved_by"
+    marketplace_submissions |o--o{ marketplace_review_events : "review decision event"
+    marketplace_listings ||--o{ marketplace_review_events : "review or moderation event"
+    marketplace_versions |o--o{ marketplace_review_events : "version-specific event"
+    users |o--o{ marketplace_review_events : "actor_id"
+    organizations ||--o{ audit_logs : "tenant audit records"
+    users |o--o{ audit_logs : "actor_id"

@@ -122,6 +122,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future marketplace installation diagrams.
+- Step 15 update: `backend/src/routes/marketplace.rs` counts active installations for catalog responses and emergency-blocks non-uninstalled installations, but no install, disable, uninstall, update, or rollback route was found. `frontend/src/pages/MarketplacePage.tsx` renders a disabled install button. Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
 
 ## AMB-008
 
@@ -139,6 +140,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future purchase and billing diagrams.
+- Step 15 update: `marketplace_listings.pricing_type` and `price_cents` exist, and paid metadata is validated, but migrations `0015` through `0018` still have no purchase, entitlement, checkout, refund, or ledger table. Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
 
 ## AMB-009
 
@@ -156,6 +158,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future payout and Marketplace finance diagrams.
+- Step 15 update: `marketplace_creators.payout_status` remains the only persisted payout-related field; no payout provider onboarding route, ledger table, or payout table exists in Marketplace code or migrations. Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
 
 ## AMB-010
 
@@ -258,6 +261,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Confidence: MEDIUM
 - Status: DECISION_REQUIRED
 - Affected diagram files: `00-implementation-status-map.mmd`, future validation and storage lifecycle diagrams.
+- Step 15 update: `upload_listing_version` writes the artifact to local storage before starting the SQL transaction. Static/security/compatibility failures are persisted as blocked version/submission rows, but no cleanup path was found for a database failure after artifact persistence. Affected diagram files: `20-marketplace-package-review-pipeline.mmd`.
 
 ## AMB-016
 
@@ -292,6 +296,7 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future catalog and review diagrams.
+- Step 15 update: `MarketplaceCatalogItemResponse` exposes rating fields and `MarketplaceCatalogDetailResponse` has `reviews`, but `get_catalog_listing` returns `reviews: Vec::new()` and no customer rating table or write route exists. Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
 
 ## AMB-018
 
@@ -1146,4 +1151,62 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 
 - Ambiguities added in step 14: AMB-054, AMB-055, AMB-056, AMB-057, AMB-058, AMB-059, AMB-060, AMB-061, AMB-062, AMB-063.
 - Data model decisions represented: billing customer storage is limited to Stripe-owned identifiers on `organization_subscriptions`; Stripe idempotency is implemented by the unique provider event key; event ordering is timestamp-based when Stripe created timestamps are present; usage is a mix of rebuildable snapshots and stored API request counters; product metrics and release readiness are derived runtime/reporting concepts, not persisted tables.
+- Production behavior changed: No.
+
+## AMB-064
+
+- ID: AMB-064
+- Domain: Marketplace Package Persistence
+- Exact question: Is Package a database table, or is package metadata stored on versions?
+- Documentation claim: `docs/V3_MARKETPLACE_DOMAIN_MODEL.md` defines Package as an artifact boundary and states that phase 1 represents it through Version artifact fields rather than a separate table.
+- Implementation evidence: `backend/src/routes/marketplace.rs` inserts package metadata into `marketplace_versions`; `backend/src/services/marketplace_package.rs` generates checksums and object keys.
+- Database evidence: Migrations `0015` through `0018` create and extend `marketplace_versions`, but no `marketplace_packages` table exists.
+- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` uploads a file and manifest for a listing version and receives `MarketplacePackageVersionResponse`.
+- Test evidence: `backend/src/services/marketplace_domain.rs` and `backend/src/services/marketplace_package.rs` test manifest/storage fields and object-key/checksum behavior.
+- Conflict or missing information: Domain terminology can imply a table, but current schema does not create one.
+- Safest interpretation: Treat Package as a conceptual artifact boundary implemented by `marketplace_versions` columns.
+- Representation to use in diagrams: Do not create a Package entity; show artifact object key, checksum, size, file name, content type, and reports on `marketplace_versions`.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
+
+## AMB-065
+
+- ID: AMB-065
+- Domain: Marketplace Moderation Persistence
+- Exact question: Are moderation actions stored in a separate moderation table?
+- Documentation claim: `docs/V3_PHASE_FOUR.md` describes moderation and takedown actions.
+- Implementation evidence: `backend/src/routes/marketplace.rs` implements `moderate_listing` by updating listing, version, and installation statuses and inserting `marketplace_review_events`; `backend/src/services/marketplace_review.rs` validates moderation actions.
+- Database evidence: `backend/migrations/0018_v3_phase_four_review_moderation.sql` creates `marketplace_review_events` with actions including `suspend_listing`, `unpublish_version`, and `emergency_block`; no separate moderation table exists.
+- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` renders moderation controls for reviewer reports and sends `api.marketplace.moderateListing`.
+- Test evidence: `backend/src/services/marketplace_review.rs` tests moderation action validation and phase 4 contract terms.
+- Conflict or missing information: Moderation is implemented, but its persistence is the shared review event log plus status changes.
+- Safest interpretation: Treat moderation as implemented through `marketplace_review_events` and target-table status updates, not as a standalone entity.
+- Representation to use in diagrams: Show moderation actions as review events and status transitions; do not draw a moderation table.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
+
+## AMB-066
+
+- ID: AMB-066
+- Domain: Marketplace Validation Reports
+- Exact question: Are validation, security, and compatibility reports normalized into separate tables?
+- Documentation claim: `docs/V3_PHASE_THREE.md` says reports are stored on each package version and on each Marketplace submission.
+- Implementation evidence: `backend/src/services/marketplace_validation.rs` returns a validation decision with JSON reports; `backend/src/routes/marketplace.rs` persists those reports to version and submission rows during upload.
+- Database evidence: `backend/migrations/0017_v3_phase_three_validation_pipeline.sql` adds `validation_status`, `validation_report`, `security_risk_level`, and `compatibility_report` to `marketplace_versions`; `marketplace_submissions.validation_report` exists from migration `0015`.
+- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` renders report JSON in creator and reviewer report cards.
+- Test evidence: `backend/src/services/marketplace_validation.rs` tests valid packages, high-risk packages, incompatible plans, and report decisions.
+- Conflict or missing information: Reports are detailed but remain JSONB columns rather than normalized report tables.
+- Safest interpretation: Treat report persistence as implemented JSONB columns on versions and submissions.
+- Representation to use in diagrams: Show report fields on `marketplace_versions` and `marketplace_submissions`; do not create validation/security/compatibility report tables.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
+
+## Step 15 Marketplace Data Model And Review Pipeline Update
+
+- Ambiguities added in step 15: AMB-064, AMB-065, AMB-066.
+- Existing Marketplace ambiguities updated in step 15: AMB-007, AMB-008, AMB-009, AMB-015, AMB-017.
+- Data model decisions represented: Package is conceptual and stored on `marketplace_versions`; validation/security/compatibility reports are JSONB columns; moderation is persisted through `marketplace_review_events`; installations are schema-backed but runtime install APIs remain deferred; purchases, payouts, and customer ratings are planned only.
 - Production behavior changed: No.
