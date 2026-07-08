@@ -1210,3 +1210,78 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Existing Marketplace ambiguities updated in step 15: AMB-007, AMB-008, AMB-009, AMB-015, AMB-017.
 - Data model decisions represented: Package is conceptual and stored on `marketplace_versions`; validation/security/compatibility reports are JSONB columns; moderation is persisted through `marketplace_review_events`; installations are schema-backed but runtime install APIs remain deferred; purchases, payouts, and customer ratings are planned only.
 - Production behavior changed: No.
+
+## AMB-067
+
+- ID: AMB-067
+- Domain: Core CMS Workflow Statuses
+- Exact question: Are `rejected`, `unpublished`, or `restored` durable states for content entries or pages?
+- Documentation claim: Workflow and UI language uses actions such as reject, unpublish, and restore.
+- Implementation evidence: `backend/src/services/workflow.rs` defines only `Draft`, `PendingReview`, `Published`, and `Archived`; `backend/src/routes/content.rs` and `backend/src/routes/pages.rs` implement reject, unpublish, and restore by transitioning to `Draft`.
+- Database evidence: `backend/migrations/0001_initial_schema.sql` creates `content_status` and `page_status`; `backend/migrations/0006_phase_six_workflow_collaboration.sql` adds only `pending_review`.
+- Frontend evidence: `frontend/src/types/api.ts`, `frontend/src/pages/EntriesPage.tsx`, and `frontend/src/pages/PagesPage.tsx` use `draft`, `pending_review`, `published`, and `archived`.
+- Test evidence: `backend/src/services/workflow.rs` tests transitions among the four implemented statuses only.
+- Conflict or missing information: Action names can be misread as persistent states.
+- Safest interpretation: Treat reject, unpublish, and restore as actions whose target state is `draft`, not as additional lifecycle states.
+- Representation to use in diagrams: Show no `Rejected`, `Unpublished`, or `Restored` state; label those routes as transitions to `Draft`.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `23-core-cms-state-machines.mmd`.
+
+## AMB-068
+
+- ID: AMB-068
+- Domain: Core CMS Workflow Side Effects
+- Exact question: Do route names map one-to-one to workflow edges and side effects?
+- Documentation claim: Workflow actions are described as distinct editorial operations.
+- Implementation evidence: `backend/src/services/workflow.rs` allows `PendingReview -> Draft`, `Published -> Draft`, and `Archived -> Draft`; multiple routes in `backend/src/routes/content.rs` and `backend/src/routes/pages.rs` target `Draft` with different side effects. For example, unpublish invalidates cache and sends an unpublish webhook, while reject and restore do not.
+- Database evidence: The database stores only the resulting status and timestamp fields; it does not store the action that caused the transition.
+- Frontend evidence: `frontend/src/pages/EntriesPage.tsx` and `frontend/src/pages/PagesPage.tsx` expose a generic status-based action, while `frontend/src/pages/WorkflowPage.tsx` exposes approve/reject for pending review items.
+- Test evidence: Workflow tests validate status transitions, not route-specific side-effect differences.
+- Conflict or missing information: The implementation permits some route/action combinations whose product meaning is ambiguous, such as restore or reject from a published record.
+- Safest interpretation: Represent the exact route-specific transitions and side effects, and do not collapse all `to draft` paths into a single business operation.
+- Representation to use in diagrams: Draw separate labels for unpublish, reject, and restore when their side effects differ.
+- Confidence: HIGH
+- Status: DECISION_REQUIRED
+- Affected diagram files: `23-core-cms-state-machines.mmd`.
+
+## AMB-069
+
+- ID: AMB-069
+- Domain: Page Versioning
+- Exact question: Are page status transitions versioned the same way as page content saves?
+- Documentation claim: Page builder documentation describes page versions and restore behavior.
+- Implementation evidence: `backend/src/routes/pages.rs` creates page version snapshots on page create, update, autosave-backed update, and version restore. The shared `transition_page` helper changes status and broadcasts preview but does not call `create_version_snapshot`.
+- Database evidence: `page_versions` stores complete `page_json` snapshots, but there is no status-transition snapshot table or restore-from column.
+- Frontend evidence: `frontend/src/pages/PagesPage.tsx` autosaves existing page edits via PUT and restores selected versions, but status action buttons call transition endpoints separately.
+- Test evidence: `frontend/src/pages/PagesPage.test.tsx` verifies builder rendering but not version lifecycle or status-transition snapshots.
+- Conflict or missing information: Users may expect publish/reject/archive/restore status actions to be visible as page versions, but current persistence only snapshots content JSON changes and version restores.
+- Safest interpretation: Treat page versions as complete JSON snapshots created by save/autosave/restore-version operations, not by status-only workflow transitions.
+- Representation to use in diagrams: Separate Page Lifecycle from Page Version Lifecycle and mark status transitions as not creating snapshots.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `23-core-cms-state-machines.mmd`.
+
+## AMB-070
+
+- ID: AMB-070
+- Domain: Core CMS Side Effects After Mutation
+- Exact question: Can cache invalidation, plugin hooks, webhook delivery, or audit logging fail after the primary state mutation has already happened?
+- Documentation claim: Workflow documentation describes state changes with side effects such as cache invalidation, webhooks, plugin hooks, and audit logs.
+- Implementation evidence: `backend/src/routes/content.rs` transitions entries before cache invalidation, after-publish plugin execution, and webhook dispatch; `backend/src/routes/pages.rs` transitions pages before cache invalidation and webhook dispatch; delete handlers record audit entries after deletion. Webhook dispatch is asynchronous for workflow events.
+- Database evidence: The primary row status/delete mutation is committed by the route SQL before several non-transactional side effects occur; delivery attempts are recorded later in `webhook_deliveries`.
+- Frontend evidence: Frontend pages report a single action result and do not model partial side-effect failures.
+- Test evidence: No lifecycle test was found that asserts compensating behavior when post-mutation side effects fail.
+- Conflict or missing information: Product intent for rollback or retry after partial side-effect failure is not documented in code.
+- Safest interpretation: Show side effects after mutation and mark failure-handling behavior as a decision-required operational risk.
+- Representation to use in diagrams: Label side effects on transition edges and mark post-mutation failure risk with AMB-070.
+- Confidence: HIGH
+- Status: DECISION_REQUIRED
+- Affected diagram files: `23-core-cms-state-machines.mmd`, future reliability diagrams.
+
+## Step 17 Core CMS State Machine Update
+
+- Ambiguities added in step 17: AMB-067, AMB-068, AMB-069, AMB-070.
+- Existing ambiguities still applicable: AMB-006 for built-in-only plugin runtime, AMB-011 and AMB-041 for webhook dispatch without durable retries, AMB-026 for frontend-only controls, AMB-036 for enum-backed status values, AMB-038 for workflow constraints enforced in application code, AMB-039 for polymorphic comments, and AMB-045 for page version snapshots.
+- State machine decisions represented: content entries and pages have four durable workflow statuses; comments derive state from resolution columns; webhook deliveries persist only delivered/failed outcomes; plugin lifecycle is enable/disable plus built-in hook execution.
+- Production behavior changed: No.

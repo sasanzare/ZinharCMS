@@ -1,0 +1,157 @@
+stateDiagram-v2
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0005_phase_five_delivery_api.sql
+%% Evidence: backend/migrations/0006_phase_six_workflow_collaboration.sql
+%% Evidence: backend/src/services/workflow.rs
+%% Evidence: backend/src/routes/content.rs
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/routes/comments.rs
+%% Evidence: backend/src/services/webhooks.rs
+%% Evidence: backend/src/routes/plugins.rs
+%% Evidence: backend/src/plugins/mod.rs
+%% Evidence: frontend/src/pages/EntriesPage.tsx
+%% Evidence: frontend/src/pages/PagesPage.tsx
+%% Evidence: frontend/src/pages/WorkflowPage.tsx
+
+state "Content Entry Lifecycle [IMPLEMENTED] AMB-067 AMB-068 AMB-070" as ContentEntryLifecycle {
+  state "Draft\nstatus=draft" as EntryDraft
+  state "Pending Review\nstatus=pending_review" as EntryPending
+  state "Published\nstatus=published" as EntryPublished
+  state "Archived\nstatus=archived" as EntryArchived
+  state "Deleted\nrow removed" as EntryDeleted
+
+  [*] --> EntryDraft : POST /api/entries/{type_slug}; role org owner/admin/editor/author; quota check, plugin before-save, sanitize, validate, version=1
+  EntryDraft --> EntryDraft : PUT /api/entries/{type_slug}/{id}; role org owner/admin/editor/author; plugin before-save, sanitize, validate, version+1
+  EntryPending --> EntryPending : PUT /api/entries/{type_slug}/{id}; role org owner/admin/editor/author; plugin before-save, sanitize, validate, version+1
+  EntryPublished --> EntryPublished : PUT /api/entries/{type_slug}/{id}; role org owner/admin/editor/author; plugin before-save, sanitize, validate, version+1, content cache invalidation
+  EntryArchived --> EntryArchived : PUT /api/entries/{type_slug}/{id}; role org owner/admin/editor/author; plugin before-save, sanitize, validate, version+1
+  EntryDraft --> EntryPending : POST /api/entries/{type_slug}/{id}/submit-review; role org owner/admin/editor/author; workflow check, version+1
+  EntryDraft --> EntryPublished : POST /api/entries/{type_slug}/{id}/publish; role org owner/admin/editor; bypass review, version+1, published_at now, cache invalidation, plugin after-publish, entry.publish webhook
+  EntryPending --> EntryPublished : POST /api/entries/{type_slug}/{id}/publish; role org owner/admin/editor; version+1, published_at now, cache invalidation, plugin after-publish, entry.publish webhook
+  EntryPending --> EntryDraft : POST /api/entries/{type_slug}/{id}/reject or /restore; role org owner/admin/editor; version+1, published_at null
+  EntryPending --> EntryDraft : POST /api/entries/{type_slug}/{id}/unpublish; role org owner/admin/editor; version+1, published_at null, cache invalidation, entry.unpublish webhook
+  EntryPublished --> EntryDraft : POST /api/entries/{type_slug}/{id}/unpublish; role org owner/admin/editor; version+1, published_at null, cache invalidation, entry.unpublish webhook
+  EntryPublished --> EntryDraft : POST /api/entries/{type_slug}/{id}/reject or /restore; role org owner/admin/editor; version+1, published_at null, no content cache invalidation or webhook found
+  EntryPublished --> EntryArchived : POST /api/entries/{type_slug}/{id}/archive; role org owner/admin/editor; version+1, published_at null, content cache invalidation
+  EntryArchived --> EntryDraft : POST /api/entries/{type_slug}/{id}/restore or /reject; role org owner/admin/editor; version+1, published_at null
+  EntryArchived --> EntryDraft : POST /api/entries/{type_slug}/{id}/unpublish; role org owner/admin/editor; version+1, published_at null, cache invalidation, entry.unpublish webhook
+  EntryDraft --> EntryDeleted : DELETE /api/entries/{type_slug}/{id}; role org owner/admin/editor; row delete, audit after mutation
+  EntryPending --> EntryDeleted : DELETE /api/entries/{type_slug}/{id}; role org owner/admin/editor; row delete, audit after mutation
+  EntryPublished --> EntryDeleted : DELETE /api/entries/{type_slug}/{id}; role org owner/admin/editor; row delete, cache invalidation, audit after mutation
+  EntryArchived --> EntryDeleted : DELETE /api/entries/{type_slug}/{id}; role org owner/admin/editor; row delete, audit after mutation
+  EntryDeleted --> [*]
+
+  note right of EntryDraft
+    No persisted rejected, unpublished, or restored entry state exists.
+    Those route names resolve to status=draft.
+  end note
+}
+
+state "Page Lifecycle [IMPLEMENTED] AMB-067 AMB-068 AMB-069 AMB-070" as PageLifecycle {
+  state "Draft\nstatus=draft" as PageDraft
+  state "Pending Review\nstatus=pending_review" as PagePending
+  state "Published\nstatus=published" as PagePublished
+  state "Archived\nstatus=archived" as PageArchived
+  state "Deleted\nrow removed" as PageDeleted
+
+  [*] --> PageDraft : POST /api/pages; role org owner/admin/editor/author; quota check, page JSON validation, version snapshot, preview broadcast
+  PageDraft --> PageDraft : PUT /api/pages/{id}; role org owner/admin/editor/author; page JSON validation, version snapshot, preview broadcast
+  PagePending --> PagePending : PUT /api/pages/{id}; role org owner/admin/editor/author; page JSON validation, version snapshot, preview broadcast
+  PagePublished --> PagePublished : PUT /api/pages/{id}; role org owner/admin/editor/author; page JSON validation, version snapshot, preview broadcast, page cache invalidation
+  PageArchived --> PageArchived : PUT /api/pages/{id}; role org owner/admin/editor/author; page JSON validation, version snapshot, preview broadcast
+  PageDraft --> PagePending : POST /api/pages/{id}/submit-review; role org owner/admin/editor/author; workflow check, status mutation, preview broadcast, no version snapshot
+  PageDraft --> PagePublished : POST /api/pages/{id}/publish; role org owner/admin/editor; bypass review, published_at now, cache invalidation, page.publish webhook, preview broadcast
+  PagePending --> PagePublished : POST /api/pages/{id}/publish; role org owner/admin/editor; published_at now, cache invalidation, page.publish webhook, preview broadcast
+  PagePending --> PageDraft : POST /api/pages/{id}/reject or /restore; role org owner/admin/editor; published_at null, preview broadcast, no cache invalidation or webhook found
+  PagePending --> PageDraft : POST /api/pages/{id}/unpublish; role org owner/admin/editor; published_at null, cache invalidation, page.unpublish webhook, preview broadcast
+  PagePublished --> PageDraft : POST /api/pages/{id}/unpublish; role org owner/admin/editor; published_at null, cache invalidation, page.unpublish webhook, preview broadcast
+  PagePublished --> PageDraft : POST /api/pages/{id}/reject or /restore; role org owner/admin/editor; published_at null, preview broadcast, no cache invalidation or webhook found
+  PagePublished --> PageArchived : POST /api/pages/{id}/archive; role org owner/admin/editor; published_at null, page cache invalidation, preview broadcast
+  PageArchived --> PageDraft : POST /api/pages/{id}/restore or /reject; role org owner/admin/editor; published_at null, preview broadcast
+  PageArchived --> PageDraft : POST /api/pages/{id}/unpublish; role org owner/admin/editor; published_at null, cache invalidation, page.unpublish webhook, preview broadcast
+  PageDraft --> PageDeleted : DELETE /api/pages/{id}?confirm=true; role org owner/admin/editor; page and version rows deleted, audit after mutation
+  PagePending --> PageDeleted : DELETE /api/pages/{id}?confirm=true; role org owner/admin/editor; page and version rows deleted, audit after mutation
+  PagePublished --> PageDeleted : DELETE /api/pages/{id}?confirm=true; role org owner/admin/editor; cache invalidation, page and version rows deleted, audit after mutation
+  PageArchived --> PageDeleted : DELETE /api/pages/{id}?confirm=true; role org owner/admin/editor; page and version rows deleted, audit after mutation
+  PageDeleted --> [*]
+
+  note right of PageDraft
+    Frontend autosave uses PUT /api/pages/{id} only for existing pages.
+    New pages require manual save before autosave can run.
+  end note
+}
+
+state "Page Version Lifecycle [IMPLEMENTED] AMB-045 AMB-069" as PageVersionLifecycle {
+  state "Version Snapshot\ncomplete page_json" as PageVersionSnapshot
+  state "Restored As Draft\npage status=draft" as PageVersionRestored
+  state "Deleted With Page\nFK cascade" as PageVersionDeleted
+
+  [*] --> PageVersionSnapshot : POST /api/pages or PUT /api/pages/{id}; role org owner/admin/editor/author; create complete snapshot, max(version)+1
+  PageVersionSnapshot --> PageVersionSnapshot : existing page autosave/save; role org owner/admin/editor/author; create another complete snapshot
+  PageVersionSnapshot --> PageVersionRestored : POST /api/pages/{id}/versions/{version}/restore; role org owner/admin/editor; version>0, validate saved page_json, update page_json, status draft, published_at null, preview broadcast
+  PageVersionRestored --> PageVersionSnapshot : restore route side effect; role org owner/admin/editor; create new snapshot from restored JSON
+  PageVersionSnapshot --> PageVersionDeleted : DELETE /api/pages/{id}?confirm=true; role org owner/admin/editor; page delete cascades versions
+  PageVersionDeleted --> [*]
+
+  note right of PageVersionSnapshot
+    Page versions store complete snapshots, not deltas.
+    Status-only page transitions do not create version snapshots.
+    No restore-from column is persisted.
+  end note
+}
+
+state "Comment Lifecycle [IMPLEMENTED] AMB-039" as CommentLifecycle {
+  state "Open\nresolved_at is null" as CommentOpen
+  state "Resolved\nresolved_at and resolved_by set" as CommentResolved
+  state "Deleted\nrow removed" as CommentDeleted
+
+  [*] --> CommentOpen : POST /api/comments; role org owner/admin/editor/author; validate entity_type entry/page, ensure entity exists, trim body
+  CommentOpen --> CommentResolved : POST /api/comments/{id}/resolve; role org owner/admin/editor; set resolved_at and resolved_by
+  CommentResolved --> CommentOpen : DELETE /api/comments/{id}/resolve; role org owner/admin/editor; clear resolved_at and resolved_by
+  CommentOpen --> CommentDeleted : DELETE /api/comments/{id}; role org owner/admin/editor; row delete
+  CommentResolved --> CommentDeleted : DELETE /api/comments/{id}; role org owner/admin/editor; row delete
+  CommentDeleted --> [*]
+
+  note right of CommentOpen
+    Comment state is derived from nullable columns.
+    There is no comments.status column.
+  end note
+}
+
+state "Webhook Delivery Lifecycle [PARTIAL] AMB-011 AMB-041" as WebhookDeliveryLifecycle {
+  state "Dispatch Attempt\ntransient tokio task or test request" as WebhookAttempt
+  state "Delivered\nstatus=delivered" as WebhookDelivered
+  state "Failed\nstatus=failed" as WebhookFailed
+
+  [*] --> WebhookAttempt : entry/page publish or unpublish, or POST /api/webhooks/{id}/test; sign HMAC, HTTP POST with timeout
+  WebhookAttempt --> WebhookDelivered : HTTP success status; insert webhook_deliveries row with delivered status
+  WebhookAttempt --> WebhookFailed : HTTP non-success or request error; insert webhook_deliveries row with failed status and error/status metadata
+  WebhookDelivered --> [*]
+  WebhookFailed --> [*] : no durable retry scheduler or attempt counter found
+}
+
+state "Plugin Lifecycle [PARTIAL] AMB-006 AMB-070" as PluginLifecycle {
+  state "Enabled\ncms_plugins.is_enabled=true" as PluginEnabled
+  state "Disabled\ncms_plugins.is_enabled=false" as PluginDisabled
+
+  [*] --> PluginEnabled : migration seed and sync_builtin_plugins; built-in seo-auto enabled by default
+  PluginEnabled --> PluginDisabled : POST /api/plugins/{plugin_key}/disable or PUT is_enabled=false; role global super_admin/admin; update cms_plugins
+  PluginDisabled --> PluginEnabled : POST /api/plugins/{plugin_key}/enable or PUT is_enabled=true; role global super_admin/admin; update cms_plugins
+  PluginEnabled --> PluginEnabled : entry before-save hook; system during create/update; built-in plugin may mutate entry data before validation persistence
+  PluginEnabled --> PluginEnabled : entry after-publish hook; system after publish mutation; failure can occur after status has changed
+
+  note right of PluginEnabled
+    Implemented runtime executes built-in plugin hooks only.
+    No arbitrary external plugin execution lifecycle was found.
+  end note
+}
+
+state "Frontend Lifecycle Controls [UX ONLY] AMB-026" as FrontendLifecycleControls {
+  state "Entries page generic action" as FrontendEntryAction
+  state "Pages page generic action" as FrontendPageAction
+  state "Workflow review queue" as FrontendWorkflowAction
+
+  [*] --> FrontendEntryAction : draft submit-review, pending publish, published archive, archived restore; backend enforces roles
+  [*] --> FrontendPageAction : draft submit-review, pending publish, published archive, archived restore, version restore; backend enforces roles
+  [*] --> FrontendWorkflowAction : approve publish or reject to draft; backend enforces roles
+}
