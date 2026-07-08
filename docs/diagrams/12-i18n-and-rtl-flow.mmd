@@ -1,0 +1,149 @@
+%% Evidence: frontend/src/main.tsx
+%% Evidence: frontend/src/i18n/I18nProvider.tsx
+%% Evidence: frontend/src/i18n/context.ts
+%% Evidence: frontend/src/i18n/locales.ts
+%% Evidence: frontend/src/i18n/messages.ts
+%% Evidence: frontend/src/i18n/LanguageSelect.tsx
+%% Evidence: frontend/src/i18n/labels.ts
+%% Evidence: frontend/src/i18n/index.ts
+%% Evidence: frontend/src/styles/index.css
+%% Evidence: frontend/src/components/AppShell.tsx
+%% Evidence: frontend/src/components/DynamicForm.tsx
+%% Evidence: frontend/src/pages/AuthPage.tsx
+%% Evidence: frontend/src/pages/DashboardPage.tsx
+%% Evidence: frontend/src/pages/ContentTypesPage.tsx
+%% Evidence: frontend/src/pages/EntriesPage.tsx
+%% Evidence: frontend/src/pages/MediaPage.tsx
+%% Evidence: frontend/src/pages/PagesPage.tsx
+%% Evidence: frontend/src/pages/WorkflowPage.tsx
+%% Evidence: frontend/src/pages/OrganizationPage.tsx
+%% Evidence: frontend/src/pages/BillingPage.tsx
+%% Evidence: frontend/src/pages/BetaPage.tsx
+%% Evidence: frontend/src/pages/MarketplacePage.tsx
+%% Evidence: frontend/src/pages/SettingsPage.tsx
+%% Evidence: docs/I18N.md
+%% Evidence: backend/migrations/0005_phase_five_delivery_api.sql
+%% Evidence: backend/src/routes/delivery.rs
+flowchart TD
+  browser["Browser [EXTERNAL]<br/>admin user agent"]
+
+  subgraph bootstrap["Application Bootstrap"]
+    main_tsx["main.tsx [IMPLEMENTED]<br/>StrictMode wraps I18nProvider<br/>RouterProvider mounted inside provider<br/>global CSS imported"]
+    i18n_provider["I18nProvider [IMPLEMENTED]<br/>owns locale state and direction<br/>exposes locale, direction, setLocale, t"]
+    router_tree["React router tree [IMPLEMENTED]<br/>all admin pages render under provider context"]
+  end
+
+  browser --> main_tsx
+  main_tsx --> i18n_provider
+  i18n_provider --> router_tree
+
+  subgraph locale_resolution["Locale Resolution and Persistence"]
+    storage_key["Storage key [IMPLEMENTED]<br/>localStorage zinhar.locale"]
+    stored_locale["Stored locale [IMPLEMENTED]<br/>normalizeLocale(localStorage value)"]
+    browser_locale["Browser locale detection [IMPLEMENTED]<br/>navigator.languages then navigator.language"]
+    normalize_locale["normalizeLocale [IMPLEMENTED]<br/>fa and fa-* -> fa-IR<br/>en and en-* -> en<br/>unsupported -> null"]
+    default_locale["Default locale [IMPLEMENTED]<br/>en"]
+    fallback_locale["Fallback locale [IMPLEMENTED]<br/>en"]
+    locale_defs["localeDefinitions [IMPLEMENTED]<br/>en ltr, fa-IR rtl"]
+  end
+
+  i18n_provider --> storage_key
+  storage_key --> stored_locale
+  browser --> browser_locale
+  stored_locale --> normalize_locale
+  browser_locale --> normalize_locale
+  normalize_locale --> locale_defs
+  normalize_locale --> default_locale
+  locale_defs --> fallback_locale
+
+  subgraph context_and_messages["Context, Dictionaries, and Type Safety"]
+    context_value["I18nContext [IMPLEMENTED]<br/>locale, direction, setLocale, t(key, params)"]
+    interpolate["interpolate() [IMPLEMENTED]<br/>replaces {param} placeholders"]
+    messages_en["English dictionary [IMPLEMENTED]<br/>messages.en"]
+    messages_fa["Persian dictionary [IMPLEMENTED]<br/>messages.fa-IR"]
+    typed_keys["Typed message keys [IMPLEMENTED]<br/>MessageKey = keyof typeof messages.en"]
+    fallback_lookup["Runtime lookup [IMPLEMENTED]<br/>messages[locale][key] then English fallback then key"]
+    label_helpers["Label helpers [IMPLEMENTED]<br/>workflowStatusKey, workflowActionKey, fieldTypeKey"]
+  end
+
+  i18n_provider --> context_value
+  context_value --> interpolate
+  context_value --> fallback_lookup
+  fallback_lookup --> messages_en
+  fallback_lookup --> messages_fa
+  messages_en --> typed_keys
+  messages_fa --> typed_keys
+  label_helpers --> typed_keys
+
+  subgraph runtime_direction["Document Language and Direction"]
+    document_lang["document.documentElement.lang [IMPLEMENTED]<br/>updated on locale change"]
+    document_dir["document.documentElement.dir [IMPLEMENTED]<br/>ltr for en, rtl for fa-IR<br/>changes at runtime"]
+    language_select["LanguageSelect [IMPLEMENTED]<br/>uses localeDefinitions and setLocale<br/>available in AuthPage and AppShell"]
+    rtl_styles["RTL CSS [IMPLEMENTED]<br/>:root[dir=rtl] uses VazirmatnZinhar<br/>table alignment and selected RTL component rules"]
+    logical_styles["Direction-aware layout [PARTIAL]<br/>global overflow and grid fixes exist<br/>not all CSS uses logical properties"]
+  end
+
+  context_value --> language_select
+  language_select --> i18n_provider
+  i18n_provider --> document_lang
+  i18n_provider --> document_dir
+  document_dir --> rtl_styles
+  rtl_styles --> logical_styles
+
+  subgraph consumers["Translation Hook Consumers"]
+    shell_consumers["Shell and shared components [IMPLEMENTED]<br/>AppShell, LanguageSelect, DynamicForm"]
+    auth_dashboard["Auth and dashboard [IMPLEMENTED]<br/>AuthPage, DashboardPage"]
+    cms_pages["Core CMS pages [PARTIAL]<br/>ContentTypesPage, EntriesPage, MediaPage, PagesPage, WorkflowPage<br/>mostly t() backed, but some hard-coded labels remain"]
+    saas_pages["SaaS and organization pages [PARTIAL]<br/>OrganizationPage, BillingPage, BetaPage, SettingsPage<br/>mostly t() backed, but Settings user labels remain hard-coded"]
+    marketplace_page["MarketplacePage [IMPLEMENTED]<br/>Marketplace catalog, creator, listing, version, reports,<br/>review and moderation copy use marketplace message keys"]
+  end
+
+  router_tree --> shell_consumers
+  router_tree --> auth_dashboard
+  router_tree --> cms_pages
+  router_tree --> saas_pages
+  router_tree --> marketplace_page
+  shell_consumers --> context_value
+  auth_dashboard --> context_value
+  cms_pages --> context_value
+  saas_pages --> context_value
+  marketplace_page --> context_value
+
+  subgraph content_scope["API and Content Localization Boundary"]
+    ui_copy["Admin UI copy [IMPLEMENTED]<br/>owned by messages.ts and t() calls"]
+    api_errors["API error messages [PARTIAL]<br/>backend message/error strings are displayed as returned<br/>not localized by frontend dictionaries"]
+    user_content["User-generated CMS content [PARTIAL]<br/>entries, pages, media captions, Marketplace listing text<br/>rendered as stored data"]
+    delivery_locale["Delivery locale filtering [PARTIAL]<br/>navigation locale table and locale query filters<br/>entry data.locale and page_json.metadata.locale filtering"]
+    no_auto_translation["No automatic API content translation [IMPLEMENTED]<br/>i18n layer does not translate stored CMS or Marketplace content"]
+  end
+
+  context_value --> ui_copy
+  error_source["ApiError messages [EXTERNAL]<br/>backend response message or error fields"] --> api_errors
+  router_tree --> user_content
+  delivery_locale --> user_content
+  user_content --> no_auto_translation
+
+  subgraph gaps["Translation Gaps and Ambiguities"]
+    brand_fixed["Brand text [IMPLEMENTED]<br/>Z and ZinharCMS are intentionally static brand copy"]
+    hardcoded_pages["Hard-coded page labels [PARTIAL] AMB-032<br/>PagesPage uses raw New, Title, Slug, Restore<br/>SettingsPage uses raw Name, Email, Role, Refresh token<br/>and raw refresh token source labels despite message keys"]
+    docs_conflict["Documentation coverage conflict [CONFLICT] AMB-032<br/>docs/I18N.md says other admin pages can be migrated incrementally<br/>current code has broad t() usage but still not complete"]
+    enum_values["API enum and status values [PARTIAL]<br/>some workflow/status labels are mapped<br/>many backend/domain enum values still render as raw strings"]
+  end
+
+  cms_pages --> hardcoded_pages
+  saas_pages --> hardcoded_pages
+  ui_copy --> brand_fixed
+  docs_conflict --> hardcoded_pages
+  user_content --> enum_values
+
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+  classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
+  classDef conflict fill:#ffecec,stroke:#b3261e,stroke-width:3px,stroke-dasharray: 8 3,color:#111;
+  classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
+  classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111;
+
+  class main_tsx,i18n_provider,router_tree,storage_key,stored_locale,browser_locale,normalize_locale,default_locale,fallback_locale,locale_defs,context_value,interpolate,messages_en,messages_fa,typed_keys,fallback_lookup,label_helpers,document_lang,document_dir,language_select,rtl_styles,shell_consumers,auth_dashboard,marketplace_page,ui_copy,no_auto_translation,brand_fixed implemented;
+  class logical_styles,cms_pages,saas_pages,api_errors,user_content,delivery_locale,hardcoded_pages,enum_values partial;
+  class docs_conflict conflict;
+  class browser,error_source external;
+  class bootstrap,locale_resolution,context_and_messages,runtime_direction,consumers,content_scope,gaps frontend;

@@ -1,0 +1,237 @@
+%% Evidence: frontend/package.json
+%% Evidence: frontend/src/main.tsx
+%% Evidence: frontend/src/router.tsx
+%% Evidence: frontend/src/components/RequireAuth.tsx
+%% Evidence: frontend/src/components/AppShell.tsx
+%% Evidence: frontend/src/components/DynamicForm.tsx
+%% Evidence: frontend/src/components/StatusBadge.tsx
+%% Evidence: frontend/src/i18n/I18nProvider.tsx
+%% Evidence: frontend/src/i18n/LanguageSelect.tsx
+%% Evidence: frontend/src/stores/useAppStore.ts
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: frontend/src/hooks/useHealth.ts
+%% Evidence: frontend/src/pages/AuthPage.tsx
+%% Evidence: frontend/src/pages/DashboardPage.tsx
+%% Evidence: frontend/src/pages/ContentTypesPage.tsx
+%% Evidence: frontend/src/pages/EntriesPage.tsx
+%% Evidence: frontend/src/pages/MediaPage.tsx
+%% Evidence: frontend/src/pages/MarketplacePage.tsx
+%% Evidence: frontend/src/pages/PagesPage.tsx
+%% Evidence: frontend/src/pages/WorkflowPage.tsx
+%% Evidence: frontend/src/pages/OrganizationPage.tsx
+%% Evidence: frontend/src/pages/WorkspaceRedirectPage.tsx
+%% Evidence: frontend/src/pages/BillingPage.tsx
+%% Evidence: frontend/src/pages/BetaPage.tsx
+%% Evidence: frontend/src/pages/SettingsPage.tsx
+%% Evidence: frontend/src/pages/DashboardPage.test.tsx
+%% Evidence: frontend/src/pages/PagesPage.test.tsx
+%% Evidence: frontend/src/types/api.ts
+%% Evidence: frontend/src/styles/index.css
+flowchart TD
+  browser["Browser [EXTERNAL]<br/>React 19 plus Vite admin client"]
+
+  subgraph entry["Entry, Providers, and Router"]
+    main_tsx["main.tsx [IMPLEMENTED]<br/>StrictMode, I18nProvider, RouterProvider<br/>imports global index.css"]
+    i18n_provider["I18nProvider [IMPLEMENTED]<br/>localStorage locale, browser locale fallback<br/>sets document lang and dir"]
+    router_tsx["router.tsx [IMPLEMENTED]<br/>createBrowserRouter route table"]
+    require_auth["RequireAuth [PARTIAL]<br/>checks useAppStore.accessToken<br/>frontend UX guard only"]
+    app_shell["AppShell [IMPLEMENTED]<br/>sidebar, topbar, organization switcher<br/>LanguageSelect, StatusBadge, Outlet"]
+    fallback_route["Fallback route * [IMPLEMENTED]<br/>Navigate to /"]
+  end
+
+  browser --> main_tsx
+  main_tsx --> i18n_provider
+  i18n_provider --> router_tsx
+  router_tsx --> login_route
+  router_tsx --> require_auth
+  require_auth --> app_shell
+  app_shell --> route_outlet
+  router_tsx --> fallback_route
+
+  subgraph routes["Exact React Route Hierarchy"]
+    login_route["/login AuthPage [IMPLEMENTED]<br/>public route<br/>redirects to / when accessToken exists"]
+    route_outlet["/ authenticated root layout [IMPLEMENTED]<br/>RequireAuth wraps AppShell and child Outlet"]
+    dashboard_route["index / DashboardPage [IMPLEMENTED]"]
+    content_types_route["/content-types ContentTypesPage [IMPLEMENTED]"]
+    entries_route["/entries EntriesPage [IMPLEMENTED]"]
+    media_route["/media MediaPage [IMPLEMENTED]"]
+    marketplace_route["/marketplace MarketplacePage [IMPLEMENTED]"]
+    pages_route["/pages PagesPage [IMPLEMENTED]"]
+    workflow_route["/workflow WorkflowPage [IMPLEMENTED]"]
+    organization_route["/organization OrganizationPage [IMPLEMENTED]"]
+    workspace_route["/workspace/:slug WorkspaceRedirectPage [IMPLEMENTED]"]
+    billing_route["/billing BillingPage [IMPLEMENTED]"]
+    beta_route["/beta BetaPage [IMPLEMENTED]"]
+    settings_route["/settings SettingsPage [IMPLEMENTED]"]
+  end
+
+  route_outlet --> dashboard_route
+  route_outlet --> content_types_route
+  route_outlet --> entries_route
+  route_outlet --> media_route
+  route_outlet --> marketplace_route
+  route_outlet --> pages_route
+  route_outlet --> workflow_route
+  route_outlet --> organization_route
+  route_outlet --> workspace_route
+  route_outlet --> billing_route
+  route_outlet --> beta_route
+  route_outlet --> settings_route
+  fallback_route --> dashboard_route
+
+  subgraph shared_frontend["Shared Frontend State, API Client, and UI"]
+    zustand_store["useAppStore [IMPLEMENTED]<br/>accessToken, refreshToken, user<br/>organizations, activeOrganizationId<br/>sidebarCollapsed"]
+    local_storage["Browser localStorage [EXTERNAL]<br/>zinhar.access_token, refresh_token, user<br/>organizations, active_organization_id, locale"]
+    api_client["services/api.ts [IMPLEMENTED]<br/>fetch wrapper with credentials include<br/>Bearer token when auth true<br/>X-Organization-Id when active organization exists"]
+    health_hook["useHealth [IMPLEMENTED]<br/>polls /health and /ready every 15s by default"]
+    status_badge["StatusBadge [IMPLEMENTED]<br/>neutral, success, warning, danger tones"]
+    language_select["LanguageSelect [IMPLEMENTED]<br/>en and fa-IR locale selector"]
+    dynamic_form["DynamicForm [IMPLEMENTED]<br/>renders content type fields for EntriesPage"]
+    type_defs["types/api.ts [IMPLEMENTED]<br/>typed API DTOs and status unions"]
+    styles_css["styles/index.css [IMPLEMENTED]<br/>app shell grids, page layouts, RTL font, builder and marketplace styles"]
+  end
+
+  zustand_store <--> local_storage
+  zustand_store --> api_client
+  app_shell --> zustand_store
+  app_shell --> health_hook
+  app_shell --> language_select
+  app_shell --> status_badge
+  health_hook --> api_client
+  dynamic_form --> type_defs
+  api_client --> type_defs
+  main_tsx --> styles_css
+
+  subgraph pages["Page Responsibilities and Dependencies"]
+    auth_page["AuthPage [IMPLEMENTED]<br/>Children: StatusBadge, LanguageSelect<br/>Hooks: useState, useAppStore<br/>API: auth.login, auth.register<br/>State: mode, email, name, password, submitting, error<br/>Org context: receives organizations and default org in session<br/>Role controls: none<br/>Test: none found"]
+    dashboard_page["DashboardPage [IMPLEMENTED]<br/>Children: StatusBadge, metric cards<br/>Hooks: useHealth, useState, useEffect<br/>API: contentTypes.list, media.list, pages.list, entries.list, billing.usage<br/>State: stats, usage, statsError, usageError<br/>Org context: implicit X-Organization-Id through API client<br/>Role controls: none in page<br/>Test: DashboardPage.test.tsx"]
+    content_types_page["ContentTypesPage [IMPLEMENTED]<br/>Children: StatusBadge, field builder rows<br/>Hooks: useState, useEffect, useCallback<br/>API: contentTypes list create update delete<br/>State: rows, draft, query, loading, saving, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
+    entries_page["EntriesPage [IMPLEMENTED]<br/>Children: DynamicForm, StatusBadge, status controls<br/>Hooks: useState, useEffect<br/>API: contentTypes.list, entries list create update delete workflow transitions<br/>State: selectedSlug, entries, status, editingId, entryData, loading, saving, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
+    media_page["MediaPage [IMPLEMENTED]<br/>Children: StatusBadge, upload form, media grid, detail editor<br/>Hooks: useState, useEffect, useCallback, useRef<br/>API: media list upload update delete<br/>State: items, selected, file, altText, caption, query, loading, working, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
+    marketplace_page["MarketplacePage [PARTIAL]<br/>Children: StatusBadge, catalog, creator profile, listing form, version upload, reports, review events<br/>Hooks: useState, useEffect, useMemo, useCallback, useAppStore<br/>API: marketplace creator listings catalog catalogDetail upload submissions review moderation<br/>State: creator, listings, selectedListingId, reports, filters, catalogDetail, manifest, packageFile, messages<br/>Org context: catalog and marketplace API are authenticated and get active organization header<br/>Role controls: review UI only for global admin or super_admin<br/>Test: none found"]
+    pages_page["PagesPage [IMPLEMENTED]<br/>Children: internal builder helpers, StatusBadge<br/>Hooks: useState, useEffect, useCallback, useRef, useAppStore<br/>API: pages list create update delete workflow versions restore, component registry list<br/>State: pages, components, versions, draft, selectedNodeId, selectedPage, dirty, autoSaveState<br/>Org context: implicit header plus copied preview URL query organization_id<br/>Role controls: none in page<br/>Test: PagesPage.test.tsx"]
+    workflow_page["WorkflowPage [IMPLEMENTED]<br/>Children: StatusBadge, pending review list, comments, plugin toggles<br/>Hooks: useState, useEffect, useMemo, useCallback<br/>API: contentTypes.list, entries.list, pages.list, comments, plugins enable disable<br/>State: items, selectedKey, comments, commentBody, includeResolved, plugins, loading, message, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
+    organization_page["OrganizationPage [IMPLEMENTED]<br/>Children: StatusBadge, settings, workspace, domains, rate limits, audit, email, alerts, invite and members tables<br/>Hooks: useState, useEffect, useMemo, useCallback, useAppStore<br/>API: organizations list current create update members invitations domains rateLimit audit email alerts<br/>State: detail, members, invitations, workspace, domains, rateLimit, auditLogs, emailDeliveries, alerts, drafts<br/>Org context: activeOrganizationId drives load and API header<br/>Role controls: manager owner/admin and owner-only ownership controls<br/>Test: none found"]
+    workspace_redirect_page["WorkspaceRedirectPage [IMPLEMENTED]<br/>Children: StatusBadge during redirect<br/>Hooks: useEffect, useParams, useNavigate, useAppStore<br/>API: organizations.list on local slug miss<br/>State: redirect side effect only<br/>Org context: selects active organization by workspace slug<br/>Role controls: none in page<br/>Test: none found"]
+    billing_page["BillingPage [IMPLEMENTED]<br/>Children: StatusBadge, subscription cards, usage bars, plan cards<br/>Hooks: useState, useEffect, useCallback, useAppStore<br/>API: billing plans usage changePlan checkout portal rebuildUsage<br/>State: plans, usage, loading, actionLoading, message, error<br/>Org context: activeOrganizationId reloads billing<br/>Role controls: owner admin billing_manager can manage<br/>Test: none found"]
+    beta_page["BetaPage [IMPLEMENTED]<br/>Children: StatusBadge, feedback, blockers, product dashboard<br/>Hooks: useState, useEffect, useCallback, useAppStore<br/>API: beta dashboard feedback blockers productDashboard participants<br/>State: dashboard, feedback, blockers, productDashboard, drafts, loading, message, error<br/>Org context: activeOrganizationId reloads beta views<br/>Role controls: org owner admin editor manage beta; global admin super_admin view product dashboard<br/>Test: none found"]
+    settings_page["SettingsPage [IMPLEMENTED]<br/>Children: StatusBadge, user profile, environment, webhooks form and table<br/>Hooks: useState, useEffect, useCallback, useHealth, useAppStore<br/>API: auth.me logout, webhooks list create update delete deliveries test<br/>State: user, webhooks, webhookDraft, loading, errors, messages<br/>Org context: implicit X-Organization-Id for webhooks<br/>Role controls: none in page; user role read-only<br/>Test: none found"]
+  end
+
+  login_route --> auth_page
+  dashboard_route --> dashboard_page
+  content_types_route --> content_types_page
+  entries_route --> entries_page
+  media_route --> media_page
+  marketplace_route --> marketplace_page
+  pages_route --> pages_page
+  workflow_route --> workflow_page
+  organization_route --> organization_page
+  workspace_route --> workspace_redirect_page
+  billing_route --> billing_page
+  beta_route --> beta_page
+  settings_route --> settings_page
+
+  auth_page --> zustand_store
+  dashboard_page --> health_hook
+  dashboard_page --> api_client
+  content_types_page --> api_client
+  entries_page --> dynamic_form
+  entries_page --> api_client
+  media_page --> api_client
+  marketplace_page --> zustand_store
+  marketplace_page --> api_client
+  pages_page --> zustand_store
+  pages_page --> api_client
+  workflow_page --> api_client
+  organization_page --> zustand_store
+  organization_page --> api_client
+  workspace_redirect_page --> zustand_store
+  workspace_redirect_page --> api_client
+  billing_page --> zustand_store
+  billing_page --> api_client
+  beta_page --> zustand_store
+  beta_page --> api_client
+  settings_page --> zustand_store
+  settings_page --> health_hook
+  settings_page --> api_client
+
+  subgraph builder["PagesPage Builder Architecture"]
+    builder_embedded["Builder implementation [IMPLEMENTED]<br/>Dedicated helper functions inside PagesPage.tsx<br/>No separate page-builder component files found"]
+    dnd_stack["Drag and drop [IMPLEMENTED]<br/>@dnd-kit/core DndContext, useDraggable, useDroppable<br/>@dnd-kit/sortable SortableContext and arrayMove"]
+    palette["Component palette [IMPLEMENTED]<br/>PaletteItem filters component registry<br/>double-click or drag to add block"]
+    canvas["BuilderCanvas [IMPLEMENTED]<br/>droppable desktop canvas<br/>sortable canvas nodes and remove controls"]
+    props_editor["Props editor [IMPLEMENTED]<br/>PropControl from component props_schema<br/>metadata editor when no block selected"]
+    local_preview["LivePreview [IMPLEMENTED]<br/>local render from draft.pageJson layout children<br/>not a WebSocket client"]
+    preview_url["Preview WebSocket URL copy [PARTIAL]<br/>copies ws URL /api/preview/:pageId with access_token and organization_id query<br/>does not open socket in React page"]
+    autosave["Autosave behavior [PARTIAL]<br/>existing pages autosave after dirty changes with 10 second timeout<br/>new pages require first manual save before autosave"]
+    versions["Page versions [IMPLEMENTED]<br/>versions table shown for selected page<br/>restore calls page version restore API"]
+  end
+
+  pages_page --> builder_embedded
+  builder_embedded --> dnd_stack
+  builder_embedded --> palette
+  builder_embedded --> canvas
+  builder_embedded --> props_editor
+  builder_embedded --> local_preview
+  builder_embedded --> preview_url
+  builder_embedded --> autosave
+  builder_embedded --> versions
+
+  subgraph access_controls["Frontend Visibility and Role Controls"]
+    frontend_guard_note["Frontend route guard [PARTIAL]<br/>RequireAuth redirects without local accessToken<br/>not authoritative backend authorization"]
+    nav_visibility["Navigation visibility [PARTIAL]<br/>AppShell renders all nav items for authenticated users<br/>no role-based nav filtering found"]
+    org_context_note["Organization context [IMPLEMENTED]<br/>organization switcher updates activeOrganizationId<br/>API client adds X-Organization-Id for authenticated requests"]
+    org_role_controls["Organization role controls [IMPLEMENTED]<br/>OrganizationPage owner/admin manager checks<br/>BillingPage owner/admin/billing_manager checks<br/>BetaPage owner/admin/editor checks"]
+    global_role_controls["Global role controls [IMPLEMENTED]<br/>Marketplace review UI for admin and super_admin<br/>Beta product dashboard for admin and super_admin"]
+  end
+
+  require_auth --> frontend_guard_note
+  app_shell --> nav_visibility
+  app_shell --> org_context_note
+  organization_page --> org_role_controls
+  billing_page --> org_role_controls
+  beta_page --> org_role_controls
+  beta_page --> global_role_controls
+  marketplace_page --> global_role_controls
+
+  subgraph tests["Frontend Test Coverage"]
+    dashboard_test["DashboardPage.test.tsx [IMPLEMENTED]<br/>renders foundation cards<br/>mocks useHealth"]
+    pages_test["PagesPage.test.tsx [IMPLEMENTED]<br/>renders builder shell, component palette, canvas empty state, props editor<br/>mocks pages and component registry API"]
+    missing_page_tests["Other page tests [PARTIAL]<br/>No direct tests found for Auth, ContentTypes, Entries, Media, Marketplace, Workflow, Organization, WorkspaceRedirect, Billing, Beta, Settings"]
+  end
+
+  dashboard_page --> dashboard_test
+  pages_page --> pages_test
+  auth_page --> missing_page_tests
+  content_types_page --> missing_page_tests
+  entries_page --> missing_page_tests
+  media_page --> missing_page_tests
+  marketplace_page --> missing_page_tests
+  workflow_page --> missing_page_tests
+  organization_page --> missing_page_tests
+  workspace_redirect_page --> missing_page_tests
+  billing_page --> missing_page_tests
+  beta_page --> missing_page_tests
+  settings_page --> missing_page_tests
+
+  subgraph overloaded["Large or Overloaded Frontend Files"]
+    pages_overloaded["PagesPage.tsx [PARTIAL]<br/>page CRUD, builder state, DnD, props editor, preview URL, versions in one file"]
+    marketplace_overloaded["MarketplacePage.tsx [PARTIAL]<br/>creator profile, listings, catalog, package upload, validation reports, review and moderation in one file"]
+    organization_overloaded["OrganizationPage.tsx [PARTIAL]<br/>settings, domains, rate limits, audit, email, alerts, invites, members in one file"]
+  end
+
+  pages_page --> pages_overloaded
+  marketplace_page --> marketplace_overloaded
+  organization_page --> organization_overloaded
+
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+  classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
+  classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
+  classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111;
+  classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
+
+  class main_tsx,i18n_provider,router_tsx,app_shell,fallback_route,login_route,route_outlet,dashboard_route,content_types_route,entries_route,media_route,marketplace_route,pages_route,workflow_route,organization_route,workspace_route,billing_route,beta_route,settings_route,zustand_store,api_client,health_hook,status_badge,language_select,dynamic_form,type_defs,styles_css,auth_page,dashboard_page,content_types_page,entries_page,media_page,pages_page,workflow_page,organization_page,workspace_redirect_page,billing_page,beta_page,settings_page,builder_embedded,dnd_stack,palette,canvas,props_editor,local_preview,versions,org_context_note,org_role_controls,global_role_controls,dashboard_test,pages_test implemented;
+  class require_auth,marketplace_page,preview_url,autosave,frontend_guard_note,nav_visibility,missing_page_tests,pages_overloaded,marketplace_overloaded,organization_overloaded partial;
+  class browser,local_storage external;
+  class entry,routes,shared_frontend,pages,builder,access_controls,tests,overloaded frontend;

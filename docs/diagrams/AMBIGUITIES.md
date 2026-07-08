@@ -571,3 +571,27 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Boundary conflicts represented: Marketplace catalog is tenant-protected despite public-catalog wording; `/uploads` file bytes are public static serving by path; API documentation is incomplete for V2/V3 route coverage.
 - Effective middleware representation: matched route service first, then global Tower route layers in effective order, followed by auth-only or tenant route-stack middleware where applicable.
 - Production behavior changed: No.
+
+## AMB-032
+
+- ID: AMB-032
+- Domain: Frontend Localization Coverage
+- Exact question: Are all React admin UI strings translated, and does the i18n layer localize API/content data?
+- Documentation claim: `docs/I18N.md` says the i18n layer supports English/Persian, persisted locale selection, RTL document direction, and that other admin pages can be migrated incrementally.
+- Implementation evidence: `frontend/src/i18n/I18nProvider.tsx`, `frontend/src/i18n/locales.ts`, `frontend/src/i18n/messages.ts`, and `frontend/src/i18n/LanguageSelect.tsx` implement typed dictionaries, locale persistence, English fallback, and runtime document `lang`/`dir` updates. `frontend/src/pages/PagesPage.tsx` still renders raw `New`, `Title`, `Slug`, and `Restore`; `frontend/src/pages/SettingsPage.tsx` still renders raw `Name`, `Email`, `Role`, `Refresh token`, `Legacy localStorage`, and `HttpOnly cookie`.
+- Database evidence: `backend/migrations/0005_phase_five_delivery_api.sql` and `backend/migrations/0008_v2_phase_one_organizations.sql` add locale-aware navigation data; no full CMS translation table or admin UI translation table exists.
+- Frontend evidence: Every page imports or consumes `useI18n` directly or through shared components, and Marketplace UI has English/Persian message keys. API-returned messages, user-generated content, content schema labels, Marketplace listing text, and many enum/status strings are rendered as stored/runtime values rather than translated dictionary entries.
+- Test evidence: `frontend/src/pages/DashboardPage.test.tsx` and `frontend/src/pages/PagesPage.test.tsx` cover selected pages, but no complete translation-coverage or locale-switch regression test was found.
+- Conflict or missing information: The current UI is substantially localized, but not every visible string is routed through `t(...)`. API/content localization is a separate delivery/content concern and should not be inferred from admin UI localization.
+- Safest interpretation: Treat admin i18n and RTL as partially implemented: infrastructure and most page copy exist, but remaining hard-coded UI labels and API/content localization limits remain.
+- Representation to use in diagrams: Use `[PARTIAL] AMB-032` for complete translation coverage, and separate UI-copy localization from API/user-generated content localization.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `12-i18n-and-rtl-flow.mmd`, future frontend, content, delivery, and accessibility diagrams.
+
+## Step 10 Frontend State and i18n Update
+
+- Ambiguities added in step 10: AMB-032.
+- Audit updated: Localization row now references incomplete UI translation coverage and content/API localization limits.
+- State/API decisions represented: refresh is method-only in the frontend with no automatic interceptor; `X-Organization-Id` is added for `auth: true` requests when an active organization exists; delivery and Stripe webhook routes remain outside admin-page API flow.
+- Production behavior changed: No.

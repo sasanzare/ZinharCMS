@@ -1,0 +1,203 @@
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: frontend/src/stores/useAppStore.ts
+%% Evidence: frontend/src/hooks/useHealth.ts
+%% Evidence: frontend/src/pages/AuthPage.tsx
+%% Evidence: frontend/src/pages/WorkspaceRedirectPage.tsx
+%% Evidence: frontend/src/pages/DashboardPage.tsx
+%% Evidence: frontend/src/pages/ContentTypesPage.tsx
+%% Evidence: frontend/src/pages/EntriesPage.tsx
+%% Evidence: frontend/src/pages/MediaPage.tsx
+%% Evidence: frontend/src/pages/PagesPage.tsx
+%% Evidence: frontend/src/pages/WorkflowPage.tsx
+%% Evidence: frontend/src/pages/OrganizationPage.tsx
+%% Evidence: frontend/src/pages/BillingPage.tsx
+%% Evidence: frontend/src/pages/BetaPage.tsx
+%% Evidence: frontend/src/pages/MarketplacePage.tsx
+%% Evidence: frontend/src/pages/SettingsPage.tsx
+%% Evidence: frontend/src/types/api.ts
+%% Evidence: frontend/src/i18n/I18nProvider.tsx
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/routes/marketplace.rs
+flowchart TD
+  browser["Browser [EXTERNAL]<br/>React admin runtime"]
+
+  subgraph storage["Browser Storage and Runtime State"]
+    ls_access["localStorage zinhar.access_token [IMPLEMENTED]<br/>read by useAppStore and api.ts"]
+    ls_refresh["localStorage zinhar.refresh_token [PARTIAL]<br/>legacy refresh token mirror when response includes token"]
+    refresh_cookie["zinhar_refresh_token cookie [IMPLEMENTED]<br/>HttpOnly, SameSite=Lax, Path=/api/auth<br/>set and cleared by backend auth routes"]
+    ls_user["localStorage zinhar.user [IMPLEMENTED]<br/>serialized AuthUser"]
+    ls_orgs["localStorage zinhar.organizations [IMPLEMENTED]<br/>serialized organization memberships"]
+    ls_active_org["localStorage zinhar.active_organization_id [IMPLEMENTED]<br/>selected organization id"]
+    ls_locale["localStorage zinhar.locale [IMPLEMENTED]<br/>language state owned by i18n provider"]
+    app_store["useAppStore [IMPLEMENTED]<br/>sidebarCollapsed, accessToken, refreshToken, user,<br/>organizations, activeOrganizationId"]
+    api_memory["api.ts module memory [IMPLEMENTED]<br/>accessToken and activeOrganizationId mirror storage"]
+  end
+
+  browser --> app_store
+  app_store <--> ls_access
+  app_store <--> ls_refresh
+  app_store <--> ls_user
+  app_store <--> ls_orgs
+  app_store <--> ls_active_org
+  app_store --> api_memory
+  ls_locale --> language_state
+
+  subgraph auth_flow["Authentication, Refresh, and Logout"]
+    auth_page["AuthPage [IMPLEMENTED]<br/>login/register form with default local credentials<br/>calls api.auth.login or api.auth.register"]
+    set_session["setSession [IMPLEMENTED]<br/>stores access token, refresh token, user, organizations<br/>selects default or stored organization"]
+    require_auth["RequireAuth [PARTIAL]<br/>redirects to /login when local accessToken is absent<br/>frontend-only guard"]
+    manual_refresh_method["api.auth.refresh [PARTIAL]<br/>method exists and can use body token or cookie<br/>no automatic refresh interceptor or current UI usage found"]
+    logout_controls["Logout controls [IMPLEMENTED]<br/>AppShell and SettingsPage call api.auth.logout with stored refresh token if present"]
+    clear_session["clearSession [IMPLEMENTED]<br/>removes access, refresh, user, organizations,<br/>and active organization from localStorage and api memory"]
+  end
+
+  auth_page --> set_session
+  set_session --> app_store
+  set_session --> refresh_cookie
+  app_store --> require_auth
+  manual_refresh_method --> refresh_cookie
+  logout_controls --> clear_session
+  clear_session --> app_store
+
+  subgraph organization_flow["Organization Selection and Tenant Context"]
+    org_switcher["AppShell organization switcher [IMPLEMENTED]<br/>selects active organization from stored memberships"]
+    workspace_redirect["WorkspaceRedirectPage [IMPLEMENTED]<br/>matches /workspace/:slug locally or reloads organizations<br/>then redirects to /organization"]
+    set_active_org["setActiveOrganization and setOrganizations [IMPLEMENTED]<br/>validate stored membership before selecting organization"]
+    tenant_header["X-Organization-Id header [IMPLEMENTED]<br/>added by api.ts when auth true and active org exists"]
+    org_reload_key["Outlet keyed by activeOrganizationId [IMPLEMENTED]<br/>page subtree remounts on organization change"]
+  end
+
+  org_switcher --> set_active_org
+  workspace_redirect --> set_active_org
+  set_active_org --> app_store
+  app_store --> tenant_header
+  org_switcher --> org_reload_key
+
+  subgraph request_pipeline["API Client Request Pipeline"]
+    api_base["API base URL [IMPLEMENTED]<br/>VITE_API_URL or http://localhost:8080"]
+    request_fn["request<T>() [IMPLEMENTED]<br/>central fetch wrapper used by all api groups"]
+    json_body["JSON body behavior [IMPLEMENTED]<br/>sets Content-Type application/json when body exists"]
+    multipart_body["Multipart behavior [IMPLEMENTED]<br/>FormData for media upload and Marketplace version upload<br/>browser sets multipart boundary"]
+    bearer_header["Authorization header [IMPLEMENTED]<br/>Bearer access token only when auth true and token exists"]
+    credentialed_fetch["Credentialed fetch [IMPLEMENTED]<br/>credentials include on every request"]
+    error_mapping["Response error handling [IMPLEMENTED]<br/>non-2xx parses message or error JSON<br/>throws ApiError(status, message)"]
+    typed_responses["Typed API DTOs [IMPLEMENTED]<br/>frontend/src/types/api.ts response and request types"]
+  end
+
+  api_base --> request_fn
+  request_fn --> json_body
+  request_fn --> multipart_body
+  request_fn --> bearer_header
+  request_fn --> tenant_header
+  request_fn --> credentialed_fetch
+  request_fn --> error_mapping
+  request_fn --> typed_responses
+  credentialed_fetch --> refresh_cookie
+
+  subgraph no_tenant["APIs That Should Not Require Tenant Header"]
+    public_system["Public system APIs [IMPLEMENTED]<br/>/ , /health , /ready<br/>api.info exists but no page usage; useHealth uses health and readiness"]
+    public_auth["Public auth APIs [IMPLEMENTED]<br/>login, register, refresh<br/>credentials include supports refresh cookie"]
+    stripe_webhook["Stripe webhook [EXTERNAL]<br/>/api/billing/stripe/webhook inbound only<br/>no frontend method by design"]
+    delivery_api["Delivery API [IMPLEMENTED]<br/>/api/v1/content, pages, settings, navigation, sitemap, robots<br/>consumer-facing; no admin API client methods"]
+  end
+
+  subgraph auth_only["Auth-Only APIs, Tenant Header Not Required by Backend"]
+    auth_only_routes["Auth protected non-tenant routes [IMPLEMENTED]<br/>/api/auth/logout, /api/auth/me<br/>/api/organizations, /api/organization-invitations/accept<br/>/api/beta/product-dashboard, /api/beta/participants/:organization_id<br/>/api/plugins"]
+    header_extra["Client behavior [PARTIAL]<br/>api.ts still sends X-Organization-Id to auth true calls when selected<br/>backend ignores it for auth-only route stack"]
+  end
+
+  subgraph tenant_apis["Tenant Header APIs"]
+    tenant_routes["Tenant protected APIs [IMPLEMENTED]<br/>content types, entries, media, pages, component registry,<br/>workflow comments, webhooks, current organization,<br/>billing, beta org dashboard, Marketplace catalog/submission/review"]
+    upload_limit["Tenant upload body limit [IMPLEMENTED]<br/>backend DefaultBodyLimit applies to tenant stack"]
+  end
+
+  request_fn --> public_system
+  request_fn --> public_auth
+  request_fn --> auth_only_routes
+  auth_only_routes --> header_extra
+  request_fn --> tenant_routes
+  tenant_routes --> upload_limit
+  delivery_api -. external consumers .-> browser
+  stripe_webhook -. inbound integration .-> request_fn
+
+  subgraph page_api_map["Frontend Page to API Group Map"]
+    page_auth["Auth [IMPLEMENTED]<br/>AuthPage -> api.auth.login/register"]
+    page_dashboard["Dashboard [IMPLEMENTED]<br/>DashboardPage -> health/readiness, contentTypes, media, pages, entries, billing.usage"]
+    page_content_types["Content types [IMPLEMENTED]<br/>ContentTypesPage -> api.contentTypes list/create/update/delete"]
+    page_entries["Entries [IMPLEMENTED]<br/>EntriesPage -> api.contentTypes and api.entries CRUD/workflow"]
+    page_media["Media [IMPLEMENTED]<br/>MediaPage -> api.media list/upload/update/delete"]
+    page_pages["Pages [IMPLEMENTED]<br/>PagesPage -> api.pages CRUD/workflow/versions/restore and api.components.list"]
+    page_workflow["Workflow [IMPLEMENTED]<br/>WorkflowPage -> contentTypes, entries/pages pending review,<br/>comments, plugins enable/disable"]
+    page_org["Organization [IMPLEMENTED]<br/>OrganizationPage -> api.organizations current, members, invitations,<br/>workspace, domains, rateLimit, auditLogs, emailDeliveries, alerts"]
+    page_billing["Billing [IMPLEMENTED]<br/>BillingPage -> api.billing plans, usage, changePlan,<br/>checkout, portal, rebuildUsage"]
+    page_beta["Beta [IMPLEMENTED]<br/>BetaPage -> api.beta dashboard, feedback, blockers,<br/>productDashboard, participants"]
+    page_marketplace["Marketplace [PARTIAL]<br/>MarketplacePage -> creator, listings, catalog, catalogDetail,<br/>version upload, submissions, review queue/events, review decisions, moderation<br/>install action is deferred"]
+    page_settings["Settings [PARTIAL]<br/>SettingsPage -> auth.me/logout, webhooks list/create/update/delete/test<br/>environment values are hard-coded read-only display"]
+  end
+
+  auth_page --> page_auth
+  request_fn --> page_dashboard
+  request_fn --> page_content_types
+  request_fn --> page_entries
+  request_fn --> page_media
+  request_fn --> page_pages
+  request_fn --> page_workflow
+  request_fn --> page_org
+  request_fn --> page_billing
+  request_fn --> page_beta
+  request_fn --> page_marketplace
+  request_fn --> page_settings
+
+  subgraph websocket_and_uploads["Special Frontend Data Flows"]
+    media_upload["Media upload [IMPLEMENTED]<br/>api.media.upload builds FormData(file, alt_text, caption)"]
+    package_upload["Marketplace package upload [IMPLEMENTED]<br/>api.marketplace.uploadVersion builds FormData(file, manifest)"]
+    preview_url["Preview WebSocket URL creation [PARTIAL]<br/>PagesPage copies ws URL from api.baseUrl<br/>adds access_token and organization_id query params<br/>React page does not instantiate WebSocket"]
+    clipboard["Clipboard side effects [IMPLEMENTED]<br/>copy media URL, workspace URL, invitation link, preview URL"]
+  end
+
+  multipart_body --> media_upload
+  multipart_body --> package_upload
+  page_pages --> preview_url
+  page_media --> clipboard
+  page_org --> clipboard
+  preview_url --> clipboard
+
+  subgraph gaps["Gaps, Unused Client Methods, and Controls Without Endpoints"]
+    backend_no_ui["Backend APIs with no admin UI/client use [PARTIAL]<br/>/api/auth module status, public delivery routes,<br/>Stripe webhook, /api/pages/slug/:slug,<br/>component registry get/create/update/delete"]
+    unused_client_methods["Defined api.ts methods with no current UI call [PARTIAL]<br/>auth.refresh, api.info, billing.subscription,<br/>webhooks.deliveries, marketplace.reviewReports,<br/>entries.unpublish, pages.unpublish"]
+    frontend_no_endpoint["Frontend controls without runtime endpoint [PARTIAL]<br/>Marketplace install button is disabled/deferred<br/>Settings environment values are static read-only copy<br/>language selection is local-only"]
+    repeated_logic["Repeated page-level API logic [PARTIAL]<br/>loading/actionLoading/message/error state and ApiError fallback<br/>repeated across pages instead of shared async hook"]
+  end
+
+  request_fn --> backend_no_ui
+  request_fn --> unused_client_methods
+  page_marketplace --> frontend_no_endpoint
+  page_settings --> frontend_no_endpoint
+  page_auth --> repeated_logic
+  page_content_types --> repeated_logic
+  page_media --> repeated_logic
+  page_pages --> repeated_logic
+  page_marketplace --> repeated_logic
+
+  subgraph language_pointer["Language State Cross Reference"]
+    language_state["Language state [IMPLEMENTED]<br/>I18nProvider reads browser/localStorage locale<br/>LanguageSelect updates locale and document dir<br/>full i18n flow is diagrammed in 12-i18n-and-rtl-flow.mmd"]
+  end
+
+  browser --> language_state
+
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+  classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
+  classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
+  classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111;
+  classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
+  classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111;
+
+  class ls_access,refresh_cookie,ls_user,ls_orgs,ls_active_org,ls_locale,app_store,api_memory,auth_page,set_session,logout_controls,clear_session,org_switcher,workspace_redirect,set_active_org,tenant_header,org_reload_key,api_base,request_fn,json_body,multipart_body,bearer_header,credentialed_fetch,error_mapping,typed_responses,public_system,public_auth,delivery_api,auth_only_routes,tenant_routes,upload_limit,page_auth,page_dashboard,page_content_types,page_entries,page_media,page_pages,page_workflow,page_org,page_billing,page_beta,page_settings,media_upload,package_upload,clipboard,language_state implemented;
+  class ls_refresh,require_auth,manual_refresh_method,header_extra,page_marketplace,preview_url,backend_no_ui,unused_client_methods,frontend_no_endpoint,repeated_logic partial;
+  class browser,stripe_webhook external;
+  class storage,auth_flow,organization_flow,request_pipeline,page_api_map,websocket_and_uploads,gaps,language_pointer frontend;
+  class tenant_apis,no_tenant,auth_only backend;
