@@ -1,0 +1,113 @@
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0003_phase_one_core.sql
+%% Evidence: backend/migrations/0005_phase_five_delivery_api.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+%% Evidence: backend/src/routes/media.rs
+%% Evidence: backend/src/services/media_processing.rs
+%% Evidence: backend/src/routes/webhooks.rs
+%% Evidence: backend/src/services/webhooks.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/services/cache.rs
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: frontend/src/pages/MediaPage.tsx
+%% Evidence: frontend/src/pages/SettingsPage.tsx
+%% [IMPLEMENTED] Media, webhook, public_settings, and navigation tables are tenant-owned after migration 0008 and RLS-protected after migration 0009.
+%% [PARTIAL] Media files are stored on local filesystem under UPLOAD_DIR. PostgreSQL stores URL/path strings, not file bytes or a generic metadata JSONB column.
+%% [PARTIAL] /uploads is served as public static files by axum ServeDir. Access control is not checked when serving file bytes.
+%% [PARTIAL] Webhook secrets are stored as plaintext in webhooks.secret and returned by management API responses. Signatures are generated per dispatch and are not stored.
+%% [PARTIAL] Webhook deliveries record one dispatch attempt per row. There is no retry count, next retry timestamp, durable job queue, or retry schedule table.
+%% [IMPLEMENTED] Delivery cache uses Redis runtime keys only. No PostgreSQL delivery_cache table exists.
+erDiagram
+  organizations {
+    UUID id PK "0008 tenant owner table"
+    TEXT slug UK "0008 global UNIQUE organization workspace slug"
+    organization_status status "0008 active, suspended, deleted"
+  }
+
+  users {
+    UUID id PK "0001 identity reference"
+    CITEXT email UK "0001 unique user email"
+  }
+
+  media {
+    UUID id PK "0001 default gen_random_uuid(); upload handler uses UUIDv7"
+    UUID organization_id FK "0008 NOT NULL DEFAULT app_default_organization_id(); REFERENCES organizations(id) ON DELETE CASCADE"
+    TEXT filename "0001 original sanitized upload filename, NOT stored path"
+    TEXT url "0001 public URL such as /uploads/{organization_id}/{file_id}.ext"
+    TEXT mime_type "0001 NOT NULL; detected from bytes in route handler"
+    BIGINT size "0001 NOT NULL; media_size_positive"
+    TEXT alt_text "0001 nullable"
+    TEXT caption "0003 nullable"
+    UUID uploader_id FK "0001 REFERENCES users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now(); idx_media_org_created"
+    TIMESTAMPTZ updated_at "0001 NOT NULL DEFAULT now()"
+  }
+
+  media_variants {
+    UUID id PK "0001 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL REFERENCES organizations(id) ON DELETE CASCADE; trigger set_media_variant_organization_id"
+    UUID media_id FK "0001 NOT NULL REFERENCES media(id) ON DELETE CASCADE"
+    TEXT variant_name "0001 NOT NULL; UNIQUE (media_id, variant_name)"
+    TEXT url "0001 public URL under /uploads/{organization_id}/variants"
+    INTEGER width "0001 nullable; positive when present"
+    INTEGER height "0001 nullable; positive when present"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now()"
+  }
+
+  webhooks {
+    UUID id PK "0005 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL DEFAULT app_default_organization_id(); REFERENCES organizations(id) ON DELETE CASCADE"
+    TEXT name "0005 NOT NULL; webhooks_name_not_empty"
+    TEXT url "0005 NOT NULL; HTTP/HTTPS URL; SSRF validation in service"
+    TEXT_ARRAY events "0005 NOT NULL; GIN idx_webhooks_active_events; supported entry/page publish/unpublish"
+    TEXT secret "0005 NOT NULL; plaintext signing secret"
+    BOOLEAN is_active "0005 NOT NULL DEFAULT TRUE"
+    TIMESTAMPTZ created_at "0005 NOT NULL DEFAULT now(); idx_webhooks_org_created"
+    TIMESTAMPTZ updated_at "0005 NOT NULL DEFAULT now()"
+  }
+
+  webhook_deliveries {
+    UUID id PK "0005 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL REFERENCES organizations(id) ON DELETE CASCADE; trigger set_webhook_delivery_organization_id"
+    UUID webhook_id FK "0005 NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE"
+    TEXT event "0005 NOT NULL"
+    JSONB payload "0005 NOT NULL; webhook_deliveries_payload_object"
+    TEXT status "0005 CHECK status IN delivered,failed"
+    INTEGER status_code "0005 nullable HTTP status"
+    TEXT response_body "0005 nullable; truncated to 2000 chars in service"
+    TEXT error "0005 nullable; truncated to 2000 chars in service"
+    TIMESTAMPTZ attempted_at "0005 NOT NULL DEFAULT now(); idx_webhook_deliveries_org_webhook_attempted"
+  }
+
+  public_settings {
+    UUID organization_id PK, FK "0008 REFERENCES organizations(id) ON DELETE CASCADE; RLS tenant-owned"
+    TEXT key PK "0005 key; public_settings_key_format; PK changed to organization_id,key in 0008"
+    JSONB value "0005 NOT NULL"
+    BOOLEAN is_public "0005 NOT NULL DEFAULT TRUE"
+    TIMESTAMPTZ updated_at "0005 NOT NULL DEFAULT now()"
+  }
+
+  navigation_items {
+    UUID id PK "0005 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL DEFAULT app_default_organization_id(); REFERENCES organizations(id) ON DELETE CASCADE"
+    TEXT label "0005 NOT NULL; navigation_label_not_empty"
+    TEXT url "0005 NOT NULL; navigation_url_not_empty"
+    UUID parent_id FK "0005 REFERENCES navigation_items(id) ON DELETE CASCADE"
+    INTEGER position "0005 NOT NULL DEFAULT 0"
+    TEXT locale "0005 NOT NULL DEFAULT fa; navigation_locale_format"
+    BOOLEAN is_public "0005 NOT NULL DEFAULT TRUE"
+    TIMESTAMPTZ created_at "0005 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0005 NOT NULL DEFAULT now()"
+  }
+
+  organizations ||--o{ media : "organization_id CASCADE"
+  users |o--o{ media : "uploader_id SET NULL"
+  media ||--o{ media_variants : "media_id CASCADE; DB rows only"
+  organizations ||--o{ media_variants : "organization_id CASCADE"
+  organizations ||--o{ webhooks : "organization_id CASCADE"
+  webhooks ||--o{ webhook_deliveries : "webhook_id CASCADE"
+  organizations ||--o{ webhook_deliveries : "organization_id CASCADE"
+  organizations ||--o{ public_settings : "organization_id CASCADE; delivery reads is_public rows"
+  organizations ||--o{ navigation_items : "organization_id CASCADE; delivery reads is_public rows"
+  navigation_items |o--o{ navigation_items : "parent_id CASCADE"

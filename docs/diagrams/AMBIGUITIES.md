@@ -703,3 +703,129 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Ambiguities added in step 11: AMB-033, AMB-034, AMB-035, AMB-036, AMB-037, AMB-038.
 - Schema decisions represented: access tokens are not database entities; refresh tokens rotate by row revocation plus new insert; settings and navigation are tenant-owned after migration 0008; content type slugs are tenant-scoped; entry JSON slugs are not SQL-unique.
 - Production behavior changed: No.
+
+## AMB-039
+
+- ID: AMB-039
+- Domain: Polymorphic Comments
+- Exact question: Are comments linked to pages and entries by SQL foreign keys or by application-level polymorphic references?
+- Documentation claim: Collaboration documentation describes comments on entries and pages.
+- Implementation evidence: `backend/src/routes/comments.rs` validates `entity_type` and checks entity existence before inserts and reads. `backend/src/routes/pages.rs` and workflow pages use comments as editorial collaboration data.
+- Database evidence: `backend/migrations/0006_phase_six_workflow_collaboration.sql` creates `comments(entity_type, entity_id)` with `CHECK (entity_type IN ('entry', 'page'))`. `backend/migrations/0008_v2_phase_one_organizations.sql` adds `organization_id` and trigger `set_comment_organization_id`, but there is no SQL foreign key from `comments.entity_id` to `pages.id` or `content_entries.id`.
+- Frontend evidence: Frontend comment usage is routed through API requests with explicit `entity_type` and `entity_id`, not relational joins.
+- Test evidence: No SQL-level polymorphic referential-integrity test was found.
+- Conflict or missing information: Runtime validates references, while schema does not enforce polymorphic foreign keys.
+- Safest interpretation: Treat comments-to-pages and comments-to-entries as application-only relationships with tenant RLS on the comment row.
+- Representation to use in diagrams: Draw dashed or explicitly labeled `application-only` relationships from comments to pages/entries; do not mark them as SQL FKs.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `15-page-builder-data-model.mmd`, future collaboration data diagrams.
+
+## AMB-040
+
+- ID: AMB-040
+- Domain: Webhook Secret Storage
+- Exact question: Are webhook signing secrets stored hashed/encrypted, or as plaintext operational secrets?
+- Documentation claim: Webhook documentation describes HMAC signatures and secret-based delivery.
+- Implementation evidence: `backend/src/routes/webhooks.rs` inserts and returns `webhooks.secret`; `backend/src/services/webhooks.rs` signs each JSON body with `sign_payload(secret, body)` and sends `X-CMS-Signature`.
+- Database evidence: `backend/migrations/0005_phase_five_delivery_api.sql` defines `webhooks.secret TEXT NOT NULL`; no secret hash, encrypted value, key id, rotation metadata, or signature table exists.
+- Frontend evidence: `frontend/src/pages/SettingsPage.tsx` creates a random secret and passes it to the backend; webhook responses include `secret`.
+- Test evidence: `backend/src/services/webhooks.rs` tests signature stability, not encrypted-at-rest behavior.
+- Conflict or missing information: HMAC signing is implemented, but secret storage hardening is not represented in schema.
+- Safest interpretation: Treat webhook secrets as plaintext application secrets in the current database schema.
+- Representation to use in diagrams: Show `webhooks.secret TEXT` and note that signatures are generated at dispatch time and not stored.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `16-media-delivery-webhook-data-model.mmd`, future webhook security diagrams.
+
+## AMB-041
+
+- ID: AMB-041
+- Domain: Webhook Retry Behavior
+- Exact question: Are webhook deliveries retried and modeled with attempt counts or schedules?
+- Documentation claim: Delivery and webhook docs describe delivery logs and async dispatch, but do not prove a durable retry scheduler.
+- Implementation evidence: `backend/src/services/webhooks.rs` loads active webhooks, starts one `tokio::spawn` per webhook, performs one HTTP POST with a 10 second timeout, and calls `record_delivery`. No retry loop, queue, worker, `attempt_count`, or `next_retry_at` logic was found.
+- Database evidence: `backend/migrations/0005_phase_five_delivery_api.sql` creates `webhook_deliveries` with `status`, `status_code`, `response_body`, `error`, and `attempted_at`; no retry metadata columns exist.
+- Frontend evidence: `frontend/src/pages/SettingsPage.tsx` can test a webhook, but it does not manage retries.
+- Test evidence: No retry or durable worker test was found.
+- Conflict or missing information: Each delivery row can be interpreted as an attempt, but the schema does not model retry state.
+- Safest interpretation: Treat webhook deliveries as one-shot attempts with logs only.
+- Representation to use in diagrams: Use `[PARTIAL] one dispatch attempt per delivery row; no retry model`.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `16-media-delivery-webhook-data-model.mmd`, future webhook runtime diagrams.
+
+## AMB-042
+
+- ID: AMB-042
+- Domain: File Deletion Cascade
+- Exact question: Does database cascade deletion also remove physical media files from local storage?
+- Documentation claim: Media documentation describes deleting media assets from the library.
+- Implementation evidence: `backend/src/routes/media.rs` deletes the `media` row, then calls `remove_file_for_url` for the original and each loaded variant URL. This cleanup runs only through the media delete handler.
+- Database evidence: `backend/migrations/0001_initial_schema.sql` defines `media_variants.media_id REFERENCES media(id) ON DELETE CASCADE`; `backend/migrations/0008_v2_phase_one_organizations.sql` adds organization ownership with `ON DELETE CASCADE`. SQL cascade only removes rows.
+- Frontend evidence: `frontend/src/pages/MediaPage.tsx` calls `api.media.delete` for user-initiated media deletion.
+- Test evidence: No filesystem cleanup test for organization cascade or direct database deletion was found.
+- Conflict or missing information: Database cascade and filesystem lifecycle are separate systems.
+- Safest interpretation: Treat file cleanup as handler-level behavior for explicit media deletes, not as a guarantee for every SQL cascade path.
+- Representation to use in diagrams: Label media-to-variant cascade as database-row cascade and document physical cleanup as application-only.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `16-media-delivery-webhook-data-model.mmd`, future media lifecycle diagrams.
+
+## AMB-043
+
+- ID: AMB-043
+- Domain: Public Media Access
+- Exact question: Are uploaded media files protected by tenant/auth checks when their URLs are requested?
+- Documentation claim: Media docs describe uploaded assets and URLs; security docs harden upload validation.
+- Implementation evidence: `backend/src/routes/mod.rs` mounts `ServeDir` at `/uploads` outside auth and tenant middleware. `backend/src/routes/media.rs` stores URLs under `/uploads/{organization_id}/...`.
+- Database evidence: Media rows are tenant-owned and RLS-protected, but static file serving does not consult PostgreSQL.
+- Frontend evidence: `frontend/src/pages/MediaPage.tsx` builds display/copy URLs from `api.baseUrl + media.url`.
+- Test evidence: No static upload access-control test was found.
+- Conflict or missing information: Metadata APIs are tenant-protected, but file bytes are public by path.
+- Safest interpretation: Treat media bytes as publicly accessible static files once the URL is known.
+- Representation to use in diagrams: Mark `/uploads` access as public static serving and separate it from tenant-protected media metadata rows.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `16-media-delivery-webhook-data-model.mmd`, future security and media delivery diagrams.
+
+## AMB-044
+
+- ID: AMB-044
+- Domain: Variant Generation Cleanup
+- Exact question: What happens to media rows and files if variant generation fails after the original upload is saved?
+- Documentation claim: Media docs describe generated WebP variants.
+- Implementation evidence: `backend/src/routes/media.rs` writes the original file, inserts the `media` row, then calls `process_image_variants`; variant rows are inserted after generated files are returned. No transaction around file writes and row inserts, and no cleanup block on variant-processing failure, was found.
+- Database evidence: `media_variants` rows exist only after successful inserts; there is no table field tracking partial variant generation or cleanup state.
+- Frontend evidence: Frontend only receives success/error from the upload endpoint and does not know partial server-side cleanup state.
+- Test evidence: No failed-variant-generation cleanup test was found.
+- Conflict or missing information: Runtime may leave original files or media rows when a later processing step fails.
+- Safest interpretation: Treat variant generation as best-effort after media row insertion, with cleanup behavior currently unproven for failure paths.
+- Representation to use in diagrams: Mark variant cleanup as `[PARTIAL] AMB-044`; do not imply transactional file/database atomicity.
+- Confidence: MEDIUM
+- Status: RESOLVED
+- Affected diagram files: `16-media-delivery-webhook-data-model.mmd`, future media processing diagrams.
+
+## AMB-045
+
+- ID: AMB-045
+- Domain: Delivery Cache Persistence
+- Exact question: Is Delivery API cache persisted in PostgreSQL or only in Redis runtime keys?
+- Documentation claim: Delivery documentation describes Redis-backed delivery cache with database fallback.
+- Implementation evidence: `backend/src/services/cache.rs` reads and writes Redis keys with TTL and falls back to fetch when Redis is unavailable. `backend/src/routes/delivery.rs` builds cache keys for content, pages, settings, navigation, sitemap, and robots.
+- Database evidence: No delivery cache table exists in migrations `0001` through `0018`.
+- Frontend evidence: No frontend cache model exists; consumers receive Delivery API responses.
+- Test evidence: Cache helper behavior is represented in code, but no PostgreSQL cache persistence test was found.
+- Conflict or missing information: Cache is implemented, but not as a relational data model.
+- Safest interpretation: Do not draw a PostgreSQL delivery cache table; mention Redis cache only in comments or runtime diagrams.
+- Representation to use in diagrams: Use `[IMPLEMENTED] Redis runtime cache` comments and no ERD entity.
+- Confidence: HIGH
+- Status: RESOLVED
+- Affected diagram files: `16-media-delivery-webhook-data-model.mmd`, future delivery runtime diagrams.
+
+## Step 12 Page Builder Media Delivery Webhook Data Model Update
+
+- Ambiguities added in step 12: AMB-039, AMB-040, AMB-041, AMB-042, AMB-043, AMB-044, AMB-045.
+- Existing ambiguity reused: AMB-034 covers navigation storage and now also applies to `16-media-delivery-webhook-data-model.mmd`.
+- Data model decisions represented: page versions are complete snapshots; restore-from is not persisted; component references inside `page_json` are stable string keys without SQL FKs; media file cleanup is handler-level; webhook retry state is not modeled; delivery cache is Redis-only.
+- Production behavior changed: No.

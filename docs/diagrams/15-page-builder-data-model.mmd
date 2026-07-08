@@ -1,0 +1,84 @@
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0004_phase_two_page_builder.sql
+%% Evidence: backend/migrations/0006_phase_six_workflow_collaboration.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/models/page.rs
+%% Evidence: frontend/src/pages/PagesPage.tsx
+%% Evidence: frontend/src/types/api.ts
+%% [IMPLEMENTED] Page builder storage uses pages, page_versions, component_registry, and polymorphic comments.
+%% [IMPLEMENTED] page_versions stores complete page_json snapshots, not deltas.
+%% [PARTIAL] Restore-from behavior is runtime-only: restore copies page_versions.page_json to pages, resets status to draft, clears published_at, then creates a new snapshot. No restored_from_version_id is persisted.
+%% [PARTIAL] Page layout references component_registry through page_json.layout node type strings matching component_key. There is no SQL foreign key from JSON nodes to component_registry.
+%% [IMPLEMENTED] Page metadata is stored inside pages.page_json.metadata, not as separate relational columns.
+erDiagram
+  organizations {
+    UUID id PK "0008 tenant owner table"
+    TEXT slug UK "0008 global UNIQUE organization workspace slug"
+    organization_status status "0008 active, suspended, deleted"
+  }
+
+  users {
+    UUID id PK "0001 identity reference"
+    CITEXT email UK "0001 unique user email"
+  }
+
+  pages {
+    UUID id PK "0001 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL DEFAULT app_default_organization_id(); REFERENCES organizations(id) ON DELETE CASCADE"
+    TEXT title "0001 NOT NULL; application validates non-empty"
+    TEXT slug "0001 NOT NULL; pages_slug_format; UNIQUE (organization_id, slug) after 0008"
+    JSONB page_json "0001 NOT NULL DEFAULT layout object; page JSON object check"
+    page_status status "0001 draft, published, archived; 0006 adds pending_review; DEFAULT draft"
+    UUID author_id FK "0001 REFERENCES users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ published_at "0001 nullable; set on publish and cleared on unpublish/restore-version"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0001 NOT NULL DEFAULT now(); idx_pages_org_updated"
+  }
+
+  page_versions {
+    UUID id PK "0001 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL REFERENCES organizations(id) ON DELETE CASCADE; trigger set_page_version_organization_id"
+    UUID page_id FK "0001 NOT NULL REFERENCES pages(id) ON DELETE CASCADE"
+    INTEGER version "0001 NOT NULL; positive; UNIQUE (page_id, version)"
+    JSONB page_json "0001 NOT NULL; complete page snapshot; page_versions_json_object"
+    TIMESTAMPTZ snapshot_at "0001 NOT NULL DEFAULT now()"
+    UUID created_by FK "0001 REFERENCES users(id) ON DELETE SET NULL"
+  }
+
+  component_registry {
+    UUID id PK "0001 default gen_random_uuid()"
+    UUID organization_id FK "0008 nullable for system components; custom components require organization_id; REFERENCES organizations(id) ON DELETE CASCADE"
+    TEXT component_key UK "0004 NOT NULL; global component_registry_key_unique; component_registry_key_format"
+    TEXT name UK "0001 NOT NULL UNIQUE"
+    TEXT category "0001 NOT NULL; application validates slug format for custom writes"
+    JSONB props_schema "0001 NOT NULL DEFAULT object; component_registry_props_object"
+    BOOLEAN is_system "0001 NOT NULL DEFAULT FALSE; system components readable across tenants"
+    TIMESTAMPTZ created_at "0001 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0001 NOT NULL DEFAULT now()"
+  }
+
+  comments {
+    UUID id PK "0006 default gen_random_uuid()"
+    UUID organization_id FK "0008 NOT NULL REFERENCES organizations(id) ON DELETE CASCADE; trigger set_comment_organization_id"
+    TEXT entity_type "0006 CHECK entity_type IN entry,page"
+    UUID entity_id "0006 NOT NULL; polymorphic id, no SQL FK to pages"
+    TEXT body "0006 NOT NULL; comments_body_not_empty"
+    UUID author_id FK "0006 REFERENCES users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ resolved_at "0006 nullable"
+    UUID resolved_by FK "0006 REFERENCES users(id) ON DELETE SET NULL"
+    TIMESTAMPTZ created_at "0006 NOT NULL DEFAULT now()"
+    TIMESTAMPTZ updated_at "0006 NOT NULL DEFAULT now()"
+  }
+
+  organizations ||--o{ pages : "organization_id CASCADE; idx_pages_org_status"
+  users |o--o{ pages : "author_id SET NULL"
+  pages ||--o{ page_versions : "page_id CASCADE; complete snapshots"
+  organizations ||--o{ page_versions : "organization_id CASCADE; idx_page_versions_org_page"
+  users |o--o{ page_versions : "created_by SET NULL"
+  organizations |o--o{ component_registry : "organization_id CASCADE for custom; NULL for system"
+  users |o--o{ comments : "author_id or resolved_by SET NULL"
+  organizations ||--o{ comments : "organization_id CASCADE; idx_comments_org_entity"
+  pages ||--o{ comments : "application-only when entity_type is page; no SQL FK"
+  component_registry ||..o{ pages : "application-only page_json.layout type equals component_key; no SQL FK"
