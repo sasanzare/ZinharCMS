@@ -1,0 +1,196 @@
+sequenceDiagram
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/services/stripe_billing.rs
+%% Evidence: backend/src/services/quota.rs
+%% Evidence: backend/src/services/audit.rs
+%% Evidence: backend/src/services/email.rs
+%% Evidence: backend/src/routes/beta.rs
+%% Evidence: backend/src/services/ga_readiness.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/migrations/0010_v2_phase_five_billing_quota.sql
+%% Evidence: backend/migrations/0011_v2_phase_six_stripe_billing.sql
+%% Evidence: backend/migrations/0012_v2_phase_seven_saas_ops.sql
+%% Evidence: backend/migrations/0014_v2_phase_nine_beta_release.sql
+
+actor Manager as Organization billing manager
+actor Member as Organization member
+actor Operator as Organization admin/editor
+participant Client as React admin/API client
+participant Tenant as Auth and tenant middleware
+participant Billing as Billing routes
+participant Quota as Quota service
+participant StripeSvc as Stripe billing service
+participant Stripe as Stripe API/webhook sender
+participant Ops as Beta/GA routes
+participant Audit as Audit/email services
+participant DB as PostgreSQL
+
+rect rgb(238, 247, 255)
+    Note over Member,DB: Plan listing and current usage [IMPLEMENTED]
+    Member->>Client: Open Billing page
+    Client->>Tenant: GET /api/billing/plans with tenant headers
+    Tenant->>Billing: TenantContext; billing path is API-quota exempt
+    Billing->>DB: SELECT active plans ordered by price
+    Billing->>Billing: Mark Stripe checkout availability from plan/configured price IDs
+    Billing-->>Client: Free, Pro, and Enterprise plan metadata
+    Client->>Tenant: GET /api/billing/usage
+    Tenant->>Billing: TenantContext
+    Billing->>Quota: usage_summary
+    Quota->>DB: Ensure/load subscription and effective plan
+    Quota->>DB: Recalculate members, content records, and media bytes
+    Quota->>DB: UPSERT three rebuildable usage_counters
+    Quota->>DB: Read current API request counter
+    Billing-->>Client: Subscription, limits, usage, and exceeded flags
+end
+
+rect rgb(238, 255, 242)
+    Note over Manager,Stripe: Checkout creation [IMPLEMENTED, EXTERNAL/LOCAL STEPS ARE NON-ATOMIC]
+    Manager->>Client: Choose paid plan
+    Client->>Tenant: POST /api/billing/checkout
+    Tenant->>Billing: TenantContext
+    Billing->>Billing: require_org_billing_manager
+    Billing->>StripeSvc: create_checkout_session
+    StripeSvc->>DB: Load active plan and Stripe price ID
+    StripeSvc->>Quota: Ensure default local subscription
+    StripeSvc->>DB: Load provider_customer_id
+    alt Customer ID missing
+        StripeSvc->>DB: Load organization name and owner email
+        StripeSvc->>Stripe: POST /v1/customers
+        Stripe-->>StripeSvc: Stripe customer ID
+        StripeSvc->>DB: UPDATE local subscription provider/customer ID
+        Note over StripeSvc,DB: Stripe customer creation and local update are not transactional [PARTIAL]
+    end
+    StripeSvc->>Stripe: POST /v1/checkout/sessions with organization/plan metadata
+    alt Stripe request fails
+        Stripe-->>Billing: ServiceUnavailable; no checkout audit
+    else Session created
+        Stripe-->>StripeSvc: Session ID and URL
+        Billing->>Audit: Record billing.checkout.create after external call
+        Audit->>DB: INSERT audit_logs
+        alt Audit fails
+            Note over Billing,Stripe: Stripe session already exists and is not canceled [PARTIAL]
+            Billing-->>Client: Mapped audit error
+        else Audit succeeds
+            Billing-->>Client: Checkout session URL
+        end
+    end
+end
+
+rect rgb(250, 248, 255)
+    Note over Manager,Stripe: Customer portal [IMPLEMENTED]
+    Manager->>Client: Open customer portal
+    Client->>Tenant: POST /api/billing/portal
+    Tenant->>Billing: TenantContext
+    Billing->>Billing: require_org_billing_manager
+    Billing->>StripeSvc: create_customer_portal_session
+    StripeSvc->>DB: Load existing provider_customer_id
+    alt Customer ID absent
+        Billing-->>Client: Validation error
+    else Customer ID present
+        StripeSvc->>Stripe: POST /v1/billing_portal/sessions
+        Stripe-->>StripeSvc: Portal URL
+        Billing->>Audit: Record billing.portal.create after external call
+        Audit->>DB: INSERT audit_logs
+        Billing-->>Client: Portal URL
+    end
+end
+
+rect rgb(255, 238, 245)
+    Note over Stripe,DB: Stripe webhook signature, idempotency, ordering, and subscription update [IMPLEMENTED]
+    Stripe->>Billing: POST /api/billing/stripe/webhook with raw body and Stripe-Signature
+    Billing->>StripeSvc: handle_webhook
+    StripeSvc->>StripeSvc: Verify timestamp tolerance and HMAC-SHA256 v1 signature
+    alt Signature/config/payload invalid
+        StripeSvc-->>Stripe: 401, 400, or 503 mapped error; no event row
+    else Signature and payload valid
+        critical Billing event transaction with RLS bypass [IMPLEMENTED]
+            StripeSvc->>DB: BEGIN; set zinhar.rls_bypass=true
+            StripeSvc->>DB: INSERT billing_events status=processing ON CONFLICT DO NOTHING
+            alt Duplicate provider_event_id
+                StripeSvc->>DB: COMMIT without reprocessing
+                StripeSvc-->>Stripe: already_processed
+            else New supported event
+                StripeSvc->>DB: Resolve organization and plan
+                StripeSvc->>DB: UPSERT organization_subscriptions only when event timestamp is not older
+                Note over StripeSvc,DB: Events without a provider created timestamp pass the ordering guard [PARTIAL] AMB-054
+                alt Subscription row applied
+                    StripeSvc->>DB: UPDATE billing_events status=processed
+                    StripeSvc->>DB: INSERT billing.stripe_webhook.process audit log
+                else Stale provider event
+                    StripeSvc->>DB: UPDATE billing_events status=ignored
+                    StripeSvc->>DB: INSERT billing.stripe_webhook.ignore audit log
+                end
+                StripeSvc->>DB: COMMIT subscription/event/audit atomically
+                StripeSvc-->>Stripe: processed or ignored
+            else Unsupported event type
+                StripeSvc->>DB: UPDATE billing_events status=ignored
+                StripeSvc->>DB: COMMIT
+                StripeSvc-->>Stripe: ignored
+            end
+        option Processing error after event insertion
+            StripeSvc->>DB: Attempt UPDATE billing_events status=failed with error
+            alt Transaction remains usable
+                StripeSvc->>DB: COMMIT failed event record
+            else PostgreSQL transaction is already aborted
+                DB-->>StripeSvc: Failed-status update/commit also fails; transaction rolls back on drop
+            end
+            StripeSvc-->>Stripe: Mapped non-success response
+        end
+    end
+    Note over Quota,DB: Subsequent quota checks load the updated plan/status; canceled/incomplete subscriptions fall back to Free [IMPLEMENTED]
+end
+
+rect rgb(255, 252, 238)
+    Note over Manager,DB: Usage rebuilding and audit [IMPLEMENTED, NON-ATOMIC COUNTERS]
+    Manager->>Client: Click Rebuild usage
+    Client->>Tenant: POST /api/billing/usage/rebuild
+    Tenant->>Billing: TenantContext
+    Billing->>Billing: require_org_billing_manager
+    Quota->>DB: Calculate members, content records, and media bytes
+    Quota->>DB: UPSERT members counter via tenant connection
+    Quota->>DB: UPSERT content_records counter via another tenant connection
+    Quota->>DB: UPSERT media_bytes counter via another tenant connection
+    alt Any counter write fails
+        Note over Quota,DB: Earlier counters may already be committed; no encompassing transaction [PARTIAL]
+        Billing-->>Client: Mapped error
+    else Rebuild succeeds
+        Billing->>Audit: Record billing.usage.rebuild
+        Audit->>DB: INSERT audit_logs in a separate transaction
+        Billing->>Quota: Build response; usage_summary rebuilds counters again
+        Billing-->>Client: Refreshed usage JSON
+    end
+end
+
+rect rgb(255, 244, 238)
+    Note over Member,DB: Beta feedback submission [IMPLEMENTED]
+    Member->>Client: Submit beta feedback
+    Client->>Tenant: POST /api/beta/feedback
+    Tenant->>Ops: TenantContext
+    Ops->>Ops: Validate category, severity, title, description, URL, and metadata
+    critical Feedback and audit transaction [IMPLEMENTED]
+        Ops->>DB: BEGIN with tenant RLS context
+        Ops->>DB: INSERT beta_feedback
+        Ops->>DB: INSERT beta.feedback.create audit log
+        Ops->>DB: COMMIT
+    option Validation or write fails
+        Ops-->>Client: Mapped error; transaction rolls back
+    end
+    Ops-->>Client: Created feedback
+end
+
+rect rgb(238, 250, 255)
+    Note over Operator,DB: GA blocker update [IMPLEMENTED]
+    Operator->>Client: Update blocker priority/status/owner/due date
+    Client->>Tenant: PATCH /api/beta/ga-blockers/{blocker_id}
+    Tenant->>Ops: TenantContext
+    Ops->>Ops: Require organization admin or editor; validate status and priority
+    critical Blocker and audit transaction [IMPLEMENTED]
+        Ops->>DB: BEGIN with tenant RLS context
+        Ops->>DB: UPDATE beta_ga_blockers for organization
+        Ops->>DB: INSERT beta.ga_blocker.update audit log
+        Ops->>DB: COMMIT
+    option Authorization, validation, or write failure
+        Ops-->>Client: Mapped error; transaction rolls back
+    end
+    Ops-->>Client: Updated GA blocker
+end

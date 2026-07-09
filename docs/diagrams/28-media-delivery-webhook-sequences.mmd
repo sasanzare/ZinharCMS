@@ -1,0 +1,137 @@
+sequenceDiagram
+%% Evidence: backend/src/routes/media.rs
+%% Evidence: backend/src/services/media_processing.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/services/cache.rs
+%% Evidence: backend/src/routes/webhooks.rs
+%% Evidence: backend/src/services/webhooks.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/migrations/0003_phase_one_core.sql
+%% Evidence: backend/migrations/0005_phase_five_delivery_api.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+
+actor Editor as Organization media/webhook manager
+actor Consumer as Delivery API consumer
+participant Tenant as Auth and tenant middleware
+participant Media as Media route
+participant Inspect as MIME/signature checks
+participant Image as Image processor
+participant FS as Local upload filesystem
+participant DB as PostgreSQL
+participant Delivery as Delivery API route
+participant Cache as Redis cache service
+participant Webhook as Webhook routes/service
+participant Receiver as External webhook consumer
+
+rect rgb(238, 247, 255)
+    Note over Editor,DB: Multipart media upload [IMPLEMENTED, NON-ATOMIC FILE/DB LIFECYCLE]
+    Editor->>Tenant: POST /api/media/upload multipart with Bearer token and organization header
+    Tenant->>Media: Claims, TenantContext, and body under configured limit
+    Media->>Media: require_org_media_writer
+    critical Multipart parsing and preflight [IMPLEMENTED]
+        Media->>Media: Read alt_text, caption, and file bytes
+        Media->>Media: Enforce configured max_upload_size
+        Media->>Inspect: Detect MIME from file signature/content
+        Inspect->>Inspect: Allow JPEG, PNG, WebP, PDF, or UTF-8 text only
+        Inspect->>Inspect: Compare declared MIME unless octet-stream
+        Media->>DB: Check organization media quota
+    option Missing/oversized/unsupported/mismatched/quota-exceeding file
+        Media-->>Editor: Validation or quota error before filesystem write
+    end
+    Media->>FS: Create {upload_dir}/{organization_id}/variants
+    Media->>FS: Write original file using generated UUID extension
+    Media->>DB: INSERT media metadata through tenant RLS connection
+    alt Database insert fails after original write
+        Note over FS,DB: Original file is not cleaned up [DECISION REQUIRED] AMB-044
+        Media-->>Editor: Mapped database error
+    else Media row inserted
+        alt Detected MIME is JPEG, PNG, or WebP
+            Media->>Image: Decode and generate configured WebP thumbnails
+            Image->>FS: Write variant files
+            alt Decode or variant write fails
+                Note over FS,DB: Media row/original and any partial variants are not rolled back [PARTIAL] AMB-044
+                Media-->>Editor: Processing error
+            else Variants generated
+                loop Each generated variant
+                    Media->>DB: INSERT media_variants row
+                end
+                alt A variant row insert fails
+                    Note over FS,DB: No transaction or compensating cleanup is implemented [PARTIAL] AMB-044
+                    Media-->>Editor: Mapped database error
+                else All metadata persisted
+                    Media-->>Editor: Media detail with variants
+                end
+            end
+        else PDF or text
+            Media-->>Editor: Media detail without variants
+        end
+    end
+end
+
+rect rgb(238, 255, 242)
+    Note over Consumer,DB: Public Delivery API cache hit, miss, and Redis fallback [IMPLEMENTED]
+    Consumer->>Delivery: GET /api/v1/content, /pages, /settings, /navigation, sitemap, or robots
+    Delivery->>DB: Resolve active default public organization
+    Delivery->>Delivery: Normalize query and construct organization-scoped cache key
+    Delivery->>Cache: get_or_set_json(key, TTL=300s)
+    alt Redis connection unavailable
+        Cache->>DB: Execute PostgreSQL fetch closure directly
+        DB-->>Cache: Published tenant content/page/settings/navigation data
+        Cache-->>Delivery: Uncached value
+    else Redis connected
+        Cache->>Cache: GET key
+        alt Valid cached JSON
+            Cache-->>Delivery: Cached value
+        else Cache miss, Redis error, or invalid cached JSON
+            Cache->>DB: Execute PostgreSQL fetch closure
+            DB-->>Cache: Published data
+            Cache->>Cache: Best-effort SETEX serialized value
+            Cache-->>Delivery: Database value
+        end
+    end
+    Delivery-->>Consumer: Public JSON/text response
+    Note over Cache,DB: Redis failure degrades to PostgreSQL; no PostgreSQL delivery-cache table exists [IMPLEMENTED]
+end
+
+rect rgb(250, 248, 255)
+    Note over Editor,DB: Webhook registration and SSRF-oriented URL validation [IMPLEMENTED]
+    Editor->>Tenant: POST /api/webhooks with URL, events, optional secret
+    Tenant->>Webhook: TenantContext
+    Webhook->>Webhook: require_org_webhook_manager
+    Webhook->>Webhook: Normalize/deduplicate supported events
+    Webhook->>Webhook: Generate secret when absent; require at least 16 characters
+    Webhook->>Webhook: Parse HTTP(S) URL, require host, reject credentials
+    Webhook->>Webhook: Reject localhost/private/link-local/multicast/unspecified IP hosts
+    alt Validation fails
+        Webhook-->>Editor: Validation error; no row inserted
+    else Validation succeeds
+        Webhook->>DB: INSERT tenant-owned webhooks row with plaintext secret
+        Webhook-->>Editor: Registered webhook including secret
+    end
+    Note over Webhook,Receiver: Validation checks literal host/IP; no DNS-resolution recheck is shown [PARTIAL]
+end
+
+rect rgb(255, 252, 238)
+    Note over Webhook,Receiver: Signed webhook delivery [IMPLEMENTED, SINGLE ATTEMPT]
+    Webhook->>DB: Open organization-scoped RLS connection
+    Webhook->>DB: Load active webhooks subscribed to event
+    loop Each matching webhook
+        Webhook-->>Webhook: tokio::spawn asynchronous dispatch task
+        Webhook->>Webhook: Serialize payload and HMAC-SHA256 sign with webhook secret
+        Webhook->>Receiver: POST JSON with X-CMS-Event, X-CMS-Signature, X-Organization-Id; 10s timeout
+        alt HTTP 2xx
+            Receiver-->>Webhook: Success response
+            Webhook->>DB: INSERT webhook_deliveries status=delivered and response details
+        else HTTP non-2xx
+            Receiver-->>Webhook: Error response
+            Webhook->>DB: INSERT webhook_deliveries status=failed and response details
+        else Network/timeout error
+            Receiver--xWebhook: Request error
+            Webhook->>DB: INSERT webhook_deliveries status=failed and error text
+        end
+        opt Delivery-log insert fails
+            Note over Webhook,DB: Spawned task logs a warning; no durable retry or queue exists [PARTIAL] AMB-011
+        end
+    end
+    Note over Webhook,Receiver: No retry scheduling or second attempt is implemented [PARTIAL] AMB-041
+end

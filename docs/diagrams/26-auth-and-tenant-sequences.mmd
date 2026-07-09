@@ -1,0 +1,178 @@
+sequenceDiagram
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/middleware/auth.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/routes/organizations.rs
+%% Evidence: backend/src/services/security.rs
+%% Evidence: backend/src/services/password.rs
+%% Evidence: backend/src/services/jwt.rs
+%% Evidence: backend/src/services/rate_limit.rs
+%% Evidence: backend/src/services/quota.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0007_phase_seven_security.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+
+actor User
+participant Client as React admin/API client
+participant Auth as Auth routes
+participant Security as Password/JWT/security services
+participant AuthMW as auth_middleware
+participant TenantMW as tenant_middleware
+participant Limits as Rate-limit/quota services
+participant Redis as Redis rate-limit counters
+participant Org as Organization routes
+participant Handler as Tenant route handler
+participant RLS as RLS service
+participant DB as PostgreSQL
+
+rect rgb(238, 247, 255)
+    Note over User,DB: Registration [IMPLEMENTED]
+    User->>Client: Submit email, password, and name
+    Client->>Auth: POST /api/auth/register
+    Auth->>Auth: Validate fields and normalize email
+    Auth->>Security: Argon2 password hash
+    Auth->>DB: Count users to choose default global role
+    critical Registration DB transaction [IMPLEMENTED]
+        Auth->>DB: BEGIN
+        Auth->>DB: INSERT users
+        Auth->>DB: INSERT user_roles
+        Auth->>DB: UPSERT active default organization membership
+        Auth->>DB: Optionally assign default organization owner
+        Auth->>DB: COMMIT
+    option Any registration write fails
+        DB-->>Auth: SQL error; transaction rolls back
+        Auth-->>Client: Mapped error
+    end
+    Auth->>Security: Sign short-lived access JWT and generate refresh token
+    Auth->>DB: INSERT hashed refresh token and expiry
+    Note over Auth,DB: Refresh-token insertion occurs after the registration commit [PARTIAL]
+    Auth-->>Client: Access token, user, memberships, default organization
+    Auth-->>Client: Set-Cookie zinhar_refresh_token; HttpOnly; SameSite=Lax; Path=/api/auth
+end
+
+rect rgb(238, 255, 242)
+    Note over User,DB: Login, failed-login tracking, and rate limiting [IMPLEMENTED]
+    User->>Client: Submit credentials
+    Client->>Auth: POST /api/auth/login with client address/forwarding headers
+    Auth->>Security: Resolve client IP
+    Auth->>DB: Count recent failed login_attempts for IP
+    alt Failure threshold reached
+        Security-->>Auth: TooManyRequests
+        break Login is rate limited
+            Auth-->>Client: 429 mapped error
+        end
+    else Login allowed
+        Auth->>DB: Load active user and highest-priority global role
+        alt User missing
+            Auth->>DB: INSERT failed login_attempt
+            Auth-->>Client: 401 generic invalid credentials
+        else User found
+            Auth->>Security: Verify Argon2 password
+            alt Password invalid
+                Auth->>DB: INSERT failed login_attempt
+                Auth-->>Client: 401 generic invalid credentials
+            else Password valid
+                Auth->>DB: INSERT successful login_attempt
+                Auth->>Security: Sign access JWT and generate refresh token
+                Auth->>DB: INSERT hashed refresh token and expiry
+                Auth-->>Client: Auth JSON plus refresh cookie
+            end
+        end
+    end
+end
+
+rect rgb(250, 248, 255)
+    Note over Client,DB: Refresh-token rotation [IMPLEMENTED, NON-ATOMIC]
+    Client->>Auth: POST /api/auth/refresh with credentialed refresh cookie
+    Auth->>Security: Hash presented refresh token
+    Auth->>DB: Find unrevoked, unexpired token for active user
+    alt Token missing, expired, revoked, or replayed
+        Auth-->>Client: 401 invalid refresh token
+    else Valid refresh record
+        Auth->>DB: UPDATE old token revoked_at = now()
+        Auth->>Security: Sign new access JWT and generate new refresh token
+        Auth->>DB: INSERT new hashed refresh token
+        alt New token insertion succeeds
+            Auth-->>Client: New access token and replacement refresh cookie
+        else New token insertion fails after revocation
+            Note over Auth,DB: No transaction or replacement linkage restores the old token [DECISION REQUIRED]
+            Auth-->>Client: Mapped database error
+        end
+    end
+end
+
+rect rgb(255, 248, 238)
+    Note over Client,DB: Logout [IMPLEMENTED]
+    Client->>AuthMW: POST /api/auth/logout with Bearer access token and optional refresh cookie/body
+    AuthMW->>Security: Verify access JWT
+    AuthMW->>Auth: Add Claims and continue
+    opt Refresh token is supplied
+        Auth->>Security: Hash refresh token
+        Auth->>DB: Revoke matching unrevoked refresh_tokens row
+    end
+    Auth-->>Client: Clear refresh cookie with Max-Age=0
+    Note over Client,Auth: Access JWT is not persisted or server-revoked; the client discards it [IMPLEMENTED LIMITATION]
+end
+
+rect rgb(255, 252, 238)
+    Note over Client,DB: Authenticated tenant-aware request and RLS context [IMPLEMENTED]
+    Client->>AuthMW: Request with Authorization: Bearer token and X-Organization-Id
+    AuthMW->>Security: Verify access JWT
+    alt JWT absent, invalid, or expired
+        AuthMW-->>Client: 401
+    else JWT valid
+        AuthMW->>TenantMW: Claims extension
+        TenantMW->>TenantMW: Parse X-Organization-Id
+        TenantMW->>DB: Load active organization and active membership for claims.sub
+        alt Membership or organization is not active
+            TenantMW-->>Client: 403
+        else Active membership
+            TenantMW->>Limits: Check organization/user request rate
+            Limits->>DB: Load organization_rate_limits settings
+            Limits->>Redis: Increment/check organization and user counters
+            alt Redis rate-limit operation fails
+                Limits-->>TenantMW: Redis error
+                TenantMW-->>Client: Mapped request error; no rate-limit fallback
+            else Rate limit allows request
+                opt Path is not /api/billing*
+                    TenantMW->>Limits: Check plan API quota and increment usage_counters
+                    Limits->>DB: Read plan/usage and UPSERT API request counter
+                end
+                TenantMW->>TenantMW: Attach Claims and TenantContext
+                TenantMW->>Handler: Continue with Claims and TenantContext
+                opt Handler uses a tenant RLS helper
+                    Handler->>RLS: Request tenant connection/transaction
+                    RLS->>DB: set_config organization_id, user_id, rls_bypass=false
+                    RLS->>DB: Execute tenant query under PostgreSQL policies
+                    DB-->>Handler: Tenant-scoped result
+                end
+                Handler-->>Client: JSON response or mapped error
+            end
+        end
+    end
+end
+
+rect rgb(255, 238, 245)
+    Note over Client,DB: Organization invitation acceptance [IMPLEMENTED]
+    Client->>AuthMW: POST /api/organization-invitations/accept with Bearer token
+    AuthMW->>Org: Claims extension and token JSON
+    Org->>Security: Hash invitation token
+    critical Membership and invitation transaction [IMPLEMENTED]
+        Org->>DB: BEGIN
+        Org->>DB: Load pending, unexpired invitation matching current user email
+        Org->>Limits: Ensure organization member capacity
+        Limits->>DB: Read current plan and active membership count
+        Org->>DB: UPSERT organization_members as active with invited role
+        Org->>DB: UPDATE invitation to accepted with accepted_at
+        Org->>DB: COMMIT
+    option Invalid/expired token, email mismatch, quota failure, or SQL error
+        DB-->>Org: Error; transaction rolls back when dropped
+        Org-->>Client: Mapped error
+    end
+    Org->>DB: Record organization.invitation.accept audit event after commit
+    Note over Org,DB: Audit failure cannot roll back accepted membership [PARTIAL]
+    Org->>DB: Reload organization membership
+    Org-->>Client: Accepted membership JSON
+end

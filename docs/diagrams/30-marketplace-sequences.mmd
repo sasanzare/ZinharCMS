@@ -1,0 +1,220 @@
+sequenceDiagram
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/services/marketplace_submission.rs
+%% Evidence: backend/src/services/marketplace_manifest.rs
+%% Evidence: backend/src/services/marketplace_package.rs
+%% Evidence: backend/src/services/marketplace_validation.rs
+%% Evidence: backend/src/services/marketplace_review.rs
+%% Evidence: backend/src/services/marketplace_catalog.rs
+%% Evidence: backend/src/services/quota.rs
+%% Evidence: frontend/src/pages/MarketplacePage.tsx
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/migrations/0016_v3_phase_two_creator_submission.sql
+%% Evidence: backend/migrations/0017_v3_phase_three_validation_pipeline.sql
+%% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+
+actor Creator
+actor Reviewer as Global administrator acting as reviewer/moderator
+actor TenantUser as Authenticated catalog consumer
+participant UI as React MarketplacePage
+participant Tenant as Auth and tenant middleware
+participant Market as Marketplace routes
+participant Validate as Submission/manifest/validation services
+participant Review as Review/moderation service
+participant Quota as Plan/quota service
+participant FS as Local Marketplace artifact storage
+participant DB as PostgreSQL
+
+rect rgb(238, 247, 255)
+    Note over Creator,DB: Creator request and verification [IMPLEMENTED]
+    Creator->>UI: Submit creator slug, display name, bio, and support email
+    UI->>Tenant: POST /api/marketplace/creator
+    Tenant->>Market: Claims and selected TenantContext
+    Market->>DB: Ensure user is active
+    Market->>Validate: Validate creator profile
+    alt Profile invalid
+        Market-->>UI: Validation errors
+    else Profile valid
+        Market->>DB: UPSERT marketplace_creators; new/rejected request becomes pending
+        Market->>DB: Record marketplace.creator.request audit for selected organization
+        Market-->>UI: Pending creator profile
+    end
+
+    Reviewer->>UI: Set creator verification state
+    UI->>Tenant: PATCH /api/marketplace/creators/{creator_id}/verification
+    Tenant->>Market: Global Claims plus selected TenantContext
+    Market->>Market: Require global admin; validate pending/approved/suspended/rejected
+    Market->>DB: UPDATE creator status, notes, verifier, and verified_at
+    Market->>DB: Record marketplace.creator.verify audit for selected organization
+    Market-->>UI: Updated creator profile
+    Note over Market,DB: Creator state update and audit are separate writes [PARTIAL]
+end
+
+rect rgb(238, 255, 242)
+    Note over Creator,DB: Listing creation and submission [IMPLEMENTED]
+    Creator->>UI: Create listing metadata
+    UI->>Tenant: POST /api/marketplace/listings
+    Tenant->>Market: Claims and TenantContext
+    Market->>DB: Require creator profile owned by current user
+    Market->>Validate: Validate product type, metadata, pricing, URLs, and screenshots
+    Market->>DB: INSERT marketplace_listings status=draft
+    Market->>DB: Record marketplace.listing.create audit separately
+    Market-->>UI: Draft listing
+    Note over Market,Creator: Listing creation does not require approved creator status; public submission does
+
+    Creator->>UI: Submit listing for review
+    UI->>Tenant: POST /api/marketplace/listings/{listing_id}/submit
+    Tenant->>Market: Claims and TenantContext
+    Market->>DB: Load creator-owned listing and creator status
+    Market->>Validate: Require approved creator and complete review metadata
+    Note over Market,DB: submit_listing does not require the current listing status to be draft/changes_requested [PARTIAL]
+    alt Creator not approved or listing incomplete
+        Market-->>UI: Validation error
+    else Submission metadata valid
+        Market->>DB: UPDATE listing status=submitted and submission timestamps
+        Market->>DB: Record marketplace.listing.submit audit separately
+        Market-->>UI: Submitted listing
+    end
+end
+
+rect rgb(250, 248, 255)
+    Note over Creator,DB: Version/package upload, validation, and submission [IMPLEMENTED]
+    Creator->>UI: Select ZIP and provide manifest JSON
+    UI->>Tenant: POST /api/marketplace/listings/{listing_id}/versions/upload multipart
+    Tenant->>Market: Claims and TenantContext
+    Market->>DB: Load creator-owned listing and creator status
+    Market->>Validate: Require approved creator and complete listing metadata
+    Note over Market,DB: upload_listing_version does not reject based on the current listing status [PARTIAL]
+    Market->>Market: Parse manifest field as JSON object and read file bytes
+    Note over Market,Validate: Manifest is supplied as a multipart field; it is not extracted from the ZIP [IMPLEMENTED]
+    Market->>Validate: Check manifest type matches listing and package size is 1..50 MiB
+    alt Multipart/manifest/type/size validation fails
+        Market-->>UI: Validation error before artifact write
+    else Upload preflight succeeds
+        Market->>Validate: Read manifest.version
+        Market->>Validate: Compute lowercase SHA-256 checksum
+        Market->>Validate: Generate creator/listing/version/checksum object key
+        Market->>FS: Persist ZIP under local upload_dir object-key path
+        Market->>Quota: Load selected organization's current plan slug
+        Quota->>DB: Read organization subscription and plan
+        Market->>Validate: evaluate_marketplace_package in process
+        Validate->>Validate: Inspect ZIP central directory and file paths
+        Validate->>Validate: Validate manifest, product type, permissions, entry points, assets, dependencies
+        Validate->>Validate: Security scan forbidden/executable/risky content
+        Validate->>Validate: Calculate Zinhar version, feature, and active-plan compatibility
+        alt Static errors or high/critical security risk
+            Validate-->>Market: version=blocked, submission=blocked with persisted reports
+        else Passed/warning and low/medium risk
+            Validate-->>Market: version=submitted, submission=queued with persisted reports
+        end
+        critical Version, submission, and listing transaction [IMPLEMENTED]
+            Market->>DB: BEGIN
+            Market->>DB: INSERT marketplace_versions with artifact metadata and reports
+            Market->>DB: INSERT marketplace_submissions
+            Market->>DB: UPDATE listing submitted or blocked
+            Market->>DB: COMMIT
+        option Database insert/commit fails
+            Note over FS,DB: Persisted artifact is not removed; orphan cleanup is missing [DECISION REQUIRED] AMB-015
+            Market-->>UI: Mapped database error
+        end
+        Market->>DB: Record marketplace.version.submit audit after commit
+        alt Audit fails
+            Note over Market,DB: Version/submission remain committed [PARTIAL]
+            Market-->>UI: Mapped audit error
+        else Audit succeeds
+            Market-->>UI: Version and submission reports
+        end
+    end
+end
+
+rect rgb(255, 252, 238)
+    Note over Reviewer,DB: Review decision [IMPLEMENTED]
+    Reviewer->>UI: Open review queue
+    UI->>Tenant: GET /api/marketplace/review/queue
+    Tenant->>Market: Global Claims and TenantContext
+    Market->>Market: Require global admin
+    Market->>DB: Load queued, validating, blocked, or submitted review rows
+    Market-->>UI: Validation/security/compatibility reports
+    Reviewer->>UI: Approve, reject, or request changes
+    UI->>Tenant: PATCH /api/marketplace/review/submissions/{submission_id}
+    Tenant->>Market: Claims and TenantContext
+    Market->>DB: Load submission/version/listing context
+    Market->>Review: Validate decision and approval gate
+    alt Approve blocked/failed/high-risk package
+        Review-->>UI: Validation error; no mutation
+    else Valid decision
+        critical Review state transaction [IMPLEMENTED]
+            Market->>DB: UPDATE submission review state, notes, reviewer, metadata
+            Market->>DB: UPDATE version approved or rejected
+            Market->>DB: UPDATE listing approved or changes_requested
+            Market->>DB: INSERT marketplace_review_events
+            Market->>DB: COMMIT
+        option Any review write fails
+            DB-->>Market: Transaction rolls back
+        end
+        Market->>DB: Record marketplace.review.decision audit after commit
+        Market-->>UI: Persisted review event
+    end
+end
+
+rect rgb(255, 244, 238)
+    Note over Reviewer,DB: Moderation [IMPLEMENTED]
+    Reviewer->>UI: Choose suspend_listing, unpublish_version, or emergency_block
+    UI->>Tenant: POST /api/marketplace/review/listings/{listing_id}/moderation
+    Tenant->>Market: Claims and TenantContext
+    Market->>Market: Require global admin
+    Market->>Review: Validate action, reason, and required version_id
+    Market->>DB: Load listing status
+    critical Moderation transaction [IMPLEMENTED]
+        alt suspend_listing
+            Market->>DB: UPDATE listing status=suspended
+        else unpublish_version
+            Market->>DB: UPDATE selected version status=deprecated
+            Market->>DB: Count remaining approved versions
+            Market->>DB: UPDATE listing approved or changes_requested
+        else emergency_block
+            Market->>DB: UPDATE listing status=blocked
+            Market->>DB: Block submitted/validating/approved versions
+            Market->>DB: Block existing non-uninstalled installation records
+        end
+        Market->>DB: INSERT marketplace_review_events moderation event
+        Market->>DB: COMMIT
+    option Any moderation write fails
+        DB-->>Market: Transaction rolls back
+    end
+    Market->>DB: Record marketplace.moderation.action audit after commit
+    Market-->>UI: Persisted moderation event
+    Note over Market,DB: No moderation restoration/appeal endpoint is implemented [DECISION REQUIRED] AMB-016
+end
+
+rect rgb(238, 250, 255)
+    Note over TenantUser,DB: Catalog search, detail, and active-plan compatibility [IMPLEMENTED, TENANT-PROTECTED]
+    TenantUser->>UI: Search/filter catalog
+    UI->>Tenant: GET /api/marketplace/catalog with Bearer token and organization header
+    Tenant->>Market: Active TenantContext
+    Market->>Quota: Load current organization plan
+    Quota->>DB: Read organization subscription and plan
+    Market->>DB: Query approved listings with latest approved, passed/warning, low/medium-risk version
+    Market->>Validate: Recalculate compatibility for current Zinhar version/features/plan
+    alt Listing/version incompatible with active organization
+        Validate-->>Market: install_eligible=false
+        Market->>Market: Filter item out of catalog response
+    else Compatible
+        Market-->>UI: Catalog item with permissions and compatibility report
+    end
+
+    TenantUser->>UI: Open listing detail
+    UI->>Tenant: GET /api/marketplace/catalog/{listing_slug}
+    Tenant->>Market: Active TenantContext
+    Market->>Quota: Load active organization plan
+    Market->>DB: Load eligible listing, approved versions, manifest, and active-install count
+    Market->>Validate: Recalculate each version's compatibility
+    alt Listing/latest version incompatible
+        Market-->>UI: 404 catalog listing not found
+    else Compatible
+        Market-->>UI: Detail, versions, permissions, changelog, and empty customer reviews
+        UI-->>TenantUser: Install control remains disabled/deferred
+    end
+    Note over UI,DB: No purchase, payout, customer-rating, or executable install flow is represented because it is not implemented
+end

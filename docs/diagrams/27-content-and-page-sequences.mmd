@@ -1,0 +1,227 @@
+sequenceDiagram
+%% Evidence: backend/src/routes/content.rs
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/services/entry_validation.rs
+%% Evidence: backend/src/services/security.rs
+%% Evidence: backend/src/services/workflow.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/src/services/cache.rs
+%% Evidence: backend/src/services/webhooks.rs
+%% Evidence: backend/src/plugins/mod.rs
+%% Evidence: backend/src/plugins/seo.rs
+%% Evidence: frontend/src/pages/EntriesPage.tsx
+%% Evidence: frontend/src/pages/PagesPage.tsx
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0004_phase_two_page_builder.sql
+
+actor Editor as Organization author/editor/admin
+participant UI as React EntriesPage/PagesPage
+participant Tenant as Auth and tenant middleware
+participant Entry as Content routes
+participant Plugin as Built-in plugin hooks
+participant Validate as Sanitization/schema/workflow
+participant Page as Page routes
+participant RLS as RLS connection/transaction
+participant DB as PostgreSQL
+participant Cache as Redis delivery cache
+participant Hook as Webhook dispatcher
+participant Preview as In-memory preview channel
+participant WS as WebSocket preview client
+
+rect rgb(238, 247, 255)
+    Note over Editor,DB: Content entry creation and update [IMPLEMENTED]
+    Editor->>UI: Submit dynamic entry form
+    UI->>Tenant: POST /api/entries/{type_slug} with Bearer token and organization header
+    Tenant->>Entry: Claims and TenantContext
+    Entry->>Validate: require_org_entry_writer
+    Entry->>DB: Check content quota for creation
+    Entry->>DB: Load content type schema
+    Entry->>Plugin: run_entry_before_save
+    Plugin->>DB: Load enabled cms_plugins for organization
+    Plugin->>Plugin: Run enabled built-in hook, including SEO mutation
+    Plugin-->>Entry: Mutated entry JSON
+    Entry->>Validate: Sanitize rich-text fields
+    Entry->>Validate: Validate sanitized data against content type schema
+    alt Role, quota, plugin, sanitization, or schema validation fails
+        Entry-->>UI: Mapped error; no content entry write
+    else Validation succeeds
+        Entry->>RLS: Open tenant connection
+        RLS->>DB: Set tenant session context
+        Entry->>DB: INSERT content_entries as draft version 1
+        Entry-->>UI: Created entry
+    end
+
+    Editor->>UI: Edit existing entry
+    UI->>Tenant: PUT /api/entries/{type_slug}/{id}
+    Tenant->>Entry: Claims and TenantContext
+    Entry->>Validate: Writer role check
+    Entry->>DB: Load type schema
+    Entry->>Plugin: before-save hook
+    Entry->>Validate: Sanitize, then schema validate
+    Entry->>RLS: Open tenant connection
+    Entry->>DB: UPDATE data and increment version
+    opt Entry was already published
+        Entry->>Cache: Best-effort invalidate content and sitemap keys
+    end
+    Entry-->>UI: Updated entry
+    Note over Entry,DB: Entry writes use a tenant connection, not an explicit multi-write transaction [IMPLEMENTED]
+end
+
+rect rgb(238, 255, 242)
+    Note over Editor,Hook: Entry workflow submission and publication [IMPLEMENTED]
+    Editor->>UI: Submit draft for review
+    UI->>Tenant: POST /api/entries/{type_slug}/{id}/submit-review
+    Tenant->>Entry: TenantContext
+    Entry->>Validate: require_org_entry_writer
+    Entry->>DB: Load current tenant entry
+    Entry->>Validate: require_transition current -> pending_review
+    Entry->>DB: UPDATE status, clear published_at, increment version
+    Entry-->>UI: pending_review entry
+
+    Editor->>UI: Publish entry
+    UI->>Tenant: POST /api/entries/{type_slug}/{id}/publish
+    Tenant->>Entry: Claims and TenantContext
+    Entry->>Validate: require_org_entry_publisher
+    Entry->>DB: Load current entry and validate transition to published
+    Entry->>DB: UPDATE status, published_at=now(), increment version
+    Entry->>Cache: Best-effort invalidate delivery keys
+    Entry->>Plugin: run_entry_after_publish
+    Plugin->>DB: Load enabled built-in plugins
+    alt After-publish plugin fails
+        Note over Entry,Plugin: Entry is already published; no rollback exists [DECISION REQUIRED] AMB-070
+        Entry-->>UI: Error after state mutation
+    else Plugin succeeds
+        Entry->>Hook: trigger entry.publish
+        Hook->>DB: Load active subscriptions for organization
+        Hook-->>Hook: Spawn one asynchronous dispatch task per subscription
+        Entry-->>UI: Published entry
+    end
+end
+
+rect rgb(250, 248, 255)
+    Note over Editor,Preview: Page creation and manual save [IMPLEMENTED]
+    Editor->>UI: Build new page and click Save
+    UI->>Tenant: POST /api/pages
+    Tenant->>Page: Claims and TenantContext
+    Page->>Validate: require_org_page_writer and content quota
+    Page->>DB: Load component registry keys
+    Page->>Validate: Validate title, slug, page_json tree, component keys, depth, and node count
+    critical Page and initial snapshot transaction [IMPLEMENTED]
+        Page->>RLS: Begin tenant transaction and set local RLS context
+        Page->>DB: INSERT pages
+        Page->>DB: INSERT page_versions complete page_json snapshot
+        Page->>DB: COMMIT
+    option Any write fails
+        DB-->>Page: SQL error; transaction rolls back
+        Page-->>UI: Mapped error
+    end
+    Page->>Preview: Broadcast committed page_json
+    Page-->>UI: Created page
+
+    Editor->>UI: Edit existing page and click Save
+    UI->>Tenant: PUT /api/pages/{id}
+    Tenant->>Page: Claims and TenantContext
+    Page->>Validate: Writer role and complete page request validation
+    critical Page update and snapshot transaction [IMPLEMENTED]
+        Page->>RLS: Begin tenant transaction
+        Page->>DB: UPDATE pages title, slug, and page_json
+        Page->>DB: INSERT next complete page_versions snapshot
+        Page->>DB: COMMIT
+    option Update or snapshot fails
+        DB-->>Page: SQL error; both writes roll back
+    end
+    Page->>Preview: Broadcast committed page_json
+    opt Page remains published
+        Page->>Cache: Best-effort invalidate page, pages, sitemap, and robots keys
+    end
+    Page-->>UI: Saved page
+end
+
+rect rgb(245, 255, 245)
+    Note over Editor,Hook: Page workflow submission and publication [IMPLEMENTED]
+    Editor->>UI: Submit page for review
+    UI->>Tenant: POST /api/pages/{id}/submit-review
+    Tenant->>Page: TenantContext
+    Page->>Validate: require_org_page_writer
+    Page->>DB: Load current tenant page and validate transition to pending_review
+    Page->>DB: UPDATE status and clear published_at
+    Page->>Preview: Broadcast current page_json
+    Page-->>UI: pending_review page
+
+    Editor->>UI: Publish page
+    UI->>Tenant: POST /api/pages/{id}/publish
+    Tenant->>Page: TenantContext
+    Page->>Validate: require_org_page_publisher
+    Page->>DB: Load page and validate transition to published
+    Page->>DB: UPDATE status and published_at=now()
+    Page->>Preview: Broadcast current page_json
+    Page->>Cache: Best-effort invalidate page delivery keys
+    Page->>Hook: trigger page.publish
+    Hook->>DB: Load active subscriptions
+    Hook-->>Hook: Spawn one dispatch task per subscription
+    Page-->>UI: Published page
+    Note over Page,DB: Status-only transitions do not create page_versions snapshots [IMPLEMENTED] AMB-069
+    Note over Page,Hook: Cache/webhook side effects occur after the page mutation [DECISION REQUIRED] AMB-070
+end
+
+rect rgb(255, 252, 238)
+    Note over Editor,DB: Debounced autosave [IMPLEMENTED FOR EXISTING PAGES]
+    Editor->>UI: Mutate page_json in builder
+    UI->>UI: Mark draft dirty
+    alt Draft has no persisted page ID
+        UI-->>Editor: Manual save required before autosave
+    else Existing page and not currently saving
+        UI->>UI: Reset 10-second debounce timer on each mutation
+        UI->>Tenant: PUT /api/pages/{id} after 10 seconds
+        Tenant->>Page: Same update and snapshot flow as manual save
+        Page->>DB: Transactionally update page and insert a new version snapshot
+        Page-->>UI: Autosaved response
+        UI->>Tenant: Reload pages/components and later request versions when selected
+        Tenant->>Page: Tenant-protected GET requests
+        Page->>DB: Read tenant-owned pages, components, or snapshots
+    end
+end
+
+rect rgb(255, 244, 238)
+    Note over Editor,Preview: Version restore [IMPLEMENTED]
+    Editor->>UI: Restore selected snapshot version
+    UI->>Tenant: POST /api/pages/{id}/versions/{version}/restore
+    Tenant->>Page: Claims and TenantContext
+    Page->>Validate: require_org_page_manager and positive version
+    Page->>RLS: Open tenant connection
+    Page->>DB: Load tenant-owned page_versions snapshot
+    Page->>DB: Load component registry keys
+    Page->>Validate: Revalidate snapshot page_json
+    critical Restore transaction [IMPLEMENTED]
+        Page->>RLS: Begin tenant transaction
+        Page->>DB: UPDATE page_json, status=draft, published_at=NULL
+        Page->>DB: INSERT restored content as a new version snapshot
+        Page->>DB: COMMIT
+    option Restore write fails
+        DB-->>Page: Transaction rolls back
+    end
+    Page->>Preview: Broadcast restored page_json
+    Note over Page,Cache: Restore does not call delivery cache invalidation even when replacing a published page [PARTIAL]
+    Page-->>UI: Restored draft page
+end
+
+rect rgb(238, 250, 255)
+    Note over UI,WS: WebSocket live preview [IMPLEMENTED, IN-MEMORY]
+    UI->>UI: Build ws(s) URL with access_token and organization_id query values
+    UI-->>WS: Share/copy preview URL
+    WS->>Tenant: GET /api/preview/{page_id}?access_token=...&organization_id=...
+    Tenant->>Tenant: Verify JWT, active organization, and active membership
+    Tenant->>Page: WebSocket upgrade with TenantContext
+    Page->>Preview: Get/create page-specific broadcast sender
+    Page->>DB: Load initial tenant-owned page
+    Page-->>WS: Initial page_json message
+    loop While socket and process-local channel remain active
+        UI->>Tenant: Manual save, autosave, restore, or workflow transition
+        Tenant->>Page: Authorized tenant request
+        Page->>Preview: Broadcast page_json after mutation
+        Preview-->>WS: Updated page_json message
+    end
+    Note over Preview,WS: Channels are process-local and not durable across backend replicas/restarts [PARTIAL]
+end
