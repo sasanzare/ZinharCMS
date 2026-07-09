@@ -1,6 +1,6 @@
 # Architecture Audit
 
-Inspection date: 2026-07-04.
+Inspection date: 2026-07-09.
 
 Status values:
 
@@ -42,9 +42,11 @@ Status values:
 | Quotas | IMPLEMENTED | `backend/migrations/0010_v2_phase_five_billing_quota.sql`; `backend/src/services/quota.rs`; `backend/src/middleware/tenant.rs`; `backend/src/routes/billing.rs`; `frontend/src/pages/BillingPage.tsx` | High | Member/content/media/API usage checks and usage rebuild are implemented. |
 | Audit logs | IMPLEMENTED | `backend/migrations/0012_v2_phase_seven_saas_ops.sql`; `backend/src/services/audit.rs`; `backend/src/routes/organizations.rs`; `frontend/src/pages/OrganizationPage.tsx` | High | Tenant audit log storage/listing and audit writes from sensitive actions exist. |
 | Email deliveries | IMPLEMENTED | `backend/migrations/0012_v2_phase_seven_saas_ops.sql`; `backend/src/services/email.rs`; `backend/src/routes/organizations.rs`; `frontend/src/pages/OrganizationPage.tsx`; `.env.example` | High | Invitation and billing notification delivery records are persisted; webhook provider is optional. |
-| SaaS alerts | PARTIALLY_IMPLEMENTED | `backend/migrations/0012_v2_phase_seven_saas_ops.sql`; `backend/src/routes/organizations.rs`; `frontend/src/pages/OrganizationPage.tsx`; `docs/V2_PHASE_SEVEN.md` | High | Alert rules are seeded and listable, but no alert CRUD/update route or alert execution engine was found. |
+| SaaS alerts | PARTIALLY_IMPLEMENTED | `backend/migrations/0012_v2_phase_seven_saas_ops.sql`; `backend/src/routes/organizations.rs`; `frontend/src/pages/OrganizationPage.tsx`; `docs/V2_PHASE_SEVEN.md`; AMB-071 | High | Alert rules are seeded and listable, but no evaluator, scheduler, occurrence/delivery table, destination, or alert execution engine was found. |
 | Beta feedback | IMPLEMENTED | `backend/migrations/0014_v2_phase_nine_beta_release.sql`; `backend/src/routes/beta.rs`; `frontend/src/pages/BetaPage.tsx`; `docs/V2_PHASE_NINE.md` | High | Participants, feedback, GA blockers, organization dashboard, and product dashboard exist. |
 | GA readiness | IMPLEMENTED | `backend/src/services/ga_readiness.rs`; `scripts/v2-ga-check.ps1`; `docs/V2_PHASE_TEN.md`; `docs/V2_RELEASE_NOTES.md`; `docs/V2_OPERATIONS_RUNBOOK.md` | High | GA readiness is implemented as docs, scripts, and static tests rather than a runtime feature. |
+| Observability | PARTIALLY_IMPLEMENTED | `backend/src/main.rs`; `backend/src/routes/mod.rs`; `backend/src/error.rs`; `docker-compose.prod.yml`; `docs/diagrams/31-observability-and-failure-recovery.mmd` | High | Request IDs, HTTP tracing, liveness/readiness, structured error categories, and persisted operational records exist. No metrics endpoint, exporter, collector, or monitoring vendor integration was found. |
+| Failure recovery | PARTIALLY_IMPLEMENTED | `backend/src/services/cache.rs`; `backend/src/services/webhooks.rs`; `backend/src/services/stripe_billing.rs`; `backend/src/services/email.rs`; `backend/src/routes/media.rs`; `backend/src/routes/marketplace.rs`; AMB-015; AMB-031; AMB-070 | High | Delivery cache falls back to PostgreSQL and failures are often recorded, but retries, filesystem compensation, backup automation, and consistent post-mutation recovery contracts are absent. |
 | Marketplace creators | IMPLEMENTED | `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql`; `backend/migrations/0016_v3_phase_two_creator_submission.sql`; `backend/src/routes/marketplace.rs`; `backend/src/services/marketplace_submission.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Creator profiles, verification states, validation, and UI exist. |
 | Listings | IMPLEMENTED | `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql`; `backend/migrations/0016_v3_phase_two_creator_submission.sql`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Creator listing CRUD, metadata, submit action, and listing table UI exist. |
 | Versions/packages | IMPLEMENTED | `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql`; `backend/migrations/0016_v3_phase_two_creator_submission.sql`; `backend/src/services/marketplace_package.rs`; `backend/src/services/marketplace_manifest.rs`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Package upload, object key/checksum/size rules, manifest validation, and immutable version trigger exist. |
@@ -52,20 +54,21 @@ Status values:
 | Compatibility | IMPLEMENTED | `backend/migrations/0017_v3_phase_three_validation_pipeline.sql`; `backend/src/services/marketplace_validation.rs`; `backend/src/services/marketplace_catalog.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Compatibility reports include plan/version/feature checks and `install_eligible`. |
 | Reviews | PARTIALLY_IMPLEMENTED | `backend/migrations/0018_v3_phase_four_review_moderation.sql`; `backend/src/services/marketplace_review.rs`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Internal Marketplace review workflow exists. Public catalog product reviews have response/UI placeholders but no persistence or write API was found. |
 | Moderation | IMPLEMENTED | `backend/migrations/0018_v3_phase_four_review_moderation.sql`; `backend/src/services/marketplace_review.rs`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_FOUR.md` | High | Admin moderation supports suspend listing, unpublish version, and emergency block; emergency block updates active installations. |
-| Catalog | IMPLEMENTED | `backend/src/routes/marketplace.rs`; `backend/src/services/marketplace_catalog.rs`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_FIVE.md`; `README.md` | High | Tenant-aware catalog and detail APIs filter approved/safe/compatible listings and render catalog UI. Central OpenAPI docs are stale. |
+| Catalog | IMPLEMENTED | `backend/src/routes/marketplace.rs`; `backend/src/services/marketplace_catalog.rs`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_FIVE.md`; `docs/API.md` | High | Tenant-aware catalog and detail APIs filter approved/safe/compatible listings and render catalog UI. Manual API docs are current; generated OpenAPI path registration remains incomplete. |
 | Installations | PARTIALLY_IMPLEMENTED | `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_THREE.md`; `docs/V3_PHASE_FIVE.md`; `docs/V3_MARKETPLACE_GAP_LIST.md` | High | Installation table, RLS, active-install counts, and emergency-block updates exist. No install/uninstall/update endpoint or active install button was found; UI says install is deferred. |
 | Purchases | PLANNED_ONLY | `docs/V3_PHASE_ONE.md`; `docs/V3_V2_MARKETPLACE_READINESS_AUDIT.md`; `docs/V3_MARKETPLACE_GAP_LIST.md`; absence from `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql`; absence from `backend/src/routes/marketplace.rs` | High | Purchase is a future paid-product concept. No purchase table, route, service, or UI action was found. |
 | Creator payouts | PLANNED_ONLY | `docs/V3_V2_MARKETPLACE_READINESS_AUDIT.md`; `docs/V3_MARKETPLACE_GAP_LIST.md`; `backend/src/routes/marketplace.rs`; `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql` | High | Creator payout status exists on creators, but payout provider, ledger, payout records, and payout routes are not implemented. |
 
-## Initial Documentation Conflicts
+## Documentation Conflicts And Final Disposition
 
-| Conflict | Evidence | Impact |
+| Conflict | Evidence | Final disposition |
 | --- | --- | --- |
-| Marketplace routes are mounted but missing from central OpenAPI registration. | `backend/src/routes/mod.rs`; `backend/src/routes/marketplace.rs` | API diagrams should treat Marketplace runtime routes as implemented, but OpenAPI documentation as stale. |
-| `docs/API.md` does not cover V2 organizations/billing/beta or V3 Marketplace routes. | `docs/API.md`; `backend/src/routes/organizations.rs`; `backend/src/routes/billing.rs`; `backend/src/routes/beta.rs`; `backend/src/routes/marketplace.rs` | API reference diagram should not rely on `docs/API.md` alone. |
-| `env.example` is smaller than `.env.example` and omits several current backend config fields. | `env.example`; `.env.example`; `backend/src/config.rs` | Deployment/config diagram should use `.env.example` plus `config.rs` as primary evidence. |
-| `docker-compose.prod.yml` exposes only a subset of backend environment variables. | `docker-compose.prod.yml`; `.env.example`; `backend/src/config.rs` | Production deployment diagram should call out optional/unset Stripe/email/rate-limit settings. |
-| Marketplace install/payment concepts appear in planning docs, while runtime install and payment paths are not implemented. | `docs/V3_PHASE_ONE.md`; `docs/V3_PHASE_THREE.md`; `docs/V3_PHASE_FIVE.md`; `docs/V3_MARKETPLACE_GAP_LIST.md`; `backend/src/routes/marketplace.rs` | Future diagrams must separate schema/planning from implemented install/purchase runtime behavior. |
+| Marketplace routes are mounted but missing from central OpenAPI registration. | `backend/src/routes/mod.rs`; `backend/src/routes/marketplace.rs` | Runtime routes remain implemented and are now listed in `docs/API.md`; generated `/openapi.json` coverage remains incomplete. |
+| `docs/API.md` omitted V2 organizations/billing/beta and V3 Marketplace routes. | `docs/API.md`; organization/billing/beta/Marketplace route files | Corrected in step 20 with exact current route boundaries and deferred capabilities. |
+| `docs/ARCHITECTURE.md` described a future Page Builder, an API-gateway layer, and local/S3-compatible storage. | `docs/ARCHITECTURE.md`; `frontend/src/pages/PagesPage.tsx`; `backend/src/routes/pages.rs`; `backend/src/routes/media.rs`; `backend/src/routes/marketplace.rs` | Corrected to implemented Page Builder, modular monolith, and local filesystem storage. |
+| `env.example` is smaller than `.env.example` and omits current backend config fields. | `env.example`; `.env.example`; `backend/src/config.rs` | Configuration diagrams use `.env.example` and `config.rs`; the legacy template drift remains documented. |
+| `docker-compose.prod.yml` exposes only a subset of optional backend environment variables. | `docker-compose.prod.yml`; `.env.example`; `backend/src/config.rs` | Production diagram marks Stripe/email/rate-limit configuration as environment-dependent. |
+| Marketplace install/payment concepts appear in planning docs, while runtime install and payment paths are absent. | V3 phase/gap docs; `backend/src/routes/marketplace.rs` | Every final diagram separates installation foundation from planned install, purchase, payout, entitlement, and customer-rating behavior. |
 
 ## Ambiguity Register Links
 
@@ -92,14 +95,16 @@ Status values:
 | AMB-019 | Stripe Billing | Webhook idempotency is implemented for organization subscription billing only. |
 | AMB-020 | Live Preview | Live preview is in-process WebSocket broadcast; do not draw cross-node pub/sub. |
 | AMB-021 | Static Uploads | Media metadata is tenant-owned, but `/uploads` static file bytes are publicly served by path. |
-| AMB-022 | API Documentation | API docs/OpenAPI are incomplete for V2/V3; route code is the source of truth. |
+| AMB-022 | API Documentation | Manual `docs/API.md` now covers verified V2/V3 routes; generated OpenAPI remains incomplete for Marketplace. |
 | AMB-023 | Marketplace Actors and RBAC | Marketplace reviewer/moderator are operational actors backed by global admin checks, not dedicated roles. |
 | AMB-024 | Beta and Support Operations Actors | Beta/support operation maps to global admin and organization admin/editor roles, not a separate support role. |
 | AMB-032 | Frontend Localization Coverage | Admin i18n is broad but not complete; untranslated UI labels and API/content localization limits must be shown as partial coverage. |
+| AMB-071 | SaaS Alert Execution | Stored alert definitions are listable only; evaluation and delivery require an owner decision. |
 ## Background Tasks And Queue Finding
 
 No durable background task or queue worker was found in the inspected code. Webhook
-delivery is dispatched inline by `backend/src/services/webhooks.rs`; preview updates
+delivery is dispatched through transient process-local `tokio::spawn` tasks in
+`backend/src/services/webhooks.rs`; preview updates
 use in-memory broadcast channels in `backend/src/state.rs` and `backend/src/routes/pages.rs`;
 Stripe webhook processing is synchronous in `backend/src/services/stripe_billing.rs`.
 
@@ -136,3 +141,19 @@ Runtime context: tenant routes require `X-Organization-Id`, an access token, an 
 | Public Delivery API queries | Runtime organization scope rather than separate table ownership | Uses RLS for tenant-owned CMS tables | Same table policies as queried CMS tables | Organization-scoped published rows | Not applicable | Not applicable | Not applicable | Public delivery resolves an organization and uses `rls::organization_connection`; user id may be empty, but organization RLS still applies. |
 | `/uploads` static files and local Marketplace artifacts | Filesystem path ownership, not database ownership | Not applicable | None | No database RLS for bytes | Not applicable | Not applicable | Not applicable | `ServeDir` exposes `upload_dir` by path. Media rows are tenant-owned, but file-byte access is not authorized through RLS. Marketplace package artifacts are also stored under `upload_dir`, so object-storage and access-control decisions remain open. |
 | Public system routes and public auth routes | No organization ownership | Not applicable | None | No tenant isolation needed | No tenant isolation needed | No tenant isolation needed | No tenant isolation needed | `/`, `/health`, `/ready`, `/openapi.json`, register, login, refresh, and logout are mounted outside tenant middleware. |
+
+## Final Step 20 Audit
+
+- Mermaid files reviewed: 33 (`00` through `32`).
+- Mermaid parser availability: no installed CLI or project-local Mermaid dependency
+  was found; no package or browser was installed.
+- Static Mermaid validation: declaration count, fences, block closure, participants,
+  ER relationships, state braces, node/class identifiers, evidence paths, and mixed
+  syntax were checked independently.
+- Ambiguities reviewed: 71 total; 63 `RESOLVED`, 8 `DECISION_REQUIRED`, 0
+  `UNRESOLVED`.
+- Planned-only capabilities remain separated from implemented behavior:
+  Marketplace executable installation, purchases/entitlements, customer ratings,
+  and creator payout execution.
+- Source code, migrations, runtime configuration, and production behavior were not
+  modified by the final documentation pass.

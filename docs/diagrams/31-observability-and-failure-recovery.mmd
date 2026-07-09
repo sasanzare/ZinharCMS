@@ -1,0 +1,133 @@
+flowchart TD
+%% Evidence: backend/src/main.rs
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/error.rs
+%% Evidence: backend/src/middleware/security.rs
+%% Evidence: backend/src/services/cache.rs
+%% Evidence: backend/src/services/rate_limit.rs
+%% Evidence: backend/src/services/webhooks.rs
+%% Evidence: backend/src/services/stripe_billing.rs
+%% Evidence: backend/src/services/email.rs
+%% Evidence: backend/src/services/audit.rs
+%% Evidence: backend/src/services/marketplace_validation.rs
+%% Evidence: backend/src/services/ga_readiness.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/routes/organizations.rs
+%% Evidence: backend/migrations/0005_phase_five_delivery_api.sql
+%% Evidence: backend/migrations/0011_v2_phase_six_stripe_billing.sql
+%% Evidence: backend/migrations/0012_v2_phase_seven_saas_ops.sql
+%% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/migrations/0017_v3_phase_three_validation_pipeline.sql
+%% Evidence: scripts/v2-ga-check.ps1
+%% Evidence: docker-compose.prod.yml
+
+subgraph ingress["HTTP observability [IMPLEMENTED]"]
+  request["Incoming HTTP request [EXTERNAL]"]
+  trace["TraceLayer HTTP spans [IMPLEMENTED]<br/>tracing-subscriber fmt output and RUST_LOG filter"]
+  request_id["SetRequestIdLayer [IMPLEMENTED]<br/>generate x-request-id when absent"]
+  propagate_id["PropagateRequestIdLayer [IMPLEMENTED]<br/>return x-request-id on response"]
+  handler["Matched Axum handler [IMPLEMENTED]"]
+  error_map["AppError response mapping [IMPLEMENTED]<br/>4xx, 429, 500, or 503 JSON"]
+  no_vendor["Central log/metric/trace backend [DECISION REQUIRED]<br/>no vendor exporter, metrics endpoint, or collector configuration found"]
+end
+
+subgraph probes["Health and readiness [IMPLEMENTED]"]
+  health["GET /health [IMPLEMENTED]<br/>process liveness and crate version only"]
+  ready["GET /ready [IMPLEMENTED]<br/>PostgreSQL SELECT 1 plus Redis PING"]
+  ready_ok["200 ready [IMPLEMENTED]"]
+  ready_bad["503 degraded [IMPLEMENTED]<br/>dependency messages wrapped by AppError"]
+  compose_health["Compose health checks [IMPLEMENTED]<br/>backend /health, frontend HTTP, PostgreSQL, Redis"]
+end
+
+subgraph lifecycle["Startup and shutdown [PARTIAL]"]
+  config_load["Load environment configuration [IMPLEMENTED]"]
+  pool["Create lazy PostgreSQL pool [IMPLEMENTED]"]
+  migrations["Run all SQLx migrations at startup [IMPLEMENTED]"]
+  seed["Seed default administrator and membership [IMPLEMENTED]"]
+  bind["Bind API listener [IMPLEMENTED]"]
+  migration_fail["Startup migration/seed failure [IMPLEMENTED]<br/>main returns error before listener binds"]
+  graceful["Graceful shutdown signal [IMPLEMENTED]<br/>Ctrl+C and Unix SIGTERM"]
+  drain_gap["Explicit background-task drain/checkpoint [DECISION REQUIRED]<br/>no durable worker or spawned-webhook drain coordination found"]
+end
+
+subgraph dependency_failures["Database and Redis failure behavior"]
+  db_runtime["Runtime PostgreSQL failure [IMPLEMENTED]<br/>SQLx errors map to conflict, not-found, or internal error"]
+  db_recovery["Automatic database retry/failover [DECISION REQUIRED]<br/>not implemented in application code"]
+  redis_delivery["Delivery cache Redis failure [IMPLEMENTED]<br/>PostgreSQL fallback; cache write is best effort"]
+  redis_limit["Rate-limit Redis failure [PARTIAL]<br/>request fails; no database/in-memory fallback"]
+  redis_ready["Redis readiness failure [IMPLEMENTED]<br/>/ready returns degraded 503"]
+end
+
+subgraph storage_failures["Filesystem and package failure behavior"]
+  media_fs["CMS media filesystem error [IMPLEMENTED]<br/>upload returns internal error"]
+  media_partial["Media file/row/variant compensation [DECISION REQUIRED] AMB-044<br/>partial file or row state can remain"]
+  market_validate["Marketplace validation failure [IMPLEMENTED]<br/>persist blocked version/submission and reports"]
+  market_artifact["Artifact cleanup policy [DECISION REQUIRED] AMB-015<br/>local artifact is retained; DB-failure orphan cleanup absent"]
+  storage_backup["Database/Redis/upload/artifact backup automation [DECISION REQUIRED] AMB-031"]
+end
+
+subgraph integration_failures["Outbound and inbound integration failures"]
+  webhook_send["Outbound CMS webhook failure [IMPLEMENTED]<br/>single attempt, 10-second timeout, failed delivery row"]
+  webhook_retry["Durable webhook retry/replay [PARTIAL] AMB-011 AMB-041<br/>tokio::spawn only; no queue, schedule, or worker"]
+  stripe_signature["Stripe signature/payload failure [IMPLEMENTED]<br/>reject request before billing event persistence"]
+  stripe_processing["Stripe processing failure [PARTIAL]<br/>attempt failed billing_events update; aborted SQL transaction can roll back"]
+  stripe_replay["Stripe failed-event replay endpoint [PARTIAL] AMB-058<br/>idempotency exists, application replay does not"]
+  email_delivery["Email delivery result [IMPLEMENTED]<br/>sent, skipped, or failed persisted in email_deliveries"]
+  email_failure["Email failure mode [IMPLEMENTED]<br/>strict returns 503; log mode records failure and continues"]
+  email_retry["Email retry/provider queue [DECISION REQUIRED]<br/>no retry scheduler or provider-specific worker found"]
+end
+
+subgraph operational_records["Operational evidence [IMPLEMENTED/PARTIAL]"]
+  audit["audit_logs [IMPLEMENTED]<br/>sensitive tenant, billing, beta, and Marketplace actions"]
+  audit_gap["Post-mutation audit/side-effect failure [DECISION REQUIRED] AMB-070<br/>some primary writes commit before audit or hooks"]
+  alert_rules["saas_alert_rules [PARTIAL]<br/>seeded and listable definitions"]
+  alert_engine["Alert evaluation and destination [DECISION REQUIRED] AMB-071<br/>no runner, event table, notification target, or schedule found"]
+  ga_tests["GA readiness evidence [IMPLEMENTED AS DOCS/TESTS]<br/>ga_readiness static tests and v2-ga-check.ps1"]
+  ga_runtime["Runtime GA readiness service/dashboard [DOCUMENTED ONLY]<br/>release checks are operational, not a product endpoint"]
+end
+
+request --> trace --> request_id --> handler --> propagate_id
+handler -- "AppError" --> error_map
+trace -. "formatted local process output" .-> no_vendor
+
+health --> compose_health
+ready --> ready_ok
+ready --> ready_bad
+ready_bad --> redis_ready
+
+config_load --> pool --> migrations
+migrations -- "success" --> seed --> bind --> graceful
+migrations -- "failure" --> migration_fail
+seed -- "failure" --> migration_fail
+graceful -. "spawned transient tasks" .-> drain_gap
+
+handler -- "SQLx query failure" --> db_runtime --> db_recovery
+handler -- "Delivery API cache" --> redis_delivery
+handler -- "tenant rate limit" --> redis_limit
+ready -- "Redis unavailable" --> redis_ready
+
+handler -- "media upload" --> media_fs --> media_partial
+handler -- "Marketplace package" --> market_validate --> market_artifact
+media_partial --> storage_backup
+market_artifact --> storage_backup
+
+handler -- "publish/unpublish event" --> webhook_send --> webhook_retry
+handler -- "Stripe webhook" --> stripe_signature
+stripe_signature -- "valid" --> stripe_processing --> stripe_replay
+handler -- "invitation/billing email" --> email_delivery --> email_failure --> email_retry
+
+handler -- "sensitive action" --> audit --> audit_gap
+handler -- "GET organization alerts" --> alert_rules --> alert_engine
+ga_tests --> ga_runtime
+
+classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
+classDef documented fill:#f5f0ff,stroke:#6a4fb3,stroke-width:2px,stroke-dasharray: 2 4,color:#111;
+classDef decision fill:#fff0f6,stroke:#9b1b5a,stroke-width:3px,stroke-dasharray: 8 2 2 2,color:#111;
+classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
+
+class trace,request_id,propagate_id,handler,error_map,health,ready,ready_ok,ready_bad,compose_health,config_load,pool,migrations,seed,bind,graceful,migration_fail,db_runtime,redis_delivery,redis_ready,media_fs,market_validate,webhook_send,stripe_signature,email_delivery,email_failure,audit,ga_tests implemented;
+class redis_limit,webhook_retry,stripe_processing,stripe_replay,alert_rules partial;
+class ga_runtime documented;
+class no_vendor,drain_gap,db_recovery,media_partial,market_artifact,storage_backup,email_retry,audit_gap,alert_engine decision;
+class request external;

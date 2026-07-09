@@ -1,8 +1,9 @@
 # API
 
-The API exposes a functional backend for authentication, RBAC-protected content
-management, entries, the media library, visual page builder, delivery API,
-workflow, comments, plugins, and webhooks.
+The API exposes authentication, organization tenancy, RBAC-protected content
+management, media, the visual Page Builder, Delivery API, workflow, plugins,
+webhooks, billing/quota operations, beta/GA records, and Marketplace submission,
+review, moderation, and catalog behavior.
 
 ## System
 
@@ -17,7 +18,7 @@ workflow, comments, plugins, and webhooks.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/auth` | Auth module planned endpoints |
+| `GET` | `/api/auth` | Auth module status and endpoint list |
 | `POST` | `/api/auth/register` | Create user; first user becomes `super_admin` |
 | `POST` | `/api/auth/login` | Issue access token and HttpOnly refresh cookie; rate-limited by failed IP attempts |
 | `POST` | `/api/auth/refresh` | Rotate refresh cookie and issue a new access token |
@@ -25,6 +26,17 @@ workflow, comments, plugins, and webhooks.
 | `GET` | `/api/auth/me` | Current authenticated user |
 
 Use the access token as `Authorization: Bearer <token>` for protected endpoints. Refresh tokens are issued as the `zinhar_refresh_token` HttpOnly cookie; legacy clients may still send `refresh_token` in the refresh/logout JSON body.
+
+## Authentication And Tenant Boundaries
+
+- Authentication-only routes require `Authorization: Bearer <token>`.
+- Tenant-aware routes additionally require `X-Organization-Id`.
+- Preview WebSocket clients may send `access_token` and `organization_id` query
+  parameters because browser WebSocket APIs cannot set arbitrary headers.
+- Tenant middleware requires an active organization and active membership, then
+  applies organization/user rate limits and API quota checks.
+- All current `/api/marketplace/*` routes are tenant-aware. The catalog is not an
+  anonymous public endpoint in the current router composition.
 
 ## Content Types
 
@@ -67,6 +79,9 @@ Example: `sort=created_at:desc`.
 
 Image uploads for `image/jpeg`, `image/png`, and `image/webp` generate:
 `thumbnail`, `small`, `medium`, and `large` WebP variants.
+
+Stored file bytes are served from `GET /uploads/{organization_id}/...` without auth
+or tenant middleware. Media metadata APIs remain tenant-protected.
 
 ## Component Registry
 
@@ -189,3 +204,114 @@ The `seo-auto` plugin runs on `entry.before_save` and fills `data.slug` from `da
 
 Supported events: `entry.publish`, `entry.unpublish`, `page.publish`, `page.unpublish`.
 Webhook requests include `X-CMS-Event` and `X-CMS-Signature` headers.
+
+Webhook delivery uses one transient asynchronous attempt per event/subscription.
+Delivery rows are persisted, but no durable retry queue or worker is implemented.
+
+## Organizations
+
+The following routes require authentication but do not require an active
+organization header:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/organizations` | List current user memberships |
+| `POST` | `/api/organizations` | Create an organization and owner membership |
+| `POST` | `/api/organization-invitations/accept` | Accept a pending invitation token |
+
+The following routes require `X-Organization-Id`:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET`, `PUT` | `/api/organizations/current` | Read or update current organization |
+| `GET` | `/api/organizations/current/members` | List members |
+| `PATCH`, `DELETE` | `/api/organizations/current/members/{user_id}` | Change role or remove member |
+| `GET`, `POST` | `/api/organizations/current/invitations` | List or create invitations |
+| `DELETE` | `/api/organizations/current/invitations/{invitation_id}` | Revoke invitation |
+| `GET` | `/api/organizations/current/workspace` | Resolve workspace URL/slug |
+| `GET`, `POST` | `/api/organizations/current/domains` | List or create domain metadata |
+| `DELETE` | `/api/organizations/current/domains/{domain_id}` | Delete domain metadata |
+| `GET`, `PUT` | `/api/organizations/current/rate-limit` | Read or update rate limits |
+| `GET` | `/api/organizations/current/audit-logs` | List tenant audit records |
+| `GET` | `/api/organizations/current/email-deliveries` | List email delivery records |
+| `GET` | `/api/organizations/current/alerts` | List seeded SaaS alert definitions |
+| `POST` | `/api/organizations/current/leave` | Leave current organization |
+| `POST` | `/api/organizations/current/transfer-ownership` | Transfer organization ownership |
+
+Organization roles are `owner`, `admin`, `editor`, `author`, `viewer`, and
+`billing_manager`. They are distinct from global user roles.
+
+## Billing And Quotas
+
+All routes except the Stripe webhook require tenant context.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/billing/plans` | List active plans and Stripe checkout availability |
+| `GET`, `PUT` | `/api/billing/subscription` | Read or manually change organization plan |
+| `POST` | `/api/billing/checkout` | Create Stripe subscription checkout session |
+| `POST` | `/api/billing/portal` | Create Stripe customer portal session |
+| `GET` | `/api/billing/usage` | Read current plan, usage, and quota state |
+| `POST` | `/api/billing/usage/rebuild` | Rebuild members/content/media counters |
+| `POST` | `/api/billing/stripe/webhook` | Public signed Stripe webhook endpoint |
+
+Stripe webhook processing verifies the signature, deduplicates provider event IDs,
+and ignores timestamped subscription events older than the current local event.
+Stripe billing applies to organization subscriptions, not Marketplace purchases or
+creator payouts.
+
+## Beta And GA Operations
+
+Tenant-aware beta routes:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/beta/dashboard` | Current organization beta dashboard |
+| `GET`, `POST` | `/api/beta/feedback` | List or create feedback |
+| `PATCH` | `/api/beta/feedback/{feedback_id}` | Update feedback status/severity |
+| `GET`, `POST` | `/api/beta/ga-blockers` | List or create GA blockers |
+| `PATCH` | `/api/beta/ga-blockers/{blocker_id}` | Update blocker status/ownership |
+
+Authentication-only global administration routes:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/beta/product-dashboard` | Cross-organization beta dashboard |
+| `PUT` | `/api/beta/participants/{organization_id}` | Upsert beta participant state |
+
+GA release readiness itself is implemented through documentation, static tests,
+and `scripts/v2-ga-check.ps1`; there is no GA readiness runtime endpoint.
+
+## Marketplace
+
+Every Marketplace route currently requires authentication and
+`X-Organization-Id`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/marketplace/catalog` | Search/filter approved compatible catalog items |
+| `GET` | `/api/marketplace/catalog/{listing_slug}` | Read compatible listing detail and versions |
+| `GET`, `POST` | `/api/marketplace/creator` | Read/request current user creator profile |
+| `PATCH` | `/api/marketplace/creators/{creator_id}/verification` | Global-admin creator verification |
+| `GET`, `POST` | `/api/marketplace/listings` | List creator listings or create draft |
+| `PUT` | `/api/marketplace/listings/{listing_id}` | Update editable creator listing |
+| `POST` | `/api/marketplace/listings/{listing_id}/submit` | Submit complete listing metadata |
+| `POST` | `/api/marketplace/listings/{listing_id}/versions/upload` | Upload ZIP plus manifest and run validation |
+| `GET` | `/api/marketplace/listings/{listing_id}/submissions` | List creator submission reports |
+| `GET` | `/api/marketplace/review/queue` | Global-admin review queue |
+| `GET` | `/api/marketplace/review/events` | Global-admin review/moderation event history |
+| `GET` | `/api/marketplace/review/reports` | Global-admin validation report list |
+| `PATCH` | `/api/marketplace/review/submissions/{submission_id}` | Approve, reject, or request changes |
+| `POST` | `/api/marketplace/review/listings/{listing_id}/moderation` | Suspend, unpublish version, or emergency block |
+
+Packages are stored on the local filesystem under `UPLOAD_DIR`. Validation,
+security, and compatibility reports are stored on `marketplace_versions` and
+`marketplace_submissions`.
+
+Installation records and emergency-block updates exist, but install, update,
+uninstall, and rollback endpoints are not implemented. Marketplace purchases,
+entitlements, customer ratings, and creator payouts are also not implemented.
+
+Marketplace runtime routes are not currently registered in the generated
+`/openapi.json` path list. This manual API reference documents the verified router
+composition until generated OpenAPI coverage is extended.

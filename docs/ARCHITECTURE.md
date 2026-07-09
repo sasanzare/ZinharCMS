@@ -1,64 +1,150 @@
 # Architecture
 
-ZinharCMS follows the proposal's API-first headless CMS architecture.
+ZinharCMS is an API-first headless CMS implemented as a modular monolith. The
+React administration application is deployed separately from one Rust/Axum
+backend process, but backend route and service modules are logical boundaries,
+not independently deployed microservices.
 
-## Layers
+## Runtime Containers
 
-- Client layer: React admin panel and future visual page builder.
-- API gateway layer: Axum REST API with CORS, request tracing, timeout, compression, JWT-ready middleware, and OpenAPI JSON.
-- Core CMS services: auth, RBAC, content types, entries, media, page builder, and delivery modules.
-- Data layer: PostgreSQL 16 for primary storage, Redis 7 for cache/session primitives, and local/S3-compatible file storage.
+- React 19/Vite administration application. The production image serves the SPA
+  through Nginx.
+- Rust/Axum backend. It composes public, authenticated, and tenant-aware routes in
+  one process.
+- PostgreSQL 16 primary database accessed through SQLx.
+- Redis 7 for Delivery API cache and organization/user rate-limit counters.
+- Local filesystem storage under `UPLOAD_DIR` for CMS media and Marketplace
+  package artifacts.
 
-## Repository Layout
+The repository does not implement a separately deployed API gateway, S3-compatible
+storage provider, CDN, durable queue, or background worker.
 
-```text
-ZinharCMS/
-├── backend/               Rust/Axum API
-│   ├── migrations/        SQLx PostgreSQL migrations
-│   └── src/
-│       ├── config.rs
-│       ├── db/
-│       ├── middleware/
-│       ├── models/
-│       ├── routes/
-│       └── services/
-├── frontend/              React/Vite admin workspace
-│   └── src/
-│       ├── components/
-│       ├── hooks/
-│       ├── pages/
-│       ├── services/
-│       └── stores/
-├── docs/
-├── docker-compose.yml
-└── docker-compose.prod.yml
-```
+## Backend Boundaries
 
-## Database Foundation
+The root Axum router exposes four distinct boundaries:
 
-The initial schema implements the proposal ERD:
+1. Public system routes: `/`, `/health`, `/ready`, and `/openapi.json`.
+2. Public integration/auth routes: registration, login, refresh, Stripe webhook,
+   and the Delivery API.
+3. Authentication-only routes: current user, organization list/create/invitation
+   acceptance, global plugin management, and product-level beta operations.
+4. Tenant-aware routes: CMS management, pages, media, webhooks, organization
+   workspace operations, billing, beta organization data, and all Marketplace
+   routes.
 
-- `users`, `roles`, `user_roles`, `refresh_tokens`
-- `content_types`, `content_entries`
-- `pages`, `page_versions`, `component_registry` with stable builder keys
-- `media`, `media_variants`
+Tenant-aware requests require a valid access token and `X-Organization-Id`.
+`tenant_middleware` verifies an active organization and active membership, applies
+rate limits and API quota checks, and inserts `TenantContext`. Database helpers set
+PostgreSQL RLS session variables before tenant-owned queries.
 
-Phase one adds role normalization for `super_admin` and `author`, refresh-token
-rotation, and media captions. Phase two adds stable `component_key` identifiers,
-seeded system components, page JSON validation, version snapshots, and live
-preview broadcast channels.
+## Identity And Authorization
 
-The schema uses `UUID` primary keys, `JSONB` for dynamic content/page structures,
-status enums, slug checks, foreign keys, and indexes for common lookups.
+Global roles and organization membership roles are separate:
 
-## Runtime Flow
+- Global roles: `super_admin`, `admin`, `editor`, `author`, `viewer`.
+- Organization roles: `owner`, `admin`, `editor`, `author`, `viewer`,
+  `billing_manager`.
 
-```mermaid
-flowchart LR
-  Admin["React Admin"] --> API["Axum API"]
-  Builder["Future Page Builder"] --> API
-  Consumer["Consumer Apps"] --> API
-  API --> PG["PostgreSQL 16"]
-  API --> Redis["Redis 7"]
-  API --> Storage["File Storage"]
-```
+Frontend route guards and hidden controls are user-experience controls. Backend
+middleware and handler/service role checks remain authoritative.
+
+Access tokens are signed JWTs and are not stored as database entities. Refresh
+tokens are random values stored as hashes in `refresh_tokens` and sent to browsers
+as `HttpOnly`, `SameSite=Lax` cookies scoped to `/api/auth`.
+
+## Data And Tenant Isolation
+
+The final schema is migration-authoritative through migration `0018`.
+
+- Core identity: users, roles, user roles, refresh tokens, login attempts.
+- Core CMS: content types, entries, pages, page versions, components, media,
+  settings, navigation, comments, plugins, and webhooks.
+- Organizations: memberships, invitations, domains, rate limits, subscriptions,
+  usage counters, audit logs, email deliveries, alert definitions, beta feedback,
+  and GA blockers.
+- Marketplace: creators, listings, versions/package metadata, submissions, review
+  events, and tenant-owned installation records.
+
+Forced PostgreSQL RLS protects tenant-owned CMS, billing, operations, beta, and
+Marketplace installation tables. Global identity and Marketplace catalog/review
+entities use application authorization instead. A global `super_admin` does not
+automatically bypass tenant middleware; explicit bypass transactions are limited
+to selected platform operations such as Stripe webhook processing.
+
+## Core CMS And Page Builder
+
+The visual Page Builder is implemented, not future work. `PagesPage.tsx` provides
+the component palette, drag-and-drop canvas, props editor, local preview, manual
+save, and debounced autosave for persisted pages.
+
+The backend validates page JSON against registered component keys, stores complete
+page snapshots in `page_versions`, supports restore-to-new-draft behavior, and
+publishes process-local WebSocket preview updates. Preview channels are in-memory,
+so multiple backend replicas require an explicit shared-broadcast design.
+
+Entries and pages share workflow states but route actions have distinct side
+effects. Publishing may invalidate Redis cache, run built-in plugin hooks, and
+dispatch signed webhooks after the primary database mutation.
+
+## Delivery, Media, And Webhooks
+
+The public Delivery API reads published content from the active organization whose
+slug is `default`. Redis values use a 300-second TTL; Redis cache failures fall back
+to PostgreSQL. Rate-limit Redis failures do not use that fallback.
+
+Media metadata is tenant-owned, while file bytes are served by the public
+`/uploads` static route when a URL is known. Image uploads generate WebP variants.
+Filesystem and relational writes are not one atomic transaction, so partial media
+or artifact cleanup remains an operational decision.
+
+CMS webhooks use HMAC-SHA256 signatures and transient `tokio::spawn` dispatch.
+Delivery attempts are stored, but no durable retry queue or worker exists.
+
+## Billing And SaaS Operations
+
+Plans, organization subscriptions, quota counters, Stripe checkout/customer
+portal, signed Stripe webhooks, idempotent event storage, and timestamp-based event
+ordering are implemented for organization billing.
+
+Audit logs and email-delivery records are persisted. Email supports `log`,
+`disabled`, and generic HTTP `webhook` modes; no specific email vendor is built in.
+SaaS alert definitions are seeded and listable, but there is no evaluator,
+scheduler, or alert destination runtime.
+
+GA readiness is represented by documentation, static Rust tests, and
+`scripts/v2-ga-check.ps1`; it is not a runtime product service.
+
+## Marketplace
+
+Implemented Marketplace behavior includes creator requests and verification,
+listing metadata/submission, package upload to local storage, manifest/static/
+security/compatibility validation, persisted reports, global-admin review and
+moderation, and a tenant-aware compatible catalog.
+
+The catalog is product-facing but not anonymous: every `/api/marketplace/*` route
+is currently mounted behind tenant middleware. Installation schema and catalog
+counts exist, but executable install/update/uninstall/rollback APIs do not.
+Purchases, entitlements, customer ratings, and creator payout execution are
+planned only.
+
+## Observability And Recovery
+
+- `TraceLayer` and formatted `tracing` output provide process-local request logs.
+- request IDs are generated and propagated as `x-request-id`.
+- `/health` reports liveness; `/ready` checks PostgreSQL and Redis.
+- startup migration or seed failure prevents the listener from binding.
+- Ctrl+C and Unix SIGTERM trigger Axum graceful shutdown.
+
+No monitoring vendor, metrics exporter, durable retry worker, automatic backup,
+TLS termination, or public reverse proxy is configured by this repository.
+Operational gaps and owner decisions are recorded in
+`docs/diagrams/AMBIGUITIES.md`.
+
+## Detailed Evidence
+
+The complete diagram set and source traceability are available in:
+
+- `docs/diagrams/README.md`
+- `docs/diagrams/ARCHITECTURE_AUDIT.md`
+- `docs/diagrams/TRACEABILITY.md`
+- `docs/diagrams/32-end-to-end-traceability.mmd`

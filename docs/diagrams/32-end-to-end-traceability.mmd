@@ -1,0 +1,121 @@
+flowchart LR
+%% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/middleware/auth.rs
+%% Evidence: backend/src/middleware/tenant.rs
+%% Evidence: backend/src/routes/auth.rs
+%% Evidence: backend/src/routes/content.rs
+%% Evidence: backend/src/routes/pages.rs
+%% Evidence: backend/src/routes/media.rs
+%% Evidence: backend/src/routes/delivery.rs
+%% Evidence: backend/src/routes/webhooks.rs
+%% Evidence: backend/src/routes/organizations.rs
+%% Evidence: backend/src/routes/billing.rs
+%% Evidence: backend/src/routes/beta.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/services/rls.rs
+%% Evidence: backend/src/services/quota.rs
+%% Evidence: backend/src/services/stripe_billing.rs
+%% Evidence: backend/src/services/marketplace_validation.rs
+%% Evidence: frontend/src/router.tsx
+%% Evidence: frontend/src/services/api.ts
+%% Evidence: frontend/src/stores/useAppStore.ts
+%% Evidence: frontend/src/pages/PagesPage.tsx
+%% Evidence: frontend/src/pages/MarketplacePage.tsx
+%% Evidence: backend/migrations/0001_initial_schema.sql
+%% Evidence: backend/migrations/0008_v2_phase_one_organizations.sql
+%% Evidence: backend/migrations/0009_v2_phase_three_rls.sql
+%% Evidence: backend/migrations/0010_v2_phase_five_billing_quota.sql
+%% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+%% Evidence: docs/API.md
+
+subgraph identity["Identity and tenant administration [IMPLEMENTED]"]
+  id_actor["Actor<br/>User or organization owner [EXTERNAL]"]
+  id_page["Frontend<br/>AuthPage, AppShell, OrganizationPage [IMPLEMENTED]"]
+  id_api["API client<br/>api.auth.*, api.organizations.* [IMPLEMENTED]"]
+  id_route["Routes<br/>/api/auth/*, /api/organizations/* [IMPLEMENTED]"]
+  id_mw["Middleware<br/>auth_middleware then tenant_middleware where required [IMPLEMENTED]"]
+  id_handler["Handlers/services<br/>auth, organizations, JWT, password, RBAC, RLS [IMPLEMENTED]"]
+  id_data["Tables<br/>users, refresh_tokens, organizations, organization_members, invitations [IMPLEMENTED]"]
+  id_test["Tests<br/>RBAC, security, email, frontend auth/store tests [PARTIAL]"]
+  id_doc["Docs<br/>API.md, V2 admin/phase docs, diagrams 03/13/17/24/26 [IMPLEMENTED]"]
+end
+
+subgraph cms["Core CMS and Page Builder [IMPLEMENTED]"]
+  cms_actor["Actor<br/>Organization author/editor/admin [EXTERNAL]"]
+  cms_page["Frontend<br/>ContentTypesPage, EntriesPage, PagesPage, WorkflowPage [IMPLEMENTED]"]
+  cms_api["API client<br/>api.contentTypes.*, entries.*, pages.*, comments.*, plugins.* [IMPLEMENTED]"]
+  cms_route["Routes<br/>content, pages, comments, plugins [IMPLEMENTED]"]
+  cms_mw["Middleware<br/>tenant context, rate limit, API quota [IMPLEMENTED]"]
+  cms_handler["Handlers/services<br/>entry validation, workflow, security, plugins, RLS [IMPLEMENTED]"]
+  cms_data["Tables<br/>content_types, content_entries, pages, page_versions, component_registry, comments [IMPLEMENTED]"]
+  cms_cache["Runtime/storage<br/>Redis delivery cache and in-memory preview channels [IMPLEMENTED/PARTIAL]"]
+  cms_test["Tests<br/>workflow/plugin tests and PagesPage tests [IMPLEMENTED]"]
+  cms_doc["Docs<br/>API.md, phase docs, diagrams 10/14/15/23/27 [IMPLEMENTED]"]
+end
+
+subgraph media_delivery["Media, Delivery API, and webhooks [PARTIAL]"]
+  md_actor["Actor<br/>Media manager or delivery consumer [EXTERNAL]"]
+  md_page["Frontend<br/>MediaPage and SettingsPage [IMPLEMENTED]"]
+  md_api["API client<br/>api.media.*, api.webhooks.*; external /api/v1 consumer [IMPLEMENTED]"]
+  md_route["Routes<br/>media, delivery, webhooks, static /uploads [IMPLEMENTED]"]
+  md_mw["Middleware<br/>tenant routes protected; delivery and /uploads public [IMPLEMENTED]"]
+  md_handler["Handlers/services<br/>MIME checks, media processing, cache, HMAC webhook dispatch [IMPLEMENTED]"]
+  md_data["Tables<br/>media, media_variants, webhooks, webhook_deliveries, settings [IMPLEMENTED]"]
+  md_external["Storage/integration<br/>local upload filesystem, Redis, external webhook receiver [IMPLEMENTED/PARTIAL]"]
+  md_test["Tests<br/>webhook URL/signature and service tests [IMPLEMENTED/PARTIAL]"]
+  md_doc["Docs<br/>API.md and diagrams 16/22/28/31 [IMPLEMENTED]"]
+end
+
+subgraph billing_ops["Organizations, billing, SaaS operations, and beta [PARTIAL]"]
+  bo_actor["Actor<br/>Owner, billing manager, beta operator [EXTERNAL]"]
+  bo_page["Frontend<br/>OrganizationPage, BillingPage, BetaPage [IMPLEMENTED]"]
+  bo_api["API client<br/>api.organizations.*, billing.*, beta.* [IMPLEMENTED]"]
+  bo_route["Routes<br/>organizations, billing, beta; public Stripe webhook [IMPLEMENTED]"]
+  bo_mw["Middleware<br/>auth-only or tenant-aware boundary by route [IMPLEMENTED]"]
+  bo_handler["Handlers/services<br/>quota, Stripe billing, audit, email, RLS [IMPLEMENTED]"]
+  bo_data["Tables<br/>plans, subscriptions, usage_counters, audit_logs, email_deliveries, beta_* [IMPLEMENTED]"]
+  bo_external["External/runtime<br/>Stripe API/webhooks and optional email webhook [IMPLEMENTED/PARTIAL]"]
+  bo_test["Tests<br/>quota, Stripe, hardening, GA readiness [IMPLEMENTED]"]
+  bo_doc["Docs<br/>API.md, V2 guides/runbook, diagrams 18/24/29/31 [IMPLEMENTED]"]
+end
+
+subgraph marketplace["Marketplace submission, review, moderation, and catalog [PARTIAL]"]
+  mp_actor["Actor<br/>Creator, global admin reviewer, tenant catalog user [EXTERNAL]"]
+  mp_page["Frontend<br/>MarketplacePage [IMPLEMENTED]"]
+  mp_api["API client<br/>api.marketplace.* [IMPLEMENTED]"]
+  mp_route["Routes<br/>/api/marketplace/* [IMPLEMENTED] tenant-protected AMB-003"]
+  mp_mw["Middleware<br/>tenant middleware plus handler global-role/creator checks [IMPLEMENTED]"]
+  mp_handler["Handlers/services<br/>submission, manifest, package, validation, review, catalog [IMPLEMENTED]"]
+  mp_data["Tables<br/>marketplace_creators, listings, versions, submissions, review_events, installations [IMPLEMENTED/PARTIAL]"]
+  mp_storage["Storage<br/>local Marketplace artifact path [IMPLEMENTED] AMB-002"]
+  mp_test["Tests<br/>Marketplace domain/manifest/package/validation/review/catalog tests [IMPLEMENTED]"]
+  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30 [IMPLEMENTED]"]
+end
+
+subgraph excluded["Separated future Marketplace capabilities"]
+  install_future["Executable install/update/rollback [PLANNED] AMB-007"]
+  purchase_future["Purchases and entitlements [PLANNED] AMB-008"]
+  payout_future["Creator payout ledger/provider [PLANNED] AMB-009"]
+  rating_future["Customer ratings/reviews [PLANNED] AMB-017"]
+end
+
+id_actor --> id_page --> id_api --> id_route --> id_mw --> id_handler --> id_data --> id_test --> id_doc
+cms_actor --> cms_page --> cms_api --> cms_route --> cms_mw --> cms_handler --> cms_data --> cms_cache --> cms_test --> cms_doc
+md_actor --> md_page --> md_api --> md_route --> md_mw --> md_handler --> md_data --> md_external --> md_test --> md_doc
+bo_actor --> bo_page --> bo_api --> bo_route --> bo_mw --> bo_handler --> bo_data --> bo_external --> bo_test --> bo_doc
+mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_test --> mp_doc
+mp_doc -. "explicit future scope" .-> install_future
+mp_doc -. "explicit future scope" .-> purchase_future
+mp_doc -. "explicit future scope" .-> payout_future
+mp_doc -. "placeholder response/UI only" .-> rating_future
+
+classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
+classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray: 2 4,color:#111;
+classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
+
+class id_page,id_api,id_route,id_mw,id_handler,id_data,id_test,id_doc,cms_page,cms_api,cms_route,cms_mw,cms_handler,cms_data,cms_test,cms_doc,md_page,md_api,md_route,md_mw,md_handler,md_data,md_test,md_doc,bo_page,bo_api,bo_route,bo_mw,bo_handler,bo_data,bo_test,bo_doc,mp_page,mp_api,mp_route,mp_mw,mp_handler,mp_test,mp_doc implemented;
+class cms_cache,md_external,bo_external,mp_data,mp_storage partial;
+class install_future,purchase_future,payout_future,rating_future planned;
+class id_actor,cms_actor,md_actor,bo_actor,mp_actor external;

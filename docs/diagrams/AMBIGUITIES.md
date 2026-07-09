@@ -256,11 +256,15 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` shows validation status but no cleanup or retry cleanup control.
 - Test evidence: No cleanup-after-failure test was found.
 - Conflict or missing information: It is unclear whether retained failed artifacts are intentional audit evidence or an unimplemented cleanup policy.
+- Exact missing decision: Define whether blocked artifacts are retained intentionally and whether database-write or abandoned-upload artifacts must be deleted.
+- Why code cannot answer it: The upload handler writes the artifact before persistence and contains no cleanup policy, retention marker, garbage-collection command, or scheduled reconciliation.
 - Safest interpretation: Do not represent automatic artifact cleanup as implemented.
 - Representation to use in diagrams: Use `[DECISION REQUIRED] cleanup policy`; show failed validation as stored report/artifact retention unless future evidence changes.
+- Safest representation used: Diagrams show local artifact persistence before validation/SQL and an explicit orphan-cleanup gap.
+- Smallest owner decision required: The Marketplace/storage owner must choose retain-versus-delete semantics for blocked artifacts and a single cleanup trigger for unreferenced files.
 - Confidence: MEDIUM
 - Status: DECISION_REQUIRED
-- Affected diagram files: `00-implementation-status-map.mmd`, future validation and storage lifecycle diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `20-marketplace-package-review-pipeline.mmd`, `30-marketplace-sequences.mmd`, `31-observability-and-failure-recovery.mmd`.
 - Step 15 update: `upload_listing_version` writes the artifact to local storage before starting the SQL transaction. Static/security/compatibility failures are persisted as blocked version/submission rows, but no cleanup path was found for a database failure after artifact persistence. Affected diagram files: `20-marketplace-package-review-pipeline.mmd`.
 
 ## AMB-016
@@ -274,11 +278,15 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` exposes review and moderation actions but no appeal/restoration UI.
 - Test evidence: No appeal or restoration test was found.
 - Conflict or missing information: Emergency block can change installations, but no reverse workflow is represented.
+- Exact missing decision: Define who may restore a suspended/blocked listing or deprecated version and which related installation states are reversed.
+- Why code cannot answer it: Current routes and schema record only forward review/moderation actions; no appeal request, restoration command, reverse transition, or authorization rule exists.
 - Safest interpretation: Treat appeal/restoration as not implemented and product-design dependent.
 - Representation to use in diagrams: Use `[DECISION REQUIRED] no appeal/restoration flow`; do not draw a restore path.
+- Safest representation used: State and sequence diagrams terminate at suspended, deprecated, or blocked states without a reverse edge.
+- Smallest owner decision required: The Marketplace policy owner must approve one restoration transition matrix and the global role allowed to execute it.
 - Confidence: HIGH
 - Status: DECISION_REQUIRED
-- Affected diagram files: `00-implementation-status-map.mmd`, future review and moderation diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `20-marketplace-package-review-pipeline.mmd`, `25-marketplace-state-machines.mmd`, `30-marketplace-sequences.mmd`.
 
 ## AMB-017
 
@@ -371,17 +379,17 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - ID: AMB-022
 - Domain: API Documentation
 - Exact question: Is the current API documentation complete for V2 and V3 runtime routes?
-- Documentation claim: `docs/API.md` documents earlier auth/content/media/pages/delivery/comment/plugin/security/webhook APIs.
+- Documentation claim: Before step 20, `docs/API.md` documented only earlier auth/content/media/pages/delivery/comment/plugin/security/webhook APIs.
 - Implementation evidence: `backend/src/routes/mod.rs` mounts organizations, billing, beta, and marketplace routes; Marketplace paths are not fully represented in central OpenAPI registration.
-- Database evidence: Migrations `0008` through `0018` add V2/V3 tables that are not covered by `docs/API.md`.
-- Frontend evidence: `frontend/src/services/api.ts` calls V2/V3 endpoints that are absent from the older API document.
+- Database evidence: Migrations `0008` through `0018` add the V2/V3 organization, billing, beta, and Marketplace domains now summarized in `docs/API.md`.
+- Frontend evidence: `frontend/src/services/api.ts` calls the V2/V3 endpoints now listed in the manual API document.
 - Test evidence: No documentation completeness test was found.
-- Conflict or missing information: Runtime APIs have outgrown the central API document.
-- Safest interpretation: Treat `docs/API.md` and OpenAPI as incomplete for V2/V3.
-- Representation to use in diagrams: Use backend route code as API boundary evidence and mark API docs as `[CONFLICT]` where stale.
+- Conflict or missing information: Step 20 corrected the manual API reference, but generated `/openapi.json` still omits Marketplace paths.
+- Safest interpretation: Treat `docs/API.md` as current for verified route groups and generated OpenAPI as incomplete for Marketplace.
+- Representation to use in diagrams: Use backend route composition as authoritative and mark only generated Marketplace OpenAPI coverage as `[CONFLICT]`.
 - Confidence: HIGH
 - Status: RESOLVED
-- Affected diagram files: `00-implementation-status-map.mmd`, `08-route-boundaries.mmd`, `09-request-middleware-pipeline.mmd`, future API and route diagrams.
+- Affected diagram files: `00-implementation-status-map.mmd`, `08-route-boundaries.mmd`, `09-request-middleware-pipeline.mmd`, `32-end-to-end-traceability.mmd`.
 
 ## AMB-023
 
@@ -508,8 +516,12 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Frontend evidence: `frontend/src/services/api.ts` uses `VITE_API_URL` as the browser API base URL; API routing is not provided by the frontend Nginx configuration.
 - Test evidence: No deployment or TLS integration test was found.
 - Conflict or missing information: Public HTTPS entrypoint, certificate management, and reverse proxy routing are not represented in the repository.
+- Exact missing decision: Select the production HTTPS termination and browser-to-backend routing boundary.
+- Why code cannot answer it: Compose exposes HTTP ports and frontend Nginx serves only static files; no certificate, proxy, ingress, or deployment-edge configuration exists.
 - Safest interpretation: Treat TLS termination and public reverse proxying as a deployment decision outside the current repo.
 - Representation to use in diagrams: Use `[DECISION REQUIRED]` for TLS/reverse proxy; do not invent Nginx reverse proxy, Traefik, cloud load balancer, or API gateway.
+- Safest representation used: Production diagrams expose the current HTTP container ports and place an unnamed decision boundary outside them.
+- Smallest owner decision required: The deployment owner must name one TLS/reverse-proxy component and define the public frontend/API origins.
 - Confidence: HIGH
 - Status: DECISION_REQUIRED
 - Affected diagram files: `06-production-deployment.mmd`, future deployment and operations diagrams.
@@ -542,8 +554,12 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Frontend evidence: Not applicable.
 - Test evidence: Backend CI runs tests against PostgreSQL, but no multi-replica migration coordination test was found.
 - Conflict or missing information: Startup migrations are implemented for a single backend startup path, while production rollout sequencing remains operational.
+- Exact missing decision: Decide whether production keeps startup migrations or uses one separately coordinated migration job before backend rollout.
+- Why code cannot answer it: `main` always runs migrations, while Compose and CI define no leader election, one-shot migration service, or replica rollout contract.
 - Safest interpretation: Treat startup migration execution as implemented, and multi-replica migration coordination as a deployment decision.
 - Representation to use in diagrams: Use `[IMPLEMENTED]` for startup migrations and `[DECISION REQUIRED]` for separate migration job or multi-replica rollout coordination.
+- Safest representation used: Runtime diagrams place migration execution before listener bind and mark multi-replica coordination outside the implemented path.
+- Smallest owner decision required: The deployment/database owner must choose startup migration or one-shot migration job for production replicas.
 - Confidence: HIGH
 - Status: DECISION_REQUIRED
 - Affected diagram files: `05-local-development-runtime.mmd`, `06-production-deployment.mmd`, future deployment diagrams.
@@ -559,8 +575,12 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Frontend evidence: Not applicable.
 - Test evidence: No backup or restore test was found.
 - Conflict or missing information: Backup is operationally required by docs, but not automated in repository deployment files.
+- Exact missing decision: Define backup targets, retention, schedule, encryption, and restore verification for PostgreSQL and local artifact volumes.
+- Why code cannot answer it: Named volumes exist, but no backup command, job, workflow, destination, retention policy, or restore drill is encoded.
 - Safest interpretation: Treat backup and restore as manual/operational responsibilities until automation is added.
 - Representation to use in diagrams: Use `[DECISION REQUIRED]` for database, Redis, upload, and Marketplace artifact backup automation.
+- Safest representation used: Deployment/recovery diagrams show persistent volumes without an implemented backup service.
+- Smallest owner decision required: The operations owner must select one backup destination and minimum schedule/retention for PostgreSQL and `uploads_data`.
 - Confidence: HIGH
 - Status: DECISION_REQUIRED
 - Affected diagram files: `06-production-deployment.mmd`, future operations and storage diagrams.
@@ -1239,11 +1259,15 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Frontend evidence: `frontend/src/pages/EntriesPage.tsx` and `frontend/src/pages/PagesPage.tsx` expose a generic status-based action, while `frontend/src/pages/WorkflowPage.tsx` exposes approve/reject for pending review items.
 - Test evidence: Workflow tests validate status transitions, not route-specific side-effect differences.
 - Conflict or missing information: The implementation permits some route/action combinations whose product meaning is ambiguous, such as restore or reject from a published record.
+- Exact missing decision: Define the valid source states for reject, restore, and unpublish as distinct business actions.
+- Why code cannot answer it: The shared workflow transition function validates target-state reachability, while route names and side effects encode meanings not persisted in the database.
 - Safest interpretation: Represent the exact route-specific transitions and side effects, and do not collapse all `to draft` paths into a single business operation.
 - Representation to use in diagrams: Draw separate labels for unpublish, reject, and restore when their side effects differ.
+- Safest representation used: The state machine keeps separate action labels even where all transitions end in `draft`.
+- Smallest owner decision required: The editorial workflow owner must approve a source-state/action matrix for reject, restore, and unpublish.
 - Confidence: HIGH
 - Status: DECISION_REQUIRED
-- Affected diagram files: `23-core-cms-state-machines.mmd`.
+- Affected diagram files: `23-core-cms-state-machines.mmd`, `27-content-and-page-sequences.mmd`.
 
 ## AMB-069
 
@@ -1273,15 +1297,51 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Frontend evidence: Frontend pages report a single action result and do not model partial side-effect failures.
 - Test evidence: No lifecycle test was found that asserts compensating behavior when post-mutation side effects fail.
 - Conflict or missing information: Product intent for rollback or retry after partial side-effect failure is not documented in code.
+- Exact missing decision: Define whether failed cache invalidation, plugin hooks, webhook dispatch, or audit writes should fail the request, retry, or reconcile asynchronously.
+- Why code cannot answer it: Side effects run in different orders and transaction scopes, and no outbox, retry state, compensation command, or reconciliation contract exists.
 - Safest interpretation: Show side effects after mutation and mark failure-handling behavior as a decision-required operational risk.
 - Representation to use in diagrams: Label side effects on transition edges and mark post-mutation failure risk with AMB-070.
+- Safest representation used: Sequence/recovery diagrams show the primary mutation first and mark later failures as non-rollback paths.
+- Smallest owner decision required: The platform owner must choose one reliability contract for post-mutation side effects: best effort, transactional outbox, or explicit retry/reconciliation.
 - Confidence: HIGH
 - Status: DECISION_REQUIRED
-- Affected diagram files: `23-core-cms-state-machines.mmd`, future reliability diagrams.
+- Affected diagram files: `23-core-cms-state-machines.mmd`, `27-content-and-page-sequences.mmd`, `31-observability-and-failure-recovery.mmd`.
 
 ## Step 17 Core CMS State Machine Update
 
 - Ambiguities added in step 17: AMB-067, AMB-068, AMB-069, AMB-070.
 - Existing ambiguities still applicable: AMB-006 for built-in-only plugin runtime, AMB-011 and AMB-041 for webhook dispatch without durable retries, AMB-026 for frontend-only controls, AMB-036 for enum-backed status values, AMB-038 for workflow constraints enforced in application code, AMB-039 for polymorphic comments, and AMB-045 for page version snapshots.
 - State machine decisions represented: content entries and pages have four durable workflow statuses; comments derive state from resolution columns; webhook deliveries persist only delivered/failed outcomes; plugin lifecycle is enable/disable plus built-in hook execution.
+- Production behavior changed: No.
+
+## AMB-071
+
+- ID: AMB-071
+- Domain: SaaS Alert Execution
+- Exact question: Are seeded SaaS alert rules evaluated and delivered, or are they passive configuration records?
+- Documentation claim: `docs/V2_PHASE_SEVEN.md` describes alert definitions for billing, email, RLS, and migration failures.
+- Implementation evidence: `backend/src/routes/organizations.rs` only lists current organization alert rules. No evaluator, scheduler, event consumer, or notification dispatcher was found.
+- Database evidence: `backend/migrations/0012_v2_phase_seven_saas_ops.sql` creates and seeds `saas_alert_rules`; it does not create alert occurrences, delivery attempts, acknowledgements, or destination tables.
+- Frontend evidence: `frontend/src/pages/OrganizationPage.tsx` displays alert definitions without controls for destinations, execution, or acknowledgement.
+- Test evidence: No alert evaluation or delivery test was found.
+- Conflict or missing information: Alert definitions exist, but there is no runtime behavior proving that a configured condition is evaluated or sent anywhere.
+- Exact missing decision: Decide whether alert rules remain informational or become executable, and define their trigger and destination contract.
+- Why code cannot answer it: No runtime service owns evaluation timing, event inputs, delivery channel, deduplication, or acknowledgement.
+- Safest interpretation: Treat `saas_alert_rules` as listable definitions only.
+- Representation to use in diagrams: Use `[PARTIAL]` for stored definitions and `[DECISION REQUIRED]` for evaluation/delivery.
+- Safest representation used: Observability diagrams stop at the listable rule and do not draw an alert runner or destination.
+- Smallest owner decision required: The SaaS operations owner must choose passive definitions or one executable trigger/destination model.
+- Confidence: HIGH
+- Status: DECISION_REQUIRED
+- Affected diagram files: `00-implementation-status-map.mmd`, `07-backend-component-architecture.mmd`, `18-billing-operations-beta-data-model.mmd`, `31-observability-and-failure-recovery.mmd`, `32-end-to-end-traceability.mmd`.
+
+## Final Step 20 Ambiguity Review
+
+- Total ambiguity records reviewed: 71.
+- Final `RESOLVED` records: 63.
+- Final `DECISION_REQUIRED` records: 8.
+- Final `UNRESOLVED` records: 0.
+- Every decision-required record now states the missing decision, why code cannot
+  answer it, the safest diagram representation, affected files, and the smallest
+  owner decision required.
 - Production behavior changed: No.
