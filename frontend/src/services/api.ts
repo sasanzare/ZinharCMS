@@ -47,6 +47,7 @@ import type {
   MarketplaceCreatorStateResponse,
   MarketplaceCreatorResponse,
   MarketplaceInstallRequest,
+  MarketplaceKillSwitchResponse,
   MarketplaceInstallationResponse,
   MarketplaceInstallationUpdateCheckResponse,
   MarketplaceInstallationUpdateRequest,
@@ -55,6 +56,10 @@ import type {
   MarketplaceModerationRequest,
   MarketplaceReviewDecisionRequest,
   MarketplaceReviewEventResponse,
+  MarketplacePermissionCatalogResponse,
+  MarketplaceRuntimeAuthorizeRequest,
+  MarketplaceRuntimeAuthorizationResponse,
+  MarketplaceRuntimeStatusResponse,
   MarketplaceVersionSubmissionResponse,
   MarketplaceValidationReportResponse,
   MediaListResponse,
@@ -344,6 +349,30 @@ changePlan: (payload: ChangePlanRequest) =>
     catalogDetail: (listingSlug: string) =>
       request<MarketplaceCatalogDetailResponse>(`/api/marketplace/catalog/${encodeURIComponent(listingSlug)}`, { auth: true }),
     installations: () => request<MarketplaceInstallationResponse[]>("/api/marketplace/installations", { auth: true }),
+    permissions: () => request<MarketplacePermissionCatalogResponse[]>("/api/marketplace/permissions", { auth: true }),
+    runtimeStatus: () => request<MarketplaceRuntimeStatusResponse>("/api/marketplace/runtime/status", { auth: true }),
+    authorizeRuntime: (installationId: string, payload: MarketplaceRuntimeAuthorizeRequest) =>
+      request<MarketplaceRuntimeAuthorizationResponse>(
+        `/api/marketplace/installations/${encodeURIComponent(installationId)}/runtime/authorize`,
+        { method: "POST", auth: true, body: payload },
+      ),
+    activateOrganizationKillSwitch: (reason: string) =>
+      request<MarketplaceKillSwitchResponse>("/api/marketplace/kill-switches/organization", {
+        method: "POST",
+        auth: true,
+        body: { reason },
+      }),
+    activateGlobalKillSwitch: (reason: string) =>
+      request<MarketplaceKillSwitchResponse>("/api/marketplace/kill-switches/global", {
+        method: "POST",
+        auth: true,
+        body: { reason },
+      }),
+    liftKillSwitch: (killSwitchId: string) =>
+      request<MarketplaceKillSwitchResponse>(
+        `/api/marketplace/kill-switches/${encodeURIComponent(killSwitchId)}/lift`,
+        { method: "POST", auth: true },
+      ),
     install: (payload: MarketplaceInstallRequest) =>
       request<MarketplaceInstallationResponse>("/api/marketplace/installations", { method: "POST", auth: true, body: payload }),
     installationUpdates: (installationId: string) =>

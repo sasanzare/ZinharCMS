@@ -800,6 +800,54 @@ export type MarketplaceInstallationUpdateCheckResponse = {
   reasons: string[];
 };
 
+export type MarketplacePermissionCatalogResponse = {
+  permission_key: string;
+  description: string;
+  category: string;
+  risk_level: string;
+  product_types: JsonValue;
+  runtime_operations: JsonValue;
+  enabled: boolean;
+};
+
+export type MarketplaceKillSwitchResponse = {
+  id: string;
+  scope: "global" | "organization";
+  organization_id: string | null;
+  reason: string;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  lifted_by: string | null;
+  lifted_at: string | null;
+};
+
+export type MarketplaceRuntimeStatusResponse = {
+  global_blocked: boolean;
+  organization_blocked: boolean;
+  organization_id: string;
+  status_message: string;
+  active_kill_switches: MarketplaceKillSwitchResponse[];
+};
+
+export type MarketplaceRuntimeAuthorizeRequest = {
+  operation: string;
+  entry_point: string;
+  payload: JsonRecord;
+};
+
+export type MarketplaceRuntimeAuthorizationResponse = {
+  allowed: boolean;
+  installation_id: string;
+  operation: string;
+  required_permission: string | null;
+  entry_point: string;
+  sandbox_policy: string;
+  execution: string;
+  reason_code: string | null;
+  message: string | null;
+};
+
 export type MarketplacePackageVersionResponse = {
   id: string;
   listing_id: string;

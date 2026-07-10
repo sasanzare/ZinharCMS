@@ -8,6 +8,11 @@ const apiMocks = vi.hoisted(() => ({
   catalog: vi.fn(),
   catalogDetail: vi.fn(),
   installations: vi.fn(),
+  permissions: vi.fn(),
+  runtimeStatus: vi.fn(),
+  activateOrganizationKillSwitch: vi.fn(),
+  activateGlobalKillSwitch: vi.fn(),
+  liftKillSwitch: vi.fn(),
   install: vi.fn(),
   installationUpdates: vi.fn(),
   enableInstallation: vi.fn(),
@@ -33,6 +38,11 @@ vi.mock("../services/api", () => ({
       catalog: apiMocks.catalog,
       catalogDetail: apiMocks.catalogDetail,
       installations: apiMocks.installations,
+      permissions: apiMocks.permissions,
+      runtimeStatus: apiMocks.runtimeStatus,
+      activateOrganizationKillSwitch: apiMocks.activateOrganizationKillSwitch,
+      activateGlobalKillSwitch: apiMocks.activateGlobalKillSwitch,
+      liftKillSwitch: apiMocks.liftKillSwitch,
       install: apiMocks.install,
       installationUpdates: apiMocks.installationUpdates,
       enableInstallation: apiMocks.enableInstallation,
@@ -136,6 +146,24 @@ beforeEach(() => {
   apiMocks.catalog.mockResolvedValue([freeItem]);
   apiMocks.catalogDetail.mockResolvedValue(freeDetail);
   apiMocks.installations.mockResolvedValue([]);
+  apiMocks.permissions.mockResolvedValue([
+    {
+      permission_key: "page.read",
+      description: "Read pages",
+      category: "page",
+      risk_level: "low",
+      product_types: ["component_pack"],
+      runtime_operations: ["component.render"],
+      enabled: true,
+    },
+  ]);
+  apiMocks.runtimeStatus.mockResolvedValue({
+    global_blocked: false,
+    organization_blocked: false,
+    organization_id: "org-1",
+    status_message: "Marketplace runtime is ready",
+    active_kill_switches: [],
+  });
   apiMocks.install.mockResolvedValue(installation);
   apiMocks.installationUpdates.mockResolvedValue({
     installation_id: installation.id,
@@ -281,5 +309,29 @@ describe("Marketplace Phase 6", () => {
       changelog_confirmed: true,
       approved_permissions: ["page.read", "content.write"],
     }));
+  });
+
+  it("shows the Phase 7 permission catalog and organization kill switch control", async () => {
+    const prompt = vi.spyOn(window, "prompt").mockReturnValue("suspicious artifact");
+    apiMocks.activateOrganizationKillSwitch.mockResolvedValue({
+      id: "switch-1",
+      scope: "organization",
+      organization_id: "org-1",
+      reason: "suspicious artifact",
+      active: true,
+      created_by: "user-1",
+      created_at: "2026-07-10T00:00:00Z",
+      lifted_by: null,
+      lifted_at: null,
+    });
+    render(<MarketplacePage />);
+
+    const runtimeHeading = await screen.findByRole("heading", { name: "Runtime safety" });
+    expect(runtimeHeading).toBeInTheDocument();
+    expect(within(runtimeHeading.closest("section")!).getByText("page.read")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Block this organization" }));
+
+    await waitFor(() => expect(apiMocks.activateOrganizationKillSwitch).toHaveBeenCalledWith("suspicious artifact"));
+    prompt.mockRestore();
   });
 });

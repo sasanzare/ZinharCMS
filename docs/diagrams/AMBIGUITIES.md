@@ -487,8 +487,18 @@ Paid entitlements and executable package runtime remain deferred.
 
 `backend/src/routes/marketplace.rs` and `backend/src/services/marketplace_installation.rs`
 now enforce exact manifest permission snapshots at install and on permission-changing
-updates. The `marketplace_installations` row remains forced-RLS tenant state; runtime
-permission enforcement and sandbox execution remain later-phase boundaries.
+updates. The `marketplace_installations` row remains forced-RLS tenant state; the
+Phase-7 policy boundary is implemented while concrete sandbox execution remains
+deferred.
+
+### Phase 7 implementation update
+
+`backend/src/services/marketplace_runtime.rs` now maps allowlisted runtime operations
+to the approved permission snapshot, product type, declared safe entry point, and a
+bounded JSON payload. `backend/src/routes/marketplace_runtime.rs` exposes policy
+decisions, runtime status, and global/organization kill-switch controls. Kill-switch
+state is forced-RLS for organization rows, global mutations use an explicit global
+admin bypass transaction, and uploaded package code remains unexecuted.
 
 ## Step 2 Report
 

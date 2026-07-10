@@ -22,7 +22,7 @@ Marketplace package versions must include a manifest before they can be submitte
 - `integration_plugin`
 - `backend_extension`
 
-`component_pack` and `design_template` are the first supported V3 MVP product types. `integration_plugin` and `backend_extension` can be represented in the manifest now but remain blocked by later review, permission, and sandbox phases before production execution.
+`component_pack` and `design_template` are the first supported V3 MVP product types. `integration_plugin` and `backend_extension` can be represented in the manifest now, but remain blocked from concrete production execution until the Phase 7 policy boundary and later runtime adapters are complete.
 
 ## Supported Permissions
 
@@ -60,7 +60,7 @@ Rules:
 
 ## Entry Points
 
-`entry_points` must be a non-empty object. Supported keys depend on product type and later runtime phases.
+`entry_points` must be a non-empty object. Phase 7 policy checks only declared safe artifact-local paths; concrete component/template/integration adapters remain later runtime work.
 
 Examples:
 

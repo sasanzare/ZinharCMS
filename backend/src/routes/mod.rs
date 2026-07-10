@@ -5,6 +5,7 @@ pub mod comments;
 pub mod content;
 pub mod delivery;
 pub mod marketplace;
+pub mod marketplace_runtime;
 pub mod media;
 pub mod organizations;
 pub mod pages;
@@ -46,6 +47,7 @@ pub fn router(state: AppState) -> Router {
         .merge(billing::router())
         .merge(media::router())
         .merge(marketplace::router())
+        .merge(marketplace_runtime::router())
         .merge(organizations::tenant_router())
         .merge(pages::router())
         .merge(comments::router())
@@ -189,6 +191,12 @@ pub fn router(state: AppState) -> Router {
         marketplace::uninstall_installation,
         marketplace::update_installation,
         marketplace::rollback_installation,
+        marketplace_runtime::list_permissions,
+        marketplace_runtime::runtime_status,
+        marketplace_runtime::authorize_runtime,
+        marketplace_runtime::activate_organization_kill_switch,
+        marketplace_runtime::activate_global_kill_switch,
+        marketplace_runtime::lift_kill_switch,
         plugins::list_plugins,
         plugins::get_plugin,
         plugins::update_plugin,
@@ -283,6 +291,12 @@ pub fn router(state: AppState) -> Router {
         marketplace::MarketplaceInstallationUpdateRequest,
         marketplace::MarketplaceInstallationResponse,
         marketplace::MarketplaceInstallationUpdateResponse,
+        marketplace_runtime::MarketplacePermissionResponse,
+        marketplace_runtime::MarketplaceKillSwitchResponse,
+        marketplace_runtime::MarketplaceRuntimeStatusResponse,
+        marketplace_runtime::MarketplaceKillSwitchRequest,
+        marketplace_runtime::MarketplaceRuntimeAuthorizeRequest,
+        marketplace_runtime::MarketplaceRuntimeAuthorizationResponse,
         plugins::PluginUpdateRequest,
         plugins::PluginResponse
     )),

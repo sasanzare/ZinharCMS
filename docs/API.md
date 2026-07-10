@@ -298,6 +298,12 @@ Every Marketplace route currently requires authentication and
 | `POST` | `/api/marketplace/installations/{installation_id}/uninstall` | Soft-uninstall while preserving organization data |
 | `POST` | `/api/marketplace/installations/{installation_id}/update` | Confirm changelog and update to a newer pinned version |
 | `POST` | `/api/marketplace/installations/{installation_id}/rollback` | Restore the safe compatible rollback version |
+| `GET` | `/api/marketplace/permissions` | Read the enabled Marketplace permission catalog |
+| `GET` | `/api/marketplace/runtime/status` | Read global/organization runtime safety and kill-switch status |
+| `POST` | `/api/marketplace/installations/{installation_id}/runtime/authorize` | Return an allowlisted sandbox host API decision without executing package code |
+| `POST` | `/api/marketplace/kill-switches/organization` | Activate an organization runtime kill switch; owner/admin |
+| `POST` | `/api/marketplace/kill-switches/global` | Activate a global runtime kill switch; global admin |
+| `POST` | `/api/marketplace/kill-switches/{kill_switch_id}/lift` | Lift an authorized organization or global kill switch |
 | `GET`, `POST` | `/api/marketplace/creator` | Read/request current user creator profile |
 | `PATCH` | `/api/marketplace/creators/{creator_id}/verification` | Global-admin creator verification |
 | `GET`, `POST` | `/api/marketplace/listings` | List creator listings or create draft |
@@ -327,3 +333,8 @@ ratings, and creator payouts are not implemented.
 Phase 6 installation paths and schemas are registered in generated `/openapi.json`.
 Earlier Marketplace creator, submission, review, moderation, and catalog paths
 remain documented manually until their legacy handlers gain OpenAPI annotations.
+
+Phase 7 adds the permission catalog, allowlisted runtime authorization decision,
+runtime status, and global/organization kill-switch paths to generated OpenAPI.
+The authorization endpoint is a policy decision only: uploaded package code is
+not executed by the backend.

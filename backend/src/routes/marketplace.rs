@@ -16,6 +16,7 @@ use uuid::Uuid;
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
+use crate::routes::marketplace_runtime;
 use crate::services::marketplace_catalog::{catalog_compatibility_report, is_catalog_compatible};
 use crate::services::marketplace_installation::{
     CLEANUP_POLICY_PRESERVE, LifecycleAction, approved_permission_snapshot,
@@ -805,6 +806,13 @@ pub async fn install_marketplace_product(
     rbac::require_org_marketplace_permission_approver(&tenant.role)?;
     let plan = quota::load_current_plan(&state.db, &tenant).await?;
     let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
+    if let Some(reason) =
+        marketplace_runtime::active_kill_switch_reason(&mut tx, tenant.organization_id).await?
+    {
+        return Err(AppError::Conflict(format!(
+            "Marketplace installations are blocked by an active kill switch: {reason}"
+        )));
+    }
     let candidate = load_install_candidate(&mut tx, payload.listing_id, payload.version_id).await?;
     let compatibility_report = validate_install_gate(
         &candidate.product_type,
@@ -1362,6 +1370,14 @@ async fn change_installation_status(
     .await?;
     validate_lifecycle_action(&installation.status, action)
         .map_err(|error| AppError::Conflict(error.message))?;
+    if action == LifecycleAction::Enable
+        && let Some(reason) =
+            marketplace_runtime::active_kill_switch_reason(&mut tx, tenant.organization_id).await?
+    {
+        return Err(AppError::Conflict(format!(
+            "Marketplace runtime is blocked by an active kill switch: {reason}"
+        )));
+    }
 
     let mut action_metadata = json!({
         "phase": "v3.6",

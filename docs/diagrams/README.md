@@ -32,6 +32,7 @@ runtime configuration, and only then supporting documentation.
 | `31` | Observability and failure recovery. |
 | `32` | End-to-end source traceability by major domain. |
 | `33` | Phase-6 Marketplace installation lifecycle, gates, updates, and rollback. |
+| `34` | Phase-7 Marketplace permission, sandbox policy, and kill-switch flow. |
 
 ## Implementation Status Language
 

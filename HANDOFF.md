@@ -5,17 +5,17 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-10 17:23 +01:00 (Europe/London)
+- **Last updated:** 2026-07-10 18:45 +01:00 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `7f18d7b feat(marketplace): implement phase 6 installation lifecycle`
-- **Working tree:** Clean before this handoff; this setup intentionally adds untracked `AGENTS.md` and `HANDOFF.md` only.
+- **Latest relevant commit:** `b1b3d05 docs: add persistent project handoff and recovery protocol`
+- **Working tree:** Modified and untracked Phase 7 implementation/documentation files; no staged changes and no commit created for Phase 7.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** V3 Marketplace Phase 6 — Installation Lifecycle
-- **Current subphase:** Phase 6.3 update and rollback; implementation is complete
-- **Overall status:** Completed for Phase 6; ready for the next verification/planning checkpoint
+- **Current phase:** V3 Marketplace Phase 7 — Permission Model, Sandbox MVP, and Kill Switch
+- **Current subphase:** 7.3 global/organization kill switch; implementation is complete and final validation is in progress
+- **Overall status:** In progress; Phase 7 code and docs are implemented, live migration/API smoke remains unverified
 
 ## 2. Project Overview
 
@@ -26,10 +26,12 @@ system of record, Redis for cache/rate-limit support, and local filesystem
 storage for CMS media and Marketplace package artifacts.
 
 The baseline includes the original CMS phases zero through ten, V2 organization,
-billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 6. The
-current V3 implementation has reached the free Marketplace installation
-lifecycle: reviewed free Component Packs and Design Templates can be installed,
-managed, updated, and safely rolled back without executing uploaded package code.
+billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 7. The
+current V3 implementation has reached the Phase 7 security boundary: reviewed
+free Component Packs and Design Templates can be installed and managed, while a
+permission catalog, allowlisted runtime policy, bounded sandbox decision, and
+global/organization kill switch prevent unauthorized or unsafe runtime actions.
+Uploaded package code is still never executed.
 
 ## 3. Technology Stack
 
@@ -70,26 +72,27 @@ and `frontend/dist` are not source-of-truth directories.
 | --- | --- | --- |
 | `README.md` | Current repository scope and quick-start commands through V3 Phase 6. | Current summary; source code and migrations outrank it. |
 | `docs/V3_PHASE_SIX.md` | Phase 6 acceptance, install gates, lifecycle rules, update/rollback behavior, and deferred boundaries. | Current Phase 6 authority. |
+| `docs/V3_PHASE_SEVEN.md` | Phase 7 permission catalog, sandbox policy, runtime authorization, kill switch, and acceptance. | Current Phase 7 authority. |
 | `docs/V3_MARKETPLACE_SCOPE.md` | V3 scope lock and MVP/out-of-scope rules. | Current product-scope authority. |
 | `docs/V3_MARKETPLACE_GAP_LIST.md` | Resolved and deferred Marketplace gaps by phase. | Current gap/status record; verify against runtime. |
 | `docs/V3_MARKETPLACE_POLICY.md` and `docs/V3_PRODUCT_TAXONOMY.md` | Review, moderation, product classification, and safety policy. | Current policy authority. |
 | `docs/API.md` | Runtime route boundaries and Marketplace endpoint documentation. | Current, with older Marketplace routes manually documented. |
 | `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Mostly current; its sentence saying the schema is authoritative through migration `0018` is stale because Phase 6 adds `0019`. |
-| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd` | Evidence links and visual Phase 6 implementation state. | Updated with Phase 6 evidence; static Mermaid validation is available, but no Mermaid parser is installed. |
+| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd` | Evidence links and visual Phase 6/7 implementation state. | Updated with Phase 7 evidence; static Mermaid validation is available, but no Mermaid parser is installed. |
 | `D:\All projects\Zinhar_Doc\version_3_marketplace_proposal.html` | Original V3 Marketplace proposal and future lifecycle goals. | Planning authority; current migrations/routes/tests supersede it for implementation status. |
 | `D:\All projects\Zinhar_Doc\version_2_proposal.html` | V2 SaaS/organization/billing proposal. | Historical planning authority for V2 dependencies. |
 | `D:\All projects\Zinhar_Doc\headless_cms_proposal_polished.html` | Original CMS proposal. | Historical baseline; current repository documentation and code are newer. |
 
 The proposals describe the complete future Marketplace lifecycle, including paid
-products and executable/runtime concepts. Phase 6 intentionally implements only
-the reviewed free install registry lifecycle; paid entitlements, payouts,
-customer ratings, runtime permissions, and sandbox execution remain deferred.
+products and executable/runtime concepts. Phase 7 implements the permission and
+containment policy boundary only; paid entitlements, payouts, customer ratings,
+concrete runtime adapters, and arbitrary package execution remain deferred.
 
 ## 6. Current Objective
 
-No unfinished product implementation objective is evidenced after commit
-`7f18d7b`. The active documentation objective is to preserve a truthful recovery
-checkpoint for the completed V3 Marketplace Phase 6 implementation.
+The active objective is to complete and validate V3 Marketplace Phase 7 without
+repeating Phase 6. The implementation target is the permission model, a
+policy-only allowlisted sandbox boundary, and global/organization kill switches.
 
 Phase 6 boundaries that must remain unchanged until their dedicated phases are
 planned and authorized:
@@ -97,7 +100,7 @@ planned and authorized:
 - only free `component_pack` and `design_template` products are installable;
 - uploaded package code is never executed;
 - paid purchase/entitlement and creator payout flows are not implemented;
-- runtime permission enforcement, sandboxing, and emergency permission revocation are deferred;
+- concrete runtime execution, host adapters, and fine-grained permission revocation remain deferred; Phase 7 policy decisions and kill switches are implemented;
 - no background automatic update is enabled; installations remain explicitly pinned.
 
 ## 7. Completed and Verified Work
@@ -132,13 +135,33 @@ planned and authorized:
   - **Verification:** repository-local Mermaid structural validation and `git diff --check`.
   - **Result:** 34 `.mmd` files each contain one standalone Mermaid declaration and no Markdown fences; diff check passed.
 
+- [x] Implemented Phase 7.1 permission catalog and runtime permission model.
+  - **Files:** `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql`, `backend/src/services/marketplace_runtime.rs`, `backend/src/services/rbac.rs`
+  - **Verification:** backend unit/static contract tests.
+  - **Result:** Permission catalog, risk/product/runtime metadata, operation mappings, and bounded reason validation are covered by the backend suite.
+
+- [x] Implemented Phase 7.2 allowlisted sandbox host API policy without executing uploaded code.
+  - **Files:** `backend/src/routes/marketplace_runtime.rs`, `backend/src/services/marketplace_runtime.rs`, `frontend/src/services/api.ts`, `frontend/src/types/api.ts`
+  - **Verification:** runtime policy tests and backend route/OpenAPI compilation.
+  - **Result:** 93 backend tests passed; inactive/blocked installations, unknown operations, permission escalation, unsafe entry points, and oversized payloads are denied; successful decisions report `execution = not_executed`.
+
+- [x] Implemented Phase 7.3 global and organization kill switches.
+  - **Files:** `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql`, `backend/src/routes/marketplace_runtime.rs`, `backend/src/routes/marketplace.rs`, `frontend/src/pages/MarketplacePage.tsx`
+  - **Verification:** backend contract tests, frontend Phase 7 UI test, lint/typecheck/build.
+  - **Result:** Owner/admin organization controls and global admin controls block runtime state, installation, and re-enable; status/lift/audit paths are present; frontend test suite passes 9 tests.
+
+- [x] Updated Phase 7 API, architecture, gap, manifest, traceability, repository inventory, ambiguity, and Mermaid documentation.
+  - **Files:** `docs/V3_PHASE_SEVEN.md`, `README.md`, `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/V3_MARKETPLACE_GAP_LIST.md`, `docs/V3_MARKETPLACE_MANIFEST_SCHEMA.md`, `docs/diagrams/*`
+  - **Verification:** repository-local Mermaid structural/evidence validation and `git diff --check`.
+  - **Result:** 35 `.mmd` files each contain one standalone Mermaid declaration with existing evidence paths and no Markdown fences.
+
 ## 8. Completed but Not Verified
 
 - [ ] Live application of migration `0019` and end-to-end API/browser installation smoke test.
   - **Files:** `backend/migrations/0019_v3_phase_six_installation_lifecycle.sql`, `backend/src/routes/marketplace.rs`, `frontend/src/pages/MarketplacePage.tsx`
   - **Missing verification:** a running backend connected to the intended database, followed by authenticated tenant requests and artifact-backed install/update/rollback.
   - **Recommended validation:** start the backend with the project environment, verify `/health`, `/ready`, `/openapi.json`, and exercise the Phase 6 endpoints against a test organization without resetting data.
-  - **Reason:** Docker infrastructure was visible with `docker compose ps`, but `docker compose exec` was denied Docker API access in this sandbox, and the local compose file does not include the backend service.
+  - **Reason:** Docker infrastructure was visible with `docker compose ps`, but `docker compose exec` was denied Docker API access in this sandbox, and the local compose file does not include the backend service. Migration `0020` has therefore only static/compile coverage so far.
 
 - [ ] Mermaid parser/render validation.
   - **Files:** `docs/diagrams/*.mmd`
@@ -150,23 +173,26 @@ planned and authorized:
 
 ### Active item
 
-There is no partially implemented product item. Phase 6 is committed and the
-current task adds only persistent recovery documentation.
+Phase 7 product code is implemented; the remaining work is final validation and
+handoff maintenance, not another implementation pass.
 
 ### Exact stopping point
 
-The implementation stopped at commit `7f18d7b`, after the Phase 6.3 update and
-rollback flow and its frontend/backend tests were completed.
+The Phase 7 implementation stopped after the 7.3 kill-switch routes/UI and
+documentation were added on top of commit `b1b3d05`. Backend tests and frontend
+tests/build have passed; live migration/API smoke is still pending.
 
 ### Partially modified files
 
 | File | Current state | Remaining work |
 | --- | --- | --- |
-| None in product code | No product file is partially modified after the Phase 6 commit. | Perform live migration/API smoke before starting a later phase. |
+| `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql` | Additive permission catalog, runtime status, and kill-switch schema is present. | Apply and inspect it in a running test database. |
+| `backend/src/routes/marketplace_runtime.rs` | Runtime status, authorization decision, kill-switch activation/lift handlers are present. | Run authenticated tenant/global-admin API smoke. |
+| `frontend/src/pages/MarketplacePage.tsx` | Phase 7 runtime safety panel and kill-switch controls are present. | Verify against a live API and browser session. |
 
 ### Incomplete implementation markers
 
-- Marketplace purchase, entitlement, payout, customer-rating, runtime permission, sandbox, and emergency permission-revocation items are intentionally planned/deferred, not stubs to finish in Phase 6.
+- Marketplace purchase, entitlement, payout, customer-rating, concrete runtime adapters, arbitrary package execution, and fine-grained permission revocation remain intentionally planned/deferred, not stubs to finish in Phase 7.
 - The frontend production build reports a chunk-size warning over 500 kB; this is non-blocking technical debt.
 
 ## 10. Current Git and Filesystem State
@@ -177,15 +203,25 @@ rollback flow and its frontend/backend tests were completed.
 
 ### Modified files
 
-- None in the Phase 6 implementation before handoff creation.
+- `README.md`, `backend/src/routes/marketplace.rs`, `backend/src/routes/mod.rs`, `backend/src/services/mod.rs`, `backend/src/services/rbac.rs` — Phase 7 route integration, kill-switch gates, service registration, and RBAC.
+- `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/V3_MARKETPLACE_GAP_LIST.md`, `docs/V3_MARKETPLACE_MANIFEST_SCHEMA.md` — Phase 7 API, scope, architecture, and manifest updates.
+- `docs/diagrams/01-project-scope.mmd`, `03-identity-and-authorization-boundaries.mmd`, `AMBIGUITIES.md`, `ARCHITECTURE_AUDIT.md`, `FILE_EVIDENCE_INDEX.md`, `README.md`, `REPOSITORY_INVENTORY.md`, `TRACEABILITY.md` — Phase 7 evidence and diagram updates.
+- `frontend/src/i18n/messages.ts`, `frontend/src/pages/MarketplacePage.tsx`, `frontend/src/pages/MarketplacePage.test.tsx`, `frontend/src/services/api.ts`, `frontend/src/types/api.ts` — Phase 7 status, permission catalog, kill-switch UI/API, and tests.
 
-### Untracked files
+### Historical handoff files and current untracked files
 
 - `AGENTS.md` — new root-level persistent handoff protocol required by this task.
 - `HANDOFF.md` — this repository-specific recovery document.
 
-Both files should be reviewed and kept. They must not be committed unless the
-user explicitly authorizes a commit.
+The original handoff files remain tracked by commit `b1b3d05`; the Phase 7
+implementation files listed below are the current uncommitted work. No commit
+should be created unless the user explicitly authorizes it.
+
+- `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql` — Phase 7 schema and seeded permission catalog.
+- `backend/src/routes/marketplace_runtime.rs` — Phase 7 runtime and kill-switch routes.
+- `backend/src/services/marketplace_runtime.rs` — Phase 7 pure runtime policy service and tests.
+- `docs/V3_PHASE_SEVEN.md` — Phase 7 authority and acceptance.
+- `docs/diagrams/34-marketplace-security-runtime.mmd` — Phase 7 Mermaid evidence diagram.
 
 ### Deleted files
 
@@ -193,8 +229,9 @@ user explicitly authorizes a commit.
 
 ### Important diff observations
 
-- Before this handoff setup, `git status --porcelain=v1 -uall` was clean and `HEAD` matched `origin/main`.
-- Commit `7f18d7b` contains the Phase 6 product, test, API, and diagram changes; no product code is intentionally changed by this handoff task.
+- At session start, `HEAD` was `b1b3d05` and matched `origin/main`; Phase 7 changes are currently unstaged.
+- Commit `7f18d7b` contains the Phase 6 product, test, API, and diagram changes; commit `b1b3d05` contains the handoff protocol. Phase 7 changes are not committed.
+- No Phase 6 files were discarded or reset; all current modifications are Phase 7 implementation/documentation plus this handoff update.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
@@ -204,20 +241,20 @@ user explicitly authorizes a commit.
 | Command | Executed? | Result | Notes |
 | --- | ---: | --- | --- |
 | `cargo fmt --manifest-path backend/Cargo.toml -- --check` | Yes | Passed | Rust formatting is clean. |
-| `cargo test --manifest-path backend/Cargo.toml --all-features` | Yes | Passed | 87 passed, 0 failed; doc tests also completed. |
+| `cargo test --manifest-path backend/Cargo.toml --all-features` | Yes | Passed | 93 passed, 0 failed; Phase 7 runtime and route contract tests included; doc tests also completed. |
 | `npm --prefix frontend run lint` | Yes | Passed | ESLint completed successfully. |
 | `npm --prefix frontend run typecheck` | Yes | Passed | `tsc -b` completed successfully. |
-| `npm --prefix frontend test` | Yes | Passed | 3 files, 8 tests passed. |
-| `npm --prefix frontend run build` | Yes | Passed with warning | Vite build completed; one output chunk is over 500 kB. |
-| Repository-local Mermaid structural check | Yes | Passed | 34 files, one declaration each, no fences. |
+| `npm --prefix frontend test` | Yes | Passed | 3 files, 9 tests passed, including the Phase 7 runtime safety control test. |
+| `npm --prefix frontend run build` | Yes | Passed with warning | Vite build completed; one output chunk is over 500 kB. Sandbox first returned esbuild `spawn EPERM`; escalated rerun passed. |
+| Repository-local Mermaid structural check | Yes | Passed | 35 files, one declaration each, no fences, all evidence paths exist. |
 | `git diff --check` | Yes | Passed | No whitespace errors. |
 | `docker compose ps` | Yes | Passed | PostgreSQL and Redis reported healthy; compose warned that `version` is obsolete. |
 | `docker compose exec -T postgres psql ...` | Yes | Not run successfully | Docker API permission was denied by the sandbox before the query executed. |
 
 ### Other known validation
 
-- `cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings` was run against the current Phase 6 tree and failed on pre-existing warnings in older backend modules. No new Phase 6-specific warning was identified in the reported output. Do not treat CI clippy as green until those legacy warnings are addressed or the policy changes.
-- No destructive migration, database reset, dependency installation, deployment, or commit was performed during handoff setup.
+- `cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings` was rerun after Phase 7 and still fails on 29 pre-existing warnings in older backend modules. No Phase 7-specific warning remains; do not treat CI clippy as green until the legacy warnings are addressed or the policy changes.
+- No destructive migration, database reset, dependency installation, deployment, or commit was performed during this Phase 7 checkpoint.
 
 ### Discovered but not run now
 
@@ -275,6 +312,22 @@ user explicitly authorizes a commit.
 - **Affected areas:** Marketplace package storage and lifecycle mutations.
 - **Do not change unless:** A durable storage contract replaces local artifact storage.
 
+### Decision: Phase 7 runtime is a policy-only allowlisted host API
+
+- **Decision:** Runtime requests are authorized against an operation allowlist, product type, declared safe entry point, approved permission snapshot, and 64 KiB JSON payload limit; the backend returns a decision and never executes uploaded code.
+- **Evidence:** `backend/src/services/marketplace_runtime.rs`, `backend/src/routes/marketplace_runtime.rs`, `docs/V3_PHASE_SEVEN.md`, migration `0020`.
+- **Reason:** The proposal requires sandbox containment before runtime expansion, while Phase 8 owns concrete Component Pack/Template/Hook adapters.
+- **Affected areas:** Runtime authorization endpoint, permission catalog, installation runtime status, frontend safety panel.
+- **Do not change unless:** A separately reviewed sandbox adapter defines execution isolation, host APIs, and permission enforcement.
+
+### Decision: Kill switches are independent runtime state with global/org scopes
+
+- **Decision:** Global and organization switches set installation `runtime_status = blocked`, prevent new install/re-enable/runtime authorization, preserve reasons/timestamps, and can be lifted under matching global/org authority.
+- **Evidence:** `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql`, `backend/src/routes/marketplace_runtime.rs`, `backend/src/routes/marketplace.rs`.
+- **Reason:** Emergency blocking must stop runtime policy decisions without deleting installation history or conflating a platform kill switch with Phase 6 listing moderation status.
+- **Affected areas:** Kill-switch table/RLS, runtime status, audit logs, Marketplace UI.
+- **Do not change unless:** A later incident/runbook phase defines a more granular revocation model.
+
 ## 13. Known Issues, Risks, and Technical Debt
 
 ### Blocking issues
@@ -283,7 +336,7 @@ user explicitly authorizes a commit.
 
 ### Non-blocking issues
 
-- **Medium:** Live DB migration/API smoke is still unverified because Docker API exec access was denied from this sandbox; use a development environment with Docker access.
+- **Medium:** Live DB migration/API smoke for migration `0020` is still unverified because Docker API exec access was denied from this sandbox; use a development environment with Docker access.
 - **Medium:** `cargo clippy -D warnings` reports legacy warnings in older modules, so the backend CI clippy step is not currently a reliable green signal.
 - **Low:** Mermaid files have only repository-local structural validation; no parser/render dependency is installed.
 - **Low:** Vite emits a large output chunk warning (>500 kB).
@@ -291,7 +344,7 @@ user explicitly authorizes a commit.
 
 ### Security risks
 
-- **High if scope expands:** Marketplace package execution and runtime permission enforcement do not exist. Do not enable executable extensions before sandboxing, kill-switch, permission enforcement, and forced-RLS review are implemented.
+- **High if scope expands:** Phase 7 supplies policy decisions but not concrete package execution. Do not enable executable extensions before an isolated adapter/runtime, kill-switch, permission enforcement, and forced-RLS review are implemented.
 - **Medium operational:** Local filesystem artifact storage and non-atomic filesystem/database behavior require backup and cleanup procedures outside this repository.
 - **Low/known:** The frontend hides controls by role, but backend middleware/handler checks remain the security authority.
 
@@ -314,31 +367,32 @@ user explicitly authorizes a commit.
 - [x] `main` and `origin/main` point to `7f18d7b`.
 - [x] The repository was clean before adding this handoff documentation.
 - [x] Phase 6 routes, migration, service, frontend UI, tests, and docs are present in the latest commit.
+- [x] Phase 7 migration, runtime policy service/routes, frontend safety controls, tests, and docs are present in the current working tree.
 - [x] Current manifests report version `0.1.0`.
 - [x] The local development compose file provides PostgreSQL, Redis, and pgAdmin; it does not run the backend/frontend services.
 
 ### Unconfirmed assumptions
 
-- [ ] The intended developer database has actually applied migration `0019`.
+- [ ] The intended developer database has actually applied migrations `0019` and `0020`.
 - [ ] A deployed environment has the expected `UPLOAD_DIR` contents and artifact files needed for end-to-end installation smoke tests.
-- [ ] The exact V3 Phase 7/8 implementation order for runtime permissions, sandboxing, and emergency revocation has not been finalized in current repository docs.
+- [ ] The exact V3 Phase 8 implementation order for concrete component/template/integration adapters has not been finalized in current repository docs.
 - [ ] The user has not authorized committing the newly created `AGENTS.md` and `HANDOFF.md`.
 
 ## 15. Remaining Work
 
-1. [ ] Verify Phase 6 against a running backend and test organization.
-   - **Start at:** `backend/src/routes/marketplace.rs` Phase 6 handlers and `backend/migrations/0019_v3_phase_six_installation_lifecycle.sql`.
+1. [ ] Verify Phase 7 against a running backend and test organization.
+   - **Start at:** `backend/src/routes/marketplace_runtime.rs` and `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql`.
    - **Prerequisites:** Docker API access or an equivalent PostgreSQL/Redis environment; safe test organization and approved artifact fixture.
-   - **Required work:** Start the backend without resetting data, verify migration application, then exercise list/install/enable/disable/uninstall/updates/update/rollback with owner/admin and non-owner roles.
-   - **Validation:** `/health`, `/ready`, `/openapi.json`, backend logs, and authenticated API assertions; record actual results here.
-   - **Done when:** Migration and all Phase 6 lifecycle gates are confirmed in a live tenant-scoped flow.
+   - **Required work:** Start the backend without resetting data, verify migration application, list the permission catalog, exercise runtime authorization allow/deny cases, activate/lift organization and global kill switches, and confirm install/re-enable gates stop while blocked.
+   - **Validation:** `/health`, `/ready`, `/openapi.json`, backend logs, and authenticated tenant/global-admin API assertions; record actual results here.
+   - **Done when:** Migration `0020` and all Phase 7 permission/sandbox/kill-switch gates are confirmed in a live tenant-scoped flow.
 
-2. [ ] Reconcile the stale schema-authority sentence in `docs/ARCHITECTURE.md`.
-   - **Start at:** the “Data And Tenant Isolation” section.
-   - **Prerequisites:** Confirm migration `0019` is the deployed/current latest migration.
-   - **Required work:** Change only the migration range statement from `0018` to `0019` and update any related evidence wording if needed.
-   - **Validation:** `git diff --check` and backend documentation static tests.
-   - **Done when:** Architecture docs no longer contradict the current migration chain.
+2. [ ] Review generated OpenAPI and documentation against Phase 7 routes.
+   - **Start at:** `backend/src/routes/mod.rs` OpenAPI registration and `docs/API.md` Marketplace section.
+   - **Prerequisites:** Backend compiles and `/openapi.json` is reachable.
+   - **Required work:** Confirm all six Phase 7 paths and schemas appear in generated OpenAPI; reconcile any path/schema drift without changing product scope.
+   - **Validation:** Fetch `/openapi.json`, backend static contract tests, and `git diff --check`.
+   - **Done when:** Runtime OpenAPI and manual API documentation agree.
 
 3. [ ] Decide how to handle legacy backend clippy warnings.
    - **Start at:** the files reported by `cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings`.
@@ -347,12 +401,12 @@ user explicitly authorizes a commit.
    - **Validation:** The exact clippy command and backend CI.
    - **Done when:** The policy and CI result are explicit and reproducible.
 
-4. [ ] Plan the next V3 runtime/permission phase without implementing it in this checkpoint.
-   - **Start at:** `docs/V3_PHASE_SIX.md` “Deferred Boundaries” and `docs/V3_MARKETPLACE_GAP_LIST.md` “Permission Gaps”.
+4. [ ] Plan V3 Phase 8 concrete runtime adapters without implementing them in this checkpoint.
+   - **Start at:** `docs/V3_PHASE_SEVEN.md`, `docs/V3_MARKETPLACE_SCOPE.md`, and the Phase 8 proposal sections for Component Pack Runtime, Template Import, and Plugin Hook MVP.
    - **Prerequisites:** Product decision on permission catalog, sandbox model, kill switch, and emergency revocation.
-   - **Required work:** Produce an acceptance checklist and migration/API design before changing product code.
+   - **Required work:** Produce an acceptance checklist and isolated adapter/API design before changing product code; preserve the policy-only Phase 7 boundary.
    - **Validation:** Review against the V3 proposal and scope lock; update `HANDOFF.md` before implementation.
-   - **Done when:** A separately authorized Phase 7/8 objective is explicit.
+   - **Done when:** A separately authorized Phase 8 objective is explicit.
 
 5. [ ] Commit handoff documentation only after user authorization.
    - **Start at:** root `AGENTS.md` and `HANDOFF.md`.
@@ -363,15 +417,15 @@ user explicitly authorizes a commit.
 
 ## 16. Exact Next Action
 
-Open `HANDOFF.md`, inspect `git status --short` and the latest commit, then begin
-with a non-destructive live Phase 6 smoke check in an environment that has Docker
-API access: start/verify PostgreSQL and Redis, start the backend with the existing
-environment variable names, confirm `/health`, `/ready`, and `/openapi.json`, and
-exercise the tenant-scoped installation list/install/lifecycle endpoints against
-a safe test organization and approved artifact fixture. Do not reset the database,
-change Phase 6 product code, enable paid/runtime Marketplace behavior, or create a
-commit. Record the actual migration/API results in this file before planning any
-Phase 7/8 work.
+Open `HANDOFF.md`, inspect `git status --short` and the latest commit, then run a
+non-destructive live Phase 7 smoke check in an environment with Docker API access:
+verify PostgreSQL and Redis, start the backend with the existing environment
+variable names, confirm `/health`, `/ready`, and `/openapi.json`, list the Phase 7
+permission catalog, authorize one allowed and one denied runtime operation, and
+activate/lift organization and global kill switches against a safe test
+organization. Do not reset the database, execute uploaded package code, enable
+paid products, or create a commit. Record the actual migration `0020` and API
+results in this file before planning Phase 8 adapters.
 
 ## 17. Acceptance Criteria for the Current Phase
 
@@ -383,9 +437,13 @@ Phase 7/8 work.
 - [x] Backend formatting and 87 backend tests pass.
 - [x] Frontend lint, typecheck, 8 tests, and production build pass.
 - [x] Phase 6 API, architecture, gap, traceability, and Mermaid documentation is updated.
-- [x] No unrelated application code was intentionally changed by the handoff setup.
+- [x] Phase 7 permission catalog, allowlisted sandbox policy, and global/organization kill switches are implemented.
+- [x] Phase 7 runtime authorization denies inactive/blocked installations, unknown operations, unapproved permissions, unsafe entry points, and oversized payloads.
+- [x] Runtime authorization explicitly does not execute uploaded package code.
+- [x] Phase 7 API, architecture, gap, manifest, traceability, and Mermaid documentation is updated.
+- [x] No unrelated application code was intentionally changed by the Phase 7 implementation.
 - [x] `HANDOFF.md` and root `AGENTS.md` are present and describe recovery protocol.
-- [ ] Live migration and authenticated end-to-end API/browser smoke are verified.
+- [ ] Live migration `0020` and authenticated end-to-end API/browser smoke are verified.
 - [ ] Any legacy clippy policy/CI failure is resolved or explicitly accepted.
 
 ## 18. Environment and Setup Notes
@@ -436,3 +494,23 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - Known completed and incomplete work recorded.
 - Next action identified.
 - No product code intentionally modified by handoff setup.
+
+### 2026-07-10 18:28 +01:00 — V3 Phase 7 security runtime checkpoint
+
+- Re-read `AGENTS.md` and `HANDOFF.md`; verified `HEAD` `b1b3d05` matches `origin/main` before implementation.
+- Implemented Phase 7.1 permission catalog, 7.2 policy-only sandbox authorization, and 7.3 global/organization kill switches.
+- Backend 93 tests, frontend 9 tests, lint/typecheck/build, and 35-diagram static validation passed.
+- Live migration/API smoke remains the exact next action; no Phase 7 commit was created.
+
+### 2026-07-10 18:35 +01:00 — Phase 7 validation checkpoint
+
+- Backend formatting and 93 tests passed.
+- Frontend lint, typecheck, 9 tests, and production build passed; Vite retained the existing large-chunk warning.
+- Mermaid structural/evidence validation passed for 35 files.
+- Working tree remains uncommitted for Phase 7; live migration/API smoke is still pending.
+
+### 2026-07-10 18:45 +01:00 — Phase 7 final code validation checkpoint
+
+- Fixed the remaining Phase 7 Clippy findings (route borrow/condition, contract-test placement, and explicit policy exception for the multi-gate authorizer).
+- `cargo fmt --check` and `cargo test --all-features` passed: 93 backend tests plus doc tests; Clippy remains blocked only by legacy warnings outside Phase 7.
+- The exact next action remains the non-destructive live migration/API smoke for migration `0020`; no commit was created.

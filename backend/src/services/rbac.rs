@@ -143,6 +143,10 @@ pub fn require_org_marketplace_permission_approver(role: &str) -> Result<(), App
     require_org_any(role, &[ORG_ADMIN])
 }
 
+pub fn require_org_marketplace_kill_switch_manager(role: &str) -> Result<(), AppError> {
+    require_org_any(role, &[ORG_ADMIN])
+}
+
 pub fn require_org_workflow_reviewer(role: &str) -> Result<(), AppError> {
     require_org_any(role, &[ORG_ADMIN, ORG_EDITOR])
 }

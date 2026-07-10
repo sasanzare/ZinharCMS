@@ -25,7 +25,10 @@
 %% Evidence: backend/migrations/0016_v3_phase_two_creator_submission.sql
 %% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
 %% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
+%% Evidence: backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql
 %% Evidence: backend/src/services/marketplace_installation.rs
+%% Evidence: backend/src/services/marketplace_runtime.rs
+%% Evidence: backend/src/routes/marketplace_runtime.rs
 %% Evidence: docs/diagrams/AMBIGUITIES.md
 flowchart TD
   subgraph global_identity["Global identity"]
@@ -92,7 +95,9 @@ flowchart TD
     moderation_boundary["Moderation [HANDLER + SERVICE + SQL]<br/>global admin plus moderation service and table updates"]
     catalog_boundary["Catalog access [MIDDLEWARE] AMB-003<br/>authenticated tenant catalog, not anonymous"]
     installation_boundary["Marketplace installation [HANDLER + SERVICE + SQL/RLS] AMB-027<br/>owner/admin manage lifecycle; all mutations remain organization-scoped"]
-    installation_runtime_boundary["External package execution [PLANNED] AMB-006<br/>Phase 6 installs metadata/artifacts but does not sandbox or execute packaged plugins"]
+    runtime_policy_boundary["Marketplace runtime policy [IMPLEMENTED]<br/>permission-bound allowlist, safe entry point, bounded payload"]
+    kill_switch_boundary["Marketplace kill switch [IMPLEMENTED]<br/>global admin or organization owner/admin; runtime status blocking"]
+    installation_runtime_boundary["Concrete package execution [PLANNED] AMB-006<br/>Phase 7 policy boundary exists; uploaded code and concrete adapters remain deferred"]
     beta_boundary["Beta and GA operations [HANDLER] AMB-024<br/>org admin/editor for tenant triage, global admin for product dashboard"]
   end
 
@@ -154,6 +159,9 @@ flowchart TD
   tenant_context --> installation_boundary
   org_role --> installation_boundary
   installation_boundary -. "execution deferred" .-> installation_runtime_boundary
+  installation_boundary --> runtime_policy_boundary
+  runtime_policy_boundary --> kill_switch_boundary
+  kill_switch_boundary -. "concrete execution deferred" .-> installation_runtime_boundary
   org_role --> beta_boundary
   global_roles --> beta_boundary
 
@@ -169,7 +177,7 @@ flowchart TD
   tenant_rls --> content_boundary
   tenant_rls --> installation_boundary
 
-  class user_account,password_credential,failed_login,global_role_assignment,global_roles,access_token,refresh_record,refresh_cookie,auth_routes,password_service,jwt_service,auth_middleware,protected_routes,organization,membership,membership_status,org_role,invitation,org_header,tenant_context,tenant_rls,role_mapping,marketplace_user,creator_profile,creator_listing,reviewer_privilege,moderator_privilege,org_installation,install_permission_snapshot,global_admin_boundary,plugin_boundary,organization_boundary,invitation_boundary,domain_boundary,billing_boundary,content_boundary,workflow_boundary,creator_verification_boundary,listing_creation_boundary,review_decision_boundary,moderation_boundary,catalog_boundary,installation_boundary,beta_boundary implemented
+  class user_account,password_credential,failed_login,global_role_assignment,global_roles,access_token,refresh_record,refresh_cookie,auth_routes,password_service,jwt_service,auth_middleware,protected_routes,organization,membership,membership_status,org_role,invitation,org_header,tenant_context,tenant_rls,role_mapping,marketplace_user,creator_profile,creator_listing,reviewer_privilege,moderator_privilege,org_installation,install_permission_snapshot,global_admin_boundary,plugin_boundary,organization_boundary,invitation_boundary,domain_boundary,billing_boundary,content_boundary,workflow_boundary,creator_verification_boundary,listing_creation_boundary,review_decision_boundary,moderation_boundary,catalog_boundary,installation_boundary,runtime_policy_boundary,kill_switch_boundary,beta_boundary implemented
   class role_permissions_array partial
   class installation_runtime_boundary planned
   class selected_org,require_auth,nav_visibility,frontend_button_gates frontend

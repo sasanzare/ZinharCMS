@@ -12,6 +12,7 @@ import type {
   MarketplaceCreatorResponse,
   MarketplaceInstallationResponse,
   MarketplaceInstallationUpdateCheckResponse,
+  MarketplacePermissionCatalogResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
   MarketplaceModerationAction,
@@ -20,6 +21,7 @@ import type {
   MarketplaceProductType,
   MarketplaceReviewDecision,
   MarketplaceReviewEventResponse,
+  MarketplaceRuntimeStatusResponse,
   MarketplaceValidationReportResponse,
 } from "../types/api";
 
@@ -225,6 +227,8 @@ export function MarketplacePage() {
   const [catalogItems, setCatalogItems] = useState<MarketplaceCatalogItemResponse[]>([]);
   const [catalogDetail, setCatalogDetail] = useState<MarketplaceCatalogDetailResponse | null>(null);
   const [installations, setInstallations] = useState<MarketplaceInstallationResponse[]>([]);
+  const [permissionCatalog, setPermissionCatalog] = useState<MarketplacePermissionCatalogResponse[]>([]);
+  const [runtimeStatus, setRuntimeStatus] = useState<MarketplaceRuntimeStatusResponse | null>(null);
   const [installTarget, setInstallTarget] = useState<MarketplaceCatalogDetailResponse | null>(null);
   const [approvedInstallPermissions, setApprovedInstallPermissions] = useState<string[]>([]);
   const [installConfirmed, setInstallConfirmed] = useState(false);
@@ -246,6 +250,8 @@ export function MarketplacePage() {
   const canReviewMarketplace = user?.role === "admin" || user?.role === "super_admin";
   const activeOrganizationRole = organizations.find((organization) => organization.id === activeOrganizationId)?.role ?? null;
   const canManageInstallations = activeOrganizationRole === "owner" || activeOrganizationRole === "admin";
+  const canManageKillSwitch = canManageInstallations;
+  const canManageGlobalKillSwitch = user?.role === "admin" || user?.role === "super_admin";
   const selectedListing = useMemo(
     () => listings.find((listing) => listing.id === selectedListingId) ?? null,
     [listings, selectedListingId],
@@ -281,6 +287,19 @@ export function MarketplacePage() {
       setError(apiMessage(caught, t("marketplace.error.installations")));
     } finally {
       setInstallationsLoading(false);
+    }
+  }, [t]);
+
+  const loadRuntimeControls = useCallback(async function loadRuntimeControls() {
+    try {
+      const [permissions, status] = await Promise.all([
+        api.marketplace.permissions(),
+        api.marketplace.runtimeStatus(),
+      ]);
+      setPermissionCatalog(permissions);
+      setRuntimeStatus(status);
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.runtime")));
     }
   }, [t]);
 
@@ -323,6 +342,31 @@ export function MarketplacePage() {
   useEffect(() => {
     void loadInstallations();
   }, [loadInstallations]);
+
+  useEffect(() => {
+    void loadRuntimeControls();
+  }, [loadRuntimeControls]);
+
+  async function runKillSwitchAction(action: "organization" | "global" | "lift", killSwitchId?: string) {
+    if (action === "organization" && !canManageKillSwitch) return;
+    if (action === "global" && !canManageGlobalKillSwitch) return;
+    if (action === "lift" && !killSwitchId) return;
+    const reason = action === "lift" ? undefined : window.prompt(t("marketplace.runtime.reasonPrompt"));
+    if (action !== "lift" && !reason?.trim()) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      if (action === "organization") await api.marketplace.activateOrganizationKillSwitch(reason!.trim());
+      if (action === "global") await api.marketplace.activateGlobalKillSwitch(reason!.trim());
+      if (action === "lift") await api.marketplace.liftKillSwitch(killSwitchId!);
+      setMessage(t("marketplace.runtime.actionSaved"));
+      await Promise.all([loadRuntimeControls(), loadInstallations()]);
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.runtimeAction")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   const loadSubmissionReports = useCallback(async function loadSubmissionReports() {
     if (!selectedListingId) {
@@ -376,7 +420,7 @@ export function MarketplacePage() {
   }, [loadReviewEvents]);
 
   async function refreshMarketplace() {
-    await Promise.all([loadMarketplace(), loadCatalog(), loadInstallations()]);
+    await Promise.all([loadMarketplace(), loadCatalog(), loadInstallations(), loadRuntimeControls()]);
   }
 
   async function openCatalogDetail(item: MarketplaceCatalogItemResponse) {
@@ -404,6 +448,7 @@ export function MarketplacePage() {
   function installRestriction(detail: MarketplaceCatalogDetailResponse) {
     if (installationsLoading) return t("marketplace.install.checkingInstallations");
     if (installationForListing(detail.item.id)) return t("marketplace.install.alreadyInstalled");
+    if (runtimeStatus?.global_blocked || runtimeStatus?.organization_blocked) return t("marketplace.install.runtimeBlocked");
     if (detail.item.pricing_type !== "free") return t("marketplace.install.entitlementRequired");
     if (detail.item.product_type !== "component_pack" && detail.item.product_type !== "design_template") {
       return t("marketplace.install.runtimeUnsupported");
@@ -863,6 +908,60 @@ export function MarketplacePage() {
           <BadgeCheck size={20} aria-hidden="true" />
           <span>{t("marketplace.creator.reviewGate")}</span>
           <strong>{approvedCreator ? t("common.enabled") : t("common.disabled")}</strong>
+        </div>
+      </section>
+
+      <section className="panel marketplace-runtime-panel">
+        <div className="panel-header">
+          <div>
+            <h2>{t("marketplace.runtime.title")}</h2>
+            <span>{t("marketplace.runtime.description")}</span>
+          </div>
+          <StatusBadge
+            label={runtimeStatus?.global_blocked || runtimeStatus?.organization_blocked
+              ? t("marketplace.runtime.blocked")
+              : t("marketplace.runtime.ready")}
+            tone={runtimeStatus?.global_blocked || runtimeStatus?.organization_blocked ? "danger" : "success"}
+          />
+        </div>
+        <div className="padded">
+          <p className="installation-gate-note" role="status">
+            <ShieldAlert size={16} aria-hidden="true" />
+            {runtimeStatus?.status_message ?? t("marketplace.runtime.loading")}
+          </p>
+          <div className="permission-approval-list">
+            <h3>{t("marketplace.runtime.permissionCatalog")}</h3>
+            {permissionCatalog.map((permission) => (
+              <div key={permission.permission_key} className="catalog-permission-row">
+                <span><strong>{permission.permission_key}</strong> — {permission.description}</span>
+                <StatusBadge label={permission.risk_level} tone={riskTone(permission.risk_level)} />
+              </div>
+            ))}
+          </div>
+          {(canManageKillSwitch || canManageGlobalKillSwitch) && (
+            <div className="installation-actions">
+              {canManageKillSwitch && (
+                <button className="secondary-button button-danger" type="button" onClick={() => void runKillSwitchAction("organization")} disabled={actionLoading || Boolean(runtimeStatus?.organization_blocked)}>
+                  <ShieldAlert size={16} aria-hidden="true" />
+                  {t("marketplace.runtime.blockOrganization")}
+                </button>
+              )}
+              {canManageGlobalKillSwitch && (
+                <button className="secondary-button button-danger" type="button" onClick={() => void runKillSwitchAction("global")} disabled={actionLoading || Boolean(runtimeStatus?.global_blocked)}>
+                  <ShieldAlert size={16} aria-hidden="true" />
+                  {t("marketplace.runtime.blockGlobal")}
+                </button>
+              )}
+              {runtimeStatus?.active_kill_switches.map((killSwitch) => (
+                ((killSwitch.scope === "global" && canManageGlobalKillSwitch)
+                  || (killSwitch.scope === "organization" && canManageKillSwitch)) && (
+                  <button className="secondary-button" type="button" key={killSwitch.id} onClick={() => void runKillSwitchAction("lift", killSwitch.id)} disabled={actionLoading}>
+                    {t("marketplace.runtime.lift", { scope: killSwitch.scope })}
+                  </button>
+                )
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

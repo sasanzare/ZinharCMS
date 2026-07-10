@@ -23,7 +23,15 @@ Phase 5 resolves the public catalog visibility and catalog compatibility filteri
 
 ## Phase 6 Update
 
-Phase 6 resolves the tenant-aware install runtime, catalog install action, install-time compatibility and permission approval gates, enable/disable/soft-uninstall lifecycle, semver update, safe rollback, Marketplace owner/admin RBAC helpers, artifact re-verification, and organization-scoped lifecycle audit taxonomy. Purchase and paid entitlement remain open for Phase 9; executable runtime permission enforcement, sandboxing, and emergency permission revocation remain open for Phase 7/8.
+Phase 6 resolves the tenant-aware install runtime, catalog install action, install-time compatibility and permission approval gates, enable/disable/soft-uninstall lifecycle, semver update, safe rollback, Marketplace owner/admin RBAC helpers, artifact re-verification, and organization-scoped lifecycle audit taxonomy. Purchase and paid entitlement remain open for Phase 9; Phase 7 now supplies the policy-only runtime permission boundary and kill-switch controls while concrete execution adapters remain later work.
+
+## Phase 7 Update
+
+Phase 7 resolves the permission catalog, allowlisted runtime policy boundary,
+bounded sandbox host API decision, global/organization kill switches, runtime
+status blocking, and kill-switch audit taxonomy. The backend still does not
+execute uploaded package code; component/template adapters and concrete
+integration hooks remain later runtime work.
 
 ## Plugin Install Gaps
 
@@ -52,12 +60,12 @@ Phase 6 resolves the tenant-aware install runtime, catalog install action, insta
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
-| Marketplace permission catalog does not exist | P0 | Define allowed permissions such as content read/write, page read/write, media read/write, webhook send, external network, and settings access. | 7.1 |
+| Marketplace permission catalog does not exist | Resolved | Phase 7.1 adds a seeded permission catalog with category, risk, product-type, and runtime-operation metadata. | 7.1 |
 | Install-time permission approval is not enforced by runtime | Resolved | Phase 6 requires an exact owner/admin-approved manifest permission snapshot before install and permission-changing updates. | 7.1, 6.1 |
-| Marketplace RBAC helpers do not exist | Partially resolved | Phase 6 adds owner/admin install and permission-approval helpers; paid purchase and runtime permission helpers remain deferred. | 7.1 |
+| Marketplace RBAC helpers do not exist | Resolved for Phase 7 controls | Phase 6 owner/admin install helpers are extended with organization kill-switch management; global kill-switch mutations require global admin. | 7.1, 7.3 |
 | Permission escalation on update is not modeled | Resolved | Phase 6 requires fresh exact approval whenever a target version changes the permission set. | 6.3, 7.1 |
-| Runtime permission enforcement is not implemented | P0 | Enforce approved permissions before product runtime actions. | 7.2, 8.1, 8.3 |
-| Emergency permission revocation is not implemented | P0 | Support kill switch and permission revocation for malicious or broken products. | 7.3 |
+| Runtime permission enforcement is not implemented | Resolved for policy boundary | Phase 7.2 denies non-allowlisted operations, undeclared entry points, unapproved permissions, unsafe paths, inactive installations, and oversized payloads; no uploaded code executes. | 7.2, 8.1, 8.3 |
+| Emergency permission revocation is not implemented | Resolved for global/org kill switch | Phase 7.3 adds global and organization kill switches, runtime blocking, lift behavior, status messages, and audit records. Fine-grained permission revocation remains future runtime work. | 7.3 |
 
 ## Audit And Operations Gaps
 

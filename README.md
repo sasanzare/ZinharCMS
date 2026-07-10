@@ -149,6 +149,13 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Tenant-transactional lifecycle audit logs, preserved organization data, lifecycle timestamps, and forced-RLS isolation.
 - Paid/custom Marketplace installs remain blocked until purchase and entitlement support is implemented.
 
+## V3 Marketplace Phase 7 Scope
+
+- Permission catalog for content, page, media, webhook, settings, and external integration capabilities with risk and product-type metadata.
+- Allowlisted sandbox host API policy for declared runtime operations, safe entry-point paths, approved permission snapshots, and bounded JSON payloads.
+- Runtime authorization decisions that never execute uploaded package code and deny inactive, incompatible, unapproved, unsafe, or oversized requests.
+- Organization and global Marketplace kill switches with reason, status, lift, forced-RLS organization handling, cross-organization admin bypass boundaries, and audit records.
+
 ## Quick Start
 
 Copy the environment template and start the local stack:

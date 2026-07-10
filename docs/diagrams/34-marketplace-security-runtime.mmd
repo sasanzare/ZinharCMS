@@ -1,0 +1,55 @@
+flowchart TD
+  %% Evidence: backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql
+  %% Evidence: backend/src/services/marketplace_manifest.rs
+  %% Evidence: backend/src/services/marketplace_runtime.rs
+  %% Evidence: backend/src/routes/marketplace_runtime.rs
+  %% Evidence: backend/src/routes/marketplace.rs
+  %% Evidence: backend/src/services/rls.rs
+  %% Evidence: backend/src/services/audit.rs
+  %% Evidence: frontend/src/pages/MarketplacePage.tsx
+  %% Evidence: frontend/src/services/api.ts
+  %% Evidence: docs/V3_PHASE_SEVEN.md
+
+  manifest["Approved manifest [IMPLEMENTED]<br/>product type, permissions, entry points"]
+  catalog["Permission catalog [IMPLEMENTED]<br/>risk, category, product types, runtime operations"]
+  snapshot["Phase-6 installation snapshot [IMPLEMENTED]<br/>owner/admin exact approval"]
+
+  subgraph sandbox["Phase 7.2 allowlisted sandbox policy [IMPLEMENTED]"]
+    operation["Known runtime operation"]
+    product_gate["Product type allowlist"]
+    entry_gate["Declared artifact-local entry point"]
+    permission_gate["Approved permission snapshot"]
+    payload_gate["JSON object <= 64 KiB"]
+    decision["Allow/deny policy decision<br/>execution = not_executed"]
+  end
+
+  subgraph switches["Phase 7.3 kill switch [IMPLEMENTED]"]
+    global_switch["Global switch<br/>global admin"]
+    org_switch["Organization switch<br/>owner/admin"]
+    runtime_block["runtime_status = blocked"]
+    status["Runtime status message"]
+  end
+
+  audit["Tenant-scoped audit log [IMPLEMENTED]<br/>authorized, denied, activate, lift"]
+  deferred["Concrete component adapters, integration network calls,<br/>arbitrary code execution [PLANNED / DEFERRED]"]
+
+  manifest --> catalog --> snapshot
+  snapshot --> operation --> product_gate --> entry_gate --> permission_gate --> payload_gate --> decision
+  global_switch --> runtime_block
+  org_switch --> runtime_block
+  runtime_block --> status
+  runtime_block -. denies .-> decision
+  decision --> audit
+  global_switch --> audit
+  org_switch --> audit
+  decision -. policy only; no package execution .-> deferred
+
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+  classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
+  classDef blocked fill:#fff0f0,stroke:#a33,stroke-width:2px,color:#111;
+  classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray:2 4,color:#111;
+
+  class manifest,catalog,operation,product_gate,entry_gate,permission_gate,payload_gate,decision,status implemented;
+  class snapshot,audit data;
+  class global_switch,org_switch,runtime_block blocked;
+  class deferred planned;
