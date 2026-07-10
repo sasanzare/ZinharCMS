@@ -12,6 +12,7 @@ import type {
   MarketplaceCreatorResponse,
   MarketplaceInstallationResponse,
   MarketplaceInstallationUpdateCheckResponse,
+  MarketplaceHookResponse,
   MarketplacePermissionCatalogResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
@@ -229,6 +230,7 @@ export function MarketplacePage() {
   const [installations, setInstallations] = useState<MarketplaceInstallationResponse[]>([]);
   const [permissionCatalog, setPermissionCatalog] = useState<MarketplacePermissionCatalogResponse[]>([]);
   const [runtimeStatus, setRuntimeStatus] = useState<MarketplaceRuntimeStatusResponse | null>(null);
+  const [marketplaceHooks, setMarketplaceHooks] = useState<MarketplaceHookResponse[]>([]);
   const [installTarget, setInstallTarget] = useState<MarketplaceCatalogDetailResponse | null>(null);
   const [approvedInstallPermissions, setApprovedInstallPermissions] = useState<string[]>([]);
   const [installConfirmed, setInstallConfirmed] = useState(false);
@@ -292,12 +294,14 @@ export function MarketplacePage() {
 
   const loadRuntimeControls = useCallback(async function loadRuntimeControls() {
     try {
-      const [permissions, status] = await Promise.all([
+      const [permissions, status, hooks] = await Promise.all([
         api.marketplace.permissions(),
         api.marketplace.runtimeStatus(),
+        api.marketplaceAdapters.hooks(),
       ]);
       setPermissionCatalog(permissions);
       setRuntimeStatus(status);
+      setMarketplaceHooks(hooks);
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.error.runtime")));
     }
@@ -959,6 +963,30 @@ export function MarketplacePage() {
                     {t("marketplace.runtime.lift", { scope: killSwitch.scope })}
                   </button>
                 )
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="panel marketplace-runtime-panel" aria-label="Marketplace plugin hooks">
+        <div className="panel-header">
+          <div>
+            <h2>Extension hooks</h2>
+            <span>Public Phase 8 contracts exposed by active integration plugins</span>
+          </div>
+          <StatusBadge label={`${marketplaceHooks.length}`} tone="neutral" />
+        </div>
+        <div className="padded">
+          {marketplaceHooks.length === 0 ? (
+            <p className="empty-copy">No public extension hooks are installed.</p>
+          ) : (
+            <div className="permission-approval-list">
+              {marketplaceHooks.map((hook) => (
+                <div key={`${hook.installation_id}:${hook.hook_key}`} className="catalog-permission-row">
+                  <span><strong>{hook.hook_type}</strong> — {hook.label} ({hook.listing_title})</span>
+                  <StatusBadge label={hook.contract_version} tone="success" />
+                </div>
               ))}
             </div>
           )}

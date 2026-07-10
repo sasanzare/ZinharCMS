@@ -1128,6 +1128,15 @@ async fn validate_page_request(
     validate_page_json(&payload.page_json, &component_keys)
 }
 
+pub(crate) async fn validate_page_json_for_tenant(
+    state: &AppState,
+    tenant: &TenantContext,
+    page_json: &Value,
+) -> Result<(), AppError> {
+    let component_keys = load_component_keys(state, tenant).await?;
+    validate_page_json(page_json, &component_keys)
+}
+
 fn validate_component_request(payload: &ComponentRegistryRequest) -> Result<(), AppError> {
     if !is_valid_slug(payload.component_key.trim()) {
         return Err(AppError::Validation("component_key is invalid".to_owned()));

@@ -652,6 +652,55 @@ export type MarketplaceCreatorResponse = {
   updated_at: string;
 };
 
+export type MarketplaceComponentResponse = ComponentRegistryResponse & {
+  installation_id: string;
+  listing_title: string;
+  version: string;
+  enabled: boolean;
+};
+
+export type TemplateAdapterRequest = {
+  template_key?: string;
+  asset_mapping?: Record<string, string>;
+};
+
+export type TemplatePreviewResponse = {
+  installation_id: string;
+  template_key: string;
+  page_json: PageJson;
+  required_assets: string[];
+  mapped_assets: string[];
+};
+
+export type TemplateImportRequest = {
+  title: string;
+  slug: string;
+  template_key?: string;
+  asset_mapping?: Record<string, string>;
+};
+
+export type MarketplaceHookResponse = {
+  installation_id: string;
+  hook_key: string;
+  hook_type: "sidebar.item" | "dashboard.widget" | "form.field" | "webhook.adapter";
+  label: string;
+  contract_version: string;
+  config: JsonRecord;
+  listing_title: string;
+  version: string;
+  enabled: boolean;
+};
+
+export type MarketplaceHookAuthorizationResponse = {
+  allowed: boolean;
+  hook_key: string;
+  hook_type: string;
+  contract_version: string;
+  execution: "not_executed";
+  reason_code: string | null;
+  message: string | null;
+};
+
 export type MarketplaceCreatorStateResponse = {
   creator: MarketplaceCreatorResponse | null;
 };

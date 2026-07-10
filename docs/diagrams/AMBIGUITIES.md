@@ -1359,6 +1359,13 @@ admin bypass transaction, and uploaded package code remains unexecuted.
 - Status: DECISION_REQUIRED
 - Affected diagram files: `00-implementation-status-map.mmd`, `07-backend-component-architecture.mmd`, `18-billing-operations-beta-data-model.mmd`, `31-observability-and-failure-recovery.mmd`, `32-end-to-end-traceability.mmd`.
 
+### Phase 8 implementation update
+
+- Migration `0021_v3_phase_eight_runtime_adapters.sql` and adapter routes now provide the host-owned Component Pack registry, Template Import, and public Plugin Hook contracts.
+- The safe interpretation is explicit: adapter endpoints consume reviewed manifest JSON, enforce active installation/runtime status and tenant ownership, and never execute uploaded package code.
+- `35-marketplace-runtime-adapters.mmd` is the evidence diagram for the three Phase 8 subphases.
+- Future executable adapters, external network calls, paid entitlements, and customer ratings remain outside this implementation.
+
 ## Final Step 20 Ambiguity Review
 
 - Total ambiguity records reviewed: 71.

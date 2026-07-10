@@ -5,19 +5,24 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-10 18:45 +01:00 (Europe/London)
+- **Last updated:** 2026-07-10 19:35 +01:00 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `b1b3d05 docs: add persistent project handoff and recovery protocol`
-- **Working tree:** Modified and untracked Phase 7 implementation/documentation files; no staged changes and no commit created for Phase 7.
+- **Latest relevant commit:** `1231613 feat(marketplace): implement v3 phase 7 runtime security controls`
+- **Working tree at session start:** Clean at Phase 7 commit `1231613`; current tree now contains the uncommitted Phase 8 implementation and documentation.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
 - **Current phase:** V3 Marketplace Phase 7 — Permission Model, Sandbox MVP, and Kill Switch
 - **Current subphase:** 7.3 global/organization kill switch; implementation is complete and final validation is in progress
 - **Overall status:** In progress; Phase 7 code and docs are implemented, live migration/API smoke remains unverified
 
 ## 2. Project Overview
+
+> **Phase 8 override (2026-07-10 18:55):** Phase 7 is complete and committed at
+> `1231613`; the active objective is V3 Marketplace Phase 8 (8.1 Component Pack
+> Runtime, 8.2 Template Import, and 8.3 Plugin Hook MVP). The clean Git state at
+> session start is the source of truth over older Phase 7 wording below.
 
 ZinharCMS is a headless CMS and multi-tenant SaaS administration product. It
 serves organization owners and content teams through a React admin application
@@ -77,22 +82,24 @@ and `frontend/dist` are not source-of-truth directories.
 | `docs/V3_MARKETPLACE_GAP_LIST.md` | Resolved and deferred Marketplace gaps by phase. | Current gap/status record; verify against runtime. |
 | `docs/V3_MARKETPLACE_POLICY.md` and `docs/V3_PRODUCT_TAXONOMY.md` | Review, moderation, product classification, and safety policy. | Current policy authority. |
 | `docs/API.md` | Runtime route boundaries and Marketplace endpoint documentation. | Current, with older Marketplace routes manually documented. |
-| `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Mostly current; its sentence saying the schema is authoritative through migration `0018` is stale because Phase 6 adds `0019`. |
-| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd` | Evidence links and visual Phase 6/7 implementation state. | Updated with Phase 7 evidence; static Mermaid validation is available, but no Mermaid parser is installed. |
+| `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Updated through migration `0021` and Phase 8 host-owned adapters. |
+| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd` | Evidence links and visual Phase 6/7/8 implementation state. | Updated with Phase 8 evidence; static Mermaid validation is available, but no Mermaid parser is installed. |
 | `D:\All projects\Zinhar_Doc\version_3_marketplace_proposal.html` | Original V3 Marketplace proposal and future lifecycle goals. | Planning authority; current migrations/routes/tests supersede it for implementation status. |
 | `D:\All projects\Zinhar_Doc\version_2_proposal.html` | V2 SaaS/organization/billing proposal. | Historical planning authority for V2 dependencies. |
 | `D:\All projects\Zinhar_Doc\headless_cms_proposal_polished.html` | Original CMS proposal. | Historical baseline; current repository documentation and code are newer. |
 
 The proposals describe the complete future Marketplace lifecycle, including paid
-products and executable/runtime concepts. Phase 7 implements the permission and
-containment policy boundary only; paid entitlements, payouts, customer ratings,
-concrete runtime adapters, and arbitrary package execution remain deferred.
+products and executable/runtime concepts. Phase 7 established the permission and
+containment boundary; Phase 8 now supplies host-owned Component Pack, Template,
+and public Hook adapters. Paid entitlements, payouts, customer ratings, external
+execution, and arbitrary package execution remain deferred.
 
 ## 6. Current Objective
 
-The active objective is to complete and validate V3 Marketplace Phase 7 without
-repeating Phase 6. The implementation target is the permission model, a
-policy-only allowlisted sandbox boundary, and global/organization kill switches.
+The active objective is to implement and validate V3 Marketplace Phase 8 without
+repeating the committed Phase 7 boundary. The implementation target is the
+Component Pack registry, Template preview/import with tenant asset mapping, and
+public Plugin Hook MVP contracts.
 
 Phase 6 boundaries that must remain unchanged until their dedicated phases are
 planned and authorized:
@@ -100,10 +107,18 @@ planned and authorized:
 - only free `component_pack` and `design_template` products are installable;
 - uploaded package code is never executed;
 - paid purchase/entitlement and creator payout flows are not implemented;
-- concrete runtime execution, host adapters, and fine-grained permission revocation remain deferred; Phase 7 policy decisions and kill switches are implemented;
+- external runtime execution and fine-grained permission revocation remain deferred; Phase 7 policy decisions and Phase 8 host-owned adapters are implemented;
 - no background automatic update is enabled; installations remain explicitly pinned.
 
 ## 7. Completed and Verified Work
+
+### Phase 8 checkpoint override (2026-07-10 19:10)
+
+- Phase 8.1 Component Pack registry is implemented: active installed manifest components are namespaced and materialized into the organization Page Builder palette.
+- Phase 8.2 Template Import is implemented: preview and import validate runtime state, media ownership, page JSON, page version, import record, and audit event.
+- Phase 8.3 Plugin Hook MVP is implemented: only `sidebar.item`, `dashboard.widget`, `form.field`, and `webhook.adapter` are exposed/authorized; execution remains `not_executed`.
+- Migration `0021`, adapter routes/service, frontend API/types/UI, docs, and diagram 35 are present in the current working tree.
+- Phase 7 remains the committed baseline at `1231613`; no prior completed work was repeated or reset.
 
 - [x] Implemented the additive Phase 6 migration and installation lifecycle schema.
   - **Files:** `backend/migrations/0019_v3_phase_six_installation_lifecycle.sql`, `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql`
@@ -171,6 +186,12 @@ planned and authorized:
 
 ## 9. Work in Progress
 
+### Phase 8 active checkpoint override
+
+Phase 8 product code is implemented and statically validated. The remaining
+verification is live migration/API/browser smoke for migration `0021`; this is
+not a request to reimplement Phase 7.
+
 ### Active item
 
 Phase 7 product code is implemented; the remaining work is final validation and
@@ -196,6 +217,12 @@ tests/build have passed; live migration/API smoke is still pending.
 - The frontend production build reports a chunk-size warning over 500 kB; this is non-blocking technical debt.
 
 ## 10. Current Git and Filesystem State
+
+### Actual state at Phase 8 checkpoint
+
+- `HEAD` is `1231613` (`feat(marketplace): implement v3 phase 7 runtime security controls`) and the working tree contains only Phase 8 implementation/documentation changes plus this handoff update.
+- No files are staged, deleted, reset, or committed for Phase 8.
+- New Phase 8 files are `backend/migrations/0021_v3_phase_eight_runtime_adapters.sql`, `backend/src/routes/marketplace_adapters.rs`, `backend/src/services/marketplace_adapters.rs`, `docs/V3_PHASE_EIGHT.md`, and `docs/diagrams/35-marketplace-runtime-adapters.mmd`.
 
 ### Staged files
 
@@ -235,6 +262,18 @@ should be created unless the user explicitly authorizes it.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
+
+### Phase 8 validation results (2026-07-10 19:10)
+
+- `cargo fmt --manifest-path backend/Cargo.toml -- --check`: passed.
+- `cargo test --manifest-path backend/Cargo.toml --all-features`: passed, 96 tests and doc tests with 0 failures; Phase 8 route/service contract tests included.
+- `npm --prefix frontend run lint`: passed.
+- `npm --prefix frontend run typecheck`: passed.
+- `npm --prefix frontend test`: passed, 3 files and 9 tests.
+- `npm --prefix frontend run build`: passed with the existing >500 kB chunk warning; sandbox `spawn EPERM` was resolved by the approved escalated rerun.
+- Mermaid static/evidence validation: passed, 36 files (`00` through `35`), one declaration each, no fences, all evidence paths present.
+- `git diff --check`: passed.
+- `cargo clippy -D warnings` remains blocked by legacy warnings outside Phase 8; no new Phase 8 warning was introduced by the test build.
 
 ### Commands executed during this inspection
 
@@ -380,6 +419,17 @@ should be created unless the user explicitly authorizes it.
 
 ## 15. Remaining Work
 
+### Phase 8 remaining-work override
+
+1. Apply migration `0021` in a safe development database and run authenticated
+   API/browser smoke for Component Pack registry, Template preview/import, asset
+   ownership rejection, and Plugin Hook authorization.
+2. Fetch generated `/openapi.json` and confirm all five Phase 8 paths and schemas
+   agree with `docs/API.md`.
+3. Keep paid entitlements, external network execution, arbitrary package code,
+   and customer ratings deferred to their proposal phases.
+4. Do not create a commit unless the user explicitly authorizes it.
+
 1. [ ] Verify Phase 7 against a running backend and test organization.
    - **Start at:** `backend/src/routes/marketplace_runtime.rs` and `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql`.
    - **Prerequisites:** Docker API access or an equivalent PostgreSQL/Redis environment; safe test organization and approved artifact fixture.
@@ -417,6 +467,18 @@ should be created unless the user explicitly authorizes it.
 
 ## 16. Exact Next Action
 
+For Phase 8, the exact next action is a non-destructive live smoke check in an
+environment with Docker API access: verify PostgreSQL/Redis, apply migration
+`0021` without reset, start the backend, confirm `/health`, `/ready`, and
+`/openapi.json`, then exercise Component Pack registry listing, Template preview
+and import with a same-organization media mapping plus one cross-tenant rejection,
+and public Plugin Hook listing/authorization. Record actual results here. Do not
+execute uploaded package code, enable paid products, reset data, or create a
+commit.
+
+The older Phase 7 instruction below is historical and superseded by the Phase 8
+action above.
+
 Open `HANDOFF.md`, inspect `git status --short` and the latest commit, then run a
 non-destructive live Phase 7 smoke check in an environment with Docker API access:
 verify PostgreSQL and Redis, start the backend with the existing environment
@@ -428,6 +490,15 @@ paid products, or create a commit. Record the actual migration `0020` and API
 results in this file before planning Phase 8 adapters.
 
 ## 17. Acceptance Criteria for the Current Phase
+
+### Phase 8 acceptance override
+
+- [x] Installed Component Pack definitions are namespaced and available to the same organization’s Page Builder palette.
+- [x] Design Template preview/import creates an independent page/version and verifies organization-owned asset mappings.
+- [x] Integration Plugin hooks are restricted to the four public contract types and return policy-only authorization.
+- [x] Phase 8 migration uses tenant RLS for template imports and plugin hooks; package code is never executed.
+- [x] Backend 96 tests, frontend 9 tests, lint/typecheck/build, Mermaid 36-file validation, and diff check pass.
+- [ ] Live migration `0021` and authenticated end-to-end adapter smoke are verified.
 
 - [x] Free Component Pack and Design Template installation is organization-owned and tenant-scoped.
 - [x] Install requires approved listing/version, safe validation/risk, active compatibility, exact owner/admin permission approval, and intact artifact bytes.
@@ -514,3 +585,23 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - Fixed the remaining Phase 7 Clippy findings (route borrow/condition, contract-test placement, and explicit policy exception for the multi-gate authorizer).
 - `cargo fmt --check` and `cargo test --all-features` passed: 93 backend tests plus doc tests; Clippy remains blocked only by legacy warnings outside Phase 7.
 - The exact next action remains the non-destructive live migration/API smoke for migration `0020`; no commit was created.
+
+### 2026-07-10 19:10 +01:00 - V3 Phase 8 runtime adapters checkpoint
+
+- Verified Git source of truth: clean Phase 7 commit `1231613` before Phase 8 changes.
+- Implemented 8.1 Component Pack registry/Page Builder integration, 8.2 Template preview/import/clone with tenant media mapping, and 8.3 public Plugin Hook registry/authorization.
+- Added migration `0021`, adapter routes/service, frontend API/UI/test updates, Phase 8 docs, and Mermaid diagram `35`.
+- Backend 96 tests, frontend 9 tests, lint/typecheck/build, Mermaid 36-file static validation, and `git diff --check` passed.
+- Exact next action is live migration `0021` and authenticated adapter smoke; no Phase 8 commit was created.
+
+### 2026-07-10 19:25 +01:00 - Phase 8 final backend checkpoint
+
+- Added automatic Component Pack registry synchronization before Template Import validation so templates can use active installed components without a prior UI visit.
+- `cargo fmt --check`, `cargo check --all-features`, and `cargo test --all-features` passed; 96 backend tests and doc tests completed with 0 failures.
+- Clippy still reports only legacy warnings outside the Phase 8 adapter module; live migration/API smoke remains pending.
+
+### 2026-07-10 19:35 +01:00 - Phase 8 frontend validation checkpoint
+
+- Added Page Builder and Marketplace UI assertions for installed Component Pack and public Hook surfaces.
+- Frontend lint, typecheck, and Vitest passed: 3 files, 9 tests; live Vite build had already passed after the Phase 8 UI implementation.
+- The exact next action remains the non-destructive live migration `0021` and authenticated adapter API/browser smoke; no commit was created.

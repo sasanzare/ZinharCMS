@@ -80,6 +80,22 @@ Examples:
 
 `assets` must be an array. Entries can be strings or structured objects in later phases. Package-level artifact integrity is enforced through `artifact_sha256` on `marketplace_versions`.
 
+## Phase 8 Adapter Declarations
+
+`component_pack` manifests may include a `components` array of safe registry
+definitions (`key`, `name`, `category`, and object `props_schema`). These entries
+are namespaced into the organization Page Builder registry only while the
+installation is active and runtime-ready.
+
+`design_template` manifests may include a `template` object with a `key`, a
+`page_json` object, and optional asset keys. `asset:<key>` values are resolved
+only to media UUIDs owned by the importing organization.
+
+`integration_plugin` manifests may include a `hooks` array. Phase 8 accepts only
+`sidebar.item`, `dashboard.widget`, `form.field`, and `webhook.adapter`; all
+other hook types are rejected. Hook authorization is a public-contract decision
+and does not execute package code.
+
 ## Example Manifest
 
 ```json

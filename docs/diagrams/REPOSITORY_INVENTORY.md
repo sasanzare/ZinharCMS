@@ -54,6 +54,7 @@ only mirroring the directory tree.
 | `backend/migrations/0018_v3_phase_four_review_moderation.sql` | Marketplace review and moderation event log. | Marketplace review/moderation | Schema | `marketplace_review_events`, supported actions including `emergency_block` | Review moderation state diagram |
 | `backend/migrations/0019_v3_phase_six_installation_lifecycle.sql` | Marketplace installation lifecycle additions. | Marketplace installations | Schema | cleanup policy, version pinning, lifecycle timestamps, same-listing rollback FK | Marketplace lifecycle/data model diagrams |
 | `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql` | Marketplace permission catalog, runtime status, and kill-switch state. | Marketplace security runtime | Schema | permission catalog, runtime blocking, global/organization kill switches, forced RLS | Marketplace security runtime diagram |
+| `backend/migrations/0021_v3_phase_eight_runtime_adapters.sql` | Component registry installation link, template import records, and public plugin hook records. | Marketplace runtime adapters | Schema | Component Pack registry, tenant template imports, public hook contracts, forced RLS | Marketplace runtime adapter diagram |
 
 ## Backend Application Composition
 
@@ -92,6 +93,7 @@ only mirroring the directory tree.
 | `backend/src/routes/billing.rs` | Plans, subscriptions, checkout, portal, usage, rebuild, and Stripe webhook. | Billing, Stripe, quota | Executable code | `/api/billing/*`, `/api/billing/stripe/webhook` | Billing sequence diagram |
 | `backend/src/routes/beta.rs` | Beta dashboard, feedback, blockers, and participant selection. | Beta feedback, GA blockers | Executable code | `/api/beta/dashboard`, `/feedback`, `/ga-blockers`, `/product-dashboard`, `/participants/{organization_id}` | Beta feedback workflow |
 | `backend/src/routes/marketplace.rs` | Marketplace catalog, creator profile, listings, package upload, validation reports, review decisions, moderation, and installation lifecycle. | Marketplace | Executable code | `/api/marketplace/catalog`, `/creator`, `/listings`, `/versions/upload`, `/review/*`, `/installations/*` | Marketplace catalog/submission/review/lifecycle diagrams |
+| `backend/src/routes/marketplace_adapters.rs` | Component Pack registry, Template preview/import, and public Plugin Hook authorization. | Marketplace runtime adapters | Executable code | `/api/marketplace/runtime/components`, `/templates/*`, `/hooks/*` | Marketplace runtime adapter diagram |
 | `backend/src/routes/marketplace_runtime.rs` | Permission catalog, sandbox authorization, runtime status, and kill-switch handlers. | Marketplace security runtime | Executable code | `/api/marketplace/permissions`, `/runtime/status`, `/runtime/authorize`, `/kill-switches/*` | Marketplace security runtime diagram |
 
 ## Backend Services And Plugins
@@ -126,6 +128,7 @@ only mirroring the directory tree.
 | `backend/src/services/marketplace_review.rs` | Review and moderation transition validation. | Marketplace review/moderation | Executable code/test | `validate_review_decision`, `validate_moderation_action` | Review state diagram |
 | `backend/src/services/marketplace_catalog.rs` | Catalog compatibility and install eligibility derivation. | Marketplace catalog | Executable code/test | `catalog_compatibility_report`, `is_catalog_compatible` | Catalog filtering diagram |
 | `backend/src/services/marketplace_installation.rs` | Installation lifecycle gates and artifact verification. | Marketplace installations | Executable code/test | permission snapshots, lifecycle transitions, SemVer, artifact size/SHA gates | Marketplace lifecycle diagrams |
+| `backend/src/services/marketplace_adapters.rs` | Pure manifest component, template, asset mapping, and public hook contract rules. | Marketplace runtime adapters | Executable code/test | component definitions, template JSON, tenant asset mapping, public hook allowlist | Marketplace runtime adapter diagram |
 | `backend/src/services/marketplace_runtime.rs` | Allowlisted runtime operations and sandbox policy validation. | Marketplace security runtime | Executable code/test | permission-bound operations, safe entry points, payload limit, runtime decision | Marketplace security runtime diagram |
 | `backend/src/services/mod.rs` | Service module export. | Backend composition | Executable code | module exports | Backend module map |
 | `backend/src/plugins/mod.rs` | Built-in plugin trait and hook runner. | Plugins | Executable code | `CmsPlugin`, `builtin_plugins`, hook runners | Plugin hook diagram |
@@ -194,6 +197,7 @@ only mirroring the directory tree.
 | `frontend/src/pages/BillingPage.tsx` | Subscription, quota, plan selection, Stripe availability UI. | Billing, quotas, Stripe | Executable code | current plan, usage, plans, checkout/portal | Billing UI flow |
 | `frontend/src/pages/BetaPage.tsx` | Beta feedback and GA blocker UI. | Beta, GA readiness | Executable code | feedback, blockers, product dashboard | Beta workflow UI |
 | `frontend/src/pages/MarketplacePage.tsx` | Marketplace catalog, creator profile, listing submission, upload, reports, review, moderation, install dialog, Installed Apps, runtime status, permission catalog, and kill-switch UI. | Marketplace | Executable code | catalog/detail, creator form, package upload, review actions, permission approval, lifecycle controls, runtime safety and kill-switch controls | Marketplace UI diagrams |
+| `frontend/src/pages/PagesPage.tsx` | Page Builder palette plus installed Component Pack registry and Template preview/import controls. | Page builder, Marketplace runtime adapters | Executable code | component palette, template preview/import, page clone | Page builder and Marketplace runtime adapter diagrams |
 | `frontend/src/pages/SettingsPage.tsx` | Webhook management UI. | Webhooks, settings | Executable code | webhook form, event toggles, delivery actions | Webhook UI flow |
 | `frontend/src/pages/WorkspaceRedirectPage.tsx` | Workspace slug route bridge. | Organizations | Executable code | workspace slug redirect | Workspace flow |
 | `frontend/src/pages/DashboardPage.test.tsx` | Frontend dashboard smoke test. | Frontend tests | Test | foundation cards | Test coverage diagram |

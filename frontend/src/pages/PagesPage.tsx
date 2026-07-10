@@ -17,7 +17,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { useI18n, workflowActionKey, workflowStatusKey, type MessageKey } from "../i18n";
 import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
-import type { ComponentRegistryResponse, JsonRecord, JsonValue, PageJson, PageNode, PageResponse, PageVersionResponse } from "../types/api";
+import type { ComponentRegistryResponse, JsonRecord, JsonValue, MarketplaceInstallationResponse, PageJson, PageNode, PageResponse, PageVersionResponse, TemplatePreviewResponse } from "../types/api";
 
 const CANVAS_DROP_ID = "page-builder-canvas";
 
@@ -427,6 +427,9 @@ export function PagesPage() {
   const activeOrganizationId = useAppStore((state) => state.activeOrganizationId);
   const [pages, setPages] = useState<PageResponse[]>([]);
   const [components, setComponents] = useState<ComponentRegistryResponse[]>([]);
+  const [templates, setTemplates] = useState<MarketplaceInstallationResponse[]>([]);
+  const [templatePreviews, setTemplatePreviews] = useState<Record<string, TemplatePreviewResponse>>({});
+  const [templateBusy, setTemplateBusy] = useState<string | null>(null);
   const [versions, setVersions] = useState<PageVersionResponse[]>([]);
   const [draft, setDraft] = useState<PageDraft>(createDraft);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -450,12 +453,15 @@ export function PagesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [pageResponse, componentResponse] = await Promise.all([
+      const [pageResponse, componentResponse, marketplaceComponentResponse, installationResponse] = await Promise.all([
         api.pages.list({ sort: "updated_at:desc" }),
         api.components.list(),
+        api.marketplaceAdapters.components(),
+        api.marketplace.installations(),
       ]);
       setPages(pageResponse.data);
-      setComponents(componentResponse);
+      setComponents([...componentResponse, ...marketplaceComponentResponse]);
+      setTemplates(installationResponse.filter((installation) => installation.product_type === "design_template" && installation.status === "active"));
       if (preferredPageId) {
         const page = pageResponse.data.find((item) => item.id === preferredPageId);
         if (page) setSelectedPage(page);
@@ -486,6 +492,40 @@ export function PagesPage() {
       setError(caught instanceof ApiError ? caught.message : caught instanceof Error ? caught.message : t("pages.error.save"));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function previewMarketplaceTemplate(installation: MarketplaceInstallationResponse) {
+    setTemplateBusy(installation.id);
+    setError(null);
+    try {
+      const preview = await api.marketplaceAdapters.previewTemplate(installation.id);
+      setTemplatePreviews((current) => ({ ...current, [installation.id]: preview }));
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : t("pages.error.load"));
+    } finally {
+      setTemplateBusy(null);
+    }
+  }
+
+  async function importMarketplaceTemplate(installation: MarketplaceInstallationResponse) {
+    const preview = templatePreviews[installation.id];
+    if (!preview) {
+      await previewMarketplaceTemplate(installation);
+      return;
+    }
+    const title = window.prompt("Template page title", installation.listing_title);
+    const slug = window.prompt("Template page slug", installation.listing_slug);
+    if (!title || !slug) return;
+    setTemplateBusy(installation.id);
+    try {
+      const page = await api.marketplaceAdapters.importTemplate(installation.id, { title, slug, template_key: preview.template_key });
+      await load(page.id);
+      editPage(page);
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : t("pages.error.save"));
+    } finally {
+      setTemplateBusy(null);
     }
   }
 
@@ -802,6 +842,34 @@ export function PagesPage() {
           </DragOverlay>
         </DndContext>
       </section>
+
+      {templates.length > 0 && (
+        <section className="panel full-width-panel" aria-label="Marketplace templates">
+          <div className="panel-header">
+            <div>
+              <h2>Marketplace templates</h2>
+              <span>Preview and clone installed templates into this organization</span>
+            </div>
+          </div>
+          <div className="table-actions">
+            {templates.map((installation) => (
+              <div className="panel" key={installation.id}>
+                <strong>{installation.listing_title}</strong>
+                <span>{installation.installed_version}</span>
+                <div className="table-actions">
+                  <button className="secondary-button" type="button" onClick={() => void previewMarketplaceTemplate(installation)} disabled={templateBusy === installation.id}>
+                    {templateBusy === installation.id ? "Loading..." : "Preview"}
+                  </button>
+                  <button className="primary-button" type="button" onClick={() => void importMarketplaceTemplate(installation)} disabled={templateBusy === installation.id || !templatePreviews[installation.id]}>
+                    Import clone
+                  </button>
+                </div>
+                {templatePreviews[installation.id] && <p className="empty-copy">Template preview ready: {templatePreviews[installation.id].required_assets.length} asset mappings</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="panel list-panel full-width-panel">
         <div className="panel-header">

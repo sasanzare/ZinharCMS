@@ -304,6 +304,11 @@ Every Marketplace route currently requires authentication and
 | `POST` | `/api/marketplace/kill-switches/organization` | Activate an organization runtime kill switch; owner/admin |
 | `POST` | `/api/marketplace/kill-switches/global` | Activate a global runtime kill switch; global admin |
 | `POST` | `/api/marketplace/kill-switches/{kill_switch_id}/lift` | Lift an authorized organization or global kill switch |
+| `GET` | `/api/marketplace/runtime/components` | Materialize active Component Pack definitions for the organization Page Builder palette |
+| `POST` | `/api/marketplace/templates/{installation_id}/preview` | Preview a Design Template with tenant-owned asset mapping |
+| `POST` | `/api/marketplace/templates/{installation_id}/import` | Clone a Design Template into a new organization page and version snapshot |
+| `GET` | `/api/marketplace/hooks` | List public hooks declared by active Integration Plugins |
+| `POST` | `/api/marketplace/hooks/{hook_type}/authorize` | Authorize a public hook contract without executing package code |
 | `GET`, `POST` | `/api/marketplace/creator` | Read/request current user creator profile |
 | `PATCH` | `/api/marketplace/creators/{creator_id}/verification` | Global-admin creator verification |
 | `GET`, `POST` | `/api/marketplace/listings` | List creator listings or create draft |
@@ -338,3 +343,7 @@ Phase 7 adds the permission catalog, allowlisted runtime authorization decision,
 runtime status, and global/organization kill-switch paths to generated OpenAPI.
 The authorization endpoint is a policy decision only: uploaded package code is
 not executed by the backend.
+
+Phase 8 adds the Component Pack registry, Template preview/import, and public
+Plugin Hook authorization paths to generated OpenAPI. Template imports verify
+organization-owned media mappings and create independent page/version records.

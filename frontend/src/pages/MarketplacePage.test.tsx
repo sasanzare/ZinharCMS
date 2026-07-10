@@ -10,6 +10,7 @@ const apiMocks = vi.hoisted(() => ({
   installations: vi.fn(),
   permissions: vi.fn(),
   runtimeStatus: vi.fn(),
+  hooks: vi.fn(),
   activateOrganizationKillSwitch: vi.fn(),
   activateGlobalKillSwitch: vi.fn(),
   liftKillSwitch: vi.fn(),
@@ -40,6 +41,7 @@ vi.mock("../services/api", () => ({
       installations: apiMocks.installations,
       permissions: apiMocks.permissions,
       runtimeStatus: apiMocks.runtimeStatus,
+      hooks: apiMocks.hooks,
       activateOrganizationKillSwitch: apiMocks.activateOrganizationKillSwitch,
       activateGlobalKillSwitch: apiMocks.activateGlobalKillSwitch,
       liftKillSwitch: apiMocks.liftKillSwitch,
@@ -53,6 +55,9 @@ vi.mock("../services/api", () => ({
       submissions: vi.fn().mockResolvedValue([]),
       reviewQueue: vi.fn().mockResolvedValue([]),
       reviewEvents: vi.fn().mockResolvedValue([]),
+    },
+    marketplaceAdapters: {
+      hooks: apiMocks.hooks,
     },
   },
 }));
@@ -164,6 +169,19 @@ beforeEach(() => {
     status_message: "Marketplace runtime is ready",
     active_kill_switches: [],
   });
+  apiMocks.hooks.mockResolvedValue([
+    {
+      installation_id: "installation-plugin-1",
+      hook_key: "sidebar-item",
+      hook_type: "sidebar.item",
+      label: "Plugin navigation",
+      contract_version: "2026-07",
+      config: {},
+      listing_title: "Public Plugin",
+      version: "1.0.0",
+      enabled: true,
+    },
+  ]);
   apiMocks.install.mockResolvedValue(installation);
   apiMocks.installationUpdates.mockResolvedValue({
     installation_id: installation.id,
@@ -328,6 +346,8 @@ describe("Marketplace Phase 6", () => {
 
     const runtimeHeading = await screen.findByRole("heading", { name: "Runtime safety" });
     expect(runtimeHeading).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Extension hooks" })).toBeInTheDocument();
+    expect(screen.getByText(/Plugin navigation/)).toBeInTheDocument();
     expect(within(runtimeHeading.closest("section")!).getByText("page.read")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Block this organization" }));
 

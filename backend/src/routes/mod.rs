@@ -5,6 +5,7 @@ pub mod comments;
 pub mod content;
 pub mod delivery;
 pub mod marketplace;
+pub mod marketplace_adapters;
 pub mod marketplace_runtime;
 pub mod media;
 pub mod organizations;
@@ -47,6 +48,7 @@ pub fn router(state: AppState) -> Router {
         .merge(billing::router())
         .merge(media::router())
         .merge(marketplace::router())
+        .merge(marketplace_adapters::router())
         .merge(marketplace_runtime::router())
         .merge(organizations::tenant_router())
         .merge(pages::router())
@@ -197,6 +199,11 @@ pub fn router(state: AppState) -> Router {
         marketplace_runtime::activate_organization_kill_switch,
         marketplace_runtime::activate_global_kill_switch,
         marketplace_runtime::lift_kill_switch,
+        marketplace_adapters::list_marketplace_components,
+        marketplace_adapters::preview_template,
+        marketplace_adapters::import_template,
+        marketplace_adapters::list_marketplace_hooks,
+        marketplace_adapters::authorize_marketplace_hook,
         plugins::list_plugins,
         plugins::get_plugin,
         plugins::update_plugin,
@@ -297,6 +304,13 @@ pub fn router(state: AppState) -> Router {
         marketplace_runtime::MarketplaceKillSwitchRequest,
         marketplace_runtime::MarketplaceRuntimeAuthorizeRequest,
         marketplace_runtime::MarketplaceRuntimeAuthorizationResponse,
+        marketplace_adapters::MarketplaceComponentResponse,
+        marketplace_adapters::TemplateAdapterRequest,
+        marketplace_adapters::TemplatePreviewResponse,
+        marketplace_adapters::TemplateImportRequest,
+        marketplace_adapters::MarketplaceHookResponse,
+        marketplace_adapters::MarketplaceHookAuthorizeRequest,
+        marketplace_adapters::MarketplaceHookAuthorizationResponse,
         plugins::PluginUpdateRequest,
         plugins::PluginResponse
     )),

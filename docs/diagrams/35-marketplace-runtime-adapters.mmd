@@ -1,0 +1,15 @@
+flowchart LR
+    %% Evidence: backend/migrations/0021_v3_phase_eight_runtime_adapters.sql
+    %% Evidence: backend/src/routes/marketplace_adapters.rs
+    %% Evidence: backend/src/services/marketplace_adapters.rs
+    %% Evidence: frontend/src/pages/PagesPage.tsx
+    %% Evidence: docs/V3_PHASE_EIGHT.md
+    Install["Active Marketplace installation"] --> Policy["Phase 7 runtime status + kill switch"]
+    Policy --> Components["8.1 Component Pack registry"]
+    Components --> Palette["Organization Page Builder palette"]
+    Policy --> Template["8.2 Template preview/import"]
+    Template --> Assets["Tenant-owned media asset mapping"]
+    Assets --> Page["Independent organization page + version"]
+    Policy --> Hooks["8.3 Public Plugin Hook registry"]
+    Hooks --> Contracts["sidebar.item / dashboard.widget / form.field / webhook.adapter"]
+    Contracts --> Host["Host-owned authorization; package code not executed"]

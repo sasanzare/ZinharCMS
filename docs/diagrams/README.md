@@ -33,6 +33,7 @@ runtime configuration, and only then supporting documentation.
 | `32` | End-to-end source traceability by major domain. |
 | `33` | Phase-6 Marketplace installation lifecycle, gates, updates, and rollback. |
 | `34` | Phase-7 Marketplace permission, sandbox policy, and kill-switch flow. |
+| `35` | Phase-8 Component Pack registry, Template Import, and public Plugin Hook adapters. |
 
 ## Implementation Status Language
 

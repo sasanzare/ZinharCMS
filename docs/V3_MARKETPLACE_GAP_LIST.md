@@ -33,6 +33,14 @@ status blocking, and kill-switch audit taxonomy. The backend still does not
 execute uploaded package code; component/template adapters and concrete
 integration hooks remain later runtime work.
 
+## Phase 8 Update
+
+Phase 8 resolves the first host-owned adapter surfaces: installed Component Pack
+definitions now feed the organization Page Builder registry, Design Templates
+can be previewed and cloned with organization-owned media mappings, and active
+Integration Plugins expose only the four public hook contracts. Adapter
+authorization remains policy-only and never executes uploaded package code.
+
 ## Plugin Install Gaps
 
 | Gap | Severity | Required V3 work | Target phase |
@@ -64,7 +72,7 @@ integration hooks remain later runtime work.
 | Install-time permission approval is not enforced by runtime | Resolved | Phase 6 requires an exact owner/admin-approved manifest permission snapshot before install and permission-changing updates. | 7.1, 6.1 |
 | Marketplace RBAC helpers do not exist | Resolved for Phase 7 controls | Phase 6 owner/admin install helpers are extended with organization kill-switch management; global kill-switch mutations require global admin. | 7.1, 7.3 |
 | Permission escalation on update is not modeled | Resolved | Phase 6 requires fresh exact approval whenever a target version changes the permission set. | 6.3, 7.1 |
-| Runtime permission enforcement is not implemented | Resolved for policy boundary | Phase 7.2 denies non-allowlisted operations, undeclared entry points, unapproved permissions, unsafe paths, inactive installations, and oversized payloads; no uploaded code executes. | 7.2, 8.1, 8.3 |
+| Runtime permission enforcement is not implemented | Resolved for policy boundary | Phase 7.2 denies non-allowlisted operations, undeclared entry points, unapproved permissions, unsafe paths, inactive installations, and oversized payloads; Phase 8 adapters re-check active installation and kill-switch state; no uploaded code executes. | 7.2, 8.1, 8.3 |
 | Emergency permission revocation is not implemented | Resolved for global/org kill switch | Phase 7.3 adds global and organization kill switches, runtime blocking, lift behavior, status messages, and audit records. Fine-grained permission revocation remains future runtime work. | 7.3 |
 
 ## Audit And Operations Gaps

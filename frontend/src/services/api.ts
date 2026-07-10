@@ -25,6 +25,9 @@ import type {
   CommentRequest,
   CommentResponse,
   ComponentRegistryResponse,
+  MarketplaceComponentResponse,
+  MarketplaceHookAuthorizationResponse,
+  MarketplaceHookResponse,
   ContentEntryResponse,
   ContentTypeResponse,
   EntryListResponse,
@@ -67,6 +70,8 @@ import type {
   PageListResponse,
   PageResponse,
   PageVersionResponse,
+  TemplateImportRequest,
+  TemplatePreviewResponse,
   PlanResponse,
   PluginResponse,
   PluginUpdateRequest,
@@ -476,6 +481,16 @@ changePlan: (payload: ChangePlanRequest) =>
   components: {
     list: (category?: string) =>
       request<ComponentRegistryResponse[]>(`/api/component-registry${query({ category })}`, { auth: true }),
+  },
+  marketplaceAdapters: {
+    components: () => request<MarketplaceComponentResponse[]>("/api/marketplace/runtime/components", { auth: true }),
+    previewTemplate: (installationId: string, payload: { template_key?: string; asset_mapping?: Record<string, string> } = {}) =>
+      request<TemplatePreviewResponse>(`/api/marketplace/templates/${installationId}/preview`, { method: "POST", auth: true, body: payload }),
+    importTemplate: (installationId: string, payload: TemplateImportRequest) =>
+      request<PageResponse>(`/api/marketplace/templates/${installationId}/import`, { method: "POST", auth: true, body: payload }),
+    hooks: () => request<MarketplaceHookResponse[]>("/api/marketplace/hooks", { auth: true }),
+    authorizeHook: (hookType: string, payload: { hook_key: string; context?: JsonRecord }) =>
+      request<MarketplaceHookAuthorizationResponse>(`/api/marketplace/hooks/${hookType}/authorize`, { method: "POST", auth: true, body: payload }),
   },
   comments: {
     list: (entity_type: CommentEntityType, entity_id: string, include_resolved = false) =>

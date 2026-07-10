@@ -54,7 +54,7 @@ as `HttpOnly`, `SameSite=Lax` cookies scoped to `/api/auth`.
 
 ## Data And Tenant Isolation
 
-The final schema is migration-authoritative through migration `0020`.
+The final schema is migration-authoritative through migration `0021`.
 
 - Core identity: users, roles, user roles, refresh tokens, login attempts.
 - Core CMS: content types, entries, pages, page versions, components, media,
@@ -126,11 +126,13 @@ is currently mounted behind tenant middleware. Phase 6 implements organization-
 owned install, enable, disable, soft-uninstall, pinned update, and safe rollback
 state transitions for free Component Packs and Design Templates. Phase 7 adds the
 permission catalog, allowlisted sandbox host API decisions, runtime status
-blocking, and global/organization kill switches. Uploaded package code is not
-executed: installation and runtime authorization remain policy state protected by
-compatibility, permission approval, artifact integrity, audit, and forced-RLS
-gates. Purchases, paid entitlements, concrete component/integration adapters,
-customer ratings, and creator payout execution are planned only.
+blocking, and global/organization kill switches. Phase 8 connects safe manifest
+declarations to the organization component registry, template import pipeline,
+and public plugin-hook contracts. Uploaded package code is not executed:
+installation and adapter authorization remain host-owned policy state protected
+by compatibility, permission approval, artifact integrity, audit, and forced-RLS
+gates. Purchases, paid entitlements, customer ratings, and creator payout
+execution are planned only.
 
 ## Observability And Recovery
 

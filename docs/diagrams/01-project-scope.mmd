@@ -25,8 +25,12 @@
 %% Evidence: docs/V3_PHASE_SEVEN.md
 %% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
 %% Evidence: backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql
+%% Evidence: backend/migrations/0021_v3_phase_eight_runtime_adapters.sql
 %% Evidence: backend/src/services/marketplace_runtime.rs
 %% Evidence: backend/src/routes/marketplace_runtime.rs
+%% Evidence: backend/src/services/marketplace_adapters.rs
+%% Evidence: backend/src/routes/marketplace_adapters.rs
+%% Evidence: docs/V3_PHASE_EIGHT.md
 %% Evidence: backend/src/services/marketplace_installation.rs
 %% Evidence: backend/src/routes/marketplace.rs
 %% Evidence: frontend/src/pages/MarketplacePage.tsx
@@ -37,7 +41,7 @@ flowchart TD
   subgraph historical_docs["Historical documentation sources [DOCUMENTED ONLY]"]
     hist_v1["V1 phase docs [DOCUMENTED ONLY]<br/>docs/PHASE_ZERO.md through docs/PHASE_SEVEN.md"]
     hist_v2["V2 phase docs [DOCUMENTED ONLY]<br/>docs/V2_PHASE_ZERO.md through docs/V2_PHASE_TEN.md"]
-    hist_v3["V3 phase docs [DOCUMENTED ONLY]<br/>docs/V3_PHASE_0_1.md through docs/V3_PHASE_SEVEN.md"]
+    hist_v3["V3 phase docs [DOCUMENTED ONLY]<br/>docs/V3_PHASE_0_1.md through docs/V3_PHASE_EIGHT.md"]
   end
 
   subgraph v1_scope["V1 CMS implementation scope"]
@@ -72,7 +76,8 @@ flowchart TD
     v3_catalog["Catalog [IMPLEMENTED] AMB-003<br/>tenant-aware approved compatible listing catalog"]
     v3_install["Phase 6 installation lifecycle [IMPLEMENTED] AMB-007 AMB-027<br/>install and Installed Apps management with tenant RLS, approval and integrity gates"]
     v3_security["Phase 7 security runtime [IMPLEMENTED]<br/>permission catalog, allowlisted sandbox policy, global/org kill switch"]
-    v3_future["Planned future Marketplace capabilities [PLANNED]<br/>paid purchase and entitlement creation, concrete runtime adapters, payouts, customer ratings, incident runbooks"]
+    v3_adapters["Phase 8 runtime adapters [IMPLEMENTED]<br/>Component Pack registry, Template Import, public Plugin Hook contracts"]
+    v3_future["Planned future Marketplace capabilities [PLANNED]<br/>paid purchase and entitlement creation, executable external adapters, payouts, customer ratings, incident runbooks"]
   end
 
   hist_v1 -. documents .-> phase_zero
@@ -117,7 +122,8 @@ flowchart TD
   v3_review --> v3_catalog
   v3_catalog --> v3_install
   v3_install --> v3_security
-  v3_security --> v3_future
+  v3_security --> v3_adapters
+  v3_adapters --> v3_future
 
   class hist_v1,hist_v2,hist_v3 documented
   class phase_zero,phase_one,phase_two,phase_three,phase_four,phase_five,phase_seven,v2_orgs,v2_tenant,v2_billing_quotas,v2_hardening,v2_beta,v2_ga,v3_scope_ready,v3_foundation,v3_creator_submission,v3_validation,v3_catalog,v3_install,v3_security implemented

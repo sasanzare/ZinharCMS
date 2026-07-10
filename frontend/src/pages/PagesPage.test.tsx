@@ -39,6 +39,27 @@ vi.mock("../services/api", () => ({
         },
       ]),
     },
+    marketplaceAdapters: {
+      components: vi.fn().mockResolvedValue([
+        {
+          id: "marketplace-component-1",
+          installation_id: "installation-1",
+          component_key: "mp-pack-hero",
+          name: "Marketplace Hero",
+          category: "sections",
+          props_schema: {},
+          is_system: false,
+          listing_title: "Pack",
+          version: "1.0.0",
+          enabled: true,
+          created_at: "2026-07-10T00:00:00Z",
+          updated_at: "2026-07-10T00:00:00Z",
+        },
+      ]),
+    },
+    marketplace: {
+      installations: vi.fn().mockResolvedValue([]),
+    },
   },
 }));
 
@@ -48,6 +69,7 @@ describe("PagesPage", () => {
 
     expect(await screen.findByText("New page builder")).toBeInTheDocument();
     expect(await screen.findByText("Hero Banner")).toBeInTheDocument();
+    expect(await screen.findByText("Marketplace Hero")).toBeInTheDocument();
     expect(screen.getByText("Drop components here")).toBeInTheDocument();
     expect(screen.getByText("Props editor")).toBeInTheDocument();
   });

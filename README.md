@@ -156,6 +156,13 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Runtime authorization decisions that never execute uploaded package code and deny inactive, incompatible, unapproved, unsafe, or oversized requests.
 - Organization and global Marketplace kill switches with reason, status, lift, forced-RLS organization handling, cross-organization admin bypass boundaries, and audit records.
 
+## V3 Marketplace Phase 8 Scope
+
+- Component Pack manifest definitions materialized into the organization-scoped Page Builder palette.
+- Design Template preview and independent page clone with organization-owned media asset mapping.
+- Public Plugin Hook MVP registry for sidebar items, dashboard widgets, form fields, and webhook adapters.
+- Adapter endpoints remain host-owned and policy-checked; uploaded Marketplace package code is never executed.
+
 ## Quick Start
 
 Copy the environment template and start the local stack:
