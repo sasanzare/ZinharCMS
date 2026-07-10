@@ -135,6 +135,14 @@ pub fn require_org_billing_manager(role: &str) -> Result<(), AppError> {
     require_org_any(role, &[ORG_ADMIN, ORG_BILLING_MANAGER])
 }
 
+pub fn require_org_marketplace_installer(role: &str) -> Result<(), AppError> {
+    require_org_any(role, &[ORG_ADMIN])
+}
+
+pub fn require_org_marketplace_permission_approver(role: &str) -> Result<(), AppError> {
+    require_org_any(role, &[ORG_ADMIN])
+}
+
 pub fn require_org_workflow_reviewer(role: &str) -> Result<(), AppError> {
     require_org_any(role, &[ORG_ADMIN, ORG_EDITOR])
 }
@@ -202,6 +210,16 @@ mod tests {
                 "billing_manager",
                 require_org_billing_manager,
                 &[ORG_OWNER, ORG_ADMIN, ORG_BILLING_MANAGER],
+            ),
+            (
+                "marketplace_installer",
+                require_org_marketplace_installer,
+                &[ORG_OWNER, ORG_ADMIN],
+            ),
+            (
+                "marketplace_permission_approver",
+                require_org_marketplace_permission_approver,
+                &[ORG_OWNER, ORG_ADMIN],
             ),
             (
                 "comment_reader",

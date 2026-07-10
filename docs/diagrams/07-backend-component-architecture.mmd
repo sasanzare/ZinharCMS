@@ -49,6 +49,7 @@ flowchart LR
 %% Evidence: backend/src/services/marketplace_policy.rs
 %% Evidence: backend/src/services/marketplace_readiness.rs
 %% Evidence: backend/src/services/marketplace_catalog.rs
+%% Evidence: backend/src/services/marketplace_installation.rs
 %% Evidence: backend/src/plugins/mod.rs
 %% Evidence: backend/src/plugins/seo.rs
 %% Evidence: backend/src/models/user.rs
@@ -132,6 +133,7 @@ subgraph marketplace_services["Marketplace services"]
     mp_policy_service["Marketplace policy [PARTIAL]\nPolicy doc/taxonomy acceptance checks; no route caller found"]
     mp_readiness_service["Marketplace readiness [PARTIAL]\nV2 dependency/gap doc acceptance checks; no route caller found"]
     mp_catalog_service["Marketplace catalog [IMPLEMENTED]\nCompatibility filter for catalog listing/version responses"]
+    mp_install_service["Marketplace installation [IMPLEMENTED]\nLifecycle validation, permission snapshots, semver checks, artifact checksum verification"]
 end
 
 subgraph plugins_models["Plugin and model modules"]
@@ -252,6 +254,7 @@ beta_routes --> quota_service
 beta_routes --> rbac_service
 beta_routes --> rls_service
 marketplace_routes --> mp_catalog_service
+marketplace_routes --> mp_install_service
 marketplace_routes --> mp_manifest_service
 marketplace_routes --> mp_package_service
 marketplace_routes --> mp_validation_service
@@ -260,12 +263,15 @@ marketplace_routes --> mp_review_service
 marketplace_routes --> audit_service
 marketplace_routes --> quota_service
 marketplace_routes --> rbac_service
+marketplace_routes --> rls_service
 
 plugin_runtime --> seo_plugin
 plugin_runtime --> postgres_db
 
 mp_catalog_service --> mp_manifest_service
 mp_catalog_service --> mp_validation_service
+mp_install_service --> mp_manifest_service
+mp_install_service --> mp_package_service
 mp_package_service --> mp_manifest_service
 mp_validation_service --> mp_manifest_service
 mp_validation_service --> mp_package_service
@@ -335,7 +341,7 @@ class preview_channels,webhooks_service,health_service,hardening_service,ga_read
 class lib_app,root_router,auth_routes,content_routes,media_routes,page_routes,delivery_routes,comment_routes,plugin_routes,webhook_routes,organization_routes,billing_routes,beta_routes,marketplace_routes,static_uploads backend
 class auth_mw,tenant_mw,security_headers,cors_layer,request_id_layer,tracing_layer,compression_layer,timeout_layer,body_limit backend
 class password_service,jwt_service,rbac_service,rate_limit_service,security_service,entry_validation_service,media_processing_service,cache_service,workflow_service,audit_service,email_service,quota_service,rls_service,stripe_service implemented
-class mp_manifest_service,mp_package_service,mp_validation_service,mp_submission_service,mp_review_service,mp_catalog_service,seo_plugin,error_module implemented
+class mp_manifest_service,mp_package_service,mp_validation_service,mp_submission_service,mp_review_service,mp_catalog_service,mp_install_service,seo_plugin,error_module implemented
 class postgres_db,redis_store,upload_fs data
 class stripe_api,email_webhook_api,outbound_webhook_receivers external
 class direct_route_sql,route_business_logic note

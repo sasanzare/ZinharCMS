@@ -13,12 +13,15 @@ flowchart TD
 %% Evidence: backend/src/services/marketplace_manifest.rs
 %% Evidence: backend/src/services/marketplace_package.rs
 %% Evidence: backend/src/services/marketplace_validation.rs
+%% Evidence: backend/src/services/marketplace_installation.rs
 %% Evidence: backend/src/services/password.rs
 %% Evidence: backend/src/services/rls.rs
 %% Evidence: backend/src/services/security.rs
 %% Evidence: backend/src/services/stripe_billing.rs
 %% Evidence: backend/src/services/webhooks.rs
 %% Evidence: frontend/src/stores/useAppStore.ts
+%% Evidence: frontend/src/pages/MarketplacePage.tsx
+%% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
 
 subgraph browser_zone["Browser Boundary"]
   browser_storage["Browser localStorage [IMPLEMENTED]<br/>access token, optional refresh fallback, user, organizations, active organization"]
@@ -49,6 +52,7 @@ subgraph validation_boundary["Validation Boundary"]
   media_validation["Media upload validation [IMPLEMENTED]<br/>MIME allowlist, file-signature detection, declared/detected type match"]
   package_validation["Marketplace package validation [IMPLEMENTED]<br/>manifest schema, product type, permissions, size, checksum, object key"]
   zip_validation["ZIP path and security scan [IMPLEMENTED]<br/>relative UTF-8 paths only; no unsafe segments; forbidden secrets and executable artifacts flagged"]
+  installation_gate["Marketplace installation gate [IMPLEMENTED]<br/>approved listing/version, passed or warning validation, low/medium risk,<br/>component/template MVP, plan compatibility, free entitlement, stored size/checksum"]
   webhook_ssrf["Webhook URL SSRF validation [IMPLEMENTED]<br/>http/https only; no credentials; localhost/private/link-local hosts rejected"]
   stripe_signature["Stripe signature verification [IMPLEMENTED]<br/>HMAC SHA-256 with timestamp tolerance"]
 end
@@ -57,6 +61,7 @@ subgraph authorization_boundary["Authorization And Tenant Boundary"]
   auth_middleware["Backend auth middleware [IMPLEMENTED]<br/>authoritative JWT boundary for auth-only routes"]
   tenant_middleware["Tenant middleware [IMPLEMENTED]<br/>X-Organization-Id, active membership, rate limit, API quota"]
   rbac_checks["RBAC checks [IMPLEMENTED]<br/>global role and organization-role service checks in handlers"]
+  permission_approval["Install permission approval [IMPLEMENTED] AMB-027<br/>organization owner/admin must approve exact manifest snapshot;<br/>permission changes require update reapproval"]
   rls_policies["PostgreSQL RLS [IMPLEMENTED]<br/>forced policies on tenant-owned tables"]
   bypass_tx["Explicit RLS bypass [PARTIAL] AMB-005<br/>only service code using begin_bypass_transaction sets rls_bypass=true"]
 end
@@ -67,6 +72,7 @@ subgraph persistence_boundary["Persistence Boundary"]
   local_uploads["Local CMS upload storage [IMPLEMENTED]<br/>media files and variants under upload_dir"]
   local_artifacts["Local Marketplace artifact storage [DECISION REQUIRED] AMB-002 AMB-015<br/>packages stored under upload_dir by object key<br/>cleanup after validation/persistence failure is not proven"]
   audit_logs["Audit logs [IMPLEMENTED]<br/>sensitive organization, billing, and Marketplace actions"]
+  soft_uninstall["Soft uninstall retention [IMPLEMENTED]<br/>status and timestamps retained; cleanup_policy preserves organization data"]
 end
 
 subgraph external_boundary["External Network Boundary"]
@@ -94,16 +100,18 @@ untrusted_inputs --> richtext_sanitize --> postgres
 untrusted_inputs --> page_json_validation --> postgres
 untrusted_inputs --> media_validation --> local_uploads
 untrusted_inputs --> package_validation --> zip_validation --> local_artifacts
+local_artifacts --> installation_gate --> permission_approval --> rls_policies
 untrusted_inputs --> webhook_ssrf --> webhook_hmac --> webhook_receiver
 stripe_api --> stripe_signature --> bypass_tx --> postgres
 rbac_checks --> audit_logs --> postgres
 rls_policies --> audit_logs
+rls_policies --> soft_uninstall --> postgres
 local_uploads -.-> static_uploads
 local_artifacts -.-> static_uploads
 frontend_guards -.-> auth_middleware
 local_uploads -.-> local_replica_risk
 local_artifacts -.-> local_replica_risk
-package_validation -.-> marketplace_runtime
+installation_gate -.-> marketplace_runtime
 
 classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
 classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
@@ -115,8 +123,8 @@ classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111;
 classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111;
 
 class browser_storage,refresh_cookie,untrusted_inputs,frontend_guards frontend;
-class cors,request_id,timeout,headers,body_limit,password_hash,login_limit,access_token,refresh_rotation,schema_validation,richtext_sanitize,page_json_validation,media_validation,package_validation,zip_validation,webhook_ssrf,stripe_signature,auth_middleware,tenant_middleware,rbac_checks,rls_policies,bypass_tx,webhook_hmac backend;
-class postgres,redis,local_uploads,local_artifacts,audit_logs data;
+class cors,request_id,timeout,headers,body_limit,password_hash,login_limit,access_token,refresh_rotation,schema_validation,richtext_sanitize,page_json_validation,media_validation,package_validation,zip_validation,installation_gate,webhook_ssrf,stripe_signature,auth_middleware,tenant_middleware,rbac_checks,permission_approval,rls_policies,bypass_tx,webhook_hmac backend;
+class postgres,redis,local_uploads,local_artifacts,audit_logs,soft_uninstall data;
 class webhook_receiver,stripe_api,email_integration external;
 class static_uploads,local_replica_risk decision;
 class marketplace_runtime planned;

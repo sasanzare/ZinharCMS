@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BadgeCheck, CheckCircle2, Eye, FileCheck, MessageSquare, PackagePlus, RefreshCw, Save, Search, Send, ShieldAlert, Star, Store, Tag, Upload, XCircle } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CheckCircle2, Eye, FileCheck, History, MessageSquare, PackagePlus, Power, RefreshCw, RotateCcw, Save, Search, Send, ShieldAlert, Star, Store, Tag, Trash2, Upload, X, XCircle } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
@@ -10,6 +10,8 @@ import type {
   MarketplaceCatalogDetailResponse,
   MarketplaceCatalogItemResponse,
   MarketplaceCreatorResponse,
+  MarketplaceInstallationResponse,
+  MarketplaceInstallationUpdateCheckResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
   MarketplaceModerationAction,
@@ -128,6 +130,13 @@ function eventTone(action: string) {
   return "neutral";
 }
 
+function installationTone(status: string) {
+  if (status === "active") return "success";
+  if (status === "disabled" || status === "rollback_pending") return "warning";
+  if (status === "blocked") return "danger";
+  return "neutral";
+}
+
 function cleanOptional(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
@@ -188,9 +197,20 @@ function catalogQuery(filters: CatalogFilterDraft) {
   };
 }
 
+function compatibilityAllowsInstall(item: MarketplaceCatalogItemResponse) {
+  return item.compatibility_report.install_eligible === true
+    && item.compatibility_report.compatible !== false;
+}
+
+function hasEveryPermission(approved: string[], requested: string[]) {
+  return requested.every((permission) => approved.includes(permission));
+}
+
 export function MarketplacePage() {
   const { t } = useI18n();
   const user = useAppStore((state) => state.user);
+  const organizations = useAppStore((state) => state.organizations);
+  const activeOrganizationId = useAppStore((state) => state.activeOrganizationId);
   const [creator, setCreator] = useState<MarketplaceCreatorResponse | null>(null);
   const [creatorDraft, setCreatorDraft] = useState<CreatorDraft>(defaultCreatorDraft);
   const [listings, setListings] = useState<MarketplaceListingResponse[]>([]);
@@ -204,16 +224,28 @@ export function MarketplacePage() {
   const [catalogFilters, setCatalogFilters] = useState<CatalogFilterDraft>(defaultCatalogFilters);
   const [catalogItems, setCatalogItems] = useState<MarketplaceCatalogItemResponse[]>([]);
   const [catalogDetail, setCatalogDetail] = useState<MarketplaceCatalogDetailResponse | null>(null);
+  const [installations, setInstallations] = useState<MarketplaceInstallationResponse[]>([]);
+  const [installTarget, setInstallTarget] = useState<MarketplaceCatalogDetailResponse | null>(null);
+  const [approvedInstallPermissions, setApprovedInstallPermissions] = useState<string[]>([]);
+  const [installConfirmed, setInstallConfirmed] = useState(false);
+  const [installationUpdates, setInstallationUpdates] = useState<Record<string, MarketplaceInstallationUpdateCheckResponse>>({});
+  const [approvedUpdatePermissions, setApprovedUpdatePermissions] = useState<Record<string, string[]>>({});
+  const [confirmedUpdatePermissions, setConfirmedUpdatePermissions] = useState<Record<string, boolean>>({});
+  const [confirmedUpdates, setConfirmedUpdates] = useState<Record<string, boolean>>({});
+  const [uninstallConfirmId, setUninstallConfirmId] = useState<string | null>(null);
   const [manifest, setManifest] = useState(defaultManifest);
   const [packageFile, setPackageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [installationsLoading, setInstallationsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const approvedCreator = creator?.status === "approved";
   const canReviewMarketplace = user?.role === "admin" || user?.role === "super_admin";
+  const activeOrganizationRole = organizations.find((organization) => organization.id === activeOrganizationId)?.role ?? null;
+  const canManageInstallations = activeOrganizationRole === "owner" || activeOrganizationRole === "admin";
   const selectedListing = useMemo(
     () => listings.find((listing) => listing.id === selectedListingId) ?? null,
     [listings, selectedListingId],
@@ -240,6 +272,17 @@ export function MarketplacePage() {
       setCatalogLoading(false);
     }
   }, [catalogFilters, t]);
+
+  const loadInstallations = useCallback(async function loadInstallations() {
+    setInstallationsLoading(true);
+    try {
+      setInstallations(await api.marketplace.installations());
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.installations")));
+    } finally {
+      setInstallationsLoading(false);
+    }
+  }, [t]);
 
   const loadMarketplace = useCallback(async function loadMarketplace() {
     setLoading(true);
@@ -276,6 +319,10 @@ export function MarketplacePage() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
+
+  useEffect(() => {
+    void loadInstallations();
+  }, [loadInstallations]);
 
   const loadSubmissionReports = useCallback(async function loadSubmissionReports() {
     if (!selectedListingId) {
@@ -329,7 +376,7 @@ export function MarketplacePage() {
   }, [loadReviewEvents]);
 
   async function refreshMarketplace() {
-    await Promise.all([loadMarketplace(), loadCatalog()]);
+    await Promise.all([loadMarketplace(), loadCatalog(), loadInstallations()]);
   }
 
   async function openCatalogDetail(item: MarketplaceCatalogItemResponse) {
@@ -346,6 +393,172 @@ export function MarketplacePage() {
 
   function resetCatalogFilters() {
     setCatalogFilters(defaultCatalogFilters);
+  }
+
+  function installationForListing(listingId: string) {
+    return installations.find((installation) => (
+      installation.listing_id === listingId && installation.status !== "uninstalled"
+    )) ?? null;
+  }
+
+  function installRestriction(detail: MarketplaceCatalogDetailResponse) {
+    if (installationsLoading) return t("marketplace.install.checkingInstallations");
+    if (installationForListing(detail.item.id)) return t("marketplace.install.alreadyInstalled");
+    if (detail.item.pricing_type !== "free") return t("marketplace.install.entitlementRequired");
+    if (detail.item.product_type !== "component_pack" && detail.item.product_type !== "design_template") {
+      return t("marketplace.install.runtimeUnsupported");
+    }
+    if (!compatibilityAllowsInstall(detail.item)) return t("marketplace.install.incompatible");
+    if (!canManageInstallations) return t("marketplace.install.roleRequired");
+    return null;
+  }
+
+  function openInstallApproval(detail: MarketplaceCatalogDetailResponse) {
+    if (installRestriction(detail)) return;
+    setInstallTarget(detail);
+    setApprovedInstallPermissions([]);
+    setInstallConfirmed(false);
+  }
+
+  function closeInstallApproval() {
+    if (actionLoading) return;
+    setInstallTarget(null);
+    setApprovedInstallPermissions([]);
+    setInstallConfirmed(false);
+  }
+
+  function toggleInstallPermission(permission: string) {
+    setApprovedInstallPermissions((current) => (
+      current.includes(permission)
+        ? current.filter((item) => item !== permission)
+        : [...current, permission]
+    ));
+  }
+
+  async function refreshInstallationSurfaces() {
+    await Promise.all([loadInstallations(), loadCatalog()]);
+    if (catalogDetail) {
+      setCatalogDetail(await api.marketplace.catalogDetail(catalogDetail.item.slug));
+    }
+  }
+
+  async function installProduct() {
+    if (!installTarget) return;
+    const requestedPermissions = stringListFromValue(installTarget.permissions);
+    if (!installConfirmed || !hasEveryPermission(approvedInstallPermissions, requestedPermissions)) return;
+
+    setActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      await api.marketplace.install({
+        listing_id: installTarget.item.id,
+        version_id: installTarget.item.latest_version_id,
+        approved_permissions: requestedPermissions,
+      });
+      setMessage(t("marketplace.message.installed", { title: installTarget.item.title }));
+      setInstallTarget(null);
+      setApprovedInstallPermissions([]);
+      setInstallConfirmed(false);
+      await refreshInstallationSurfaces();
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.install")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function runInstallationAction(
+    installation: MarketplaceInstallationResponse,
+    action: "enable" | "disable" | "uninstall" | "rollback",
+  ) {
+    if (!canManageInstallations) return;
+    setActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      if (action === "enable") await api.marketplace.enableInstallation(installation.id);
+      if (action === "disable") await api.marketplace.disableInstallation(installation.id);
+      if (action === "uninstall") await api.marketplace.uninstallInstallation(installation.id);
+      if (action === "rollback") await api.marketplace.rollbackInstallation(installation.id);
+      const actionLabels = {
+        enable: t("marketplace.installations.enable"),
+        disable: t("marketplace.installations.disable"),
+        uninstall: t("marketplace.installations.uninstall"),
+        rollback: t("marketplace.installations.rollbackLabel"),
+      };
+      setMessage(t("marketplace.message.installationAction", { action: actionLabels[action] }));
+      setUninstallConfirmId(null);
+      setInstallationUpdates((current) => {
+        const next = { ...current };
+        delete next[installation.id];
+        return next;
+      });
+      await refreshInstallationSurfaces();
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.installationAction")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function checkInstallationUpdates(installation: MarketplaceInstallationResponse) {
+    setActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const update = await api.marketplace.installationUpdates(installation.id);
+      setInstallationUpdates((current) => ({ ...current, [installation.id]: update }));
+      setApprovedUpdatePermissions((current) => ({ ...current, [installation.id]: [] }));
+      setConfirmedUpdatePermissions((current) => ({ ...current, [installation.id]: false }));
+      setConfirmedUpdates((current) => ({ ...current, [installation.id]: false }));
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.updateCheck")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  function toggleUpdatePermission(installationId: string, permission: string) {
+    setApprovedUpdatePermissions((current) => {
+      const approved = current[installationId] ?? [];
+      return {
+        ...current,
+        [installationId]: approved.includes(permission)
+          ? approved.filter((item) => item !== permission)
+          : [...approved, permission],
+      };
+    });
+  }
+
+  async function updateInstallation(installation: MarketplaceInstallationResponse) {
+    const update = installationUpdates[installation.id];
+    if (!update?.update_available || !update.target_version_id || !confirmedUpdates[installation.id]) return;
+    const requestedPermissions = stringListFromValue(update.permissions);
+    const approvedPermissions = approvedUpdatePermissions[installation.id] ?? [];
+    if (update.permission_reapproval_required && !hasEveryPermission(approvedPermissions, requestedPermissions)) return;
+
+    setActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      await api.marketplace.updateInstallation(installation.id, {
+        version_id: update.target_version_id,
+        changelog_confirmed: true,
+        approved_permissions: update.permission_reapproval_required ? requestedPermissions : undefined,
+      });
+      setMessage(t("marketplace.message.updated", { title: installation.listing_title, version: update.target_version ?? "" }));
+      setInstallationUpdates((current) => {
+        const next = { ...current };
+        delete next[installation.id];
+        return next;
+      });
+      await refreshInstallationSurfaces();
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.update")));
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function saveCreator() {
@@ -626,7 +839,7 @@ export function MarketplacePage() {
   return (
     <div className="page-stack marketplace-page">
       <div className="toolbar toolbar--end">
-        <button className="secondary-button" type="button" onClick={() => void refreshMarketplace()} disabled={loading || catalogLoading}>
+        <button className="secondary-button" type="button" onClick={() => void refreshMarketplace()} disabled={loading || catalogLoading || installationsLoading}>
           <RefreshCw size={16} aria-hidden="true" />
           {t("marketplace.refresh")}
         </button>
@@ -804,13 +1017,296 @@ export function MarketplacePage() {
                   {catalogDetail.reviews.length === 0 && <p className="empty-state">{t("marketplace.catalog.noReviews")}</p>}
                 </div>
               </div>
-              <button className="secondary-button" type="button" disabled>
-                {t("marketplace.catalog.installDeferred")}
+              {installRestriction(catalogDetail) && (
+                <p className="installation-gate-note" role="status">
+                  <AlertTriangle size={16} aria-hidden="true" />
+                  {installRestriction(catalogDetail)}
+                </p>
+              )}
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => openInstallApproval(catalogDetail)}
+                disabled={Boolean(installRestriction(catalogDetail)) || actionLoading}
+              >
+                <PackagePlus size={16} aria-hidden="true" />
+                {t("marketplace.install.openApproval")}
               </button>
             </aside>
           </div>
         </section>
       )}
+
+      {installTarget && (
+        <div className="marketplace-dialog-backdrop" role="presentation">
+          <section
+            className="marketplace-install-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-install-title"
+          >
+            <div className="panel-header">
+              <div>
+                <h2 id="marketplace-install-title">{t("marketplace.install.title", { title: installTarget.item.title })}</h2>
+                <span>{t("marketplace.install.description")}</span>
+              </div>
+              <button className="icon-button" type="button" onClick={closeInstallApproval} aria-label={t("common.close")} disabled={actionLoading}>
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="padded marketplace-install-dialog-body">
+              <div className="install-summary-grid">
+                <div>
+                  <span>{t("marketplace.catalog.version")}</span>
+                  <strong>v{installTarget.item.latest_version}</strong>
+                </div>
+                <div>
+                  <span>{t("marketplace.install.organizationRole")}</span>
+                  <strong>{activeOrganizationRole ?? "-"}</strong>
+                </div>
+                <div>
+                  <span>{t("marketplace.install.compatibility")}</span>
+                  <StatusBadge label={t("marketplace.install.compatible")} tone="success" />
+                </div>
+              </div>
+              <div className="permission-approval-list">
+                <h3>{t("marketplace.install.permissionsTitle")}</h3>
+                <p>{t("marketplace.install.permissionsDescription")}</p>
+                {stringListFromValue(installTarget.permissions).map((permission) => (
+                  <label key={permission}>
+                    <input
+                      type="checkbox"
+                      checked={approvedInstallPermissions.includes(permission)}
+                      onChange={() => toggleInstallPermission(permission)}
+                    />
+                    <span>{permission}</span>
+                  </label>
+                ))}
+                {stringListFromValue(installTarget.permissions).length === 0 && (
+                  <p className="empty-state">{t("marketplace.catalog.noPermissions")}</p>
+                )}
+              </div>
+              <label className="installation-confirmation">
+                <input type="checkbox" checked={installConfirmed} onChange={(event) => setInstallConfirmed(event.target.checked)} />
+                <span>{t("marketplace.install.confirm")}</span>
+              </label>
+              <div className="toolbar toolbar--end">
+                <button className="secondary-button" type="button" onClick={closeInstallApproval} disabled={actionLoading}>
+                  {t("common.cancel")}
+                </button>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => void installProduct()}
+                  disabled={
+                    actionLoading
+                    || !installConfirmed
+                    || !hasEveryPermission(
+                      approvedInstallPermissions,
+                      stringListFromValue(installTarget.permissions),
+                    )
+                  }
+                >
+                  <PackagePlus size={16} aria-hidden="true" />
+                  {t("marketplace.install.confirmAction")}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      <section className="panel marketplace-installations-panel">
+        <div className="panel-header">
+          <div>
+            <h2>{t("marketplace.installations.title")}</h2>
+            <span>{t("marketplace.installations.description")}</span>
+          </div>
+          <StatusBadge label={`${installations.length}`} tone="neutral" />
+        </div>
+        {!canManageInstallations && (
+          <div className="installation-role-note">
+            <ShieldAlert size={18} aria-hidden="true" />
+            <span>{t("marketplace.installations.roleNotice")}</span>
+          </div>
+        )}
+        <div className="padded marketplace-installations-grid">
+          {installations.map((installation) => {
+            const update = installationUpdates[installation.id];
+            const currentPermissions = stringListFromValue(installation.permissions);
+            const targetPermissions = stringListFromValue(update?.permissions);
+            const lifecycleAllowsVersionChange = installation.status === "active" || installation.status === "disabled";
+            const addedPermissions = targetPermissions.filter((permission) => !currentPermissions.includes(permission));
+            const removedPermissions = currentPermissions.filter((permission) => !targetPermissions.includes(permission));
+            const updatePermissionsApproved = hasEveryPermission(
+              approvedUpdatePermissions[installation.id] ?? [],
+              targetPermissions,
+            );
+            const canUpdate = Boolean(
+              canManageInstallations
+              && update?.update_available
+              && update.target_version_id
+              && confirmedUpdates[installation.id]
+              && (
+                !update.permission_reapproval_required
+                || (updatePermissionsApproved && confirmedUpdatePermissions[installation.id])
+              ),
+            );
+
+            return (
+              <article className="marketplace-installation-card" key={installation.id}>
+                <div className="installation-card-heading">
+                  <div>
+                    <h3>{installation.listing_title}</h3>
+                    <span>{installation.product_type}</span>
+                  </div>
+                  <StatusBadge label={installation.status} tone={installationTone(installation.status)} />
+                </div>
+                <div className="installation-facts">
+                  <span>{t("marketplace.installations.installedVersion")}</span>
+                  <strong>v{installation.installed_version}</strong>
+                  <span>{t("marketplace.installations.versionPinned")}</span>
+                  <strong>{t(installation.version_pinned ? "common.yes" : "common.no")}</strong>
+                  <span>{t("marketplace.installations.cleanupPolicy")}</span>
+                  <strong>{installation.cleanup_policy}</strong>
+                  <span>{t("marketplace.installations.installedAt")}</span>
+                  <strong>{new Date(installation.installed_at).toLocaleString()}</strong>
+                </div>
+                <div>
+                  <h4>{t("marketplace.catalog.permissions")}</h4>
+                  <div className="catalog-permission-row">
+                    {currentPermissions.map((permission) => <span key={permission}>{permission}</span>)}
+                    {currentPermissions.length === 0 && <span>{t("marketplace.catalog.noPermissions")}</span>}
+                  </div>
+                </div>
+                <div className="installation-actions">
+                  {installation.status === "disabled" && (
+                    <button className="secondary-button" type="button" onClick={() => void runInstallationAction(installation, "enable")} disabled={!canManageInstallations || actionLoading}>
+                      <Power size={16} aria-hidden="true" />
+                      {t("marketplace.installations.enable")}
+                    </button>
+                  )}
+                  {installation.status === "active" && (
+                    <button className="secondary-button" type="button" onClick={() => void runInstallationAction(installation, "disable")} disabled={!canManageInstallations || actionLoading}>
+                      <Power size={16} aria-hidden="true" />
+                      {t("marketplace.installations.disable")}
+                    </button>
+                  )}
+                  {lifecycleAllowsVersionChange && (
+                    <button className="secondary-button" type="button" onClick={() => void checkInstallationUpdates(installation)} disabled={!canManageInstallations || actionLoading}>
+                      <RefreshCw size={16} aria-hidden="true" />
+                      {t("marketplace.installations.checkUpdates")}
+                    </button>
+                  )}
+                  {installation.rollback_version_id && lifecycleAllowsVersionChange && (
+                    <button className="secondary-button" type="button" onClick={() => void runInstallationAction(installation, "rollback")} disabled={!canManageInstallations || actionLoading}>
+                      <RotateCcw size={16} aria-hidden="true" />
+                      {t("marketplace.installations.rollback", { version: installation.rollback_version ?? "" })}
+                    </button>
+                  )}
+                  {installation.status !== "uninstalled" && (
+                    <button className="secondary-button button-danger" type="button" onClick={() => setUninstallConfirmId(installation.id)} disabled={!canManageInstallations || actionLoading}>
+                      <Trash2 size={16} aria-hidden="true" />
+                      {t("marketplace.installations.uninstall")}
+                    </button>
+                  )}
+                </div>
+
+                {uninstallConfirmId === installation.id && (
+                  <div className="installation-confirm-box" role="alert">
+                    <AlertTriangle size={18} aria-hidden="true" />
+                    <div>
+                      <strong>{t("marketplace.installations.uninstallConfirmTitle")}</strong>
+                      <span>{t("marketplace.installations.uninstallConfirmDescription", { policy: installation.cleanup_policy })}</span>
+                    </div>
+                    <button className="secondary-button" type="button" onClick={() => setUninstallConfirmId(null)} disabled={actionLoading}>{t("common.cancel")}</button>
+                    <button className="secondary-button button-danger" type="button" onClick={() => void runInstallationAction(installation, "uninstall")} disabled={actionLoading}>{t("marketplace.installations.confirmUninstall")}</button>
+                  </div>
+                )}
+
+                {update && (
+                  <div className="installation-update-panel">
+                    <div className="installation-update-heading">
+                      <div>
+                        <h4>{t("marketplace.installations.updateTitle")}</h4>
+                        <span>{t("marketplace.installations.currentVersion", { version: update.current_version })}</span>
+                      </div>
+                      {update.version_pinned && <StatusBadge label={t("marketplace.installations.pinned")} tone="warning" />}
+                    </div>
+                    {!update.update_available ? (
+                      <div className="installation-update-empty">
+                        <CheckCircle2 size={18} aria-hidden="true" />
+                        <span>{t("marketplace.installations.upToDate")}</span>
+                        {update.reasons.map((reason) => <small key={reason}>{reason}</small>)}
+                      </div>
+                    ) : (
+                      <>
+                        <label className="installation-version-select">
+                          {t("marketplace.installations.targetVersion")}
+                          <select value={update.target_version_id ?? ""} disabled>
+                            <option value={update.target_version_id ?? ""}>v{update.target_version}</option>
+                          </select>
+                        </label>
+                        <div>
+                          <h4>{t("marketplace.catalog.changelog")}</h4>
+                          <pre className="validation-report-json">{formatReportJson(update.changelog)}</pre>
+                        </div>
+                        {(addedPermissions.length > 0 || removedPermissions.length > 0) && (
+                          <div className="permission-change-summary">
+                            <h4>{t("marketplace.installations.permissionChanges")}</h4>
+                            {addedPermissions.map((permission) => <span className="permission-added" key={`added-${permission}`}>+ {permission}</span>)}
+                            {removedPermissions.map((permission) => <span className="permission-removed" key={`removed-${permission}`}>- {permission}</span>)}
+                          </div>
+                        )}
+                        {update.permission_reapproval_required && (
+                          <div className="permission-approval-list permission-approval-list--update">
+                            <h4>{t("marketplace.installations.reapprovalTitle")}</h4>
+                            <p>{t("marketplace.installations.reapprovalDescription")}</p>
+                            {targetPermissions.map((permission) => (
+                              <label key={permission}>
+                                <input
+                                  type="checkbox"
+                                  checked={(approvedUpdatePermissions[installation.id] ?? []).includes(permission)}
+                                  onChange={() => toggleUpdatePermission(installation.id, permission)}
+                                />
+                                <span>{permission}</span>
+                              </label>
+                            ))}
+                            <label className="installation-confirmation">
+                              <input
+                                type="checkbox"
+                                checked={confirmedUpdatePermissions[installation.id] ?? false}
+                                onChange={(event) => setConfirmedUpdatePermissions((current) => ({
+                                  ...current,
+                                  [installation.id]: event.target.checked,
+                                }))}
+                              />
+                              <span>{t("marketplace.installations.reapprovalConfirm")}</span>
+                            </label>
+                          </div>
+                        )}
+                        <label className="installation-confirmation">
+                          <input
+                            type="checkbox"
+                            checked={confirmedUpdates[installation.id] ?? false}
+                            onChange={(event) => setConfirmedUpdates((current) => ({ ...current, [installation.id]: event.target.checked }))}
+                          />
+                          <span>{t("marketplace.installations.confirmChangelog", { version: update.target_version ?? "" })}</span>
+                        </label>
+                        <button className="primary-button" type="button" onClick={() => void updateInstallation(installation)} disabled={!canUpdate || actionLoading}>
+                          <History size={16} aria-hidden="true" />
+                          {t("marketplace.installations.updateAction", { version: update.target_version ?? "" })}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+          {installations.length === 0 && <p className="empty-state">{t("marketplace.installations.empty")}</p>}
+        </div>
+      </section>
 
       <section className="two-column-workspace marketplace-workspace">
         <div className="panel">

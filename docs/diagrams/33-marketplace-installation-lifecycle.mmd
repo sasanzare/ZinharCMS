@@ -1,0 +1,83 @@
+flowchart TD
+  %% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+  %% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
+  %% Evidence: backend/src/routes/marketplace.rs
+  %% Evidence: backend/src/services/marketplace_installation.rs
+  %% Evidence: backend/src/services/marketplace_catalog.rs
+  %% Evidence: backend/src/services/rls.rs
+  %% Evidence: backend/src/services/audit.rs
+  %% Evidence: frontend/src/pages/MarketplacePage.tsx
+  %% Evidence: frontend/src/services/api.ts
+  %% Evidence: docs/V3_PHASE_SIX.md
+
+  actor["Organization owner/admin<br/>active tenant session"]
+  tenant["Tenant middleware [IMPLEMENTED]<br/>auth, membership, organization role, plan context"]
+  catalog["Marketplace catalog/detail [IMPLEMENTED]<br/>approved compatible listing and selected version"]
+  install_api["POST /api/marketplace/installations [IMPLEMENTED]"]
+
+  subgraph install_gates["Install-time gates [IMPLEMENTED]"]
+    listing_gate["Listing and version gate<br/>listing approved; version approved"]
+    safety_gate["Validation and risk gate<br/>passed/warning; low/medium risk"]
+    product_gate["MVP product/pricing gate<br/>free Component Pack or Design Template"]
+    compatibility_gate["Compatibility gate<br/>Zinhar version, features, active plan"]
+    permission_gate["Permission gate<br/>exact manifest snapshot approved by owner/admin"]
+    artifact_gate["Artifact integrity gate<br/>object key, file, size, SHA-256"]
+  end
+
+  install_tx["Tenant transaction [IMPLEMENTED]<br/>insert marketplace_installations active + pinned version"]
+  install_audit["Atomic audit [IMPLEMENTED]<br/>marketplace.installation.install"]
+  active["active<br/>status=active"]
+
+  subgraph lifecycle["Installation lifecycle [IMPLEMENTED]"]
+    disabled["disabled<br/>status=disabled"]
+    uninstalled["soft-uninstalled<br/>status=uninstalled"]
+    blocked["blocked<br/>status=blocked"]
+    rollback_reserved["rollback_pending<br/>schema-reserved status"]
+  end
+
+  updates["GET /{id}/updates [IMPLEMENTED]<br/>find strictly newer compatible version"]
+  update_confirm["POST /{id}/update [IMPLEMENTED]<br/>changelog confirmation; permission reapproval on change"]
+  rollback["POST /{id}/rollback [IMPLEMENTED]<br/>same-listing approved/deprecated safe target"]
+  version_swap["Version swap [IMPLEMENTED]<br/>version_id pinned; rollback_version_id stores previous"]
+  lifecycle_audit["Atomic lifecycle audit [IMPLEMENTED]<br/>enable, disable, uninstall, update, rollback"]
+
+  paid["Paid/custom entitlement creation [PLANNED]<br/>Phase 9 purchase/webhook flow"]
+  runtime["Package execution/sandbox/runtime permissions [PLANNED]<br/>Phase 7/8; uploaded code is not executed in Phase 6"]
+
+  actor --> tenant --> catalog
+  catalog --> install_api
+  install_api --> listing_gate --> safety_gate --> product_gate --> compatibility_gate --> permission_gate --> artifact_gate
+  artifact_gate --> install_tx --> install_audit --> active
+
+  active -->|POST /{id}/disable| disabled
+  disabled -->|POST /{id}/enable; gates rechecked| active
+  active -->|POST /{id}/uninstall; retain organization data| uninstalled
+  disabled -->|POST /{id}/uninstall; retain organization data| uninstalled
+  blocked -->|POST /{id}/uninstall; retain organization data| uninstalled
+  active -->|emergency_block| blocked
+  disabled -->|emergency_block| blocked
+
+  active --> updates
+  disabled --> updates
+  updates --> update_confirm --> version_swap --> lifecycle_audit
+  version_swap --> active
+  version_swap --> disabled
+  active --> rollback
+  disabled --> rollback
+  rollback --> version_swap
+
+  product_gate -. paid/custom rejected until entitlement .-> paid
+  product_gate -. integration/backend runtime deferred .-> runtime
+
+  classDef actor fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111;
+  classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111;
+  classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
+  classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray:2 4,color:#111;
+  classDef reserved fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray:6 3,color:#111;
+
+  class actor actor;
+  class tenant,catalog,install_api,listing_gate,safety_gate,product_gate,compatibility_gate,permission_gate,artifact_gate,updates,update_confirm,rollback backend;
+  class install_tx,install_audit,active,disabled,uninstalled,blocked,version_swap,lifecycle_audit data;
+  class rollback_reserved reserved;
+  class paid,runtime planned;

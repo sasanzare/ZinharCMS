@@ -112,10 +112,10 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Domain: Marketplace Installations
 - Exact question: Does the Marketplace installation table mean products can currently be installed?
 - Documentation claim: `docs/V3_PHASE_FIVE.md` and `docs/V3_MARKETPLACE_GAP_LIST.md` state installation runtime is deferred.
-- Implementation evidence: `backend/src/routes/marketplace.rs` reads installation counts and updates active installations during emergency block, but no install/uninstall/update endpoint was found.
+- Historical pre-Phase-6 implementation evidence: `backend/src/routes/marketplace.rs` read installation counts and updated active installations during emergency block, but no install/uninstall/update endpoint had been found.
 - Database evidence: `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql` creates `marketplace_installations` with statuses and tenant RLS.
-- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` shows install-related catalog messaging but does not perform installation; UI text indicates install is deferred.
-- Test evidence: No installation endpoint or install-flow test was found.
+- Historical pre-Phase-6 frontend evidence: `frontend/src/pages/MarketplacePage.tsx` showed install-related catalog messaging but did not perform installation; UI text indicated install was deferred.
+- Historical pre-Phase-6 test evidence: No installation endpoint or install-flow test was found.
 - Conflict or missing information: Schema exists before runtime behavior.
 - Safest interpretation: Treat installation as partial schema/supporting state only.
 - Representation to use in diagrams: Use `[PARTIAL] installation table and moderation updates, no install API`.
@@ -123,6 +123,13 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future marketplace installation diagrams.
 - Step 15 update: `backend/src/routes/marketplace.rs` counts active installations for catalog responses and emergency-blocks non-uninstalled installations, but no install, disable, uninstall, update, or rollback route was found. `frontend/src/pages/MarketplacePage.tsx` renders a disabled install button. Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
+
+### Phase 6 implementation update
+
+The earlier Step 15 evidence above is historical. Phase 6 now provides tenant-aware
+list/install/enable/disable/soft-uninstall/update-check/update/rollback routes,
+owner/admin permission approval, artifact integrity gates, and Installed Apps UI.
+Paid entitlements and executable package runtime remain deferred.
 
 ## AMB-008
 
@@ -465,16 +472,23 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 - Domain: Marketplace Installation Authorization
 - Exact question: Are install-time permission approval and installation runtime authorization implemented?
 - Documentation claim: V3 gap documentation says Marketplace install runtime, permission approval enforcement, and runtime permission enforcement are future work.
-- Implementation evidence: `backend/src/routes/marketplace.rs` exposes catalog, creator, listing, version, review, and moderation routes; no install/uninstall/update route was found. Moderation can update existing installation rows during emergency block.
+- Historical pre-Phase-6 implementation evidence: `backend/src/routes/marketplace.rs` exposed catalog, creator, listing, version, review, and moderation routes; no install/uninstall/update route had been found. Moderation could update existing installation rows during emergency block.
 - Database evidence: `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql` creates `marketplace_installations` with `permissions_json`, `permission_approved_by`, `permission_approved_at`, status values, and forced RLS policies.
-- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` displays catalog compatibility and an install-deferred message; no install action is wired to an API call.
-- Test evidence: No install-time authorization, permission approval, or runtime permission enforcement test was found.
+- Historical pre-Phase-6 frontend evidence: `frontend/src/pages/MarketplacePage.tsx` displayed catalog compatibility and an install-deferred message; no install action was wired to an API call.
+- Historical pre-Phase-6 test evidence: No install-time authorization, permission approval, or runtime permission enforcement test was found.
 - Conflict or missing information: Installation authorization fields exist in schema, but runtime authorization behavior is not implemented.
 - Safest interpretation: Treat Marketplace installation authorization as partial schema/RLS only until install APIs and permission enforcement exist.
 - Representation to use in diagrams: Use `[PARTIAL] AMB-027` for installation records and `[NOT FOUND]` for install-time authorization route/enforcement.
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `03-identity-and-authorization-boundaries.mmd`, future Marketplace install and permission diagrams.
+
+### Phase 6 implementation update
+
+`backend/src/routes/marketplace.rs` and `backend/src/services/marketplace_installation.rs`
+now enforce exact manifest permission snapshots at install and on permission-changing
+updates. The `marketplace_installations` row remains forced-RLS tenant state; runtime
+permission enforcement and sandbox execution remain later-phase boundaries.
 
 ## Step 2 Report
 
@@ -1228,8 +1242,8 @@ frontend code, or tests provide enough evidence. Naming alone is not treated as 
 
 - Ambiguities added in step 15: AMB-064, AMB-065, AMB-066.
 - Existing Marketplace ambiguities updated in step 15: AMB-007, AMB-008, AMB-009, AMB-015, AMB-017.
-- Data model decisions represented: Package is conceptual and stored on `marketplace_versions`; validation/security/compatibility reports are JSONB columns; moderation is persisted through `marketplace_review_events`; installations are schema-backed but runtime install APIs remain deferred; purchases, payouts, and customer ratings are planned only.
-- Production behavior changed: No.
+- Data model decisions represented: Package is conceptual and stored on `marketplace_versions`; validation/security/compatibility reports are JSONB columns; moderation is persisted through `marketplace_review_events`; free installation lifecycle is implemented through tenant-owned `marketplace_installations`; purchases, payouts, and customer ratings are planned only.
+- Production behavior changed: Phase 6 adds the free installation lifecycle; production database application remains environment-dependent.
 
 ## AMB-067
 

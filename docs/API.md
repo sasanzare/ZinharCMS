@@ -291,6 +291,13 @@ Every Marketplace route currently requires authentication and
 | --- | --- | --- |
 | `GET` | `/api/marketplace/catalog` | Search/filter approved compatible catalog items |
 | `GET` | `/api/marketplace/catalog/{listing_slug}` | Read compatible listing detail and versions |
+| `GET`, `POST` | `/api/marketplace/installations` | List current installs or install an approved free product |
+| `GET` | `/api/marketplace/installations/{installation_id}/updates` | Check for a newer compatible approved version |
+| `POST` | `/api/marketplace/installations/{installation_id}/enable` | Re-enable a safe disabled installation |
+| `POST` | `/api/marketplace/installations/{installation_id}/disable` | Disable an active installation |
+| `POST` | `/api/marketplace/installations/{installation_id}/uninstall` | Soft-uninstall while preserving organization data |
+| `POST` | `/api/marketplace/installations/{installation_id}/update` | Confirm changelog and update to a newer pinned version |
+| `POST` | `/api/marketplace/installations/{installation_id}/rollback` | Restore the safe compatible rollback version |
 | `GET`, `POST` | `/api/marketplace/creator` | Read/request current user creator profile |
 | `PATCH` | `/api/marketplace/creators/{creator_id}/verification` | Global-admin creator verification |
 | `GET`, `POST` | `/api/marketplace/listings` | List creator listings or create draft |
@@ -308,10 +315,15 @@ Packages are stored on the local filesystem under `UPLOAD_DIR`. Validation,
 security, and compatibility reports are stored on `marketplace_versions` and
 `marketplace_submissions`.
 
-Installation records and emergency-block updates exist, but install, update,
-uninstall, and rollback endpoints are not implemented. Marketplace purchases,
-entitlements, customer ratings, and creator payouts are also not implemented.
+Phase 6 implements tenant-aware install, enable, disable, soft-uninstall, update
+check, pinned update, and rollback endpoints for free Component Packs and Design
+Templates. Mutations require organization owner/admin, exact permission approval,
+current compatibility, safe review state, and artifact size/SHA integrity. Paid and
+custom products fail until Marketplace purchase/entitlement support exists.
 
-Marketplace runtime routes are not currently registered in the generated
-`/openapi.json` path list. This manual API reference documents the verified router
-composition until generated OpenAPI coverage is extended.
+Marketplace purchases, paid entitlements, executable plugin sandboxing, customer
+ratings, and creator payouts are not implemented.
+
+Phase 6 installation paths and schemas are registered in generated `/openapi.json`.
+Earlier Marketplace creator, submission, review, moderation, and catalog paths
+remain documented manually until their legacy handlers gain OpenAPI annotations.

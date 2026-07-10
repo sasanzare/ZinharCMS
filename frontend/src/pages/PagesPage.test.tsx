@@ -7,6 +7,9 @@ vi.mock("../services/api", () => ({
   ApiError: class ApiError extends Error {
     status = 500;
   },
+  setApiAccessToken: vi.fn(),
+  setApiOrganizationId: vi.fn(),
+  setApiRefreshToken: vi.fn(),
   api: {
     baseUrl: "http://localhost:8080",
     pages: {

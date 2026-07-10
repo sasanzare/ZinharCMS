@@ -21,15 +21,19 @@ Phase 4 resolves the initial human review and moderation workflow gap. Reviewers
 
 Phase 5 resolves the public catalog visibility and catalog compatibility filtering gaps. The catalog API and admin UI now expose only approved, safe, install-eligible products for the active organization, with search, filters, and listing details that show permissions before install. Later phases still need install runtime APIs, permission approval enforcement, abuse reporting, and full incident runbooks.
 
+## Phase 6 Update
+
+Phase 6 resolves the tenant-aware install runtime, catalog install action, install-time compatibility and permission approval gates, enable/disable/soft-uninstall lifecycle, semver update, safe rollback, Marketplace owner/admin RBAC helpers, artifact re-verification, and organization-scoped lifecycle audit taxonomy. Purchase and paid entitlement remain open for Phase 9; executable runtime permission enforcement, sandboxing, and emergency permission revocation remain open for Phase 7/8.
+
 ## Plugin Install Gaps
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
-| Marketplace installation runtime API does not exist | P0 | Phase 1 added `marketplace_installations`; later phases must add tenant-aware install, disable, uninstall, update, and rollback APIs. | 6.1, 6.2, 6.3 |
-| Catalog install action is not implemented | P0 | Phase 5 exposes only approved, compatible listings through catalog APIs and UI; later phases must connect install actions to tenant-aware runtime APIs. | 6.1, 6.2 |
-| Install compatibility enforcement is incomplete | P0 | Phase 5 enforces `install_eligible` for catalog display; phase 6 must enforce the same contract at install time. | 6.1 |
-| Install rollback API is not implemented | P1 | Phase 1 added rollback version metadata; later phases must implement rollback execution and safety checks. | 6.3 |
-| Installed product lifecycle runtime events are not implemented | P0 | Phase 1 defined install statuses; later phases must implement install, disable, uninstall, update, rollback, suspend, and kill-switch actions. | 6.1, 6.2, 7.3 |
+| Marketplace installation runtime API does not exist | Resolved | Phase 6 adds tenant-aware install, enable, disable, soft-uninstall, update, and rollback APIs. | 6.1, 6.2, 6.3 |
+| Catalog install action is not implemented | Resolved | Phase 6 connects catalog versions to the organization-owned installation API. | 6.1, 6.2 |
+| Install compatibility enforcement is incomplete | Resolved | Phase 6 re-evaluates the active plan, version/features, review state, and artifact integrity at mutation time. | 6.1 |
+| Install rollback API is not implemented | Resolved | Phase 6 adds same-listing, safe, compatible, artifact-verified rollback. | 6.3 |
+| Installed product lifecycle runtime events are not implemented | Resolved | Phase 6 implements install, enable, disable, uninstall, update, and rollback; the later runtime kill switch remains Phase 7.3 work. | 6.1, 6.2, 7.3 |
 | Tenant-owned RLS policies for later Marketplace tables do not exist | P0 | Phase 1 added forced RLS for installations; later purchase, entitlement, review, and organization-scoped product state tables must also use forced RLS. | 9.2, 10.1 |
 
 ## Creator Payment Gaps
@@ -49,9 +53,9 @@ Phase 5 resolves the public catalog visibility and catalog compatibility filteri
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
 | Marketplace permission catalog does not exist | P0 | Define allowed permissions such as content read/write, page read/write, media read/write, webhook send, external network, and settings access. | 7.1 |
-| Install-time permission approval is not enforced by runtime | P0 | Phase 1 added installation permission snapshot fields; later phases must enforce approval before runtime actions. | 7.1, 6.1 |
-| Marketplace RBAC helpers do not exist | P0 | Add helpers for catalog browsing, free install, paid purchase, permission approval, creator submission, and platform moderation. | 7.1 |
-| Permission escalation on update is not modeled | P0 | Require reapproval when a new version asks for broader permissions. | 6.3, 7.1 |
+| Install-time permission approval is not enforced by runtime | Resolved | Phase 6 requires an exact owner/admin-approved manifest permission snapshot before install and permission-changing updates. | 7.1, 6.1 |
+| Marketplace RBAC helpers do not exist | Partially resolved | Phase 6 adds owner/admin install and permission-approval helpers; paid purchase and runtime permission helpers remain deferred. | 7.1 |
+| Permission escalation on update is not modeled | Resolved | Phase 6 requires fresh exact approval whenever a target version changes the permission set. | 6.3, 7.1 |
 | Runtime permission enforcement is not implemented | P0 | Enforce approved permissions before product runtime actions. | 7.2, 8.1, 8.3 |
 | Emergency permission revocation is not implemented | P0 | Support kill switch and permission revocation for malicious or broken products. | 7.3 |
 
@@ -59,7 +63,7 @@ Phase 5 resolves the public catalog visibility and catalog compatibility filteri
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
-| Marketplace audit action taxonomy does not exist | P0 | Reserve action names for submission, review, install, update, rollback, purchase, payout, report abuse, takedown, and kill switch. | 1.1, 4.2, 6.1 |
+| Marketplace audit action taxonomy does not exist | Partially resolved | Phase 6 defines organization-scoped install, enable, disable, uninstall, update, and rollback actions; purchase, payout, abuse, and kill-switch actions remain later-phase work. | 1.1, 4.2, 6.1 |
 | Platform-level Marketplace audit view is partial | P1 | Phase 4 adds review event logs and audit records; later analytics must aggregate creators, listings, decisions, reports, and blocked packages. | 4.1, 11.2 |
 | Marketplace incident runbook does not exist | P1 | Phase 4 adds emergency block primitives; later documentation must define support flow for malicious product, broken install, refund, dispute, and emergency block. | 15.1 |
 

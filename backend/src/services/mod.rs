@@ -8,6 +8,7 @@ pub mod health;
 pub mod jwt;
 pub mod marketplace_catalog;
 pub mod marketplace_domain;
+pub mod marketplace_installation;
 pub mod marketplace_manifest;
 pub mod marketplace_package;
 pub mod marketplace_policy;

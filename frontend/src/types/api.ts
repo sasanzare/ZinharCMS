@@ -742,6 +742,64 @@ export type MarketplaceCatalogDetailResponse = {
   versions: MarketplaceCatalogVersionResponse[];
   reviews: MarketplaceCatalogReviewResponse[];
 };
+
+export type MarketplaceInstallationStatus = "active" | "disabled" | "uninstalled" | "rollback_pending" | "blocked";
+
+export type MarketplaceInstallRequest = {
+  listing_id: string;
+  version_id: string;
+  approved_permissions: string[];
+};
+
+export type MarketplaceInstallationUpdateRequest = {
+  version_id: string;
+  changelog_confirmed: boolean;
+  approved_permissions?: string[] | null;
+};
+
+export type MarketplaceInstallationResponse = {
+  id: string;
+  organization_id: string;
+  listing_id: string;
+  listing_title: string;
+  listing_slug: string;
+  product_type: MarketplaceProductType;
+  pricing_type: MarketplacePricingType;
+  version_id: string;
+  installed_version: string;
+  status: MarketplaceInstallationStatus;
+  permissions: JsonValue;
+  permission_approved_by: string | null;
+  permission_approved_at: string | null;
+  rollback_version_id: string | null;
+  rollback_version: string | null;
+  cleanup_policy: string;
+  version_pinned: boolean;
+  installed_by: string | null;
+  installed_at: string;
+  enabled_at: string;
+  disabled_at: string | null;
+  uninstalled_at: string | null;
+  version_changed_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceInstallationUpdateCheckResponse = {
+  installation_id: string;
+  current_version_id: string;
+  current_version: string;
+  current_status: MarketplaceInstallationStatus;
+  version_pinned: boolean;
+  update_available: boolean;
+  target_version_id: string | null;
+  target_version: string | null;
+  changelog: JsonValue;
+  permissions: JsonValue;
+  permission_reapproval_required: boolean;
+  compatibility_report: JsonValue;
+  reasons: string[];
+};
+
 export type MarketplacePackageVersionResponse = {
   id: string;
   listing_id: string;

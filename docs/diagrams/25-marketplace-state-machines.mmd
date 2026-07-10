@@ -133,22 +133,33 @@ state "Submission Review Lifecycle [IMPLEMENTED WITH SCHEMA-ONLY VALUES]" as Mar
   end note
 }
 
-state "Installation Lifecycle [PARTIAL - DATABASE FOUNDATION ONLY]" as MarketplaceInstallationLifecycle {
+state "Installation Lifecycle [IMPLEMENTED - FREE MVP; RUNTIME EXECUTION DEFERRED]" as MarketplaceInstallationLifecycle {
   state "Active\nstatus=active" as InstallationActive
   state "Disabled\nstatus=disabled" as InstallationDisabled
   state "Uninstalled\nstatus=uninstalled" as InstallationUninstalled
-  state "Rollback Pending\nstatus=rollback_pending" as InstallationRollbackPending
+  state "Rollback Pending\nstatus=rollback_pending [RESERVED]" as InstallationRollbackPending
   state "Blocked\nstatus=blocked" as InstallationBlocked
 
-  [*] --> InstallationActive : schema default only; no install endpoint found
+  [*] --> InstallationActive : POST /installations; approved free component/template
+  InstallationActive --> InstallationDisabled : POST /{id}/disable
+  InstallationDisabled --> InstallationActive : POST /{id}/enable; gates rechecked
+  InstallationActive --> InstallationUninstalled : POST /{id}/uninstall; soft retention
+  InstallationDisabled --> InstallationUninstalled : POST /{id}/uninstall; soft retention
+  InstallationBlocked --> InstallationUninstalled : POST /{id}/uninstall; soft retention
+  InstallationActive --> InstallationActive : POST /{id}/update; pinned version changes, rollback_version_id set
+  InstallationDisabled --> InstallationDisabled : POST /{id}/update; pinned version changes, rollback_version_id set
+  InstallationActive --> InstallationActive : POST /{id}/rollback; current and rollback versions swap
+  InstallationDisabled --> InstallationDisabled : POST /{id}/rollback; current and rollback versions swap
   InstallationActive --> InstallationBlocked : moderation emergency_block updates existing non-uninstalled installations
   InstallationDisabled --> InstallationBlocked : moderation emergency_block updates existing non-uninstalled installations
-  InstallationRollbackPending --> InstallationBlocked : moderation emergency_block updates existing non-uninstalled installations
+  InstallationRollbackPending --> InstallationBlocked : reserved status; moderation emergency_block
 
   note right of InstallationActive
-    The marketplace_installations table and RLS policies exist.
-    No executable install, disable, uninstall, rollback, purchase, or payout API was found.
-    The frontend catalog shows install as deferred.
+    Phase 6 implements tenant-aware list/install/enable/disable/soft-uninstall,
+    update-check/update, and rollback APIs with forced RLS, owner/admin approval,
+    compatibility, artifact checksum, and audit gates.
+    Uploaded packages are not executed; paid purchase/entitlement and sandbox
+    runtime remain later phases.
   end note
 }
 

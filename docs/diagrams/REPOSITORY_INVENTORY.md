@@ -52,6 +52,7 @@ only mirroring the directory tree.
 | `backend/migrations/0016_v3_phase_two_creator_submission.sql` | Creator verification and listing submission refinements. | Marketplace creators/listings | Schema | Creator statuses, listing metadata constraints, immutable version trigger | Marketplace submission diagram |
 | `backend/migrations/0017_v3_phase_three_validation_pipeline.sql` | Validation and compatibility report storage. | Marketplace validation | Schema | `validation_status`, `security_risk_level`, `validation_report`, `compatibility_report` | Package validation sequence |
 | `backend/migrations/0018_v3_phase_four_review_moderation.sql` | Marketplace review and moderation event log. | Marketplace review/moderation | Schema | `marketplace_review_events`, supported actions including `emergency_block` | Review moderation state diagram |
+| `backend/migrations/0019_v3_phase_six_installation_lifecycle.sql` | Marketplace installation lifecycle additions. | Marketplace installations | Schema | cleanup policy, version pinning, lifecycle timestamps, same-listing rollback FK | Marketplace lifecycle/data model diagrams |
 
 ## Backend Application Composition
 
@@ -89,7 +90,7 @@ only mirroring the directory tree.
 | `backend/src/routes/organizations.rs` | Organizations, members, invitations, domains, rate limits, audit, email, alerts, leave and ownership transfer. | Organizations, SaaS ops | Executable code | `/api/organizations`, `/api/organizations/current/*` | Organization admin diagram |
 | `backend/src/routes/billing.rs` | Plans, subscriptions, checkout, portal, usage, rebuild, and Stripe webhook. | Billing, Stripe, quota | Executable code | `/api/billing/*`, `/api/billing/stripe/webhook` | Billing sequence diagram |
 | `backend/src/routes/beta.rs` | Beta dashboard, feedback, blockers, and participant selection. | Beta feedback, GA blockers | Executable code | `/api/beta/dashboard`, `/feedback`, `/ga-blockers`, `/product-dashboard`, `/participants/{organization_id}` | Beta feedback workflow |
-| `backend/src/routes/marketplace.rs` | Marketplace catalog, creator profile, listings, package upload, validation reports, review decisions, moderation. | Marketplace | Executable code | `/api/marketplace/catalog`, `/creator`, `/listings`, `/versions/upload`, `/review/*` | Marketplace catalog/submission/review diagrams |
+| `backend/src/routes/marketplace.rs` | Marketplace catalog, creator profile, listings, package upload, validation reports, review decisions, moderation, and installation lifecycle. | Marketplace | Executable code | `/api/marketplace/catalog`, `/creator`, `/listings`, `/versions/upload`, `/review/*`, `/installations/*` | Marketplace catalog/submission/review/lifecycle diagrams |
 
 ## Backend Services And Plugins
 
@@ -122,6 +123,7 @@ only mirroring the directory tree.
 | `backend/src/services/marketplace_validation.rs` | ZIP parsing, static validation, security scan, compatibility report. | Marketplace validation | Executable code/test | `evaluate_marketplace_package`, `install_eligible` report, high-risk blocking | Validation pipeline diagram |
 | `backend/src/services/marketplace_review.rs` | Review and moderation transition validation. | Marketplace review/moderation | Executable code/test | `validate_review_decision`, `validate_moderation_action` | Review state diagram |
 | `backend/src/services/marketplace_catalog.rs` | Catalog compatibility and install eligibility derivation. | Marketplace catalog | Executable code/test | `catalog_compatibility_report`, `is_catalog_compatible` | Catalog filtering diagram |
+| `backend/src/services/marketplace_installation.rs` | Installation lifecycle gates and artifact verification. | Marketplace installations | Executable code/test | permission snapshots, lifecycle transitions, SemVer, artifact size/SHA gates | Marketplace lifecycle diagrams |
 | `backend/src/services/mod.rs` | Service module export. | Backend composition | Executable code | module exports | Backend module map |
 | `backend/src/plugins/mod.rs` | Built-in plugin trait and hook runner. | Plugins | Executable code | `CmsPlugin`, `builtin_plugins`, hook runners | Plugin hook diagram |
 | `backend/src/plugins/seo.rs` | Built-in SEO slug plugin. | Plugins, entries | Executable code/test | `SeoAutoPlugin`, `slugify` | Plugin hook diagram |
@@ -188,7 +190,7 @@ only mirroring the directory tree.
 | `frontend/src/pages/OrganizationPage.tsx` | Organization admin UI. | Organizations, memberships, SaaS ops | Executable code | members, invitations, domains, rate limits, audit logs, email deliveries, alerts | Organization admin flow |
 | `frontend/src/pages/BillingPage.tsx` | Subscription, quota, plan selection, Stripe availability UI. | Billing, quotas, Stripe | Executable code | current plan, usage, plans, checkout/portal | Billing UI flow |
 | `frontend/src/pages/BetaPage.tsx` | Beta feedback and GA blocker UI. | Beta, GA readiness | Executable code | feedback, blockers, product dashboard | Beta workflow UI |
-| `frontend/src/pages/MarketplacePage.tsx` | Marketplace catalog, creator profile, listing submission, upload, reports, review and moderation UI. | Marketplace | Executable code | catalog cards/detail, creator form, package upload, review actions, install deferred message | Marketplace UI diagrams |
+| `frontend/src/pages/MarketplacePage.tsx` | Marketplace catalog, creator profile, listing submission, upload, reports, review, moderation, install dialog, and Installed Apps UI. | Marketplace | Executable code | catalog/detail, creator form, package upload, review actions, permission approval, lifecycle controls, update/changelog confirmation | Marketplace UI diagrams |
 | `frontend/src/pages/SettingsPage.tsx` | Webhook management UI. | Webhooks, settings | Executable code | webhook form, event toggles, delivery actions | Webhook UI flow |
 | `frontend/src/pages/WorkspaceRedirectPage.tsx` | Workspace slug route bridge. | Organizations | Executable code | workspace slug redirect | Workspace flow |
 | `frontend/src/pages/DashboardPage.test.tsx` | Frontend dashboard smoke test. | Frontend tests | Test | foundation cards | Test coverage diagram |
@@ -200,7 +202,7 @@ only mirroring the directory tree.
 | Path | Responsibility | Domain | Kind | Why it matters for diagrams |
 | --- | --- | --- | --- | --- |
 | `docs/ARCHITECTURE.md` | Current architecture overview. | Architecture | Documentation | Useful for terminology, lower priority than code/schema. |
-| `docs/API.md` | Current API documentation for earlier phases. | API docs | Documentation | Stale for V2/V3 Marketplace routes; conflict evidence. |
+| `docs/API.md` | Current API documentation for earlier phases and Marketplace lifecycle. | API docs | Documentation | Manual reference for legacy handlers plus Phase-6 routes; generated coverage is partial for older handlers. |
 | `docs/I18N.md` | i18n design and extension guidance. | Localization | Documentation | Supports localization diagram after frontend evidence. |
 | `docs/sample-data.sql` | Local sample data. | Seed/testing | Documentation/schema data | Shows intended demo state but not runtime behavior. |
 | `docs/PHASE_ZERO.md` | Phase zero foundation notes. | Historical phase | Documentation | Historical context only. |
@@ -244,6 +246,7 @@ only mirroring the directory tree.
 | `docs/V3_PHASE_THREE.md` | Validation/security/compatibility notes. | Marketplace validation | Documentation | Context for validation reports. |
 | `docs/V3_PHASE_FOUR.md` | Review and moderation notes. | Marketplace review | Documentation | Context for review event log and moderation. |
 | `docs/V3_PHASE_FIVE.md` | Catalog notes. | Marketplace catalog | Documentation | Context for public catalog and deferred install. |
+| `docs/V3_PHASE_SIX.md` | Installation lifecycle notes. | Marketplace installations | Documentation | Context for free install, permission approval, lifecycle, update, rollback, audit, and deferred paid/runtime boundaries. |
 
 ## Search And Inspection Notes
 
@@ -255,4 +258,4 @@ only mirroring the directory tree.
 - Redis is used for delivery cache, rate limiting, and readiness checks.
 - Stripe is implemented for organization subscription billing, not Marketplace purchases or payouts.
 - Webhook delivery is performed inline by backend services; no durable background queue was found.
-- Marketplace installation persistence exists as a table and moderation target, but no install/uninstall runtime endpoint or UI action was found.
+- Marketplace free installation persistence and lifecycle runtime exist with tenant RLS; paid entitlements and executable package runtime remain deferred.

@@ -111,7 +111,7 @@ flowchart TD
   end
 
   subgraph tenant_apis["Tenant Header APIs"]
-    tenant_routes["Tenant protected APIs [IMPLEMENTED]<br/>content types, entries, media, pages, component registry,<br/>workflow comments, webhooks, current organization,<br/>billing, beta org dashboard, Marketplace catalog/submission/review"]
+    tenant_routes["Tenant protected APIs [IMPLEMENTED]<br/>content types, entries, media, pages, component registry,<br/>workflow comments, webhooks, current organization,<br/>billing, beta, Marketplace catalog/submission/review/installation lifecycle"]
     upload_limit["Tenant upload body limit [IMPLEMENTED]<br/>backend DefaultBodyLimit applies to tenant stack"]
   end
 
@@ -135,7 +135,7 @@ flowchart TD
     page_org["Organization [IMPLEMENTED]<br/>OrganizationPage -> api.organizations current, members, invitations,<br/>workspace, domains, rateLimit, auditLogs, emailDeliveries, alerts"]
     page_billing["Billing [IMPLEMENTED]<br/>BillingPage -> api.billing plans, usage, changePlan,<br/>checkout, portal, rebuildUsage"]
     page_beta["Beta [IMPLEMENTED]<br/>BetaPage -> api.beta dashboard, feedback, blockers,<br/>productDashboard, participants"]
-    page_marketplace["Marketplace [PARTIAL]<br/>MarketplacePage -> creator, listings, catalog, catalogDetail,<br/>version upload, submissions, review queue/events, review decisions, moderation<br/>install action is deferred"]
+    page_marketplace["Marketplace [IMPLEMENTED]<br/>MarketplacePage -> creator/listings/catalog/review plus Installed Apps<br/>installations list/install/update-check/enable/disable/uninstall/update/rollback<br/>owner/admin permission and changelog confirmations"]
     page_settings["Settings [PARTIAL]<br/>SettingsPage -> auth.me/logout, webhooks list/create/update/delete/test<br/>environment values are hard-coded read-only display"]
   end
 
@@ -155,12 +155,14 @@ flowchart TD
   subgraph websocket_and_uploads["Special Frontend Data Flows"]
     media_upload["Media upload [IMPLEMENTED]<br/>api.media.upload builds FormData(file, alt_text, caption)"]
     package_upload["Marketplace package upload [IMPLEMENTED]<br/>api.marketplace.uploadVersion builds FormData(file, manifest)"]
+    installation_lifecycle["Marketplace installation lifecycle [IMPLEMENTED]<br/>typed JSON requests/responses; active organization header<br/>install dialog and Installed Apps refresh after mutations"]
     preview_url["Preview WebSocket URL creation [PARTIAL]<br/>PagesPage copies ws URL from api.baseUrl<br/>adds access_token and organization_id query params<br/>React page does not instantiate WebSocket"]
     clipboard["Clipboard side effects [IMPLEMENTED]<br/>copy media URL, workspace URL, invitation link, preview URL"]
   end
 
   multipart_body --> media_upload
   multipart_body --> package_upload
+  page_marketplace --> installation_lifecycle
   page_pages --> preview_url
   page_media --> clipboard
   page_org --> clipboard
@@ -169,13 +171,12 @@ flowchart TD
   subgraph gaps["Gaps, Unused Client Methods, and Controls Without Endpoints"]
     backend_no_ui["Backend APIs with no admin UI/client use [PARTIAL]<br/>/api/auth module status, public delivery routes,<br/>Stripe webhook, /api/pages/slug/:slug,<br/>component registry get/create/update/delete"]
     unused_client_methods["Defined api.ts methods with no current UI call [PARTIAL]<br/>auth.refresh, api.info, billing.subscription,<br/>webhooks.deliveries, marketplace.reviewReports,<br/>entries.unpublish, pages.unpublish"]
-    frontend_no_endpoint["Frontend controls without runtime endpoint [PARTIAL]<br/>Marketplace install button is disabled/deferred<br/>Settings environment values are static read-only copy<br/>language selection is local-only"]
+    frontend_no_endpoint["Frontend controls without runtime endpoint [PARTIAL]<br/>Settings environment values are static read-only copy<br/>language selection is local-only"]
     repeated_logic["Repeated page-level API logic [PARTIAL]<br/>loading/actionLoading/message/error state and ApiError fallback<br/>repeated across pages instead of shared async hook"]
   end
 
   request_fn --> backend_no_ui
   request_fn --> unused_client_methods
-  page_marketplace --> frontend_no_endpoint
   page_settings --> frontend_no_endpoint
   page_auth --> repeated_logic
   page_content_types --> repeated_logic
@@ -196,8 +197,8 @@ flowchart TD
   classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
   classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111;
 
-  class ls_access,refresh_cookie,ls_user,ls_orgs,ls_active_org,ls_locale,app_store,api_memory,auth_page,set_session,logout_controls,clear_session,org_switcher,workspace_redirect,set_active_org,tenant_header,org_reload_key,api_base,request_fn,json_body,multipart_body,bearer_header,credentialed_fetch,error_mapping,typed_responses,public_system,public_auth,delivery_api,auth_only_routes,tenant_routes,upload_limit,page_auth,page_dashboard,page_content_types,page_entries,page_media,page_pages,page_workflow,page_org,page_billing,page_beta,page_settings,media_upload,package_upload,clipboard,language_state implemented;
-  class ls_refresh,require_auth,manual_refresh_method,header_extra,page_marketplace,preview_url,backend_no_ui,unused_client_methods,frontend_no_endpoint,repeated_logic partial;
+  class ls_access,refresh_cookie,ls_user,ls_orgs,ls_active_org,ls_locale,app_store,api_memory,auth_page,set_session,logout_controls,clear_session,org_switcher,workspace_redirect,set_active_org,tenant_header,org_reload_key,api_base,request_fn,json_body,multipart_body,bearer_header,credentialed_fetch,error_mapping,typed_responses,public_system,public_auth,delivery_api,auth_only_routes,tenant_routes,upload_limit,page_auth,page_dashboard,page_content_types,page_entries,page_media,page_pages,page_workflow,page_org,page_billing,page_beta,page_marketplace,page_settings,media_upload,package_upload,installation_lifecycle,clipboard,language_state implemented;
+  class ls_refresh,require_auth,manual_refresh_method,header_extra,preview_url,backend_no_ui,unused_client_methods,frontend_no_endpoint,repeated_logic partial;
   class browser,stripe_webhook external;
   class storage,auth_flow,organization_flow,request_pipeline,page_api_map,websocket_and_uploads,gaps,language_pointer frontend;
   class tenant_apis,no_tenant,auth_only backend;

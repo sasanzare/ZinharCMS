@@ -31,6 +31,7 @@ runtime configuration, and only then supporting documentation.
 | `26`-`30` | End-to-end auth, CMS, media, billing, operations, and Marketplace sequences. |
 | `31` | Observability and failure recovery. |
 | `32` | End-to-end source traceability by major domain. |
+| `33` | Phase-6 Marketplace installation lifecycle, gates, updates, and rollback. |
 
 ## Implementation Status Language
 
@@ -47,8 +48,8 @@ runtime configuration, and only then supporting documentation.
 - Every `.mmd` file contains exactly one standalone Mermaid declaration.
 - Markdown fences are not used inside `.mmd` files.
 - Evidence comments reference existing repository paths.
-- Planned Marketplace install, purchase, payout, and customer-rating capabilities
-  remain visually separate from implemented Marketplace submission/review/catalog.
+- Paid purchase, payout, customer-rating, and executable sandbox/runtime capabilities
+  remain visually separate from the implemented Phase-6 free installation lifecycle.
 - No Mermaid parser or project-local Mermaid dependency was installed in the
   repository, so parser validation was unavailable.
 - All Mermaid files were independently checked with repository-local static

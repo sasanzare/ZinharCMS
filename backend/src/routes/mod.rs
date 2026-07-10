@@ -181,6 +181,14 @@ pub fn router(state: AppState) -> Router {
         comments::resolve_comment,
         comments::unresolve_comment,
         comments::delete_comment,
+        marketplace::list_installations,
+        marketplace::install_marketplace_product,
+        marketplace::check_installation_updates,
+        marketplace::enable_installation,
+        marketplace::disable_installation,
+        marketplace::uninstall_installation,
+        marketplace::update_installation,
+        marketplace::rollback_installation,
         plugins::list_plugins,
         plugins::get_plugin,
         plugins::update_plugin,
@@ -271,6 +279,10 @@ pub fn router(state: AppState) -> Router {
         webhooks::WebhookTestResponse,
         comments::CommentRequest,
         comments::CommentResponse,
+        marketplace::MarketplaceInstallRequest,
+        marketplace::MarketplaceInstallationUpdateRequest,
+        marketplace::MarketplaceInstallationResponse,
+        marketplace::MarketplaceInstallationUpdateResponse,
         plugins::PluginUpdateRequest,
         plugins::PluginResponse
     )),
@@ -289,6 +301,7 @@ pub fn router(state: AppState) -> Router {
         (name = "webhooks", description = "Webhook subscriptions and delivery logs"),
         (name = "comments", description = "Editorial collaboration comments"),
         (name = "organizations", description = "Organization, member, and invitation management"),
+        (name = "marketplace", description = "Marketplace installation lifecycle"),
         (name = "plugins", description = "CMS plugin registry and settings")
     )
 )]

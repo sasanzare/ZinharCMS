@@ -38,7 +38,7 @@ flowchart TD
     marketplace_creator["Marketplace creator [IMPLEMENTED]<br/>authenticated user with creator profile"]
     marketplace_reviewer["Marketplace reviewer [IMPLEMENTED] AMB-023<br/>implemented through global admin checks"]
     marketplace_moderator["Marketplace moderator [IMPLEMENTED] AMB-023<br/>implemented through global admin checks"]
-    tenant_catalog_consumer["Authenticated tenant catalog consumer [IMPLEMENTED] AMB-003<br/>uses auth and X-Organization-Id"]
+    tenant_catalog_consumer["Authenticated tenant Marketplace consumer [IMPLEMENTED] AMB-003<br/>browses catalog and lists organization installations"]
   end
 
   subgraph ops_actors["Operations and consumer actors"]
@@ -53,7 +53,7 @@ flowchart TD
     axum_backend["Axum backend [IMPLEMENTED]<br/>route composition, middleware, services"]
     delivery_api["Delivery API [IMPLEMENTED]<br/>/api/v1/content, pages, settings, navigation, sitemap, robots"]
     tenant_api["Tenant admin API [IMPLEMENTED]<br/>auth plus tenant middleware"]
-    marketplace_api["Marketplace API [PARTIAL]<br/>catalog, creator, submission, validation, review, moderation"]
+    marketplace_api["Marketplace API [PARTIAL]<br/>catalog, creator, review, moderation, installation lifecycle; paid purchase/runtime execution deferred"]
     billing_api["Billing API [PARTIAL]<br/>plans, subscription, checkout, portal, usage"]
     beta_api["Beta API [IMPLEMENTED]<br/>feedback, blockers, participants, product dashboard"]
     preview_api["Preview WebSocket API [PARTIAL] AMB-020<br/>in-process broadcast"]
@@ -109,7 +109,9 @@ flowchart TD
   marketplace_creator -. submits products .-> marketplace_api
   marketplace_reviewer -. reviews products .-> marketplace_api
   marketplace_moderator -. moderates products .-> marketplace_api
-  tenant_catalog_consumer -. browses tenant catalog .-> marketplace_api
+  tenant_catalog_consumer -. browses catalog and installed apps .-> marketplace_api
+  org_owner -. installs and manages apps .-> marketplace_api
+  org_admin -. installs and manages apps .-> marketplace_api
   beta_support_operator -. manages beta/support workflows .-> beta_api
 
   axum_backend --> postgres

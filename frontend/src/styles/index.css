@@ -984,6 +984,274 @@ input {
   display: block;
 }
 
+.installation-gate-note,
+.installation-role-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  border: 1px solid #ead7ad;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #725319;
+  background: #fff9ec;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.installation-gate-note svg,
+.installation-role-note svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.marketplace-dialog-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: rgba(16, 32, 39, 0.48);
+}
+
+.marketplace-install-dialog {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid #cfddda;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(16, 32, 39, 0.2);
+}
+
+.marketplace-install-dialog-body,
+.permission-approval-list,
+.marketplace-installations-grid,
+.marketplace-installation-card,
+.installation-update-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.install-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.install-summary-grid > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdfc;
+}
+
+.install-summary-grid span,
+.installation-facts span {
+  color: #657178;
+  font-size: 0.82rem;
+}
+
+.permission-approval-list {
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfdfc;
+}
+
+.permission-approval-list h3,
+.permission-approval-list h4,
+.marketplace-installation-card h4,
+.installation-update-panel h4 {
+  margin: 0;
+  color: #102027;
+}
+
+.permission-approval-list p {
+  margin: 0;
+  color: #586a72;
+  line-height: 1.5;
+}
+
+.permission-approval-list label,
+.installation-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  color: #33464d;
+  line-height: 1.45;
+}
+
+.permission-approval-list input,
+.installation-confirmation input {
+  width: 17px;
+  min-width: 17px;
+  min-height: 17px;
+  margin-top: 2px;
+}
+
+.marketplace-installations-panel {
+  min-width: 0;
+}
+
+.installation-role-note {
+  margin: 16px 16px 0;
+}
+
+.marketplace-installations-grid {
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  align-items: start;
+}
+
+.marketplace-installation-card {
+  align-content: start;
+  border: 1px solid #dce7e4;
+  border-radius: 9px;
+  padding: 16px;
+  background: #fbfdfc;
+}
+
+.installation-card-heading,
+.installation-update-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.installation-card-heading > div,
+.installation-update-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.installation-card-heading h3,
+.installation-update-heading h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #102027;
+}
+
+.installation-card-heading span,
+.installation-update-heading span {
+  color: #657178;
+  font-size: 0.84rem;
+}
+
+.installation-facts {
+  display: grid;
+  grid-template-columns: minmax(105px, auto) minmax(0, 1fr);
+  gap: 7px 12px;
+  min-width: 0;
+  border: 1px solid #e2eae8;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+
+.installation-facts strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #26363c;
+  font-size: 0.88rem;
+}
+
+.installation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.installation-actions button {
+  flex: 1 1 150px;
+}
+
+.installation-confirm-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #efc7c7;
+  border-radius: 8px;
+  padding: 12px;
+  color: #7b2b2b;
+  background: #fff6f6;
+}
+
+.installation-confirm-box > div {
+  display: grid;
+  gap: 3px;
+}
+
+.installation-confirm-box span {
+  line-height: 1.45;
+  font-size: 0.84rem;
+}
+
+.installation-update-panel {
+  border-top: 1px solid #dce7e4;
+  padding-top: 14px;
+}
+
+.installation-update-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: #256555;
+}
+
+.installation-update-empty small {
+  flex-basis: 100%;
+  color: #657178;
+}
+
+.installation-version-select {
+  display: grid;
+  gap: 6px;
+  color: #45565d;
+  font-size: 0.88rem;
+}
+
+.installation-version-select select {
+  width: 100%;
+}
+
+.permission-change-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.permission-change-summary h4 {
+  flex-basis: 100%;
+}
+
+.permission-change-summary span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.82rem;
+}
+
+.permission-added {
+  color: #116755;
+  background: #e0f3ee;
+}
+
+.permission-removed {
+  color: #8a3434;
+  background: #fae8e8;
+}
+
 .marketplace-report-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
@@ -2141,7 +2409,57 @@ input {
     grid-column: span 7;
   }
 }
+
+@media (max-width: 1100px) {
+  .marketplace-catalog-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .marketplace-catalog-controls button {
+    justify-self: start;
+  }
+
+  .catalog-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-detail-side,
+  [dir="rtl"] .catalog-detail-side {
+    border-top: 1px solid #dce7e4;
+    border-right: 0;
+    border-left: 0;
+    padding-top: 18px;
+    padding-right: 0;
+    padding-left: 0;
+  }
+}
+
 @media (max-width: 760px) {
+  .marketplace-catalog-controls,
+  .install-summary-grid,
+  .marketplace-installations-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplace-dialog-backdrop {
+    place-items: end stretch;
+    padding: 0;
+  }
+
+  .marketplace-install-dialog {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .installation-confirm-box {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .installation-confirm-box button {
+    grid-column: span 1;
+  }
+
   .marketplace-report-grid,
   .review-field-grid {
     grid-template-columns: 1fr;

@@ -24,6 +24,8 @@
 %% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
 %% Evidence: backend/migrations/0016_v3_phase_two_creator_submission.sql
 %% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+%% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
+%% Evidence: backend/src/services/marketplace_installation.rs
 %% Evidence: docs/diagrams/AMBIGUITIES.md
 flowchart TD
   subgraph global_identity["Global identity"]
@@ -65,8 +67,8 @@ flowchart TD
     creator_listing["Creator-owned listing [IMPLEMENTED]<br/>listing.creator_id checked against creator user"]
     reviewer_privilege["Reviewer privilege [IMPLEMENTED] AMB-023<br/>global admin check, no dedicated reviewer role"]
     moderator_privilege["Moderator privilege [IMPLEMENTED] AMB-023<br/>global admin check, no dedicated moderator role"]
-    org_installation["Organization-owned installation [PARTIAL] AMB-007 AMB-027<br/>marketplace_installations table with RLS, no install API"]
-    install_permission_snapshot["Installation permission snapshot [PARTIAL] AMB-027<br/>permissions_json and approval fields, no runtime approval enforcement found"]
+    org_installation["Organization-owned installation [IMPLEMENTED] AMB-007<br/>tenant-scoped list and lifecycle APIs over forced RLS"]
+    install_permission_snapshot["Installation permission snapshot [IMPLEMENTED] AMB-027<br/>manifest permissions must exactly match owner/admin approval; changes require reapproval"]
   end
 
   subgraph frontend_controls["Frontend controls"]
@@ -89,7 +91,8 @@ flowchart TD
     review_decision_boundary["Review decisions [HANDLER + SERVICE]<br/>global admin plus review validation service"]
     moderation_boundary["Moderation [HANDLER + SERVICE + SQL]<br/>global admin plus moderation service and table updates"]
     catalog_boundary["Catalog access [MIDDLEWARE] AMB-003<br/>authenticated tenant catalog, not anonymous"]
-    installation_boundary["Installation records [SQL/RLS + NOT FOUND] AMB-027<br/>RLS table exists; install-time authorization route not found"]
+    installation_boundary["Marketplace installation [HANDLER + SERVICE + SQL/RLS] AMB-027<br/>owner/admin manage lifecycle; all mutations remain organization-scoped"]
+    installation_runtime_boundary["External package execution [PLANNED] AMB-006<br/>Phase 6 installs metadata/artifacts but does not sandbox or execute packaged plugins"]
     beta_boundary["Beta and GA operations [HANDLER] AMB-024<br/>org admin/editor for tenant triage, global admin for product dashboard"]
   end
 
@@ -149,6 +152,8 @@ flowchart TD
   moderator_privilege --> moderation_boundary
   tenant_context --> catalog_boundary
   tenant_context --> installation_boundary
+  org_role --> installation_boundary
+  installation_boundary -. "execution deferred" .-> installation_runtime_boundary
   org_role --> beta_boundary
   global_roles --> beta_boundary
 
@@ -164,9 +169,11 @@ flowchart TD
   tenant_rls --> content_boundary
   tenant_rls --> installation_boundary
 
-  class user_account,password_credential,failed_login,global_role_assignment,global_roles,access_token,refresh_record,refresh_cookie,auth_routes,password_service,jwt_service,auth_middleware,protected_routes,organization,membership,membership_status,org_role,invitation,org_header,tenant_context,tenant_rls,role_mapping,marketplace_user,creator_profile,creator_listing,reviewer_privilege,moderator_privilege,global_admin_boundary,plugin_boundary,organization_boundary,invitation_boundary,domain_boundary,billing_boundary,content_boundary,workflow_boundary,creator_verification_boundary,listing_creation_boundary,review_decision_boundary,moderation_boundary,catalog_boundary,beta_boundary implemented
-  class role_permissions_array,org_installation,install_permission_snapshot,installation_boundary partial
+  class user_account,password_credential,failed_login,global_role_assignment,global_roles,access_token,refresh_record,refresh_cookie,auth_routes,password_service,jwt_service,auth_middleware,protected_routes,organization,membership,membership_status,org_role,invitation,org_header,tenant_context,tenant_rls,role_mapping,marketplace_user,creator_profile,creator_listing,reviewer_privilege,moderator_privilege,org_installation,install_permission_snapshot,global_admin_boundary,plugin_boundary,organization_boundary,invitation_boundary,domain_boundary,billing_boundary,content_boundary,workflow_boundary,creator_verification_boundary,listing_creation_boundary,review_decision_boundary,moderation_boundary,catalog_boundary,installation_boundary,beta_boundary implemented
+  class role_permissions_array partial
+  class installation_runtime_boundary planned
   class selected_org,require_auth,nav_visibility,frontend_button_gates frontend
   classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
   classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111
   classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,stroke-dasharray: 3 3,color:#111
+  classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray: 2 4,color:#111

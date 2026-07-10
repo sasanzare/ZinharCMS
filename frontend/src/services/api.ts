@@ -46,6 +46,10 @@ import type {
   MarketplaceCreatorRequest,
   MarketplaceCreatorStateResponse,
   MarketplaceCreatorResponse,
+  MarketplaceInstallRequest,
+  MarketplaceInstallationResponse,
+  MarketplaceInstallationUpdateCheckResponse,
+  MarketplaceInstallationUpdateRequest,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
   MarketplaceModerationRequest,
@@ -339,6 +343,39 @@ changePlan: (payload: ChangePlanRequest) =>
       request<MarketplaceCatalogItemResponse[]>(`/api/marketplace/catalog${query(params)}`, { auth: true }),
     catalogDetail: (listingSlug: string) =>
       request<MarketplaceCatalogDetailResponse>(`/api/marketplace/catalog/${encodeURIComponent(listingSlug)}`, { auth: true }),
+    installations: () => request<MarketplaceInstallationResponse[]>("/api/marketplace/installations", { auth: true }),
+    install: (payload: MarketplaceInstallRequest) =>
+      request<MarketplaceInstallationResponse>("/api/marketplace/installations", { method: "POST", auth: true, body: payload }),
+    installationUpdates: (installationId: string) =>
+      request<MarketplaceInstallationUpdateCheckResponse>(
+        `/api/marketplace/installations/${encodeURIComponent(installationId)}/updates`,
+        { auth: true },
+      ),
+    enableInstallation: (installationId: string) =>
+      request<MarketplaceInstallationResponse>(
+        `/api/marketplace/installations/${encodeURIComponent(installationId)}/enable`,
+        { method: "POST", auth: true },
+      ),
+    disableInstallation: (installationId: string) =>
+      request<MarketplaceInstallationResponse>(
+        `/api/marketplace/installations/${encodeURIComponent(installationId)}/disable`,
+        { method: "POST", auth: true },
+      ),
+    uninstallInstallation: (installationId: string) =>
+      request<MarketplaceInstallationResponse>(
+        `/api/marketplace/installations/${encodeURIComponent(installationId)}/uninstall`,
+        { method: "POST", auth: true },
+      ),
+    rollbackInstallation: (installationId: string) =>
+      request<MarketplaceInstallationResponse>(
+        `/api/marketplace/installations/${encodeURIComponent(installationId)}/rollback`,
+        { method: "POST", auth: true },
+      ),
+    updateInstallation: (installationId: string, payload: MarketplaceInstallationUpdateRequest) =>
+      request<MarketplaceInstallationResponse>(
+        `/api/marketplace/installations/${encodeURIComponent(installationId)}/update`,
+        { method: "POST", auth: true, body: payload },
+      ),
     createListing: (payload: MarketplaceListingRequest) =>
       request<MarketplaceListingResponse>("/api/marketplace/listings", { method: "POST", auth: true, body: payload }),
     updateListing: (listingId: string, payload: MarketplaceListingRequest) =>

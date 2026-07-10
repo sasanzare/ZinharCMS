@@ -122,10 +122,13 @@ security/compatibility validation, persisted reports, global-admin review and
 moderation, and a tenant-aware compatible catalog.
 
 The catalog is product-facing but not anonymous: every `/api/marketplace/*` route
-is currently mounted behind tenant middleware. Installation schema and catalog
-counts exist, but executable install/update/uninstall/rollback APIs do not.
-Purchases, entitlements, customer ratings, and creator payout execution are
-planned only.
+is currently mounted behind tenant middleware. Phase 6 implements organization-
+owned install, enable, disable, soft-uninstall, pinned update, and safe rollback
+state transitions for free Component Packs and Design Templates. Uploaded package
+code is not executed: installation remains registry state protected by compatibility,
+permission approval, artifact integrity, audit, and forced-RLS gates. Purchases,
+paid entitlements, executable plugin sandboxing, customer ratings, and creator
+payout execution are planned only.
 
 ## Observability And Recovery
 

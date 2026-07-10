@@ -6,9 +6,12 @@ flowchart TD
 %% Evidence: backend/migrations/0012_v2_phase_seven_saas_ops.sql
 %% Evidence: backend/migrations/0014_v2_phase_nine_beta_release.sql
 %% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
+%% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
 %% Evidence: backend/src/middleware/tenant.rs
 %% Evidence: backend/src/services/rls.rs
 %% Evidence: backend/src/routes/mod.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/services/marketplace_installation.rs
 
 subgraph tenant_request_path["Tenant Request Path [IMPLEMENTED]"]
   client["Admin/API client [IMPLEMENTED]<br/>Bearer access token"]
@@ -34,7 +37,7 @@ subgraph rls_tables["RLS-Protected Ownership Groups [IMPLEMENTED]"]
   billing_quota["Billing and quota tenant tables [IMPLEMENTED]<br/>organization_subscriptions, usage_counters"]
   ops_beta["Operations and beta tenant tables [IMPLEMENTED]<br/>organization_domains, organization_rate_limits<br/>audit_logs, saas_alert_rules<br/>beta_participants, beta_feedback, beta_ga_blockers"]
   nullable_org["Nullable organization event tables [IMPLEMENTED]<br/>billing_events, email_deliveries<br/>tenant select/delete require non-null organization_id<br/>insert/update allow null or tenant match"]
-  installs["marketplace_installations [IMPLEMENTED]<br/>organization-owned Marketplace installation records"]
+  installs["marketplace_installations [IMPLEMENTED]<br/>organization-owned list/install/lifecycle state<br/>forced select/insert/update/delete RLS; soft uninstall retained"]
 end
 
 pg_policy --> core_direct

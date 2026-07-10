@@ -97,7 +97,9 @@ flowchart TD
   end
 
   subgraph installation_group["Installation"]
-    installation["Installation [PARTIAL] AMB-007<br/>table, counts, emergency block updates; no install API"]
+    installation["Marketplace installation lifecycle [IMPLEMENTED] AMB-007<br/>list, install, enable, disable, soft uninstall, update check, update, rollback"]
+    installation_gates["Installation gates [IMPLEMENTED] AMB-027<br/>owner/admin approval, permission snapshot, artifact checksum, compatibility, free entitlement"]
+    installation_ui["Installed Apps UI [IMPLEMENTED]<br/>install dialog, lifecycle controls, update/changelog confirmation"]
   end
 
   subgraph purchase_group["Purchase"]
@@ -162,11 +164,14 @@ flowchart TD
   review_restoration -. decision .-> internal_review
   catalog --> compatibility
   compatibility --> installation
+  installation_gates --> installation
+  installation --> installation_ui
+  audit_logs --> installation
   catalog -. future paid listing .-> purchase
   purchase -. future revenue .-> payout
 
-  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility implemented
-  class global_rbac,uploads_access,live_preview,redis_cache,webhooks,plugins,localization,stripe_subscriptions,saas_alerts,internal_review,installation partial
+  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility,installation,installation_gates,installation_ui implemented
+  class global_rbac,uploads_access,live_preview,redis_cache,webhooks,plugins,localization,stripe_subscriptions,saas_alerts,internal_review partial
   class purchase,payout planned
   class api_docs conflict
   class artifact_cleanup,review_restoration decision

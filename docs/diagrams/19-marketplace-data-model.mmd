@@ -3,20 +3,22 @@ erDiagram
     %% Evidence: backend/migrations/0016_v3_phase_two_creator_submission.sql
     %% Evidence: backend/migrations/0017_v3_phase_three_validation_pipeline.sql
     %% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+    %% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
     %% Evidence: backend/src/routes/marketplace.rs
     %% Evidence: backend/src/services/marketplace_manifest.rs
     %% Evidence: backend/src/services/marketplace_package.rs
     %% Evidence: backend/src/services/marketplace_submission.rs
     %% Evidence: backend/src/services/marketplace_validation.rs
     %% Evidence: backend/src/services/marketplace_review.rs
+    %% Evidence: backend/src/services/marketplace_installation.rs
     %% Evidence: frontend/src/pages/MarketplacePage.tsx
     %% Evidence: docs/V3_MARKETPLACE_DOMAIN_MODEL.md
     %% Evidence: docs/V3_MARKETPLACE_GAP_LIST.md
-    %% [IMPLEMENTED] Creator, listing, version, submission, installation schema, internal review events, validation reports, and moderation state are persisted.
-    %% [PARTIAL] marketplace_installations exists and emergency_block updates it, but no install/disable/uninstall/update/rollback route exists.
+    %% [IMPLEMENTED] Creator, listing, version, submission, installation lifecycle, internal review events, validation reports, and moderation state are persisted.
+    %% [IMPLEMENTED] marketplace_installations is tenant-RLS protected and supports install, enable, disable, soft uninstall, update, and rollback with transactional audit.
     %% [PARTIAL] Package metadata is stored on marketplace_versions; there is no package table.
     %% [PARTIAL] Moderation uses marketplace_review_events plus listing/version/installation status updates; there is no separate moderation table.
-    %% [PLANNED] Purchase, entitlement, creator payout ledger, and customer ratings are documented but no tables exist.
+    %% [PLANNED] Paid purchase/entitlement creation, creator payout ledger, external sandbox/runtime execution, and customer ratings are documented but no tables/runtime exist.
 
     users {
         UUID id PK
@@ -123,9 +125,15 @@ erDiagram
         JSONB permissions_json "CHECK jsonb array"
         UUID permission_approved_by FK "nullable REFERENCES users(id) ON DELETE SET NULL"
         TIMESTAMPTZ permission_approved_at
-        UUID rollback_version_id FK "nullable REFERENCES marketplace_versions(id) ON DELETE SET NULL"
+        UUID rollback_version_id FK "nullable; same-listing composite FK ON DELETE RESTRICT"
+        TEXT cleanup_policy "CHECK preserve_organization_data"
+        BOOLEAN version_pinned "default true"
         JSONB metadata "CHECK jsonb object"
         TIMESTAMPTZ installed_at
+        TIMESTAMPTZ enabled_at
+        TIMESTAMPTZ disabled_at
+        TIMESTAMPTZ uninstalled_at
+        TIMESTAMPTZ version_changed_at
         TIMESTAMPTZ updated_at
     }
 
@@ -149,8 +157,8 @@ erDiagram
         UUID id PK
         UUID organization_id FK "tenant audit context"
         UUID actor_id FK "nullable actor"
-        TEXT action "marketplace.* action names"
-        TEXT entity_type "marketplace_creator listing version submission"
+        TEXT action "marketplace.* including installation lifecycle"
+        TEXT entity_type "marketplace_creator listing version submission marketplace_installation"
         UUID entity_id "application-level reference"
         JSONB metadata
         TIMESTAMPTZ created_at

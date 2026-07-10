@@ -2,7 +2,7 @@
 
 ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
 This repository currently implements phases zero through ten from the original project
-proposal plus V3 Marketplace phases 0.1 through 5: a runnable monorepo foundation, local infrastructure, CI, environment
+proposal plus V3 Marketplace phases 0.1 through 6: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
@@ -140,6 +140,14 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Search and filters for query text, category, product type, and pricing type while excluding suspended or incompatible products.
 - Listing detail API and admin UI panels for description, screenshots, changelog, permissions, compatible versions, review placeholders, license, and support links.
 - Compatibility reports recalculated against the active organization's plan before catalog display.
+
+## V3 Marketplace Phase 6 Scope
+
+- Organization-owned install records for approved, safe, compatible free Component Packs and Design Templates.
+- Exact install-time permission approval plus package existence, size, and SHA-256 integrity gates.
+- Owner/admin enable, disable, soft-uninstall, semver update, version pinning, and safe rollback operations.
+- Tenant-transactional lifecycle audit logs, preserved organization data, lifecycle timestamps, and forced-RLS isolation.
+- Paid/custom Marketplace installs remain blocked until purchase and entitlement support is implemented.
 
 ## Quick Start
 

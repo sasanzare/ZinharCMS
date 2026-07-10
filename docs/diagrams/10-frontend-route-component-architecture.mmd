@@ -108,7 +108,7 @@ flowchart TD
     content_types_page["ContentTypesPage [IMPLEMENTED]<br/>Children: StatusBadge, field builder rows<br/>Hooks: useState, useEffect, useCallback<br/>API: contentTypes list create update delete<br/>State: rows, draft, query, loading, saving, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
     entries_page["EntriesPage [IMPLEMENTED]<br/>Children: DynamicForm, StatusBadge, status controls<br/>Hooks: useState, useEffect<br/>API: contentTypes.list, entries list create update delete workflow transitions<br/>State: selectedSlug, entries, status, editingId, entryData, loading, saving, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
     media_page["MediaPage [IMPLEMENTED]<br/>Children: StatusBadge, upload form, media grid, detail editor<br/>Hooks: useState, useEffect, useCallback, useRef<br/>API: media list upload update delete<br/>State: items, selected, file, altText, caption, query, loading, working, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
-    marketplace_page["MarketplacePage [PARTIAL]<br/>Children: StatusBadge, catalog, creator profile, listing form, version upload, reports, review events<br/>Hooks: useState, useEffect, useMemo, useCallback, useAppStore<br/>API: marketplace creator listings catalog catalogDetail upload submissions review moderation<br/>State: creator, listings, selectedListingId, reports, filters, catalogDetail, manifest, packageFile, messages<br/>Org context: catalog and marketplace API are authenticated and get active organization header<br/>Role controls: review UI only for global admin or super_admin<br/>Test: none found"]
+    marketplace_page["MarketplacePage [IMPLEMENTED]<br/>Children: catalog/install dialog, Installed Apps, creator/listing/upload, reports and review events<br/>Hooks: useState, useEffect, useMemo, useCallback, useAppStore<br/>API: catalog/detail, installations, install, update-check, enable/disable/uninstall/update/rollback, creator/review/moderation<br/>State: catalog detail, permission approvals, installations, update checks, confirmation and creator/review state<br/>Org context: authenticated requests include active organization header<br/>Role controls: owner/admin manage installs; global admin/super_admin review<br/>Test: MarketplacePage.test.tsx"]
     pages_page["PagesPage [IMPLEMENTED]<br/>Children: internal builder helpers, StatusBadge<br/>Hooks: useState, useEffect, useCallback, useRef, useAppStore<br/>API: pages list create update delete workflow versions restore, component registry list<br/>State: pages, components, versions, draft, selectedNodeId, selectedPage, dirty, autoSaveState<br/>Org context: implicit header plus copied preview URL query organization_id<br/>Role controls: none in page<br/>Test: PagesPage.test.tsx"]
     workflow_page["WorkflowPage [IMPLEMENTED]<br/>Children: StatusBadge, pending review list, comments, plugin toggles<br/>Hooks: useState, useEffect, useMemo, useCallback<br/>API: contentTypes.list, entries.list, pages.list, comments, plugins enable disable<br/>State: items, selectedKey, comments, commentBody, includeResolved, plugins, loading, message, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
     organization_page["OrganizationPage [IMPLEMENTED]<br/>Children: StatusBadge, settings, workspace, domains, rate limits, audit, email, alerts, invite and members tables<br/>Hooks: useState, useEffect, useMemo, useCallback, useAppStore<br/>API: organizations list current create update members invitations domains rateLimit audit email alerts<br/>State: detail, members, invitations, workspace, domains, rateLimit, auditLogs, emailDeliveries, alerts, drafts<br/>Org context: activeOrganizationId drives load and API header<br/>Role controls: manager owner/admin and owner-only ownership controls<br/>Test: none found"]
@@ -184,6 +184,7 @@ flowchart TD
     org_context_note["Organization context [IMPLEMENTED]<br/>organization switcher updates activeOrganizationId<br/>API client adds X-Organization-Id for authenticated requests"]
     org_role_controls["Organization role controls [IMPLEMENTED]<br/>OrganizationPage owner/admin manager checks<br/>BillingPage owner/admin/billing_manager checks<br/>BetaPage owner/admin/editor checks"]
     global_role_controls["Global role controls [IMPLEMENTED]<br/>Marketplace review UI for admin and super_admin<br/>Beta product dashboard for admin and super_admin"]
+    marketplace_role_controls["Marketplace organization controls [IMPLEMENTED]<br/>owner/admin can approve permissions and manage installations<br/>other active members can browse/list but controls are disabled"]
   end
 
   require_auth --> frontend_guard_note
@@ -194,15 +195,18 @@ flowchart TD
   beta_page --> org_role_controls
   beta_page --> global_role_controls
   marketplace_page --> global_role_controls
+  marketplace_page --> marketplace_role_controls
 
   subgraph tests["Frontend Test Coverage"]
     dashboard_test["DashboardPage.test.tsx [IMPLEMENTED]<br/>renders foundation cards<br/>mocks useHealth"]
     pages_test["PagesPage.test.tsx [IMPLEMENTED]<br/>renders builder shell, component palette, canvas empty state, props editor<br/>mocks pages and component registry API"]
-    missing_page_tests["Other page tests [PARTIAL]<br/>No direct tests found for Auth, ContentTypes, Entries, Media, Marketplace, Workflow, Organization, WorkspaceRedirect, Billing, Beta, Settings"]
+    marketplace_test["MarketplacePage.test.tsx [IMPLEMENTED]<br/>permission confirmation, org-role gating, deferred paid/runtime messaging, duplicate install, blocked uninstall, update reapproval"]
+    missing_page_tests["Other page tests [PARTIAL]<br/>No direct tests found for Auth, ContentTypes, Entries, Media, Workflow, Organization, WorkspaceRedirect, Billing, Beta, Settings"]
   end
 
   dashboard_page --> dashboard_test
   pages_page --> pages_test
+  marketplace_page --> marketplace_test
   auth_page --> missing_page_tests
   content_types_page --> missing_page_tests
   entries_page --> missing_page_tests
@@ -217,7 +221,7 @@ flowchart TD
 
   subgraph overloaded["Large or Overloaded Frontend Files"]
     pages_overloaded["PagesPage.tsx [PARTIAL]<br/>page CRUD, builder state, DnD, props editor, preview URL, versions in one file"]
-    marketplace_overloaded["MarketplacePage.tsx [PARTIAL]<br/>creator profile, listings, catalog, package upload, validation reports, review and moderation in one file"]
+    marketplace_overloaded["MarketplacePage.tsx [PARTIAL]<br/>creator/listing/catalog/review plus install dialog and Installed Apps lifecycle in one file"]
     organization_overloaded["OrganizationPage.tsx [PARTIAL]<br/>settings, domains, rate limits, audit, email, alerts, invites, members in one file"]
   end
 
@@ -231,7 +235,7 @@ flowchart TD
   classDef frontend fill:#f2fbf8,stroke:#24735a,stroke-width:2px,color:#111;
   classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
 
-  class main_tsx,i18n_provider,router_tsx,app_shell,fallback_route,login_route,route_outlet,dashboard_route,content_types_route,entries_route,media_route,marketplace_route,pages_route,workflow_route,organization_route,workspace_route,billing_route,beta_route,settings_route,zustand_store,api_client,health_hook,status_badge,language_select,dynamic_form,type_defs,styles_css,auth_page,dashboard_page,content_types_page,entries_page,media_page,pages_page,workflow_page,organization_page,workspace_redirect_page,billing_page,beta_page,settings_page,builder_embedded,dnd_stack,palette,canvas,props_editor,local_preview,versions,org_context_note,org_role_controls,global_role_controls,dashboard_test,pages_test implemented;
-  class require_auth,marketplace_page,preview_url,autosave,frontend_guard_note,nav_visibility,missing_page_tests,pages_overloaded,marketplace_overloaded,organization_overloaded partial;
+  class main_tsx,i18n_provider,router_tsx,app_shell,fallback_route,login_route,route_outlet,dashboard_route,content_types_route,entries_route,media_route,marketplace_route,pages_route,workflow_route,organization_route,workspace_route,billing_route,beta_route,settings_route,zustand_store,api_client,health_hook,status_badge,language_select,dynamic_form,type_defs,styles_css,auth_page,dashboard_page,content_types_page,entries_page,media_page,marketplace_page,pages_page,workflow_page,organization_page,workspace_redirect_page,billing_page,beta_page,settings_page,builder_embedded,dnd_stack,palette,canvas,props_editor,local_preview,versions,org_context_note,org_role_controls,global_role_controls,marketplace_role_controls,dashboard_test,pages_test,marketplace_test implemented;
+  class require_auth,preview_url,autosave,frontend_guard_note,nav_visibility,missing_page_tests,pages_overloaded,marketplace_overloaded,organization_overloaded partial;
   class browser,local_storage external;
   class entry,routes,shared_frontend,pages,builder,access_controls,tests,overloaded frontend;

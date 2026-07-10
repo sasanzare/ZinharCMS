@@ -6,10 +6,12 @@ flowchart TD
     %% Evidence: backend/src/services/marketplace_package.rs
     %% Evidence: backend/src/services/marketplace_validation.rs
     %% Evidence: backend/src/services/marketplace_review.rs
+    %% Evidence: backend/src/services/marketplace_installation.rs
     %% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
     %% Evidence: backend/migrations/0016_v3_phase_two_creator_submission.sql
     %% Evidence: backend/migrations/0017_v3_phase_three_validation_pipeline.sql
     %% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+    %% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
     %% Evidence: frontend/src/pages/MarketplacePage.tsx
     %% Evidence: frontend/src/services/api.ts
     %% Evidence: docs/V3_PHASE_TWO.md
@@ -97,11 +99,13 @@ flowchart TD
         no_restore["No appeal or restoration route found [DECISION REQUIRED] AMB-016"]
     end
 
-    subgraph catalog_and_future["Catalog and deferred runtime [PARTIAL/PLANNED]"]
+    subgraph catalog_and_installation["Catalog and installation lifecycle [IMPLEMENTED/PARTIAL]"]
         catalog_filter["Catalog eligibility: listing approved, version approved, validation passed/warning, risk low/medium, install_eligible [IMPLEMENTED]"]
-        catalog_ui["Catalog UI displays ratings as placeholders and install button disabled [PARTIAL] AMB-017"]
-        install_runtime["Install, disable, uninstall, update, rollback APIs [PLANNED] AMB-007"]
-        purchase_runtime["Purchase, entitlement, payout, customer rating tables [PLANNED] AMB-008 AMB-009 AMB-017"]
+        catalog_ui["MarketplacePage catalog, install dialog, and Installed Apps [IMPLEMENTED]<br/>customer ratings remain placeholders AMB-017"]
+        install_gates["Install/enable/update/rollback gates [IMPLEMENTED] AMB-027<br/>owner/admin, exact permission approval, approved/safe version, compatibility, checksum, free entitlement"]
+        install_runtime["List, install, enable, disable, soft uninstall, update-check, update, rollback APIs [IMPLEMENTED] AMB-007"]
+        install_audit["Installation mutations and audit_logs in one tenant transaction [IMPLEMENTED]<br/>soft uninstall preserves organization data"]
+        purchase_runtime["Paid purchase/entitlement creation, payout, customer rating, sandbox/runtime execution [PLANNED] AMB-006 AMB-008 AMB-009 AMB-017"]
     end
 
     frontend_ui --> api_router
@@ -139,7 +143,7 @@ flowchart TD
     action_kind -- "unpublish_version" --> unpublish_version --> moderation_event
     action_kind -- "emergency_block" --> emergency_block --> moderation_event
     moderation_event --> audit_moderation --> no_restore
-    catalog_filter --> catalog_ui --> install_runtime
+    catalog_filter --> catalog_ui --> install_gates --> install_runtime --> install_audit
     catalog_ui --> purchase_runtime
 
     classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
@@ -151,8 +155,8 @@ flowchart TD
     classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
 
     class frontend_ui,catalog_ui frontend;
-    class api_router,creator_request,creator_validate,creator_pending,creator_verify,creator_approved,listing_create,listing_submit,listing_review_check,upload_start,multipart_parse,manifest_json_check,product_type_check,file_check,version_extract,checksum,object_key,load_plan,evaluate,archive_inspection,path_validation,manifest_validation,permission_validation,static_report,security_scan,compatibility_eval,report_result,review_queue,decision,approve_guard,approve_updates,reject_updates,moderation_action,action_kind,suspend_listing,unpublish_version,emergency_block,catalog_filter backend;
-    class persist_artifact,report_persistence,tx_start,insert_version,insert_submission,update_listing_status,tx_commit,audit_submit,review_event,audit_review,moderation_event,audit_moderation data;
+    class api_router,creator_request,creator_validate,creator_pending,creator_verify,creator_approved,listing_create,listing_submit,listing_review_check,upload_start,multipart_parse,manifest_json_check,product_type_check,file_check,version_extract,checksum,object_key,load_plan,evaluate,archive_inspection,path_validation,manifest_validation,permission_validation,static_report,security_scan,compatibility_eval,report_result,review_queue,decision,approve_guard,approve_updates,reject_updates,moderation_action,action_kind,suspend_listing,unpublish_version,emergency_block,catalog_filter,install_gates,install_runtime backend;
+    class persist_artifact,report_persistence,tx_start,insert_version,insert_submission,update_listing_status,tx_commit,audit_submit,review_event,audit_review,moderation_event,audit_moderation,install_audit data;
     class artifact_orphan,no_restore decision;
-    class install_runtime,purchase_runtime planned;
+    class purchase_runtime planned;
     class blocked_review,queued_review partial;

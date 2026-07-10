@@ -67,6 +67,7 @@ subgraph tenant_stack["Tenant-protected routes - DefaultBodyLimit plus tenant_mi
     billing_tenant["Tenant billing routes [IMPLEMENTED]\n/api/billing/plans, subscription, checkout, portal, usage, usage/rebuild"]
     media_tenant["Media routes [IMPLEMENTED]\n/api/media, /api/media/upload, /api/media/{id}"]
     marketplace_tenant["Marketplace routes [IMPLEMENTED]\n/api/marketplace/catalog and catalog/{listing_slug} are tenant-protected, not anonymous public; AMB-003"]
+    marketplace_installations["Marketplace installation routes [IMPLEMENTED]\n/api/marketplace/installations list/install; {id}/updates, enable, disable, uninstall, update, rollback"]
     marketplace_creator["Marketplace creator/listing routes [IMPLEMENTED]\n/api/marketplace/creator, creators/{creator_id}/verification, listings, listings/{listing_id}, submit, versions/upload, submissions"]
     marketplace_review["Marketplace review/moderation routes [IMPLEMENTED]\n/api/marketplace/review/queue, events, reports, submissions/{submission_id}, listings/{listing_id}/moderation"]
     org_tenant["Tenant organization routes [IMPLEMENTED]\n/api/organizations/current, members, invitations, workspace, domains, rate-limit, audit-logs, email-deliveries, alerts, leave, transfer-ownership"]
@@ -116,6 +117,7 @@ tenant_boundary --> beta_tenant
 tenant_boundary --> billing_tenant
 tenant_boundary --> media_tenant
 tenant_boundary --> marketplace_tenant
+tenant_boundary --> marketplace_installations
 tenant_boundary --> marketplace_creator
 tenant_boundary --> marketplace_review
 tenant_boundary --> org_tenant
@@ -129,6 +131,6 @@ classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 
 classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111
 classDef conflict fill:#ffecec,stroke:#b3261e,stroke-width:3px,stroke-dasharray: 8 3,color:#111
 
-class root_router,public_system_boundary,route_root,route_health,route_ready,route_openapi,public_auth_boundary,auth_status,auth_register,auth_login,auth_refresh,public_billing_boundary,stripe_webhook,public_delivery_boundary,delivery_entries,delivery_entry,delivery_pages,delivery_page,delivery_settings,delivery_navigation,delivery_sitemap,delivery_robots,auth_only_boundary,auth_me_logout,beta_product,beta_participant,org_workspace,org_invite_accept,plugin_admin,tenant_boundary,content_boundary,beta_tenant,billing_tenant,media_tenant,marketplace_creator,marketplace_review,org_tenant,page_tenant,preview_tenant,comment_tenant,webhook_tenant implemented
+class root_router,public_system_boundary,route_root,route_health,route_ready,route_openapi,public_auth_boundary,auth_status,auth_register,auth_login,auth_refresh,public_billing_boundary,stripe_webhook,public_delivery_boundary,delivery_entries,delivery_entry,delivery_pages,delivery_page,delivery_settings,delivery_navigation,delivery_sitemap,delivery_robots,auth_only_boundary,auth_me_logout,beta_product,beta_participant,org_workspace,org_invite_accept,plugin_admin,tenant_boundary,content_boundary,beta_tenant,billing_tenant,media_tenant,marketplace_installations,marketplace_creator,marketplace_review,org_tenant,page_tenant,preview_tenant,comment_tenant,webhook_tenant implemented
 class route_uploads partial
 class marketplace_tenant conflict

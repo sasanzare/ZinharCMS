@@ -1,12 +1,14 @@
+use std::cmp::Ordering;
 use std::path::PathBuf;
 
 use axum::extract::{Extension, Multipart, Path, Query, State};
+use axum::http::StatusCode;
 use axum::routing::{get, patch, post, put};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use sqlx::FromRow;
+use sqlx::{FromRow, PgConnection, Postgres, Transaction};
 use tokio::fs;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -15,6 +17,12 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::services::marketplace_catalog::{catalog_compatibility_report, is_catalog_compatible};
+use crate::services::marketplace_installation::{
+    CLEANUP_POLICY_PRESERVE, LifecycleAction, approved_permission_snapshot,
+    canonicalize_permission_value, compare_semver, permission_reapproval_required,
+    permissions_are_subset, permissions_from_manifest, validate_lifecycle_action,
+    validate_mvp_product_type, validate_newer_version, verify_stored_artifact,
+};
 use crate::services::marketplace_manifest::MARKETPLACE_MANIFEST_SCHEMA_VERSION;
 use crate::services::marketplace_package::{
     marketplace_package_object_key, sha256_hex, validate_package_size,
@@ -29,7 +37,7 @@ use crate::services::marketplace_submission::{
     validate_listing_review_input,
 };
 use crate::services::marketplace_validation::evaluate_marketplace_package;
-use crate::services::{audit, quota, rbac};
+use crate::services::{audit, quota, rbac, rls};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -38,6 +46,34 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/marketplace/catalog/{listing_slug}",
             get(get_catalog_listing),
+        )
+        .route(
+            "/api/marketplace/installations",
+            get(list_installations).post(install_marketplace_product),
+        )
+        .route(
+            "/api/marketplace/installations/{installation_id}/updates",
+            get(check_installation_updates),
+        )
+        .route(
+            "/api/marketplace/installations/{installation_id}/enable",
+            post(enable_installation),
+        )
+        .route(
+            "/api/marketplace/installations/{installation_id}/disable",
+            post(disable_installation),
+        )
+        .route(
+            "/api/marketplace/installations/{installation_id}/uninstall",
+            post(uninstall_installation),
+        )
+        .route(
+            "/api/marketplace/installations/{installation_id}/update",
+            post(update_installation),
+        )
+        .route(
+            "/api/marketplace/installations/{installation_id}/rollback",
+            post(rollback_installation),
         )
         .route(
             "/api/marketplace/creator",
@@ -286,6 +322,149 @@ pub struct MarketplaceCatalogDetailResponse {
     pub reviews: Vec<MarketplaceCatalogReviewResponse>,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MarketplaceInstallRequest {
+    pub listing_id: Uuid,
+    pub version_id: Uuid,
+    pub approved_permissions: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MarketplaceInstallationUpdateRequest {
+    pub version_id: Uuid,
+    pub changelog_confirmed: bool,
+    pub approved_permissions: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MarketplaceInstallationResponse {
+    pub id: Uuid,
+    pub organization_id: Uuid,
+    pub listing_id: Uuid,
+    pub listing_title: String,
+    pub listing_slug: String,
+    pub product_type: String,
+    pub pricing_type: String,
+    pub version_id: Uuid,
+    pub installed_version: String,
+    pub status: String,
+    pub permissions: Value,
+    pub permission_approved_by: Option<Uuid>,
+    pub permission_approved_at: Option<DateTime<Utc>>,
+    pub rollback_version_id: Option<Uuid>,
+    pub rollback_version: Option<String>,
+    pub cleanup_policy: String,
+    pub version_pinned: bool,
+    pub installed_by: Option<Uuid>,
+    pub installed_at: DateTime<Utc>,
+    pub enabled_at: DateTime<Utc>,
+    pub disabled_at: Option<DateTime<Utc>>,
+    pub uninstalled_at: Option<DateTime<Utc>>,
+    pub version_changed_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MarketplaceInstallationUpdateResponse {
+    pub installation_id: Uuid,
+    pub current_version_id: Uuid,
+    pub current_version: String,
+    pub current_status: String,
+    pub version_pinned: bool,
+    pub update_available: bool,
+    pub target_version_id: Option<Uuid>,
+    pub target_version: Option<String>,
+    pub changelog: Value,
+    pub permissions: Value,
+    pub permission_reapproval_required: bool,
+    pub compatibility_report: Value,
+    pub reasons: Vec<String>,
+}
+
+#[derive(Debug, FromRow)]
+struct MarketplaceInstallationDbRow {
+    id: Uuid,
+    organization_id: Uuid,
+    listing_id: Uuid,
+    listing_title: String,
+    listing_slug: String,
+    product_type: String,
+    pricing_type: String,
+    version_id: Uuid,
+    installed_version: String,
+    status: String,
+    permissions: Value,
+    permission_approved_by: Option<Uuid>,
+    permission_approved_at: Option<DateTime<Utc>>,
+    rollback_version_id: Option<Uuid>,
+    rollback_version: Option<String>,
+    cleanup_policy: String,
+    version_pinned: bool,
+    installed_by: Option<Uuid>,
+    installed_at: DateTime<Utc>,
+    enabled_at: DateTime<Utc>,
+    disabled_at: Option<DateTime<Utc>>,
+    uninstalled_at: Option<DateTime<Utc>>,
+    version_changed_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow)]
+struct InstallationLifecycleRow {
+    listing_id: Uuid,
+    version_id: Uuid,
+    current_version: String,
+    status: String,
+    permissions_json: Value,
+    permission_approved_by: Option<Uuid>,
+    permission_approved_at: Option<DateTime<Utc>>,
+    rollback_version_id: Option<Uuid>,
+    metadata: Value,
+    version_pinned: bool,
+    product_type: String,
+    pricing_type: String,
+    listing_status: String,
+    current_version_status: String,
+    current_manifest_json: Value,
+    current_artifact_object_key: String,
+    current_artifact_sha256: String,
+    current_artifact_size_bytes: i64,
+    current_validation_status: String,
+    current_security_risk_level: String,
+}
+
+#[derive(Debug, FromRow)]
+struct MarketplaceVersionGateRow {
+    version_id: Uuid,
+    version: String,
+    version_status: String,
+    manifest_json: Value,
+    artifact_object_key: String,
+    artifact_sha256: String,
+    artifact_size_bytes: i64,
+    validation_status: String,
+    security_risk_level: String,
+}
+
+#[derive(Debug, FromRow)]
+struct InstallationCandidateRow {
+    listing_id: Uuid,
+    listing_title: String,
+    listing_slug: String,
+    product_type: String,
+    pricing_type: String,
+    listing_status: String,
+    version_id: Uuid,
+    version: String,
+    version_status: String,
+    manifest_json: Value,
+    artifact_object_key: String,
+    artifact_sha256: String,
+    artifact_size_bytes: i64,
+    validation_status: String,
+    security_risk_level: String,
+}
+
 #[derive(Debug, Clone, FromRow)]
 struct MarketplaceCatalogRow {
     id: Uuid,
@@ -426,6 +605,7 @@ pub async fn list_catalog(
     let category = clean_query_param(query.category);
     let product_type = clean_query_param(query.product_type);
     let pricing_type = clean_query_param(query.pricing_type);
+    let mut tx = rls::begin_bypass_transaction(&state.db).await?;
 
     let rows = sqlx::query_as::<_, MarketplaceCatalogRow>(
         r#"
@@ -483,8 +663,9 @@ pub async fn list_catalog(
     .bind(category.as_deref())
     .bind(product_type.as_deref())
     .bind(pricing_type.as_deref())
-    .fetch_all(&state.db)
+    .fetch_all(&mut *tx)
     .await?;
+    tx.commit().await?;
 
     let items = rows
         .iter()
@@ -505,6 +686,7 @@ pub async fn get_catalog_listing(
     }
 
     let plan = quota::load_current_plan(&state.db, &tenant).await?;
+    let mut tx = rls::begin_bypass_transaction(&state.db).await?;
     let row = sqlx::query_as::<_, MarketplaceCatalogRow>(
         r#"
         SELECT listing.id,
@@ -548,7 +730,7 @@ pub async fn get_catalog_listing(
         "#,
     )
     .bind(&slug)
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(|| AppError::NotFound("catalog listing not found".to_owned()))?;
 
@@ -566,11 +748,12 @@ pub async fn get_catalog_listing(
         "#,
     )
     .bind(row.id)
-    .fetch_all(&state.db)
+    .fetch_all(&mut *tx)
     .await?
     .iter()
     .filter_map(|version| catalog_version_from_row(version, &plan.slug))
     .collect::<Vec<_>>();
+    tx.commit().await?;
 
     Ok(Json(MarketplaceCatalogDetailResponse {
         description: row.description,
@@ -583,6 +766,715 @@ pub async fn get_catalog_listing(
         reviews: Vec::new(),
         item,
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/marketplace/installations",
+    tag = "marketplace",
+    responses((status = 200, description = "Current organization Marketplace installations", body = [MarketplaceInstallationResponse]))
+)]
+pub async fn list_installations(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+) -> Result<Json<Vec<MarketplaceInstallationResponse>>, AppError> {
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let rows = sqlx::query_as::<_, MarketplaceInstallationDbRow>(&installation_select_sql(
+        "WHERE installation.organization_id = $1 AND installation.status <> 'uninstalled'",
+    ))
+    .bind(tenant.organization_id)
+    .fetch_all(db.as_mut())
+    .await?;
+
+    Ok(Json(rows.into_iter().map(Into::into).collect()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/marketplace/installations",
+    tag = "marketplace",
+    request_body = MarketplaceInstallRequest,
+    responses((status = 201, description = "Marketplace product installed", body = MarketplaceInstallationResponse))
+)]
+pub async fn install_marketplace_product(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Json(payload): Json<MarketplaceInstallRequest>,
+) -> Result<(StatusCode, Json<MarketplaceInstallationResponse>), AppError> {
+    rbac::require_org_marketplace_installer(&tenant.role)?;
+    rbac::require_org_marketplace_permission_approver(&tenant.role)?;
+    let plan = quota::load_current_plan(&state.db, &tenant).await?;
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
+    let candidate = load_install_candidate(&mut tx, payload.listing_id, payload.version_id).await?;
+    let compatibility_report = validate_install_gate(
+        &candidate.product_type,
+        &candidate.pricing_type,
+        &candidate.listing_status,
+        &candidate.version_status,
+        &candidate.validation_status,
+        &candidate.security_risk_level,
+        &candidate.manifest_json,
+        &plan.slug,
+    )?;
+    let permissions =
+        approved_permission_snapshot(&candidate.manifest_json, &payload.approved_permissions)
+            .map_err(|error| AppError::Validation(error.message))?;
+    verify_stored_artifact(
+        &state.config.upload_dir,
+        &candidate.artifact_object_key,
+        candidate.artifact_size_bytes,
+        &candidate.artifact_sha256,
+    )
+    .await
+    .map_err(|error| AppError::Conflict(error.message))?;
+
+    let installation_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO marketplace_installations (
+          organization_id, listing_id, version_id, installed_by, status,
+          permissions_json, permission_approved_by, permission_approved_at,
+          cleanup_policy, version_pinned, enabled_at, version_changed_at, metadata
+        )
+        VALUES ($1, $2, $3, $4, 'active', $5, $4, now(), $6, TRUE, now(), now(), $7)
+        RETURNING id
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .bind(candidate.listing_id)
+    .bind(candidate.version_id)
+    .bind(tenant.user_id)
+    .bind(&permissions)
+    .bind(CLEANUP_POLICY_PRESERVE)
+    .bind(json!({
+        "phase": "v3.6",
+        "install_source": "marketplace_catalog",
+        "compatibility_report": compatibility_report,
+    }))
+    .fetch_one(&mut *tx)
+    .await?;
+
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        "marketplace.installation.install",
+        "marketplace_installation",
+        Some(installation_id),
+        json!({
+            "listing_id": candidate.listing_id,
+            "listing_slug": candidate.listing_slug,
+            "listing_title": candidate.listing_title,
+            "version_id": candidate.version_id,
+            "version": candidate.version,
+            "package_checksum": candidate.artifact_sha256,
+            "permissions": permissions,
+            "decision": "installed",
+            "cleanup_policy": CLEANUP_POLICY_PRESERVE,
+        }),
+    )
+    .await?;
+    let installation =
+        load_installation_in_transaction(&mut tx, tenant.organization_id, installation_id).await?;
+    tx.commit().await?;
+
+    Ok((StatusCode::CREATED, Json(installation.into())))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/marketplace/installations/{installation_id}/updates",
+    tag = "marketplace",
+    params(("installation_id" = Uuid, Path, description = "Marketplace installation id")),
+    responses((status = 200, description = "Compatible update check", body = MarketplaceInstallationUpdateResponse))
+)]
+pub async fn check_installation_updates(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(installation_id): Path<Uuid>,
+) -> Result<Json<MarketplaceInstallationUpdateResponse>, AppError> {
+    let plan = quota::load_current_plan(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let installation =
+        load_installation_on_connection(db.as_mut(), tenant.organization_id, installation_id)
+            .await?;
+
+    if let Err(error) = validate_lifecycle_action(&installation.status, LifecycleAction::Update) {
+        return Ok(Json(MarketplaceInstallationUpdateResponse {
+            installation_id,
+            current_version_id: installation.version_id,
+            current_version: installation.current_version,
+            current_status: installation.status,
+            version_pinned: installation.version_pinned,
+            update_available: false,
+            target_version_id: None,
+            target_version: None,
+            changelog: Value::Null,
+            permissions: json!([]),
+            permission_reapproval_required: false,
+            compatibility_report: json!({}),
+            reasons: vec![error.message],
+        }));
+    }
+
+    let versions = sqlx::query_as::<_, MarketplaceVersionGateRow>(
+        r#"
+        SELECT id as version_id,
+               version,
+               status as version_status,
+               manifest_json,
+               artifact_object_key,
+               artifact_sha256,
+               artifact_size_bytes,
+               validation_status,
+               security_risk_level
+        FROM marketplace_versions
+        WHERE listing_id = $1
+          AND status = 'approved'
+          AND validation_status IN ('passed', 'warning')
+          AND security_risk_level IN ('low', 'medium')
+        "#,
+    )
+    .bind(installation.listing_id)
+    .fetch_all(db.as_mut())
+    .await?;
+
+    let mut best: Option<(MarketplaceVersionGateRow, Value)> = None;
+    for version in versions {
+        if compare_semver(&version.version, &installation.current_version)
+            != Some(Ordering::Greater)
+        {
+            continue;
+        }
+        let Ok(report) = validate_install_gate(
+            &installation.product_type,
+            &installation.pricing_type,
+            &installation.listing_status,
+            &version.version_status,
+            &version.validation_status,
+            &version.security_risk_level,
+            &version.manifest_json,
+            &plan.slug,
+        ) else {
+            continue;
+        };
+        let replace = best.as_ref().is_none_or(|(current_best, _)| {
+            compare_semver(&version.version, &current_best.version) == Some(Ordering::Greater)
+        });
+        if replace {
+            best = Some((version, report));
+        }
+    }
+
+    let Some((target, compatibility_report)) = best else {
+        return Ok(Json(MarketplaceInstallationUpdateResponse {
+            installation_id,
+            current_version_id: installation.version_id,
+            current_version: installation.current_version,
+            current_status: installation.status,
+            version_pinned: installation.version_pinned,
+            update_available: false,
+            target_version_id: None,
+            target_version: None,
+            changelog: Value::Null,
+            permissions: json!([]),
+            permission_reapproval_required: false,
+            compatibility_report: json!({}),
+            reasons: vec!["no newer approved compatible version is available".to_owned()],
+        }));
+    };
+    let permissions = permissions_from_manifest(&target.manifest_json)
+        .map_err(|error| AppError::Validation(error.message))?;
+    let reapproval =
+        permission_reapproval_required(&installation.permissions_json, &target.manifest_json)
+            .map_err(|error| AppError::Validation(error.message))?;
+
+    Ok(Json(MarketplaceInstallationUpdateResponse {
+        installation_id,
+        current_version_id: installation.version_id,
+        current_version: installation.current_version,
+        current_status: installation.status,
+        version_pinned: installation.version_pinned,
+        update_available: true,
+        target_version_id: Some(target.version_id),
+        target_version: Some(target.version),
+        changelog: target
+            .manifest_json
+            .get("changelog")
+            .cloned()
+            .unwrap_or(Value::Null),
+        permissions: json!(permissions),
+        permission_reapproval_required: reapproval,
+        compatibility_report,
+        reasons: Vec::new(),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/marketplace/installations/{installation_id}/enable",
+    tag = "marketplace",
+    params(("installation_id" = Uuid, Path, description = "Marketplace installation id")),
+    responses((status = 200, description = "Marketplace installation enabled", body = MarketplaceInstallationResponse))
+)]
+pub async fn enable_installation(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(installation_id): Path<Uuid>,
+) -> Result<Json<MarketplaceInstallationResponse>, AppError> {
+    change_installation_status(&state, &tenant, installation_id, LifecycleAction::Enable).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/marketplace/installations/{installation_id}/disable",
+    tag = "marketplace",
+    params(("installation_id" = Uuid, Path, description = "Marketplace installation id")),
+    responses((status = 200, description = "Marketplace installation disabled", body = MarketplaceInstallationResponse))
+)]
+pub async fn disable_installation(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(installation_id): Path<Uuid>,
+) -> Result<Json<MarketplaceInstallationResponse>, AppError> {
+    change_installation_status(&state, &tenant, installation_id, LifecycleAction::Disable).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/marketplace/installations/{installation_id}/uninstall",
+    tag = "marketplace",
+    params(("installation_id" = Uuid, Path, description = "Marketplace installation id")),
+    responses((status = 200, description = "Marketplace installation soft-uninstalled", body = MarketplaceInstallationResponse))
+)]
+pub async fn uninstall_installation(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(installation_id): Path<Uuid>,
+) -> Result<Json<MarketplaceInstallationResponse>, AppError> {
+    change_installation_status(&state, &tenant, installation_id, LifecycleAction::Uninstall).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/marketplace/installations/{installation_id}/update",
+    tag = "marketplace",
+    params(("installation_id" = Uuid, Path, description = "Marketplace installation id")),
+    request_body = MarketplaceInstallationUpdateRequest,
+    responses((status = 200, description = "Marketplace installation updated", body = MarketplaceInstallationResponse))
+)]
+pub async fn update_installation(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(installation_id): Path<Uuid>,
+    Json(payload): Json<MarketplaceInstallationUpdateRequest>,
+) -> Result<Json<MarketplaceInstallationResponse>, AppError> {
+    rbac::require_org_marketplace_installer(&tenant.role)?;
+    if !payload.changelog_confirmed {
+        return Err(AppError::Validation(
+            "changelog_confirmed must be true before updating an installation".to_owned(),
+        ));
+    }
+
+    let plan = quota::load_current_plan(&state.db, &tenant).await?;
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
+    let installation = load_installation_lifecycle_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        installation_id,
+        true,
+    )
+    .await?;
+    validate_lifecycle_action(&installation.status, LifecycleAction::Update)
+        .map_err(|error| AppError::Conflict(error.message))?;
+    let target =
+        load_version_gate_in_transaction(&mut tx, installation.listing_id, payload.version_id)
+            .await?;
+    let compatibility_report = validate_install_gate(
+        &installation.product_type,
+        &installation.pricing_type,
+        &installation.listing_status,
+        &target.version_status,
+        &target.validation_status,
+        &target.security_risk_level,
+        &target.manifest_json,
+        &plan.slug,
+    )?;
+    validate_newer_version(&installation.current_version, &target.version)
+        .map_err(|error| AppError::Conflict(error.message))?;
+
+    let requires_reapproval =
+        permission_reapproval_required(&installation.permissions_json, &target.manifest_json)
+            .map_err(|error| AppError::Validation(error.message))?;
+    let (permissions, approved_by, approved_at) = if requires_reapproval {
+        rbac::require_org_marketplace_permission_approver(&tenant.role)?;
+        let approved = payload.approved_permissions.as_deref().ok_or_else(|| {
+            AppError::Validation(
+                "approved_permissions is required when an update changes permissions".to_owned(),
+            )
+        })?;
+        let snapshot = approved_permission_snapshot(&target.manifest_json, approved)
+            .map_err(|error| AppError::Validation(error.message))?;
+        (snapshot, Some(tenant.user_id), Some(Utc::now()))
+    } else {
+        if let Some(approved) = payload.approved_permissions.as_deref() {
+            approved_permission_snapshot(&target.manifest_json, approved)
+                .map_err(|error| AppError::Validation(error.message))?;
+        }
+        (
+            json!(
+                permissions_from_manifest(&target.manifest_json)
+                    .map_err(|error| AppError::Validation(error.message))?
+            ),
+            installation.permission_approved_by.or(Some(tenant.user_id)),
+            installation.permission_approved_at.or(Some(Utc::now())),
+        )
+    };
+    verify_stored_artifact(
+        &state.config.upload_dir,
+        &target.artifact_object_key,
+        target.artifact_size_bytes,
+        &target.artifact_sha256,
+    )
+    .await
+    .map_err(|error| AppError::Conflict(error.message))?;
+
+    let metadata = metadata_with_rollback_snapshot(
+        &installation,
+        &compatibility_report,
+        "update",
+        target.version_id,
+    );
+    sqlx::query(
+        r#"
+        UPDATE marketplace_installations
+        SET rollback_version_id = version_id,
+            version_id = $3,
+            permissions_json = $4,
+            permission_approved_by = $5,
+            permission_approved_at = $6,
+            version_pinned = TRUE,
+            version_changed_at = now(),
+            metadata = $7,
+            updated_at = now()
+        WHERE id = $1 AND organization_id = $2
+        "#,
+    )
+    .bind(installation_id)
+    .bind(tenant.organization_id)
+    .bind(target.version_id)
+    .bind(&permissions)
+    .bind(approved_by)
+    .bind(approved_at)
+    .bind(&metadata)
+    .execute(&mut *tx)
+    .await?;
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        "marketplace.installation.update",
+        "marketplace_installation",
+        Some(installation_id),
+        json!({
+            "listing_id": installation.listing_id,
+            "previous_version_id": installation.version_id,
+            "previous_version": installation.current_version,
+            "version_id": target.version_id,
+            "version": target.version,
+            "package_checksum": target.artifact_sha256,
+            "permissions": permissions,
+            "permission_reapproved": requires_reapproval,
+            "changelog_confirmed": true,
+            "decision": "updated",
+        }),
+    )
+    .await?;
+    let updated =
+        load_installation_in_transaction(&mut tx, tenant.organization_id, installation_id).await?;
+    tx.commit().await?;
+
+    Ok(Json(updated.into()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/marketplace/installations/{installation_id}/rollback",
+    tag = "marketplace",
+    params(("installation_id" = Uuid, Path, description = "Marketplace installation id")),
+    responses((status = 200, description = "Marketplace installation rolled back", body = MarketplaceInstallationResponse))
+)]
+pub async fn rollback_installation(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(installation_id): Path<Uuid>,
+) -> Result<Json<MarketplaceInstallationResponse>, AppError> {
+    rbac::require_org_marketplace_installer(&tenant.role)?;
+    let plan = quota::load_current_plan(&state.db, &tenant).await?;
+    let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
+    let installation = load_installation_lifecycle_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        installation_id,
+        true,
+    )
+    .await?;
+    validate_lifecycle_action(&installation.status, LifecycleAction::Rollback)
+        .map_err(|error| AppError::Conflict(error.message))?;
+    let rollback_version_id = installation.rollback_version_id.ok_or_else(|| {
+        AppError::Conflict("installation does not have a rollback version".to_owned())
+    })?;
+    let target =
+        load_version_gate_in_transaction(&mut tx, installation.listing_id, rollback_version_id)
+            .await?;
+    let compatibility_report = validate_rollback_gate(
+        &installation.product_type,
+        &installation.pricing_type,
+        &installation.listing_status,
+        &target.version_status,
+        &target.validation_status,
+        &target.security_risk_level,
+        &target.manifest_json,
+        &plan.slug,
+    )?;
+    if target.version_id == installation.version_id {
+        return Err(AppError::Conflict(
+            "rollback version is already installed".to_owned(),
+        ));
+    }
+    verify_stored_artifact(
+        &state.config.upload_dir,
+        &target.artifact_object_key,
+        target.artifact_size_bytes,
+        &target.artifact_sha256,
+    )
+    .await
+    .map_err(|error| AppError::Conflict(error.message))?;
+
+    let target_permissions = permissions_from_manifest(&target.manifest_json)
+        .map_err(|error| AppError::Validation(error.message))?;
+    let current_permissions = canonicalize_permission_value(
+        &installation.permissions_json,
+        "current permission snapshot",
+    )
+    .map_err(|error| AppError::Validation(error.message))?;
+    let stored_rollback_permissions = installation
+        .metadata
+        .get("rollback_permissions")
+        .map(|value| canonicalize_permission_value(value, "rollback permission snapshot"))
+        .transpose()
+        .map_err(|error| AppError::Validation(error.message))?;
+    let has_stored_approval = stored_rollback_permissions
+        .as_ref()
+        .is_some_and(|permissions| permissions == &target_permissions);
+    if !has_stored_approval && !permissions_are_subset(&target_permissions, &current_permissions) {
+        return Err(AppError::Conflict(
+            "rollback target requires permissions that are not in the approved rollback snapshot"
+                .to_owned(),
+        ));
+    }
+    let (approved_by, approved_at) = if has_stored_approval {
+        rollback_approval_from_metadata(&installation.metadata)
+            .unwrap_or((tenant.user_id, Utc::now()))
+    } else {
+        (
+            installation
+                .permission_approved_by
+                .unwrap_or(tenant.user_id),
+            installation.permission_approved_at.unwrap_or_else(Utc::now),
+        )
+    };
+    let permissions = json!(target_permissions);
+    let metadata = metadata_with_rollback_snapshot(
+        &installation,
+        &compatibility_report,
+        "rollback",
+        target.version_id,
+    );
+    sqlx::query(
+        r#"
+        UPDATE marketplace_installations
+        SET rollback_version_id = version_id,
+            version_id = $3,
+            permissions_json = $4,
+            permission_approved_by = $5,
+            permission_approved_at = $6,
+            version_pinned = TRUE,
+            version_changed_at = now(),
+            metadata = $7,
+            updated_at = now()
+        WHERE id = $1 AND organization_id = $2
+        "#,
+    )
+    .bind(installation_id)
+    .bind(tenant.organization_id)
+    .bind(target.version_id)
+    .bind(&permissions)
+    .bind(approved_by)
+    .bind(approved_at)
+    .bind(&metadata)
+    .execute(&mut *tx)
+    .await?;
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        "marketplace.installation.rollback",
+        "marketplace_installation",
+        Some(installation_id),
+        json!({
+            "listing_id": installation.listing_id,
+            "previous_version_id": installation.version_id,
+            "previous_version": installation.current_version,
+            "version_id": target.version_id,
+            "version": target.version,
+            "package_checksum": target.artifact_sha256,
+            "permissions": permissions,
+            "decision": "rolled_back",
+        }),
+    )
+    .await?;
+    let rolled_back =
+        load_installation_in_transaction(&mut tx, tenant.organization_id, installation_id).await?;
+    tx.commit().await?;
+
+    Ok(Json(rolled_back.into()))
+}
+
+async fn change_installation_status(
+    state: &AppState,
+    tenant: &TenantContext,
+    installation_id: Uuid,
+    action: LifecycleAction,
+) -> Result<Json<MarketplaceInstallationResponse>, AppError> {
+    rbac::require_org_marketplace_installer(&tenant.role)?;
+    let plan = if action == LifecycleAction::Enable {
+        Some(quota::load_current_plan(&state.db, tenant).await?)
+    } else {
+        None
+    };
+    let mut tx = rls::begin_tenant_transaction(&state.db, tenant).await?;
+    let installation = load_installation_lifecycle_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        installation_id,
+        true,
+    )
+    .await?;
+    validate_lifecycle_action(&installation.status, action)
+        .map_err(|error| AppError::Conflict(error.message))?;
+
+    let mut action_metadata = json!({
+        "phase": "v3.6",
+        "cleanup_policy": CLEANUP_POLICY_PRESERVE,
+    });
+    if action == LifecycleAction::Enable {
+        let compatibility_report = validate_rollback_gate(
+            &installation.product_type,
+            &installation.pricing_type,
+            &installation.listing_status,
+            &installation.current_version_status,
+            &installation.current_validation_status,
+            &installation.current_security_risk_level,
+            &installation.current_manifest_json,
+            &plan.expect("enable plan is loaded").slug,
+        )?;
+        let approved = canonicalize_permission_value(
+            &installation.permissions_json,
+            "current permission snapshot",
+        )
+        .map_err(|error| AppError::Validation(error.message))?;
+        approved_permission_snapshot(&installation.current_manifest_json, &approved)
+            .map_err(|error| AppError::Conflict(error.message))?;
+        verify_stored_artifact(
+            &state.config.upload_dir,
+            &installation.current_artifact_object_key,
+            installation.current_artifact_size_bytes,
+            &installation.current_artifact_sha256,
+        )
+        .await
+        .map_err(|error| AppError::Conflict(error.message))?;
+        action_metadata["compatibility_report"] = compatibility_report;
+    }
+
+    let (audit_action, decision) = match action {
+        LifecycleAction::Enable => {
+            sqlx::query(
+                r#"
+                UPDATE marketplace_installations
+                SET status = 'active', enabled_at = now(), disabled_at = NULL,
+                    metadata = metadata || $3, updated_at = now()
+                WHERE id = $1 AND organization_id = $2
+                "#,
+            )
+            .bind(installation_id)
+            .bind(tenant.organization_id)
+            .bind(&action_metadata)
+            .execute(&mut *tx)
+            .await?;
+            ("marketplace.installation.enable", "enabled")
+        }
+        LifecycleAction::Disable => {
+            sqlx::query(
+                r#"
+                UPDATE marketplace_installations
+                SET status = 'disabled', disabled_at = now(),
+                    metadata = metadata || $3, updated_at = now()
+                WHERE id = $1 AND organization_id = $2
+                "#,
+            )
+            .bind(installation_id)
+            .bind(tenant.organization_id)
+            .bind(&action_metadata)
+            .execute(&mut *tx)
+            .await?;
+            ("marketplace.installation.disable", "disabled")
+        }
+        LifecycleAction::Uninstall => {
+            sqlx::query(
+                r#"
+                UPDATE marketplace_installations
+                SET status = 'uninstalled', disabled_at = COALESCE(disabled_at, now()),
+                    uninstalled_at = now(), cleanup_policy = $3,
+                    metadata = metadata || $4, updated_at = now()
+                WHERE id = $1 AND organization_id = $2
+                "#,
+            )
+            .bind(installation_id)
+            .bind(tenant.organization_id)
+            .bind(CLEANUP_POLICY_PRESERVE)
+            .bind(&action_metadata)
+            .execute(&mut *tx)
+            .await?;
+            ("marketplace.installation.uninstall", "uninstalled")
+        }
+        LifecycleAction::Update | LifecycleAction::Rollback => {
+            unreachable!("version mutations use dedicated handlers")
+        }
+    };
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        audit_action,
+        "marketplace_installation",
+        Some(installation_id),
+        json!({
+            "listing_id": installation.listing_id,
+            "version_id": installation.version_id,
+            "version": installation.current_version,
+            "package_checksum": installation.current_artifact_sha256,
+            "permissions": installation.permissions_json,
+            "decision": decision,
+            "cleanup_policy": CLEANUP_POLICY_PRESERVE,
+            "organization_data_deleted": false,
+        }),
+    )
+    .await?;
+    let changed =
+        load_installation_in_transaction(&mut tx, tenant.organization_id, installation_id).await?;
+    tx.commit().await?;
+
+    Ok(Json(changed.into()))
 }
 pub async fn get_creator(
     State(state): State<AppState>,
@@ -1324,7 +2216,7 @@ pub async fn moderate_listing(
     .fetch_one(&state.db)
     .await?;
 
-    let mut tx = state.db.begin().await?;
+    let mut tx = rls::begin_bypass_transaction(&state.db).await?;
     let (event_version_id, previous_status, next_status) = match action.as_str() {
         MODERATION_SUSPEND_LISTING => {
             let metadata = moderation_metadata(
@@ -1624,6 +2516,380 @@ fn moderation_metadata(
             "creator_message": creator_message
         }
     })
+}
+
+impl From<MarketplaceInstallationDbRow> for MarketplaceInstallationResponse {
+    fn from(row: MarketplaceInstallationDbRow) -> Self {
+        Self {
+            id: row.id,
+            organization_id: row.organization_id,
+            listing_id: row.listing_id,
+            listing_title: row.listing_title,
+            listing_slug: row.listing_slug,
+            product_type: row.product_type,
+            pricing_type: row.pricing_type,
+            version_id: row.version_id,
+            installed_version: row.installed_version,
+            status: row.status,
+            permissions: row.permissions,
+            permission_approved_by: row.permission_approved_by,
+            permission_approved_at: row.permission_approved_at,
+            rollback_version_id: row.rollback_version_id,
+            rollback_version: row.rollback_version,
+            cleanup_policy: row.cleanup_policy,
+            version_pinned: row.version_pinned,
+            installed_by: row.installed_by,
+            installed_at: row.installed_at,
+            enabled_at: row.enabled_at,
+            disabled_at: row.disabled_at,
+            uninstalled_at: row.uninstalled_at,
+            version_changed_at: row.version_changed_at,
+            updated_at: row.updated_at,
+        }
+    }
+}
+
+fn installation_select_sql(where_clause: &str) -> String {
+    format!(
+        r#"
+        SELECT installation.id,
+               installation.organization_id,
+               installation.listing_id,
+               listing.title as listing_title,
+               listing.slug as listing_slug,
+               listing.product_type,
+               listing.pricing_type,
+               installation.version_id,
+               version.version as installed_version,
+               installation.status,
+               installation.permissions_json as permissions,
+               installation.permission_approved_by,
+               installation.permission_approved_at,
+               installation.rollback_version_id,
+               rollback.version as rollback_version,
+               installation.cleanup_policy,
+               installation.version_pinned,
+               installation.installed_by,
+               installation.installed_at,
+               installation.enabled_at,
+               installation.disabled_at,
+               installation.uninstalled_at,
+               installation.version_changed_at,
+               installation.updated_at
+        FROM marketplace_installations installation
+        JOIN marketplace_listings listing ON listing.id = installation.listing_id
+        JOIN marketplace_versions version ON version.id = installation.version_id
+        LEFT JOIN marketplace_versions rollback ON rollback.id = installation.rollback_version_id
+        {where_clause}
+        ORDER BY CASE installation.status WHEN 'active' THEN 0 WHEN 'disabled' THEN 1
+                     WHEN 'blocked' THEN 2 ELSE 3 END,
+                 installation.updated_at DESC
+        "#,
+    )
+}
+
+async fn load_installation_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    organization_id: Uuid,
+    installation_id: Uuid,
+) -> Result<MarketplaceInstallationDbRow, AppError> {
+    sqlx::query_as::<_, MarketplaceInstallationDbRow>(&installation_select_sql(
+        "WHERE installation.id = $1 AND installation.organization_id = $2",
+    ))
+    .bind(installation_id)
+    .bind(organization_id)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Marketplace installation not found".to_owned()))
+}
+
+async fn load_installation_on_connection(
+    db: &mut PgConnection,
+    organization_id: Uuid,
+    installation_id: Uuid,
+) -> Result<InstallationLifecycleRow, AppError> {
+    sqlx::query_as::<_, InstallationLifecycleRow>(&installation_lifecycle_select_sql(false))
+        .bind(installation_id)
+        .bind(organization_id)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Marketplace installation not found".to_owned()))
+}
+
+async fn load_installation_lifecycle_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    organization_id: Uuid,
+    installation_id: Uuid,
+    for_update: bool,
+) -> Result<InstallationLifecycleRow, AppError> {
+    sqlx::query_as::<_, InstallationLifecycleRow>(&installation_lifecycle_select_sql(for_update))
+        .bind(installation_id)
+        .bind(organization_id)
+        .fetch_optional(&mut **tx)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Marketplace installation not found".to_owned()))
+}
+
+fn installation_lifecycle_select_sql(for_update: bool) -> String {
+    let lock = if for_update {
+        "FOR UPDATE OF installation"
+    } else {
+        ""
+    };
+    format!(
+        r#"
+        SELECT installation.listing_id,
+               installation.version_id,
+               version.version as current_version,
+               installation.status,
+               installation.permissions_json,
+               installation.permission_approved_by,
+               installation.permission_approved_at,
+               installation.rollback_version_id,
+               installation.metadata,
+               installation.version_pinned,
+               listing.product_type,
+               listing.pricing_type,
+               listing.status as listing_status,
+               version.status as current_version_status,
+               version.manifest_json as current_manifest_json,
+               version.artifact_object_key as current_artifact_object_key,
+               version.artifact_sha256 as current_artifact_sha256,
+               version.artifact_size_bytes as current_artifact_size_bytes,
+               version.validation_status as current_validation_status,
+               version.security_risk_level as current_security_risk_level
+        FROM marketplace_installations installation
+        JOIN marketplace_listings listing ON listing.id = installation.listing_id
+        JOIN marketplace_versions version ON version.id = installation.version_id
+        WHERE installation.id = $1 AND installation.organization_id = $2
+        {lock}
+        "#,
+    )
+}
+
+async fn load_install_candidate(
+    tx: &mut Transaction<'_, Postgres>,
+    listing_id: Uuid,
+    version_id: Uuid,
+) -> Result<InstallationCandidateRow, AppError> {
+    sqlx::query_as::<_, InstallationCandidateRow>(
+        r#"
+        SELECT listing.id as listing_id,
+               listing.title as listing_title,
+               listing.slug as listing_slug,
+               listing.product_type,
+               listing.pricing_type,
+               listing.status as listing_status,
+               version.id as version_id,
+               version.version,
+               version.status as version_status,
+               version.manifest_json,
+               version.artifact_object_key,
+               version.artifact_sha256,
+               version.artifact_size_bytes,
+               version.validation_status,
+               version.security_risk_level
+        FROM marketplace_listings listing
+        JOIN marketplace_versions version ON version.listing_id = listing.id
+        WHERE listing.id = $1 AND version.id = $2
+        FOR SHARE OF listing, version
+        "#,
+    )
+    .bind(listing_id)
+    .bind(version_id)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("approved Marketplace version not found".to_owned()))
+}
+
+async fn load_version_gate_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    listing_id: Uuid,
+    version_id: Uuid,
+) -> Result<MarketplaceVersionGateRow, AppError> {
+    sqlx::query_as::<_, MarketplaceVersionGateRow>(
+        r#"
+        SELECT id as version_id,
+               version,
+               status as version_status,
+               manifest_json,
+               artifact_object_key,
+               artifact_sha256,
+               artifact_size_bytes,
+               validation_status,
+               security_risk_level
+        FROM marketplace_versions version
+        WHERE listing_id = $1 AND id = $2
+        FOR SHARE OF version
+        "#,
+    )
+    .bind(listing_id)
+    .bind(version_id)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Marketplace version not found for this listing".to_owned()))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_install_gate(
+    product_type: &str,
+    pricing_type: &str,
+    listing_status: &str,
+    version_status: &str,
+    validation_status: &str,
+    security_risk_level: &str,
+    manifest: &Value,
+    organization_plan: &str,
+) -> Result<Value, AppError> {
+    validate_marketplace_version_gate(
+        product_type,
+        pricing_type,
+        listing_status,
+        version_status,
+        validation_status,
+        security_risk_level,
+        manifest,
+        organization_plan,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_rollback_gate(
+    product_type: &str,
+    pricing_type: &str,
+    listing_status: &str,
+    version_status: &str,
+    validation_status: &str,
+    security_risk_level: &str,
+    manifest: &Value,
+    organization_plan: &str,
+) -> Result<Value, AppError> {
+    validate_marketplace_version_gate(
+        product_type,
+        pricing_type,
+        listing_status,
+        version_status,
+        validation_status,
+        security_risk_level,
+        manifest,
+        organization_plan,
+        true,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_marketplace_version_gate(
+    product_type: &str,
+    pricing_type: &str,
+    listing_status: &str,
+    version_status: &str,
+    validation_status: &str,
+    security_risk_level: &str,
+    manifest: &Value,
+    organization_plan: &str,
+    allow_deprecated: bool,
+) -> Result<Value, AppError> {
+    if pricing_type != "free" {
+        return Err(AppError::Conflict(
+            "Marketplace entitlement is required before installing paid or custom products"
+                .to_owned(),
+        ));
+    }
+    validate_mvp_product_type(product_type).map_err(|error| AppError::Conflict(error.message))?;
+    if listing_status != "approved" {
+        return Err(AppError::Conflict(
+            "Marketplace listing is not approved for installation".to_owned(),
+        ));
+    }
+    let version_allowed =
+        version_status == "approved" || (allow_deprecated && version_status == "deprecated");
+    if !version_allowed {
+        return Err(AppError::Conflict(
+            "Marketplace version is not approved for this lifecycle action".to_owned(),
+        ));
+    }
+    if !matches!(validation_status, "passed" | "warning") {
+        return Err(AppError::Conflict(
+            "Marketplace version has not passed package validation".to_owned(),
+        ));
+    }
+    if !matches!(security_risk_level, "low" | "medium") {
+        return Err(AppError::Conflict(
+            "Marketplace version is blocked by its security risk level".to_owned(),
+        ));
+    }
+
+    let report = catalog_compatibility_report(manifest, organization_plan);
+    if !is_catalog_compatible(&report) {
+        let reasons = report
+            .get("reasons")
+            .and_then(Value::as_array)
+            .map(|reasons| {
+                reasons
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .collect::<Vec<_>>()
+                    .join("; ")
+            })
+            .unwrap_or_else(|| "unknown compatibility failure".to_owned());
+        return Err(AppError::Conflict(format!(
+            "Marketplace version is incompatible with the active organization: {reasons}"
+        )));
+    }
+    Ok(report)
+}
+
+fn metadata_with_rollback_snapshot(
+    installation: &InstallationLifecycleRow,
+    compatibility_report: &Value,
+    action: &str,
+    target_version_id: Uuid,
+) -> Value {
+    let mut metadata = installation
+        .metadata
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+    metadata.insert(
+        "rollback_permissions".to_owned(),
+        installation.permissions_json.clone(),
+    );
+    metadata.insert(
+        "rollback_permission_approved_by".to_owned(),
+        json!(installation.permission_approved_by),
+    );
+    metadata.insert(
+        "rollback_permission_approved_at".to_owned(),
+        json!(installation.permission_approved_at),
+    );
+    metadata.insert(
+        "rollback_from_version_id".to_owned(),
+        json!(installation.version_id),
+    );
+    metadata.insert("last_lifecycle_action".to_owned(), json!(action));
+    metadata.insert(
+        "last_target_version_id".to_owned(),
+        json!(target_version_id),
+    );
+    metadata.insert(
+        "compatibility_report".to_owned(),
+        compatibility_report.clone(),
+    );
+    Value::Object(metadata)
+}
+
+fn rollback_approval_from_metadata(metadata: &Value) -> Option<(Uuid, DateTime<Utc>)> {
+    let approved_by = metadata
+        .get("rollback_permission_approved_by")?
+        .as_str()
+        .and_then(|value| Uuid::parse_str(value).ok())?;
+    let approved_at = metadata
+        .get("rollback_permission_approved_at")?
+        .as_str()
+        .and_then(|value| DateTime::parse_from_rfc3339(value).ok())?
+        .with_timezone(&Utc);
+    Some((approved_by, approved_at))
 }
 
 async fn ensure_active_user(state: &AppState, user_id: Uuid) -> Result<(), AppError> {
@@ -1954,7 +3220,9 @@ fn map_validation(result: Result<(), Vec<String>>) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{sanitize_filename, screenshots_from_value};
+    use super::{
+        sanitize_filename, screenshots_from_value, validate_install_gate, validate_rollback_gate,
+    };
     use serde_json::json;
 
     #[test]
@@ -1972,5 +3240,43 @@ mod tests {
             1
         );
         assert!(screenshots_from_value(&json!({ "url": "https://example.com/a.png" })).is_err());
+    }
+
+    #[test]
+    fn deprecated_version_is_rollback_only() {
+        let manifest = json!({
+            "permissions": ["page.read"],
+            "compatibility": {
+                "min_zinhar_version": "0.1.0",
+                "max_zinhar_version": "99.0.0",
+                "required_plan": "free"
+            }
+        });
+        assert!(
+            validate_install_gate(
+                "component_pack",
+                "free",
+                "approved",
+                "deprecated",
+                "passed",
+                "low",
+                &manifest,
+                "free",
+            )
+            .is_err()
+        );
+        assert!(
+            validate_rollback_gate(
+                "component_pack",
+                "free",
+                "approved",
+                "deprecated",
+                "passed",
+                "low",
+                &manifest,
+                "free",
+            )
+            .is_ok()
+        );
     }
 }
