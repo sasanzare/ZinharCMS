@@ -45,6 +45,7 @@ and tests.
 | `33-marketplace-installation-lifecycle.mmd` | Phase-6 install gates, lifecycle, update, rollback, and deferred boundaries | `0015`-`0019` | Marketplace installation routes | Installation lifecycle handlers | `marketplace_installation.rs`, RLS, audit | `MarketplacePage` | Installation/update/rollback methods | Marketplace service and static contract tests | `docs/V3_PHASE_SIX.md`, V3 API/architecture docs | HIGH | AMB-007, AMB-027 |
 | `34-marketplace-security-runtime.mmd` | Phase-7 permission catalog, allowlisted sandbox policy, and global/organization kill switch | `0015`, `0019`, `0020` | Marketplace runtime and kill-switch routes | Runtime authorization and kill-switch handlers | `marketplace_runtime.rs`, RLS, audit | `MarketplacePage` | Runtime status, permission catalog, kill-switch methods | Runtime policy and marketplace contract tests | `docs/V3_PHASE_SEVEN.md`, V3 API/architecture docs | HIGH | AMB-007, AMB-015 |
 | `35-marketplace-runtime-adapters.mmd` | Phase-8 Component Pack registry, Template Import, and public Plugin Hook adapters | `0019`, `0020`, `0021` | Marketplace adapter routes | Registry, template, and hook handlers | `marketplace_adapters.rs`, pages, media, RLS, audit | `PagesPage`, `MarketplacePage` | Adapter registry, preview/import, hook authorization methods | Adapter service and backend/frontend tests | `docs/V3_PHASE_EIGHT.md`, V3 API/architecture docs | HIGH | AMB-007, AMB-027 |
+| `36-marketplace-finance-lifecycle.mmd` | Phase-9 free/paid purchases, entitlement gate, revenue split/refund ledger, payout verification | `0022` | Marketplace finance, installation, and billing webhook routes | Checkout, entitlement, ledger, refund, payout handlers | `marketplace_finance.rs`, `stripe_billing.rs`, RLS, audit | `MarketplacePage` | Purchases, checkout, paid install methods | Finance unit tests and backend/frontend suites | `docs/V3_PHASE_NINE.md`, API/architecture docs | HIGH | AMB-008, AMB-009 |
 
 ## Cross-Cutting Findings
 
@@ -56,6 +57,7 @@ and tests.
   S3/CDN behavior is not implemented.
 - Installations have schema, forced RLS, catalog counts, emergency-block updates,
   and tenant-aware install/enable/disable/uninstall/update/rollback APIs.
-- Purchases, entitlements, creator payouts, and customer ratings remain planned.
+- Purchases, entitlements, revenue ledger, and payout onboarding/verification are
+  implemented; automated payout transfers and customer ratings remain planned.
 - Webhook dispatch is transient and process-local; no durable queue or retry worker
   exists.

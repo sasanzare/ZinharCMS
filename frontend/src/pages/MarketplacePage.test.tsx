@@ -8,6 +8,8 @@ const apiMocks = vi.hoisted(() => ({
   catalog: vi.fn(),
   catalogDetail: vi.fn(),
   installations: vi.fn(),
+  purchases: vi.fn(),
+  checkout: vi.fn(),
   permissions: vi.fn(),
   runtimeStatus: vi.fn(),
   hooks: vi.fn(),
@@ -39,6 +41,8 @@ vi.mock("../services/api", () => ({
       catalog: apiMocks.catalog,
       catalogDetail: apiMocks.catalogDetail,
       installations: apiMocks.installations,
+      purchases: apiMocks.purchases,
+      checkout: apiMocks.checkout,
       permissions: apiMocks.permissions,
       runtimeStatus: apiMocks.runtimeStatus,
       hooks: apiMocks.hooks,
@@ -151,6 +155,7 @@ beforeEach(() => {
   apiMocks.catalog.mockResolvedValue([freeItem]);
   apiMocks.catalogDetail.mockResolvedValue(freeDetail);
   apiMocks.installations.mockResolvedValue([]);
+  apiMocks.purchases.mockResolvedValue([]);
   apiMocks.permissions.mockResolvedValue([
     {
       permission_key: "page.read",
@@ -243,7 +248,7 @@ describe("Marketplace Phase 6", () => {
     expect(screen.getByRole("button", { name: "Review and install" })).toBeDisabled();
   });
 
-  it("explains paid entitlement and unsupported runtime gates", async () => {
+  it("offers paid checkout while preserving unsupported runtime gates", async () => {
     const paidItem = {
       ...freeItem,
       id: "listing-paid",
@@ -269,7 +274,8 @@ describe("Marketplace Phase 6", () => {
 
     const paidHeading = await screen.findByRole("heading", { name: "Paid Pack" });
     fireEvent.click(within(paidHeading.closest("article")!).getByRole("button", { name: "Details" }));
-    expect(await screen.findByText(/paid or custom entitlement is required/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Complete the organization purchase/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Purchase for $49.00" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Review and install" })).toBeDisabled();
 
     const pluginHeading = screen.getByRole("heading", { name: "Integration Plugin" });

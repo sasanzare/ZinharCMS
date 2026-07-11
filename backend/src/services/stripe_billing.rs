@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::config::Config;
 use crate::error::AppError;
 use crate::middleware::tenant::TenantContext;
-use crate::services::{audit, quota, rls};
+use crate::services::{audit, marketplace_finance, quota, rls};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -90,6 +90,57 @@ pub async fn create_checkout_session(
         (
             "subscription_data[metadata][plan_slug]".to_owned(),
             plan.slug,
+        ),
+    ];
+    let payload = stripe_post(config, "checkout/sessions", params).await?;
+    Ok(CheckoutSession {
+        session_id: required_string(&payload, "id")?,
+        url: required_string(&payload, "url")?,
+    })
+}
+
+pub async fn create_marketplace_checkout_session(
+    config: &Config,
+    purchase_id: Uuid,
+    organization_id: Uuid,
+    title: &str,
+    amount_cents: i32,
+    currency: &str,
+) -> Result<CheckoutSession, AppError> {
+    if amount_cents <= 0 {
+        return Err(AppError::Validation(
+            "Marketplace checkout amount must be positive".to_owned(),
+        ));
+    }
+    let params = vec![
+        ("mode".to_owned(), "payment".to_owned()),
+        ("success_url".to_owned(), config.stripe_success_url.clone()),
+        ("cancel_url".to_owned(), config.stripe_cancel_url.clone()),
+        (
+            "line_items[0][price_data][currency]".to_owned(),
+            currency.to_owned(),
+        ),
+        (
+            "line_items[0][price_data][product_data][name]".to_owned(),
+            title.to_owned(),
+        ),
+        (
+            "line_items[0][price_data][unit_amount]".to_owned(),
+            amount_cents.to_string(),
+        ),
+        ("line_items[0][quantity]".to_owned(), "1".to_owned()),
+        ("client_reference_id".to_owned(), purchase_id.to_string()),
+        (
+            "metadata[organization_id]".to_owned(),
+            organization_id.to_string(),
+        ),
+        (
+            "metadata[marketplace_purchase_id]".to_owned(),
+            purchase_id.to_string(),
+        ),
+        (
+            "payment_intent_data[metadata][marketplace_purchase_id]".to_owned(),
+            purchase_id.to_string(),
         ),
     ];
     let payload = stripe_post(config, "checkout/sessions", params).await?;
@@ -259,6 +310,15 @@ async fn process_event(
 ) -> Result<EventOutcome, AppError> {
     match event_type {
         "checkout.session.completed" => {
+            if metadata_from_event(payload, "marketplace_purchase_id").is_some() {
+                let (organization_id, applied) =
+                    apply_marketplace_purchase_completed(tx, payload).await?;
+                return Ok(if applied {
+                    EventOutcome::Processed(Some(organization_id))
+                } else {
+                    EventOutcome::Ignored(Some(organization_id))
+                });
+            }
             let (organization_id, applied) =
                 apply_checkout_completed(tx, payload, provider_event_created_at).await?;
             if applied {
@@ -266,6 +326,17 @@ async fn process_event(
             } else {
                 Ok(EventOutcome::Ignored(Some(organization_id)))
             }
+        }
+        "charge.refunded" => {
+            if metadata_from_event(payload, "marketplace_purchase_id").is_some() {
+                let (organization_id, applied) = apply_marketplace_refund(tx, payload).await?;
+                return Ok(if applied {
+                    EventOutcome::Processed(Some(organization_id))
+                } else {
+                    EventOutcome::Ignored(Some(organization_id))
+                });
+            }
+            Ok(EventOutcome::Ignored(None))
         }
         "customer.subscription.updated" => {
             let (organization_id, applied) =
@@ -289,6 +360,117 @@ async fn process_event(
         }
         _ => Ok(EventOutcome::Ignored(None)),
     }
+}
+
+async fn apply_marketplace_purchase_completed(
+    tx: &mut Transaction<'_, Postgres>,
+    payload: &Value,
+) -> Result<(Uuid, bool), AppError> {
+    let purchase_id = metadata_from_event(payload, "marketplace_purchase_id")
+        .and_then(|value| Uuid::parse_str(&value).ok())
+        .ok_or_else(|| {
+            AppError::Validation("Marketplace purchase metadata is invalid".to_owned())
+        })?;
+    let provider_event_id = required_string(payload, "id")?;
+    let provider_payment_id = event_object(payload)
+        .ok()
+        .and_then(|object| object_string(object, "payment_intent"));
+    let row = sqlx::query_as::<_, (Uuid, Uuid, Uuid, i32, i32, String, String)>(
+        "SELECT organization_id, listing_id, version_id, subtotal_cents, tax_cents, currency, status FROM marketplace_purchases WHERE id = $1 FOR UPDATE",
+    )
+    .bind(purchase_id)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Marketplace purchase not found".to_owned()))?;
+    if row.6 == "completed" {
+        return Ok((row.0, false));
+    }
+    if row.6 != "pending" {
+        return Err(AppError::Conflict(
+            "Marketplace purchase is not payable".to_owned(),
+        ));
+    }
+    let object = event_object(payload)?;
+    if object_string(object, "payment_status").as_deref() != Some("paid")
+        || object.get("amount_total").and_then(Value::as_i64) != Some((row.3 + row.4) as i64)
+        || object_string(object, "currency").as_deref() != Some(row.5.as_str())
+    {
+        return Err(AppError::Conflict(
+            "Stripe Marketplace payment does not match the pending purchase".to_owned(),
+        ));
+    }
+    sqlx::query("UPDATE marketplace_purchases SET status = 'completed', provider_payment_id = COALESCE($2, provider_payment_id), updated_at = now() WHERE id = $1")
+        .bind(purchase_id).bind(provider_payment_id).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO marketplace_entitlements (organization_id, purchase_id, listing_id, version_id, metadata) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (purchase_id) DO NOTHING")
+        .bind(row.0).bind(purchase_id).bind(row.1).bind(row.2).bind(serde_json::json!({"source":"stripe.checkout.session.completed"})).execute(&mut **tx).await?;
+    let creator_id: Uuid =
+        sqlx::query_scalar("SELECT creator_id FROM marketplace_listings WHERE id = $1")
+            .bind(row.1)
+            .fetch_one(&mut **tx)
+            .await?;
+    let split = marketplace_finance::calculate_revenue_split(
+        row.3 + row.4,
+        row.4,
+        marketplace_finance::DEFAULT_COMMISSION_BPS,
+    )
+    .map_err(AppError::Validation)?;
+    sqlx::query("INSERT INTO marketplace_revenue_ledger (organization_id, purchase_id, creator_id, listing_id, entry_type, provider_event_id, currency, gross_cents, tax_cents, commission_bps, platform_fee_cents, creator_share_cents, metadata) VALUES ($1, $2, $3, $4, 'purchase', $5, $6, $7, $8, $9, $10, $11, $12) ON CONFLICT DO NOTHING")
+        .bind(row.0).bind(purchase_id).bind(creator_id).bind(row.1).bind(&provider_event_id).bind(row.5).bind(row.3).bind(row.4).bind(marketplace_finance::DEFAULT_COMMISSION_BPS).bind(split.platform_fee_cents).bind(split.creator_share_cents).bind(serde_json::json!({"provider":"stripe","provider_event_id":provider_event_id})).execute(&mut **tx).await?;
+    Ok((row.0, true))
+}
+
+async fn apply_marketplace_refund(
+    tx: &mut Transaction<'_, Postgres>,
+    payload: &Value,
+) -> Result<(Uuid, bool), AppError> {
+    let purchase_id = metadata_from_event(payload, "marketplace_purchase_id")
+        .and_then(|value| Uuid::parse_str(&value).ok())
+        .ok_or_else(|| AppError::Validation("Marketplace refund metadata is invalid".to_owned()))?;
+    let provider_event_id = required_string(payload, "id")?;
+    let row = sqlx::query_as::<_, (Uuid, Uuid, Uuid, i32, i32, String, String)>("SELECT organization_id, listing_id, version_id, subtotal_cents, tax_cents, currency, status FROM marketplace_purchases WHERE id = $1 FOR UPDATE")
+        .bind(purchase_id).fetch_optional(&mut **tx).await?.ok_or_else(|| AppError::NotFound("Marketplace purchase not found".to_owned()))?;
+    if row.6 == "refunded" {
+        return Ok((row.0, false));
+    }
+    let object = event_object(payload)?;
+    let refunded_cents = object
+        .get("amount_refunded")
+        .and_then(Value::as_i64)
+        .ok_or_else(|| AppError::Validation("Stripe refund amount is missing".to_owned()))?;
+    let total_cents = row.3 + row.4;
+    if refunded_cents <= 0 || refunded_cents > total_cents as i64 {
+        return Err(AppError::Conflict(
+            "Stripe refund amount does not match the Marketplace purchase".to_owned(),
+        ));
+    }
+    let full_refund = refunded_cents == total_cents as i64;
+    if full_refund {
+        sqlx::query("UPDATE marketplace_purchases SET status = 'refunded', refunded_at = now(), updated_at = now() WHERE id = $1")
+            .bind(purchase_id)
+            .execute(&mut **tx)
+            .await?;
+        sqlx::query("UPDATE marketplace_entitlements SET status = 'revoked', revoked_at = now() WHERE purchase_id = $1 AND status = 'active'")
+            .bind(purchase_id)
+            .execute(&mut **tx)
+            .await?;
+    }
+    let creator_id: Uuid =
+        sqlx::query_scalar("SELECT creator_id FROM marketplace_listings WHERE id = $1")
+            .bind(row.1)
+            .fetch_one(&mut **tx)
+            .await?;
+    let refunded_cents = refunded_cents as i32;
+    let refund_tax_cents = (row.4 as i64 * refunded_cents as i64 / total_cents as i64) as i32;
+    let split = marketplace_finance::calculate_revenue_split(
+        refunded_cents,
+        refund_tax_cents,
+        marketplace_finance::DEFAULT_COMMISSION_BPS,
+    )
+    .map_err(AppError::Validation)?;
+    let entry_type = if full_refund { "refund" } else { "adjustment" };
+    sqlx::query("INSERT INTO marketplace_revenue_ledger (organization_id, purchase_id, creator_id, listing_id, entry_type, provider_event_id, currency, gross_cents, tax_cents, commission_bps, platform_fee_cents, creator_share_cents, adjustment_cents, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT DO NOTHING")
+        .bind(row.0).bind(purchase_id).bind(creator_id).bind(row.1).bind(entry_type).bind(&provider_event_id).bind(row.5).bind(refunded_cents).bind(refund_tax_cents).bind(marketplace_finance::DEFAULT_COMMISSION_BPS).bind(-split.platform_fee_cents).bind(-split.creator_share_cents).bind(-refunded_cents).bind(serde_json::json!({"provider":"stripe","provider_event_id":provider_event_id,"refund_kind":entry_type})).execute(&mut **tx).await?;
+    Ok((row.0, true))
 }
 
 async fn apply_checkout_completed(
@@ -659,6 +841,12 @@ fn metadata_string(object: &Value, key: &str) -> Option<String> {
         .and_then(Value::as_str)
         .filter(|value| !value.trim().is_empty())
         .map(ToOwned::to_owned)
+}
+
+fn metadata_from_event(payload: &Value, key: &str) -> Option<String> {
+    event_object(payload)
+        .ok()
+        .and_then(|object| metadata_string(object, key))
 }
 
 fn organization_id_from_object(object: &Value) -> Result<Uuid, AppError> {

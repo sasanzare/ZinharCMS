@@ -6,6 +6,7 @@ pub mod content;
 pub mod delivery;
 pub mod marketplace;
 pub mod marketplace_adapters;
+pub mod marketplace_finance;
 pub mod marketplace_runtime;
 pub mod media;
 pub mod organizations;
@@ -49,6 +50,7 @@ pub fn router(state: AppState) -> Router {
         .merge(media::router())
         .merge(marketplace::router())
         .merge(marketplace_adapters::router())
+        .merge(marketplace_finance::router())
         .merge(marketplace_runtime::router())
         .merge(organizations::tenant_router())
         .merge(pages::router())
@@ -204,6 +206,14 @@ pub fn router(state: AppState) -> Router {
         marketplace_adapters::import_template,
         marketplace_adapters::list_marketplace_hooks,
         marketplace_adapters::authorize_marketplace_hook,
+        marketplace_finance::list_purchases,
+        marketplace_finance::create_checkout,
+        marketplace_finance::list_revenue_ledger,
+        marketplace_finance::get_payout_account,
+        marketplace_finance::onboard_payout_account,
+        marketplace_finance::verify_payout_account,
+        marketplace_finance::get_creator_balance,
+        marketplace_finance::request_payout,
         plugins::list_plugins,
         plugins::get_plugin,
         plugins::update_plugin,
@@ -311,6 +321,15 @@ pub fn router(state: AppState) -> Router {
         marketplace_adapters::MarketplaceHookResponse,
         marketplace_adapters::MarketplaceHookAuthorizeRequest,
         marketplace_adapters::MarketplaceHookAuthorizationResponse,
+        marketplace_finance::MarketplaceCheckoutRequest,
+        marketplace_finance::MarketplacePurchaseResponse,
+        marketplace_finance::MarketplaceCheckoutResponse,
+        marketplace_finance::PayoutOnboardingRequest,
+        marketplace_finance::MarketplacePayoutAccountResponse,
+        marketplace_finance::MarketplaceRevenueLedgerResponse,
+        marketplace_finance::PayoutVerificationRequest,
+        marketplace_finance::MarketplaceCreatorBalanceResponse,
+        marketplace_finance::MarketplacePayoutResponse,
         plugins::PluginUpdateRequest,
         plugins::PluginResponse
     )),

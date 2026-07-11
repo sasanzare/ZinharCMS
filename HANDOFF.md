@@ -5,19 +5,26 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-10 19:35 +01:00 (Europe/London)
+- **Last updated:** 2026-07-11 07:40 +01:00 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `1231613 feat(marketplace): implement v3 phase 7 runtime security controls`
-- **Working tree at session start:** Clean at Phase 7 commit `1231613`; current tree now contains the uncommitted Phase 8 implementation and documentation.
+- **Latest relevant commit:** `b52f81c feat(marketplace): implement v3 phase 8 runtime adapters`
+- **Working tree at session start:** Clean at Phase 8 commit `b52f81c`; current tree contains only the uncommitted Phase 9 implementation and documentation.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** V3 Marketplace Phase 7 — Permission Model, Sandbox MVP, and Kill Switch
-- **Current subphase:** 7.3 global/organization kill switch; implementation is complete and final validation is in progress
-- **Overall status:** In progress; Phase 7 code and docs are implemented, live migration/API smoke remains unverified
+- **Current phase:** V3 Marketplace Phase 9 — Monetization
+- **Current subphase:** 9.1–9.4 implementation, local validation, and authenticated smoke complete
+- **Overall status:** Phase 9 complete in the local environment; changes remain uncommitted pending explicit user authorization
 
 ## 2. Project Overview
+
+> **Phase 9 override (2026-07-10 21:20):** Phase 8 is committed at `b52f81c`.
+> The active objective is Phase 9 monetization. Migration `0022`, free/paid
+> checkout, entitlements, paid lifecycle gates, revenue/refund ledger, payout
+> onboarding/verification, frontend purchase/onboarding surfaces, Phase 9 docs,
+> and diagram `36` are present in the uncommitted working tree. Older Phase 7/8
+> status and exact-next-action text below is historical.
 
 > **Phase 8 override (2026-07-10 18:55):** Phase 7 is complete and committed at
 > `1231613`; the active objective is V3 Marketplace Phase 8 (8.1 Component Pack
@@ -605,3 +612,39 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - Added Page Builder and Marketplace UI assertions for installed Component Pack and public Hook surfaces.
 - Frontend lint, typecheck, and Vitest passed: 3 files, 9 tests; live Vite build had already passed after the Phase 8 UI implementation.
 - The exact next action remains the non-destructive live migration `0021` and authenticated adapter API/browser smoke; no commit was created.
+
+### 2026-07-10 21:20 +01:00 - V3 Phase 9 monetization checkpoint
+
+- Verified Git source of truth: Phase 8 is committed at `b52f81c`; no Phase 8 work was repeated.
+- Implemented 9.1 free purchase/entitlement, 9.2 paid one-time Stripe checkout and paid lifecycle entitlement gates, 9.3 idempotent purchase/refund revenue ledger, and 9.4 payout onboarding plus admin verification/eligibility.
+- Added migration `0022`, finance routes/service, Stripe Marketplace event handling, frontend purchase/payout surfaces, `docs/V3_PHASE_NINE.md`, and Mermaid diagram `36`.
+- Backend tests passed at the first checkpoint (98); final rerun includes the new Phase 9 contract test. Frontend typecheck/lint/build pass; one historical Phase 6 assertion was updated for the new paid-checkout behavior and requires the final rerun.
+- **Exact Next Action:** run final backend/frontend suites and Mermaid/diff checks; then apply migration `0022` in a safe development database and perform signed Stripe checkout/refund plus payout-verification smoke. Do not create a commit unless the user explicitly requests it.
+
+### 2026-07-10 21:29 +01:00 - User-requested pause checkpoint
+
+- Final local validation completed: backend formatting and 99 tests passed; frontend lint, typecheck, production build, and 9 tests passed. Vitest still reports two pre-existing post-teardown Dashboard async warnings despite all tests passing.
+- Mermaid structural validation passed for 37 files (`00` through `36`), and `git diff --check` passed with only line-ending notices.
+- Because the original debug executable was locked, an isolated Phase 9 binary was compiled under `backend/target/phase9` and started on port `8081` without modifying the existing service. The isolated process was stopped at the user's request.
+- PostgreSQL confirms SQLx migration `22 v3 phase nine marketplace finance` applied successfully; migration 21 is also present and successful.
+- Working tree remains uncommitted and unstaged. No reset, deletion, commit, or branch operation was performed.
+- **Exact Next Action:** resume with authenticated Phase 9 API smoke against migration `0022`: free checkout/install, paid checkout with signed Stripe completion, paid install entitlement gate, full-refund reversal/revocation, payout onboarding, and admin payout verification. Then update this handoff with smoke results. Do not repeat implementation or local test suites unless code changes.
+
+### 2026-07-11 07:25 +01:00 - Phase 9 smoke blocker
+
+- Read `AGENTS.md`, this handoff, Git status, diff summary, and recent commits; repository state still matches the Phase 9 uncommitted checkpoint on `b52f81c`.
+- Backend smoke was attempted twice. The process compiled but could not complete migrations because PostgreSQL was unavailable (`pool timed out while waiting for an open connection`); `/health`, `/ready`, and `/openapi.json` therefore could not be reached.
+- `Test-NetConnection` confirmed localhost ports `5432` and `6379` are closed. `docker compose up -d postgres redis` failed because Docker Desktop daemon `//./pipe/dockerDesktopLinuxEngine` is not running.
+- No source files were changed during this smoke attempt; no commit, reset, cleanup, or destructive action was performed.
+- **Exact Next Action:** start Docker Desktop (or provide an equivalent PostgreSQL/Redis environment), run `docker compose up -d postgres redis`, then start the backend and execute the authenticated Phase 9 smoke matrix. Do not repeat local implementation/tests unless code changes.
+
+### 2026-07-11 07:40 +01:00 - Phase 9 authenticated smoke completed
+
+- Docker PostgreSQL/Redis were started successfully; migrations 20, 21, and 22 are present and successful.
+- Backend smoke passed: `/health` 200, `/ready` 200 with PostgreSQL/Redis reachable, `/openapi.json` 200; all five Phase 9 paths and purchase/ledger/payout schemas were present.
+- 9.1 passed: free checkout returned `201`, created a completed purchase and active entitlement, and free installation returned `200 active` with artifact verification.
+- 9.2 passed: paid checkout without configured Stripe secret returned `503` and persisted `failed`; paid install without entitlement returned `409`. With a locally signed `checkout.session.completed`, purchase became `completed`, entitlement was granted, and paid installation returned `200 active`.
+- 9.3 passed: purchase ledger split recorded platform fee `980` and creator share `3920` for a `4900` purchase. A locally signed full `charge.refunded` returned `200`; purchase became `refunded`, entitlement became `revoked`, and exactly two ledger entries (`purchase`, `refund`) remained.
+- 9.4 passed: payout onboarding returned `pending`; verification without submitted details returned `409`; provider-attested verification with all readiness flags returned `200 verified` and `payouts_enabled=true`.
+- All temporary fixture rows and artifact files were removed; existing database rows were not reset. Backend process was stopped; PostgreSQL/Redis remain healthy under Docker.
+- **Exact Next Action:** review the uncommitted Phase 9 diff and, only after explicit user authorization, stage/commit the Phase 9 implementation. No further implementation or test repetition is required unless review identifies a change.

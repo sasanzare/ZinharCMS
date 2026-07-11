@@ -33,6 +33,14 @@ status blocking, and kill-switch audit taxonomy. The backend still does not
 execute uploaded package code; component/template adapters and concrete
 integration hooks remain later runtime work.
 
+## Phase 9 Update
+
+Phase 9 resolves free/paid purchase records, organization entitlements, Stripe
+one-time checkout completion, full-refund entitlement revocation, revenue split
+ledger entries, and creator payout onboarding/verification. Subscription-style
+Marketplace add-ons, partial refunds, and automated payout transfer execution
+remain later work.
+
 ## Phase 8 Update
 
 Phase 8 resolves the first host-owned adapter surfaces: installed Component Pack
@@ -50,18 +58,18 @@ authorization remains policy-only and never executes uploaded package code.
 | Install compatibility enforcement is incomplete | Resolved | Phase 6 re-evaluates the active plan, version/features, review state, and artifact integrity at mutation time. | 6.1 |
 | Install rollback API is not implemented | Resolved | Phase 6 adds same-listing, safe, compatible, artifact-verified rollback. | 6.3 |
 | Installed product lifecycle runtime events are not implemented | Resolved | Phase 6 implements install, enable, disable, uninstall, update, and rollback; the later runtime kill switch remains Phase 7.3 work. | 6.1, 6.2, 7.3 |
-| Tenant-owned RLS policies for later Marketplace tables do not exist | P0 | Phase 1 added forced RLS for installations; later purchase, entitlement, review, and organization-scoped product state tables must also use forced RLS. | 9.2, 10.1 |
+| Tenant-owned RLS policies for later Marketplace tables do not exist | Resolved for Phase 9 | Forced RLS protects installations, purchases, entitlements, and revenue ledger rows. | 9.2, 10.1 |
 
 ## Creator Payment Gaps
 
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
-| Creator payout and advanced profile operations do not exist | P0 | Phase 2 added creator request and verification APIs; later phases must add payout eligibility, provider onboarding, and advanced creator operations. | 2.1, 2.2 |
-| Marketplace purchase table does not exist | P1 | Add purchase records separate from organization subscriptions. | 9.2 |
-| Marketplace entitlement table does not exist | P1 | Add product entitlement linked to purchase, organization, listing, and version. | 9.2 |
-| Revenue split ledger does not exist | P1 | Add ledger rows for gross amount, platform commission, creator share, refunds, and settlement state. | 9.3 |
-| Payout provider is not connected | P1 | Add Stripe Connect or payout provider onboarding and payout status tracking. | 9.4 |
-| Refund policy is not modeled | P1 | Define refund impact on entitlement, reviews, revenue ledger, and creator balance. | 9.2, 9.3 |
+| Creator payout and advanced profile operations do not exist | Partially resolved | Phase 9 adds provider account onboarding and eligibility verification; transfer scheduling remains open. | 2.1, 2.2, 9.4 |
+| Marketplace purchase table does not exist | Resolved | Phase 9 stores Marketplace purchases separately from organization subscriptions. | 9.2 |
+| Marketplace entitlement table does not exist | Resolved | Phase 9 links active/revoked entitlement to organization, purchase, listing, and version. | 9.2 |
+| Revenue split ledger does not exist | Resolved | Phase 9 records idempotent purchase and full-refund effects. | 9.3 |
+| Payout provider is not connected | Partially resolved | Phase 9 adds Stripe Connect-style onboarding and verification state; transfer execution remains open. | 9.4 |
+| Refund policy is not modeled | Partially resolved | Full refund revokes entitlement and reverses the ledger; partial refunds remain unsupported. | 9.2, 9.3 |
 | Creator self-purchase prevention is not modeled | P1 | Detect and block creator-owned organization purchases where policy disallows them. | 9.2 |
 
 ## Permission Gaps

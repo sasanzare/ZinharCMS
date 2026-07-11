@@ -10,10 +10,12 @@ import type {
   MarketplaceCatalogDetailResponse,
   MarketplaceCatalogItemResponse,
   MarketplaceCreatorResponse,
+  MarketplaceCreatorBalanceResponse,
   MarketplaceInstallationResponse,
   MarketplaceInstallationUpdateCheckResponse,
   MarketplaceHookResponse,
   MarketplacePermissionCatalogResponse,
+  MarketplacePurchaseResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
   MarketplaceModerationAction,
@@ -215,6 +217,7 @@ export function MarketplacePage() {
   const organizations = useAppStore((state) => state.organizations);
   const activeOrganizationId = useAppStore((state) => state.activeOrganizationId);
   const [creator, setCreator] = useState<MarketplaceCreatorResponse | null>(null);
+  const [creatorBalance, setCreatorBalance] = useState<MarketplaceCreatorBalanceResponse | null>(null);
   const [creatorDraft, setCreatorDraft] = useState<CreatorDraft>(defaultCreatorDraft);
   const [listings, setListings] = useState<MarketplaceListingResponse[]>([]);
   const [listingDraft, setListingDraft] = useState<ListingDraft>(defaultListingDraft);
@@ -228,6 +231,7 @@ export function MarketplacePage() {
   const [catalogItems, setCatalogItems] = useState<MarketplaceCatalogItemResponse[]>([]);
   const [catalogDetail, setCatalogDetail] = useState<MarketplaceCatalogDetailResponse | null>(null);
   const [installations, setInstallations] = useState<MarketplaceInstallationResponse[]>([]);
+  const [purchases, setPurchases] = useState<MarketplacePurchaseResponse[]>([]);
   const [permissionCatalog, setPermissionCatalog] = useState<MarketplacePermissionCatalogResponse[]>([]);
   const [runtimeStatus, setRuntimeStatus] = useState<MarketplaceRuntimeStatusResponse | null>(null);
   const [marketplaceHooks, setMarketplaceHooks] = useState<MarketplaceHookResponse[]>([]);
@@ -284,7 +288,12 @@ export function MarketplacePage() {
   const loadInstallations = useCallback(async function loadInstallations() {
     setInstallationsLoading(true);
     try {
-      setInstallations(await api.marketplace.installations());
+      const [nextInstallations, nextPurchases] = await Promise.all([
+        api.marketplace.installations(),
+        api.marketplace.purchases(),
+      ]);
+      setInstallations(nextInstallations);
+      setPurchases(nextPurchases);
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.error.installations")));
     } finally {
@@ -318,6 +327,7 @@ export function MarketplacePage() {
       setCreator(creatorState.creator);
       setListings(nextListings);
       if (creatorState.creator) {
+        setCreatorBalance(await api.marketplace.creatorBalance(creatorState.creator.id));
         setCreatorDraft({
           slug: creatorState.creator.slug,
           display_name: creatorState.creator.display_name,
@@ -449,11 +459,18 @@ export function MarketplacePage() {
     )) ?? null;
   }
 
+  function purchaseForListing(listingId: string) {
+    return purchases.find((purchase) => purchase.listing_id === listingId && purchase.status === "completed") ?? null;
+  }
+
   function installRestriction(detail: MarketplaceCatalogDetailResponse) {
     if (installationsLoading) return t("marketplace.install.checkingInstallations");
     if (installationForListing(detail.item.id)) return t("marketplace.install.alreadyInstalled");
     if (runtimeStatus?.global_blocked || runtimeStatus?.organization_blocked) return t("marketplace.install.runtimeBlocked");
-    if (detail.item.pricing_type !== "free") return t("marketplace.install.entitlementRequired");
+    if (detail.item.pricing_type === "custom") return t("marketplace.install.entitlementRequired");
+    if (detail.item.pricing_type === "paid" && !purchaseForListing(detail.item.id)) {
+      return t("marketplace.install.purchaseRequired");
+    }
     if (detail.item.product_type !== "component_pack" && detail.item.product_type !== "design_template") {
       return t("marketplace.install.runtimeUnsupported");
     }
@@ -504,6 +521,7 @@ export function MarketplacePage() {
         listing_id: installTarget.item.id,
         version_id: installTarget.item.latest_version_id,
         approved_permissions: requestedPermissions,
+        purchase_id: purchaseForListing(installTarget.item.id)?.id,
       });
       setMessage(t("marketplace.message.installed", { title: installTarget.item.title }));
       setInstallTarget(null);
@@ -512,6 +530,60 @@ export function MarketplacePage() {
       await refreshInstallationSurfaces();
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.error.install")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function purchaseProduct(detail: MarketplaceCatalogDetailResponse) {
+    if (!canManageInstallations || detail.item.pricing_type !== "paid") return;
+    setActionLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const checkout = await api.marketplace.checkout(detail.item.id, detail.item.latest_version_id);
+      if (checkout.entitlement_granted) {
+        await loadInstallations();
+        setMessage(t("marketplace.purchase.completed"));
+      } else if (checkout.checkout_url) {
+        window.location.assign(checkout.checkout_url);
+      } else {
+        setMessage(t("marketplace.purchase.pending"));
+      }
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.purchase")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function startPayoutOnboarding() {
+    if (!creator || !approvedCreator) return;
+    const providerAccountId = window.prompt(t("marketplace.payout.accountPrompt"));
+    if (!providerAccountId?.trim()) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      await api.marketplace.onboardPayout(creator.id, providerAccountId.trim());
+      setMessage(t("marketplace.payout.pending"));
+      await loadMarketplace();
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.payout")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function requestCreatorPayout() {
+    if (!creator || !approvedCreator) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      await api.marketplace.requestPayout(creator.id);
+      setMessage(t("marketplace.payout.requested"));
+      setCreatorBalance(await api.marketplace.creatorBalance(creator.id));
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.payoutRequest")));
     } finally {
       setActionLoading(false);
     }
@@ -1150,6 +1222,17 @@ export function MarketplacePage() {
                   {installRestriction(catalogDetail)}
                 </p>
               )}
+              {catalogDetail.item.pricing_type === "paid" && !purchaseForListing(catalogDetail.item.id) && (
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => void purchaseProduct(catalogDetail)}
+                  disabled={!canManageInstallations || actionLoading}
+                >
+                  <BadgeCheck size={16} aria-hidden="true" />
+                  {t("marketplace.purchase.action", { price: catalogPriceLabel(catalogDetail.item) })}
+                </button>
+              )}
               <button
                 className="primary-button"
                 type="button"
@@ -1465,6 +1548,21 @@ export function MarketplacePage() {
               <Save size={16} aria-hidden="true" />
               {t("marketplace.creator.save")}
             </button>
+            {creator && (
+              <button className="secondary-button" type="button" onClick={() => void startPayoutOnboarding()} disabled={!approvedCreator || actionLoading}>
+                <BadgeCheck size={16} aria-hidden="true" />
+                {t("marketplace.payout.action", { status: creator.payout_status })}
+              </button>
+            )}
+            {creatorBalance && (
+              <div className="form-grid form-grid--inline">
+                <span>{t("marketplace.payout.available", { amount: `${(creatorBalance.available_cents / 100).toFixed(2)} ${creatorBalance.currency.toUpperCase()}` })}</span>
+                <span>{t("marketplace.payout.pendingBalance", { days: creatorBalance.settlement_days })}</span>
+                <button className="secondary-button" type="button" onClick={() => void requestCreatorPayout()} disabled={!approvedCreator || creator?.payout_status !== "verified" || actionLoading}>
+                  {t("marketplace.payout.request")}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

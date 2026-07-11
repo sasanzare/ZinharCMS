@@ -54,7 +54,7 @@ as `HttpOnly`, `SameSite=Lax` cookies scoped to `/api/auth`.
 
 ## Data And Tenant Isolation
 
-The final schema is migration-authoritative through migration `0021`.
+The final schema is migration-authoritative through migration `0022`.
 
 - Core identity: users, roles, user roles, refresh tokens, login attempts.
 - Core CMS: content types, entries, pages, page versions, components, media,
@@ -63,7 +63,8 @@ The final schema is migration-authoritative through migration `0021`.
   usage counters, audit logs, email deliveries, alert definitions, beta feedback,
   and GA blockers.
 - Marketplace: creators, listings, versions/package metadata, submissions, review
-  events, and tenant-owned installation records.
+  events, tenant-owned installation records, purchases, entitlements, revenue
+  ledger entries, payout accounts, and payout records.
 
 Forced PostgreSQL RLS protects tenant-owned CMS, billing, operations, beta, and
 Marketplace installation tables. Global identity and Marketplace catalog/review
@@ -128,11 +129,13 @@ state transitions for free Component Packs and Design Templates. Phase 7 adds th
 permission catalog, allowlisted sandbox host API decisions, runtime status
 blocking, and global/organization kill switches. Phase 8 connects safe manifest
 declarations to the organization component registry, template import pipeline,
-and public plugin-hook contracts. Uploaded package code is not executed:
+and public plugin-hook contracts. Phase 9 adds separate Marketplace purchases,
+paid entitlements, auditable revenue splits/refund reversals, and payout account
+verification. Uploaded package code is not executed:
 installation and adapter authorization remain host-owned policy state protected
 by compatibility, permission approval, artifact integrity, audit, and forced-RLS
-gates. Purchases, paid entitlements, customer ratings, and creator payout
-execution are planned only.
+gates. Customer ratings, partial-refund workflows, automated payout transfers,
+and subscription-style Marketplace add-ons remain planned only.
 
 ## Observability And Recovery
 

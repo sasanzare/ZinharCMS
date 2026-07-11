@@ -163,6 +163,14 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Public Plugin Hook MVP registry for sidebar items, dashboard widgets, form fields, and webhook adapters.
 - Adapter endpoints remain host-owned and policy-checked; uploaded Marketplace package code is never executed.
 
+## V3 Marketplace Phase 9 Scope
+
+- Free and paid organization purchases with receipts, tax metadata, and Stripe one-time Checkout for paid products.
+- Active entitlements gate paid install, re-enable, update, and rollback operations; full refunds revoke access.
+- Idempotent revenue split ledger entries record platform commission, creator share, and refund reversals.
+- Creator payout-provider onboarding and admin verification prevent unverified creators from becoming payout eligible.
+- Marketplace finance remains separate from organization subscription billing.
+
 ## Quick Start
 
 Copy the environment template and start the local stack:

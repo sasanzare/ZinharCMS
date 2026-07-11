@@ -327,13 +327,11 @@ security, and compatibility reports are stored on `marketplace_versions` and
 `marketplace_submissions`.
 
 Phase 6 implements tenant-aware install, enable, disable, soft-uninstall, update
-check, pinned update, and rollback endpoints for free Component Packs and Design
+check, pinned update, and rollback endpoints for Component Packs and Design
 Templates. Mutations require organization owner/admin, exact permission approval,
-current compatibility, safe review state, and artifact size/SHA integrity. Paid and
-custom products fail until Marketplace purchase/entitlement support exists.
-
-Marketplace purchases, paid entitlements, executable plugin sandboxing, customer
-ratings, and creator payouts are not implemented.
+current compatibility, safe review state, and artifact size/SHA integrity. Phase 9
+adds active-entitlement enforcement for paid product lifecycle operations. Custom
+pricing remains unsupported.
 
 Phase 6 installation paths and schemas are registered in generated `/openapi.json`.
 Earlier Marketplace creator, submission, review, moderation, and catalog paths
@@ -347,3 +345,17 @@ not executed by the backend.
 Phase 8 adds the Component Pack registry, Template preview/import, and public
 Plugin Hook authorization paths to generated OpenAPI. Template imports verify
 organization-owned media mappings and create independent page/version records.
+
+Phase 9 adds these generated OpenAPI paths:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/marketplace/purchases` | List organization purchases and receipts |
+| `POST` | `/api/marketplace/purchases/checkout` | Grant a free entitlement or create paid Stripe Checkout |
+| `GET` | `/api/marketplace/revenue-ledger` | List tenant-scoped purchase/refund financial effects |
+| `GET/POST` | `/api/marketplace/creators/{creator_id}/payout` | Read or start creator-owned payout onboarding |
+| `POST` | `/api/marketplace/creators/{creator_id}/payout/verify` | Record provider-attested payout state as global admin |
+
+The existing signed `/api/billing/webhook` endpoint processes both subscription
+events and metadata-scoped Marketplace payment/refund events while persisting
+their effects in separate domain tables.

@@ -1376,3 +1376,12 @@ admin bypass transaction, and uploaded package code remains unexecuted.
   answer it, the safest diagram representation, affected files, and the smallest
   owner decision required.
 - Production behavior changed: No.
+## Phase 9 Implementation Update
+
+- AMB-008 is superseded by migration `0022` and the Marketplace finance routes:
+  free/paid purchases, receipts, entitlements, one-time Stripe checkout, full
+  refunds, and the revenue ledger are implemented separately from subscriptions.
+- AMB-009 is superseded for onboarding and eligibility: payout accounts can be
+  registered and provider-attested verification is admin-gated. Automated payout
+  transfer execution remains deferred.
+- Diagram `36-marketplace-finance-lifecycle.mmd` is the Phase 9 evidence view.

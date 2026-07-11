@@ -49,6 +49,8 @@ import type {
   MarketplaceCreatorRequest,
   MarketplaceCreatorStateResponse,
   MarketplaceCreatorResponse,
+  MarketplaceCheckoutResponse,
+  MarketplaceCreatorBalanceResponse,
   MarketplaceInstallRequest,
   MarketplaceKillSwitchResponse,
   MarketplaceInstallationResponse,
@@ -60,6 +62,9 @@ import type {
   MarketplaceReviewDecisionRequest,
   MarketplaceReviewEventResponse,
   MarketplacePermissionCatalogResponse,
+  MarketplacePayoutAccountResponse,
+  MarketplacePayoutResponse,
+  MarketplacePurchaseResponse,
   MarketplaceRuntimeAuthorizeRequest,
   MarketplaceRuntimeAuthorizationResponse,
   MarketplaceRuntimeStatusResponse,
@@ -354,6 +359,28 @@ changePlan: (payload: ChangePlanRequest) =>
     catalogDetail: (listingSlug: string) =>
       request<MarketplaceCatalogDetailResponse>(`/api/marketplace/catalog/${encodeURIComponent(listingSlug)}`, { auth: true }),
     installations: () => request<MarketplaceInstallationResponse[]>("/api/marketplace/installations", { auth: true }),
+    purchases: () => request<MarketplacePurchaseResponse[]>("/api/marketplace/purchases", { auth: true }),
+    checkout: (listingId: string, versionId: string, currency = "usd") =>
+      request<MarketplaceCheckoutResponse>("/api/marketplace/purchases/checkout", {
+        method: "POST",
+        auth: true,
+        body: { listing_id: listingId, version_id: versionId, currency },
+      }),
+    payoutAccount: (creatorId: string) =>
+      request<MarketplacePayoutAccountResponse>(`/api/marketplace/creators/${encodeURIComponent(creatorId)}/payout`, { auth: true }),
+    onboardPayout: (creatorId: string, providerAccountId: string, country?: string) =>
+      request<MarketplacePayoutAccountResponse>(`/api/marketplace/creators/${encodeURIComponent(creatorId)}/payout`, {
+        method: "POST",
+        auth: true,
+        body: { provider_account_id: providerAccountId, country },
+      }),
+    creatorBalance: (creatorId: string) =>
+      request<MarketplaceCreatorBalanceResponse>(`/api/marketplace/creators/${encodeURIComponent(creatorId)}/balance`, { auth: true }),
+    requestPayout: (creatorId: string) =>
+      request<MarketplacePayoutResponse>(`/api/marketplace/creators/${encodeURIComponent(creatorId)}/payout/request`, {
+        method: "POST",
+        auth: true,
+      }),
     permissions: () => request<MarketplacePermissionCatalogResponse[]>("/api/marketplace/permissions", { auth: true }),
     runtimeStatus: () => request<MarketplaceRuntimeStatusResponse>("/api/marketplace/runtime/status", { auth: true }),
     authorizeRuntime: (installationId: string, payload: MarketplaceRuntimeAuthorizeRequest) =>

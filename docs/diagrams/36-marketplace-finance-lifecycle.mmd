@@ -1,0 +1,54 @@
+sequenceDiagram
+    %% Evidence: backend/migrations/0022_v3_phase_nine_marketplace_finance.sql
+    %% Evidence: backend/src/routes/marketplace_finance.rs
+    %% Evidence: backend/src/services/stripe_billing.rs
+    %% Evidence: frontend/src/pages/MarketplacePage.tsx
+    %% Evidence: docs/V3_PHASE_NINE.md
+    autonumber
+    actor Buyer as Organization owner/admin
+    participant UI as Marketplace UI
+    participant API as Marketplace finance API
+    participant DB as PostgreSQL + forced RLS
+    participant Stripe as Stripe Checkout/Webhook
+    actor Creator as Creator owner
+    actor Admin as Global admin
+
+    Note over UI,DB: 9.1 Free product
+    Buyer->>UI: Approve permissions and install
+    UI->>API: Optional free checkout
+    API->>DB: Completed zero-value purchase + entitlement + ledger
+    API-->>UI: Entitlement active
+    UI->>API: Install approved version
+    API->>DB: Verify gates and create installation
+
+    Note over UI,Stripe: 9.2 Paid product
+    Buyer->>UI: Purchase paid listing/version
+    UI->>API: Create checkout
+    API->>DB: Pending purchase + receipt + tax metadata
+    API->>Stripe: Create one-time Checkout Session
+    Stripe-->>UI: Hosted checkout URL
+    Stripe->>API: Signed checkout.session.completed
+    API->>DB: Verify amount/currency/status and grant entitlement
+    UI->>API: Install with purchase_id
+    API->>DB: Require completed active entitlement
+
+    Note over API,DB: 9.3 Revenue split ledger
+    API->>DB: Idempotent purchase entry with commission and creator share
+    alt Full refund
+        Stripe->>API: Signed charge.refunded
+        API->>DB: Revoke entitlement + reversing refund entry
+    else Duplicate provider event
+        API->>DB: Ignore already processed billing event
+    end
+
+    Note over Creator,Admin: 9.4 Payout onboarding and eligibility
+    Creator->>API: Register provider account
+    API->>DB: payout status = pending
+    Admin->>API: Record provider-attested verification
+    alt Creator approved and provider payout-ready
+        API->>DB: payout status = verified
+    else Unverified, restricted, or incomplete
+        API-->>Admin: Reject payout eligibility
+    end
+
+    Note over API,Stripe: Marketplace finance is separate from organization subscription billing

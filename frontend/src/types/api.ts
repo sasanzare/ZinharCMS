@@ -798,6 +798,71 @@ export type MarketplaceInstallRequest = {
   listing_id: string;
   version_id: string;
   approved_permissions: string[];
+  purchase_id?: string;
+};
+
+export type MarketplacePurchaseResponse = {
+  id: string;
+  organization_id: string;
+  listing_id: string;
+  version_id: string;
+  pricing_type: "free" | "paid";
+  currency: string;
+  subtotal_cents: number;
+  tax_cents: number;
+  total_cents: number;
+  provider: string;
+  provider_checkout_id: string | null;
+  status: "pending" | "completed" | "failed" | "refunded" | "canceled";
+  receipt_number: string;
+  provider_metadata: JsonRecord;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceCheckoutResponse = {
+  purchase: MarketplacePurchaseResponse;
+  checkout_url: string | null;
+  entitlement_granted: boolean;
+};
+
+export type MarketplacePayoutAccountResponse = {
+  id: string;
+  creator_id: string;
+  provider: string;
+  provider_account_id: string | null;
+  status: "not_configured" | "pending" | "verified" | "restricted";
+  country: string | null;
+  charges_enabled: boolean;
+  payouts_enabled: boolean;
+  details_submitted: boolean;
+  metadata: JsonRecord;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceCreatorBalanceResponse = {
+  creator_id: string;
+  currency: string;
+  pending_cents: number;
+  available_cents: number;
+  paid_cents: number;
+  net_earned_cents: number;
+  settlement_days: number;
+};
+
+export type MarketplacePayoutResponse = {
+  id: string;
+  creator_id: string;
+  amount_cents: number;
+  currency: string;
+  status: string;
+  provider_account_id: string | null;
+  settlement_at: string | null;
+  provider_transfer_id: string | null;
+  metadata: JsonRecord;
+  created_at: string;
+  updated_at: string;
 };
 
 export type MarketplaceInstallationUpdateRequest = {

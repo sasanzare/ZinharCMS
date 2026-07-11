@@ -328,6 +328,7 @@ pub struct MarketplaceInstallRequest {
     pub listing_id: Uuid,
     pub version_id: Uuid,
     pub approved_permissions: Vec<String>,
+    pub purchase_id: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -814,6 +815,22 @@ pub async fn install_marketplace_product(
         )));
     }
     let candidate = load_install_candidate(&mut tx, payload.listing_id, payload.version_id).await?;
+    if candidate.pricing_type == "paid" {
+        let purchase_id = payload.purchase_id.ok_or_else(|| {
+            AppError::Conflict(
+                "paid Marketplace installation requires a completed purchase entitlement"
+                    .to_owned(),
+            )
+        })?;
+        ensure_paid_entitlement(
+            &mut tx,
+            tenant.organization_id,
+            purchase_id,
+            candidate.listing_id,
+            candidate.version_id,
+        )
+        .await?;
+    }
     let compatibility_report = validate_install_gate(
         &candidate.product_type,
         &candidate.pricing_type,
@@ -823,6 +840,7 @@ pub async fn install_marketplace_product(
         &candidate.security_risk_level,
         &candidate.manifest_json,
         &plan.slug,
+        candidate.pricing_type == "paid" && payload.purchase_id.is_some(),
     )?;
     let permissions =
         approved_permission_snapshot(&candidate.manifest_json, &payload.approved_permissions)
@@ -962,6 +980,7 @@ pub async fn check_installation_updates(
             &version.security_risk_level,
             &version.manifest_json,
             &plan.slug,
+            false,
         ) else {
             continue;
         };
@@ -1094,6 +1113,10 @@ pub async fn update_installation(
     .await?;
     validate_lifecycle_action(&installation.status, LifecycleAction::Update)
         .map_err(|error| AppError::Conflict(error.message))?;
+    if installation.pricing_type == "paid" {
+        ensure_active_listing_entitlement(&mut tx, tenant.organization_id, installation.listing_id)
+            .await?;
+    }
     let target =
         load_version_gate_in_transaction(&mut tx, installation.listing_id, payload.version_id)
             .await?;
@@ -1106,6 +1129,7 @@ pub async fn update_installation(
         &target.security_risk_level,
         &target.manifest_json,
         &plan.slug,
+        installation.pricing_type == "paid",
     )?;
     validate_newer_version(&installation.current_version, &target.version)
         .map_err(|error| AppError::Conflict(error.message))?;
@@ -1228,6 +1252,10 @@ pub async fn rollback_installation(
     .await?;
     validate_lifecycle_action(&installation.status, LifecycleAction::Rollback)
         .map_err(|error| AppError::Conflict(error.message))?;
+    if installation.pricing_type == "paid" {
+        ensure_active_listing_entitlement(&mut tx, tenant.organization_id, installation.listing_id)
+            .await?;
+    }
     let rollback_version_id = installation.rollback_version_id.ok_or_else(|| {
         AppError::Conflict("installation does not have a rollback version".to_owned())
     })?;
@@ -1384,6 +1412,14 @@ async fn change_installation_status(
         "cleanup_policy": CLEANUP_POLICY_PRESERVE,
     });
     if action == LifecycleAction::Enable {
+        if installation.pricing_type == "paid" {
+            ensure_active_listing_entitlement(
+                &mut tx,
+                tenant.organization_id,
+                installation.listing_id,
+            )
+            .await?;
+        }
         let compatibility_report = validate_rollback_gate(
             &installation.product_type,
             &installation.pricing_type,
@@ -2747,6 +2783,54 @@ async fn load_version_gate_in_transaction(
 }
 
 #[allow(clippy::too_many_arguments)]
+async fn ensure_paid_entitlement(
+    tx: &mut Transaction<'_, Postgres>,
+    organization_id: Uuid,
+    purchase_id: Uuid,
+    listing_id: Uuid,
+    version_id: Uuid,
+) -> Result<(), AppError> {
+    let entitled: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM marketplace_entitlements entitlement JOIN marketplace_purchases purchase ON purchase.id = entitlement.purchase_id WHERE entitlement.organization_id = $1 AND entitlement.purchase_id = $2 AND entitlement.listing_id = $3 AND entitlement.version_id = $4 AND entitlement.status = 'active' AND purchase.status = 'completed')",
+    )
+    .bind(organization_id)
+    .bind(purchase_id)
+    .bind(listing_id)
+    .bind(version_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    if entitled {
+        Ok(())
+    } else {
+        Err(AppError::Conflict(
+            "completed Marketplace entitlement was not found for this organization/version"
+                .to_owned(),
+        ))
+    }
+}
+
+async fn ensure_active_listing_entitlement(
+    tx: &mut Transaction<'_, Postgres>,
+    organization_id: Uuid,
+    listing_id: Uuid,
+) -> Result<(), AppError> {
+    let entitled: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM marketplace_entitlements entitlement JOIN marketplace_purchases purchase ON purchase.id = entitlement.purchase_id WHERE entitlement.organization_id = $1 AND entitlement.listing_id = $2 AND entitlement.status = 'active' AND purchase.status = 'completed')",
+    )
+    .bind(organization_id)
+    .bind(listing_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    if entitled {
+        Ok(())
+    } else {
+        Err(AppError::Conflict(
+            "active Marketplace entitlement was not found for this paid product".to_owned(),
+        ))
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn validate_install_gate(
     product_type: &str,
     pricing_type: &str,
@@ -2756,6 +2840,7 @@ fn validate_install_gate(
     security_risk_level: &str,
     manifest: &Value,
     organization_plan: &str,
+    allow_paid: bool,
 ) -> Result<Value, AppError> {
     validate_marketplace_version_gate(
         product_type,
@@ -2767,6 +2852,7 @@ fn validate_install_gate(
         manifest,
         organization_plan,
         false,
+        allow_paid,
     )
 }
 
@@ -2791,6 +2877,7 @@ fn validate_rollback_gate(
         manifest,
         organization_plan,
         true,
+        pricing_type == "paid",
     )
 }
 
@@ -2805,8 +2892,9 @@ fn validate_marketplace_version_gate(
     manifest: &Value,
     organization_plan: &str,
     allow_deprecated: bool,
+    allow_paid: bool,
 ) -> Result<Value, AppError> {
-    if pricing_type != "free" {
+    if pricing_type != "free" && !(allow_paid && pricing_type == "paid") {
         return Err(AppError::Conflict(
             "Marketplace entitlement is required before installing paid or custom products"
                 .to_owned(),
@@ -3278,6 +3366,7 @@ mod tests {
                 "low",
                 &manifest,
                 "free",
+                false,
             )
             .is_err()
         );
