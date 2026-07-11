@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Manager as Organization owner/admin
+    participant Member as Authenticated organization member
+    participant API as Marketplace API
+    participant DB as PostgreSQL with forced RLS
+    participant Mod as Global marketplace admin
+    Manager->>API: Submit review after install/purchase
+    API->>DB: Verify ownership and upsert pending review
+    API->>DB: Write tenant audit event
+    Mod->>API: Publish or reject review
+    API->>DB: Update moderation state and audit
+    Member->>API: Submit abuse report with evidence
+    API->>DB: Insert moderation-queue record
+    alt Critical severity
+        API->>DB: Persist unread admin notification and audit it
+    end
+    Mod->>API: Investigate, resolve, or dismiss
+    API->>DB: Update queue state and acknowledgement

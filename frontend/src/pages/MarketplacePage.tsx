@@ -7,6 +7,7 @@ import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import type {
   JsonValue,
+  JsonRecord,
   MarketplaceCatalogDetailResponse,
   MarketplaceCatalogItemResponse,
   MarketplaceCreatorResponse,
@@ -15,6 +16,8 @@ import type {
   MarketplaceInstallationUpdateCheckResponse,
   MarketplaceHookResponse,
   MarketplacePermissionCatalogResponse,
+  MarketplaceProductReviewResponse,
+  MarketplaceAbuseReportResponse,
   MarketplacePurchaseResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
@@ -92,6 +95,15 @@ const defaultReviewDraft = {
   internal_comment: "",
   creator_message: "",
   reason: "",
+};
+
+const defaultCustomerFeedback = {
+  rating: 5,
+  body: "",
+  report_type: "other" as "malware" | "copyright" | "spam" | "fraud" | "privacy" | "other",
+  severity: "medium" as "low" | "medium" | "high" | "critical",
+  description: "",
+  evidence: "{}",
 };
 
 type ReviewDraft = typeof defaultReviewDraft;
@@ -227,6 +239,11 @@ export function MarketplacePage() {
   const [reviewReports, setReviewReports] = useState<MarketplaceValidationReportResponse[]>([]);
   const [reviewEvents, setReviewEvents] = useState<MarketplaceReviewEventResponse[]>([]);
   const [reviewDrafts, setReviewDrafts] = useState<Record<string, ReviewDraft>>({});
+  const [customerFeedback, setCustomerFeedback] = useState(defaultCustomerFeedback);
+  const [customerReviewQueue, setCustomerReviewQueue] = useState<MarketplaceProductReviewResponse[]>([]);
+  const [abuseReportQueue, setAbuseReportQueue] = useState<MarketplaceAbuseReportResponse[]>([]);
+  const [customerReviewReasons, setCustomerReviewReasons] = useState<Record<string, string>>({});
+  const [abuseResolutionNotes, setAbuseResolutionNotes] = useState<Record<string, string>>({});
   const [catalogFilters, setCatalogFilters] = useState<CatalogFilterDraft>(defaultCatalogFilters);
   const [catalogItems, setCatalogItems] = useState<MarketplaceCatalogItemResponse[]>([]);
   const [catalogDetail, setCatalogDetail] = useState<MarketplaceCatalogDetailResponse | null>(null);
@@ -421,6 +438,24 @@ export function MarketplacePage() {
     }
   }, [canReviewMarketplace, t]);
 
+  const loadCustomerModerationQueues = useCallback(async function loadCustomerModerationQueues() {
+    if (!canReviewMarketplace) {
+      setCustomerReviewQueue([]);
+      setAbuseReportQueue([]);
+      return;
+    }
+    try {
+      const [reviews, reports] = await Promise.all([
+        api.marketplace.reviewModerationQueue(),
+        api.marketplace.abuseReports(),
+      ]);
+      setCustomerReviewQueue(reviews);
+      setAbuseReportQueue(reports);
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.feedback.error.queue")));
+    }
+  }, [canReviewMarketplace, t]);
+
   useEffect(() => {
     void loadSubmissionReports();
   }, [loadSubmissionReports]);
@@ -433,6 +468,10 @@ export function MarketplacePage() {
     void loadReviewEvents();
   }, [loadReviewEvents]);
 
+  useEffect(() => {
+    void loadCustomerModerationQueues();
+  }, [loadCustomerModerationQueues]);
+
   async function refreshMarketplace() {
     await Promise.all([loadMarketplace(), loadCatalog(), loadInstallations(), loadRuntimeControls()]);
   }
@@ -440,6 +479,7 @@ export function MarketplacePage() {
   async function openCatalogDetail(item: MarketplaceCatalogItemResponse) {
     setCatalogLoading(true);
     setError(null);
+    setCustomerFeedback(defaultCustomerFeedback);
     try {
       setCatalogDetail(await api.marketplace.catalogDetail(item.slug));
     } catch (caught) {
@@ -552,6 +592,89 @@ export function MarketplacePage() {
       }
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.error.purchase")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function submitCustomerReview(detail: MarketplaceCatalogDetailResponse) {
+    if (!canManageInstallations || !customerFeedback.body.trim()) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      await api.marketplace.submitReview(detail.item.id, {
+        version_id: detail.item.latest_version_id,
+        rating: customerFeedback.rating,
+        body: customerFeedback.body.trim(),
+      });
+      setCustomerFeedback((current) => ({ ...current, body: "" }));
+      setMessage(t("marketplace.feedback.reviewSubmitted"));
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.feedback.error.review")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function submitAbuseReport(detail: MarketplaceCatalogDetailResponse) {
+    if (!customerFeedback.description.trim()) return;
+    let evidence: JsonRecord;
+    try {
+      const parsed: unknown = JSON.parse(customerFeedback.evidence);
+      if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") throw new Error("evidence must be an object");
+      evidence = parsed as JsonRecord;
+    } catch {
+      setError(t("marketplace.feedback.error.evidence"));
+      return;
+    }
+    setActionLoading(true);
+    setError(null);
+    try {
+      await api.marketplace.submitAbuseReport(detail.item.id, {
+        version_id: detail.item.latest_version_id,
+        report_type: customerFeedback.report_type,
+        severity: customerFeedback.severity,
+        description: customerFeedback.description.trim(),
+        evidence,
+      });
+      setCustomerFeedback((current) => ({ ...current, description: "" }));
+      setMessage(t(customerFeedback.severity === "critical" ? "marketplace.feedback.criticalSubmitted" : "marketplace.feedback.reportSubmitted"));
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.feedback.error.report")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function moderateCustomerReview(reviewId: string, status: "published" | "rejected") {
+    setActionLoading(true);
+    setError(null);
+    try {
+      await api.marketplace.moderateReview(reviewId, {
+        status,
+        moderation_reason: cleanOptional(customerReviewReasons[reviewId] ?? ""),
+      });
+      setMessage(t("marketplace.feedback.reviewModerated"));
+      await loadCustomerModerationQueues();
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.feedback.error.moderation")));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function resolveCustomerAbuseReport(reportId: string, status: "investigating" | "resolved" | "dismissed") {
+    setActionLoading(true);
+    setError(null);
+    try {
+      await api.marketplace.resolveAbuseReport(reportId, {
+        status,
+        resolution_note: cleanOptional(abuseResolutionNotes[reportId] ?? ""),
+      });
+      setMessage(t("marketplace.feedback.reportUpdated"));
+      await loadCustomerModerationQueues();
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.feedback.error.resolution")));
     } finally {
       setActionLoading(false);
     }
@@ -1216,6 +1339,66 @@ export function MarketplacePage() {
                   {catalogDetail.reviews.length === 0 && <p className="empty-state">{t("marketplace.catalog.noReviews")}</p>}
                 </div>
               </div>
+              <div className="marketplace-feedback-form">
+                <h3>{t("marketplace.feedback.rateTitle")}</h3>
+                <p className="review-note">
+                  {canManageInstallations && (installationForListing(catalogDetail.item.id) || purchaseForListing(catalogDetail.item.id))
+                    ? t("marketplace.feedback.reviewEligible")
+                    : t("marketplace.feedback.reviewIneligible")}
+                </p>
+                <label>
+                  {t("marketplace.feedback.rating")}
+                  <select
+                    value={customerFeedback.rating}
+                    onChange={(event) => setCustomerFeedback((current) => ({ ...current, rating: Number(event.target.value) }))}
+                  >
+                    {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} / 5</option>)}
+                  </select>
+                </label>
+                <label>
+                  {t("marketplace.feedback.review")}
+                  <textarea
+                    rows={3}
+                    value={customerFeedback.body}
+                    onChange={(event) => setCustomerFeedback((current) => ({ ...current, body: event.target.value }))}
+                    maxLength={4000}
+                  />
+                </label>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void submitCustomerReview(catalogDetail)}
+                  disabled={!canManageInstallations || !(installationForListing(catalogDetail.item.id) || purchaseForListing(catalogDetail.item.id)) || customerFeedback.body.trim().length < 3 || actionLoading}
+                >
+                  <Star size={16} aria-hidden="true" /> {t("marketplace.feedback.submitReview")}
+                </button>
+              </div>
+              <div className="marketplace-feedback-form">
+                <h3>{t("marketplace.feedback.reportTitle")}</h3>
+                <label>
+                  {t("marketplace.feedback.violationType")}
+                  <select value={customerFeedback.report_type} onChange={(event) => setCustomerFeedback((current) => ({ ...current, report_type: event.target.value as typeof current.report_type }))}>
+                    <option value="malware">{t("marketplace.feedback.type.malware")}</option><option value="copyright">{t("marketplace.feedback.type.copyright")}</option><option value="spam">{t("marketplace.feedback.type.spam")}</option><option value="fraud">{t("marketplace.feedback.type.fraud")}</option><option value="privacy">{t("marketplace.feedback.type.privacy")}</option><option value="other">{t("marketplace.feedback.type.other")}</option>
+                  </select>
+                </label>
+                <label>
+                  {t("marketplace.feedback.severity")}
+                  <select value={customerFeedback.severity} onChange={(event) => setCustomerFeedback((current) => ({ ...current, severity: event.target.value as typeof current.severity }))}>
+                    <option value="low">{t("marketplace.feedback.severity.low")}</option><option value="medium">{t("marketplace.feedback.severity.medium")}</option><option value="high">{t("marketplace.feedback.severity.high")}</option><option value="critical">{t("marketplace.feedback.severity.critical")}</option>
+                  </select>
+                </label>
+                <label>
+                  {t("common.description")}
+                  <textarea rows={3} value={customerFeedback.description} onChange={(event) => setCustomerFeedback((current) => ({ ...current, description: event.target.value }))} maxLength={4000} />
+                </label>
+                <label>
+                  {t("marketplace.feedback.evidence")}
+                  <textarea rows={2} value={customerFeedback.evidence} onChange={(event) => setCustomerFeedback((current) => ({ ...current, evidence: event.target.value }))} />
+                </label>
+                <button className="secondary-button button-danger" type="button" onClick={() => void submitAbuseReport(catalogDetail)} disabled={customerFeedback.description.trim().length < 10 || actionLoading}>
+                  <ShieldAlert size={16} aria-hidden="true" /> {t("marketplace.feedback.submitReport")}
+                </button>
+              </div>
               {installRestriction(catalogDetail) && (
                 <p className="installation-gate-note" role="status">
                   <AlertTriangle size={16} aria-hidden="true" />
@@ -1748,6 +1931,81 @@ export function MarketplacePage() {
           </div>
         )}
       </section>
+
+      {canReviewMarketplace && (
+        <section className="two-column-workspace marketplace-report-grid">
+          <div className="panel">
+            <div className="panel-header">
+              <div>
+                <h2>{t("marketplace.feedback.reviewQueueTitle")}</h2>
+                <span>{t("marketplace.feedback.reviewQueueDescription")}</span>
+              </div>
+              <Star size={18} aria-hidden="true" />
+            </div>
+            <div className="validation-report-list padded">
+              {customerReviewQueue.map((review) => (
+                <article className="validation-report-card" key={review.id}>
+                  <div className="validation-report-card-header">
+                    <div><strong>{review.author} · {review.rating}/5</strong><span>{review.listing_id}</span></div>
+                    <StatusBadge label={review.status} tone="neutral" />
+                  </div>
+                  <p>{review.body}</p>
+                  <label>
+                    {t("marketplace.feedback.moderationReason")}
+                    <textarea
+                      aria-label={`${t("marketplace.feedback.moderationReason")} ${review.author}`}
+                      rows={2}
+                      value={customerReviewReasons[review.id] ?? ""}
+                      onChange={(event) => setCustomerReviewReasons((current) => ({ ...current, [review.id]: event.target.value }))}
+                    />
+                  </label>
+                  <div className="review-action-row moderation-actions">
+                    <button className="secondary-button" type="button" disabled={actionLoading} onClick={() => void moderateCustomerReview(review.id, "published")}>{t("marketplace.feedback.publishReview")}</button>
+                    <button className="secondary-button button-danger" type="button" disabled={actionLoading} onClick={() => void moderateCustomerReview(review.id, "rejected")}>{t("marketplace.feedback.rejectReview")}</button>
+                  </div>
+                </article>
+              ))}
+              {customerReviewQueue.length === 0 && <p className="empty-state">{t("marketplace.feedback.reviewQueueEmpty")}</p>}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-header">
+              <div>
+                <h2>{t("marketplace.feedback.abuseQueueTitle")}</h2>
+                <span>{t("marketplace.feedback.abuseQueueDescription")}</span>
+              </div>
+              <ShieldAlert size={18} aria-hidden="true" />
+            </div>
+            <div className="validation-report-list padded">
+              {abuseReportQueue.map((report) => (
+                <article className="validation-report-card" key={report.id}>
+                  <div className="validation-report-card-header">
+                    <div><strong>{report.report_type} · {report.severity}</strong><span>{report.listing_id}</span></div>
+                    <StatusBadge label={report.status} tone={report.severity === "critical" ? "danger" : "neutral"} />
+                  </div>
+                  <p>{report.description}</p>
+                  <label>
+                    {t("marketplace.feedback.resolutionNote")}
+                    <textarea
+                      aria-label={`${t("marketplace.feedback.resolutionNote")} ${report.id}`}
+                      rows={2}
+                      value={abuseResolutionNotes[report.id] ?? ""}
+                      onChange={(event) => setAbuseResolutionNotes((current) => ({ ...current, [report.id]: event.target.value }))}
+                    />
+                  </label>
+                  <div className="review-action-row moderation-actions">
+                    <button className="secondary-button" type="button" disabled={actionLoading} onClick={() => void resolveCustomerAbuseReport(report.id, "investigating")}>{t("marketplace.feedback.investigateReport")}</button>
+                    <button className="secondary-button" type="button" disabled={actionLoading} onClick={() => void resolveCustomerAbuseReport(report.id, "resolved")}>{t("marketplace.feedback.resolveReport")}</button>
+                    <button className="secondary-button button-danger" type="button" disabled={actionLoading} onClick={() => void resolveCustomerAbuseReport(report.id, "dismissed")}>{t("marketplace.feedback.dismissReport")}</button>
+                  </div>
+                </article>
+              ))}
+              {abuseReportQueue.length === 0 && <p className="empty-state">{t("marketplace.feedback.abuseQueueEmpty")}</p>}
+            </div>
+          </div>
+        </section>
+      )}
 
       {canReviewMarketplace && (
         <section className="panel marketplace-review-events">

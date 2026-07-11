@@ -5,17 +5,17 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-11 07:40 +01:00 (Europe/London)
+- **Last updated:** 2026-07-11 14:54 +01:00 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `b52f81c feat(marketplace): implement v3 phase 8 runtime adapters`
-- **Working tree at session start:** Clean at Phase 8 commit `b52f81c`; current tree contains only the uncommitted Phase 9 implementation and documentation.
+- **Latest relevant commit:** `dffe515 feat(marketplace): complete v3 phase 9 monetization`
+- **Working tree at session start:** Phase 9 was committed at `dffe515`; the current tree contains the uncommitted Phase 10 implementation, migration `0025`, frontend/admin feedback surfaces, and documentation corrections.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** V3 Marketplace Phase 9 — Monetization
-- **Current subphase:** 9.1–9.4 implementation, local validation, and authenticated smoke complete
-- **Overall status:** Phase 9 complete in the local environment; changes remain uncommitted pending explicit user authorization
+- **Current phase:** V3 Marketplace Phase 10 — Customer feedback and abuse reporting
+- **Current subphase:** 10.1 and 10.2 implementation and validation complete
+- **Overall status:** Phase 10 is complete in the local environment; changes remain unstaged and uncommitted pending explicit user authorization
 
 ## 2. Project Overview
 
@@ -82,9 +82,10 @@ and `frontend/dist` are not source-of-truth directories.
 
 | Document | Role | Authority / freshness |
 | --- | --- | --- |
-| `README.md` | Current repository scope and quick-start commands through V3 Phase 6. | Current summary; source code and migrations outrank it. |
+| `README.md` | Current repository scope and quick-start commands through V3 Phase 10. | Current summary; source code and migrations outrank it. |
 | `docs/V3_PHASE_SIX.md` | Phase 6 acceptance, install gates, lifecycle rules, update/rollback behavior, and deferred boundaries. | Current Phase 6 authority. |
 | `docs/V3_PHASE_SEVEN.md` | Phase 7 permission catalog, sandbox policy, runtime authorization, kill switch, and acceptance. | Current Phase 7 authority. |
+| `docs/V3_PHASE_TEN.md` | Phase 10 customer review/rating and abuse-reporting acceptance. | Current Phase 10 authority. |
 | `docs/V3_MARKETPLACE_SCOPE.md` | V3 scope lock and MVP/out-of-scope rules. | Current product-scope authority. |
 | `docs/V3_MARKETPLACE_GAP_LIST.md` | Resolved and deferred Marketplace gaps by phase. | Current gap/status record; verify against runtime. |
 | `docs/V3_MARKETPLACE_POLICY.md` and `docs/V3_PRODUCT_TAXONOMY.md` | Review, moderation, product classification, and safety policy. | Current policy authority. |
@@ -103,6 +104,14 @@ execution, and arbitrary package execution remain deferred.
 
 ## 6. Current Objective
 
+> **Phase 10 override (2026-07-11 14:54):** Phase 9 is committed at `dffe515`.
+> The active objective is V3 Marketplace Phase 10: 10.1 customer rating/review
+> after install or purchase, and 10.2 abuse reporting with evidence, moderation
+> queue, and critical internal notification. The implementation and validation
+> are complete; the remaining action is user-authorized review/stage/commit.
+
+The historical Phase 8 objective below is superseded by the Phase 10 override.
+
 The active objective is to implement and validate V3 Marketplace Phase 8 without
 repeating the committed Phase 7 boundary. The implementation target is the
 Component Pack registry, Template preview/import with tenant asset mapping, and
@@ -118,6 +127,31 @@ planned and authorized:
 - no background automatic update is enabled; installations remain explicitly pinned.
 
 ## 7. Completed and Verified Work
+
+### Phase 10 final checkpoint override (2026-07-11 14:54)
+
+- Phase 10.1 is implemented: owner/admin customer reviews are gated by
+  organization install or completed purchase, include 1-5 rating and review text,
+  return to `pending` on resubmission, and publish only through global-admin
+  moderation. Published reviews feed catalog averages and listing detail.
+- Phase 10.2 is implemented: authenticated organization members can submit abuse
+  reports with violation type, severity, description, and JSON-object evidence;
+  global admins get pending review and abuse queues and can investigate, resolve,
+  dismiss, publish, or reject as applicable.
+- Critical abuse reports now create both the report/audit record and a persisted
+  unread `marketplace_internal_notifications` admin notification in the same
+  transaction; resolving or dismissing acknowledges the notification.
+- Follow-up hardening is included: review list responses are sanitized for
+  tenant/catalog users, abuse queues show only actionable statuses, Unicode text
+  length is counted by characters, and stale diagram/doc claims were corrected.
+- Added/updated migrations `0024` and `0025`, backend feedback service/routes,
+  OpenAPI registration, Marketplace frontend forms/admin queues/API types, Phase
+  10 documentation, and Mermaid diagram `37`.
+- Validation passed after the final changes: backend format check, backend tests
+  (102 tests plus doc tests), frontend lint/typecheck/Vitest/build, `git
+  diff --check`, 38-file Mermaid static validation, Docker PostgreSQL/Redis
+  readiness, SQLx migrations `24` and `25`, and backend `/health`, `/ready`, and
+  `/openapi.json` smoke with all six Phase 10 paths present.
 
 ### Phase 8 checkpoint override (2026-07-10 19:10)
 
@@ -225,6 +259,20 @@ tests/build have passed; live migration/API smoke is still pending.
 
 ## 10. Current Git and Filesystem State
 
+### Actual state at Phase 10 final checkpoint
+
+- `HEAD` is `dffe515` (`feat(marketplace): complete v3 phase 9 monetization`) on
+  `main`, matching `origin/main` at inspection time.
+- No files are staged, deleted, reset, or committed for Phase 10.
+- Modified tracked files are Phase 10 implementation/documentation/UI files plus
+  this handoff update.
+- New Phase 10 files are `backend/migrations/0024_v3_phase_ten_ratings_abuse.sql`,
+  `backend/migrations/0025_v3_phase_ten_internal_notifications.sql`,
+  `backend/src/services/marketplace_feedback.rs`, `docs/V3_PHASE_TEN.md`, and
+  `docs/diagrams/37-marketplace-feedback-abuse.mmd`.
+- Docker PostgreSQL/Redis were started for validation and remain healthy; the
+  temporary backend process was stopped after smoke verification.
+
 ### Actual state at Phase 8 checkpoint
 
 - `HEAD` is `1231613` (`feat(marketplace): implement v3 phase 7 runtime security controls`) and the working tree contains only Phase 8 implementation/documentation changes plus this handoff update.
@@ -269,6 +317,31 @@ should be created unless the user explicitly authorizes it.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
+
+### Phase 10 final validation results (2026-07-11 14:54)
+
+- `cargo fmt --manifest-path backend/Cargo.toml -- --check`: passed.
+- `cargo test --manifest-path backend/Cargo.toml --all-features`: passed, 102
+  backend tests plus doc tests with 0 failures.
+- `npm --prefix frontend run lint`: passed.
+- `npm --prefix frontend run typecheck`: passed.
+- `npm --prefix frontend test`: passed, 3 files and 13 tests.
+- `npm --prefix frontend run build`: passed with the existing >500 kB Vite chunk
+  warning.
+- `git diff --check`: passed with line-ending notices only.
+- Mermaid static validation: passed, 38 `.mmd` files, one declaration each and no
+  Markdown fences.
+- Docker smoke: PostgreSQL and Redis healthy; backend `/health` 200, `/ready` 200
+  with PostgreSQL/Redis reachable, `/openapi.json` 200.
+- SQLx migration smoke: `_sqlx_migrations` reports version `24` (`v3 phase ten
+  ratings abuse`) and version `25` (`v3 phase ten internal notifications`) with
+  `success = true`.
+- OpenAPI smoke: all six Phase 10 routes are present:
+  `/api/marketplace/listings/{listing_id}/reviews`,
+  `/api/marketplace/reviews`,
+  `/api/marketplace/reviews/{review_id}/moderation`,
+  `/api/marketplace/listings/{listing_id}/reports`,
+  `/api/marketplace/reports`, and `/api/marketplace/reports/{report_id}`.
 
 ### Phase 8 validation results (2026-07-10 19:10)
 
@@ -426,6 +499,14 @@ should be created unless the user explicitly authorizes it.
 
 ## 15. Remaining Work
 
+### Phase 10 remaining-work override
+
+1. Review the uncommitted Phase 10 diff.
+2. If and only if the user explicitly authorizes it, stage and commit the Phase
+   10 implementation.
+3. Do not repeat Phases 9 or 10 and do not rerun completed validation unless code
+   or migrations change.
+
 ### Phase 8 remaining-work override
 
 1. Apply migration `0021` in a safe development database and run authenticated
@@ -474,14 +555,10 @@ should be created unless the user explicitly authorizes it.
 
 ## 16. Exact Next Action
 
-For Phase 8, the exact next action is a non-destructive live smoke check in an
-environment with Docker API access: verify PostgreSQL/Redis, apply migration
-`0021` without reset, start the backend, confirm `/health`, `/ready`, and
-`/openapi.json`, then exercise Component Pack registry listing, Template preview
-and import with a same-organization media mapping plus one cross-tenant rejection,
-and public Plugin Hook listing/authorization. Record actual results here. Do not
-execute uploaded package code, enable paid products, reset data, or create a
-commit.
+Review the uncommitted Phase 10 diff and, only after explicit user authorization,
+stage and commit the Phase 10 implementation. Do not rerun completed validation
+unless review changes code. If work resumes without a commit request, begin the
+next explicitly authorized proposal phase; do not repeat Phases 9 or 10.
 
 The older Phase 7 instruction below is historical and superseded by the Phase 8
 action above.
@@ -648,3 +725,30 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - 9.4 passed: payout onboarding returned `pending`; verification without submitted details returned `409`; provider-attested verification with all readiness flags returned `200 verified` and `payouts_enabled=true`.
 - All temporary fixture rows and artifact files were removed; existing database rows were not reset. Backend process was stopped; PostgreSQL/Redis remain healthy under Docker.
 - **Exact Next Action:** review the uncommitted Phase 9 diff and, only after explicit user authorization, stage/commit the Phase 9 implementation. No further implementation or test repetition is required unless review identifies a change.
+
+### 2026-07-11 09:25 +01:00 - V3 Phase 10 feedback and abuse-reporting checkpoint
+
+- Verified Git source of truth: Phase 9 is committed at `dffe515`; no Phase 9 implementation was repeated.
+- Implemented 10.1 customer ratings/reviews with one organization review per listing, 1–5 rating, review text, install-or-completed-purchase ownership gate, pending/published/rejected moderation, published catalog aggregation, and audit records.
+- Implemented 10.2 abuse intake with typed severity/evidence, forced-RLS report storage, global-admin severity-prioritized moderation queue, investigate/resolve/dismiss states, and an atomic critical-notification handoff/audit record.
+- Added migration `0024`, feedback validation service/contract test, routes/OpenAPI, Marketplace UI/API client/forms, Phase 10 docs, and Mermaid diagram `37`.
+- Validation passed: `cargo fmt --check`, `cargo test --all-features` (101 tests), frontend lint/typecheck, Vitest (3 files/10 tests), production build, `git diff --check`, PostgreSQL migration 24, and backend `/health` plus OpenAPI route smoke. The temporary backend process was stopped; PostgreSQL/Redis remain healthy.
+- **Exact Next Action:** review the uncommitted Phase 10 diff and only after explicit user authorization stage/commit it. Do not repeat completed work.
+
+### 2026-07-11 14:54 +01:00 - V3 Phase 10 final validation checkpoint
+
+- Verified the handoff against actual Git state and treated the repository as the
+  source of truth where the earlier 09:25 handoff was stale.
+- Completed Phase 10 hardening after review: sanitized customer-review list DTO,
+  global pending-review queue, actionable abuse queue, persisted internal
+  notifications for critical abuse reports, notification acknowledgement,
+  Unicode character-count validation, frontend admin queues/API types/tests, and
+  stale diagram/doc corrections.
+- Final validation passed: backend format, 102 backend tests plus doc tests,
+  frontend lint/typecheck/build, 13 frontend tests, `git diff --check`, 38
+  Mermaid files, migration versions `24` and `25`, and backend health/ready/OpenAPI
+  smoke with all six Phase 10 paths present.
+- The temporary backend process was stopped. Docker PostgreSQL/Redis remain
+  healthy. No commit, reset, cleanup, or destructive action was performed.
+- **Exact Next Action:** review the uncommitted Phase 10 diff and only after
+  explicit user authorization stage/commit it. Do not repeat completed work.

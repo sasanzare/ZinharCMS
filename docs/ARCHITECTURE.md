@@ -54,7 +54,7 @@ as `HttpOnly`, `SameSite=Lax` cookies scoped to `/api/auth`.
 
 ## Data And Tenant Isolation
 
-The final schema is migration-authoritative through migration `0022`.
+The final schema is migration-authoritative through migration `0025`.
 
 - Core identity: users, roles, user roles, refresh tokens, login attempts.
 - Core CMS: content types, entries, pages, page versions, components, media,
@@ -64,7 +64,8 @@ The final schema is migration-authoritative through migration `0022`.
   and GA blockers.
 - Marketplace: creators, listings, versions/package metadata, submissions, review
   events, tenant-owned installation records, purchases, entitlements, revenue
-  ledger entries, payout accounts, and payout records.
+  ledger entries, payout accounts, payout records, customer reviews, abuse
+  reports, and critical-report internal notifications.
 
 Forced PostgreSQL RLS protects tenant-owned CMS, billing, operations, beta, and
 Marketplace installation tables. Global identity and Marketplace catalog/review
@@ -131,11 +132,13 @@ blocking, and global/organization kill switches. Phase 8 connects safe manifest
 declarations to the organization component registry, template import pipeline,
 and public plugin-hook contracts. Phase 9 adds separate Marketplace purchases,
 paid entitlements, auditable revenue splits/refund reversals, and payout account
-verification. Uploaded package code is not executed:
+verification. Phase 10 adds ownership-gated customer ratings/reviews, global-admin
+review moderation, abuse-report intake and an actionable moderation queue, plus a
+persisted internal notification for every critical report. Uploaded package code is not executed:
 installation and adapter authorization remain host-owned policy state protected
 by compatibility, permission approval, artifact integrity, audit, and forced-RLS
-gates. Customer ratings, partial-refund workflows, automated payout transfers,
-and subscription-style Marketplace add-ons remain planned only.
+gates. Partial-refund workflows, automated payout transfers, external
+notification delivery, and subscription-style Marketplace add-ons remain planned only.
 
 ## Observability And Recovery
 

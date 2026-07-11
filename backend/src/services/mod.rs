@@ -9,6 +9,7 @@ pub mod jwt;
 pub mod marketplace_adapters;
 pub mod marketplace_catalog;
 pub mod marketplace_domain;
+pub mod marketplace_feedback;
 pub mod marketplace_finance;
 pub mod marketplace_installation;
 pub mod marketplace_manifest;

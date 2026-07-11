@@ -291,6 +291,12 @@ Every Marketplace route currently requires authentication and
 | --- | --- | --- |
 | `GET` | `/api/marketplace/catalog` | Search/filter approved compatible catalog items |
 | `GET` | `/api/marketplace/catalog/{listing_slug}` | Read compatible listing detail and versions |
+| `GET`, `POST` | `/api/marketplace/listings/{listing_id}/reviews` | Read published/current-organization customer reviews or submit a gated review |
+| `GET` | `/api/marketplace/reviews` | Read pending customer reviews for moderation (global admin) |
+| `PATCH` | `/api/marketplace/reviews/{review_id}/moderation` | Publish or reject a customer review (global admin) |
+| `POST` | `/api/marketplace/listings/{listing_id}/reports` | Submit a Marketplace abuse report with evidence |
+| `GET` | `/api/marketplace/reports` | Read severity-prioritized abuse reports (global admin) |
+| `PATCH` | `/api/marketplace/reports/{report_id}` | Investigate, resolve, or dismiss an abuse report (global admin) |
 | `GET`, `POST` | `/api/marketplace/installations` | List current installs or install an approved free product |
 | `GET` | `/api/marketplace/installations/{installation_id}/updates` | Check for a newer compatible approved version |
 | `POST` | `/api/marketplace/installations/{installation_id}/enable` | Re-enable a safe disabled installation |

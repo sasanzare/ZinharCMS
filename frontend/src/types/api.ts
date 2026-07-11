@@ -780,6 +780,77 @@ export type MarketplaceCatalogReviewResponse = {
   created_at: string | null;
 };
 
+export type MarketplaceProductReviewRequest = {
+  version_id?: string;
+  rating: number;
+  body: string;
+};
+
+export type MarketplaceProductReviewModerationRequest = {
+  status: "published" | "rejected";
+  moderation_reason?: string;
+};
+
+export type MarketplaceProductReviewResponse = {
+  id: string;
+  organization_id: string;
+  listing_id: string;
+  version_id: string | null;
+  author_id: string;
+  author: string;
+  rating: number;
+  body: string;
+  status: "pending" | "published" | "rejected";
+  moderation_reason: string | null;
+  moderated_by: string | null;
+  moderated_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceProductReviewListResponse = {
+  id: string;
+  author: string;
+  rating: number;
+  body: string;
+  status: "pending" | "published" | "rejected";
+  created_at: string;
+  updated_at: string;
+};
+
+export type MarketplaceAbuseReportRequest = {
+  version_id?: string;
+  report_type: "malware" | "copyright" | "spam" | "fraud" | "privacy" | "other";
+  severity: "low" | "medium" | "high" | "critical";
+  description: string;
+  evidence?: JsonRecord;
+};
+
+export type MarketplaceAbuseReportResolutionRequest = {
+  status: "investigating" | "resolved" | "dismissed";
+  resolution_note?: string;
+};
+
+export type MarketplaceAbuseReportResponse = {
+  id: string;
+  organization_id: string;
+  listing_id: string;
+  version_id: string | null;
+  reporter_id: string;
+  report_type: "malware" | "copyright" | "spam" | "fraud" | "privacy" | "other";
+  severity: "low" | "medium" | "high" | "critical";
+  description: string;
+  evidence: JsonRecord;
+  status: "open" | "investigating" | "resolved" | "dismissed";
+  resolution_note: string | null;
+  notification_status: "not_required" | "created" | "acknowledged";
+  critical_notified_at: string | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type MarketplaceCatalogDetailResponse = {
   item: MarketplaceCatalogItemResponse;
   description: string;

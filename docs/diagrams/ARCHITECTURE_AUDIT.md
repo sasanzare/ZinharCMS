@@ -52,7 +52,8 @@ Status values:
 | Versions/packages | IMPLEMENTED | `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql`; `backend/migrations/0016_v3_phase_two_creator_submission.sql`; `backend/src/services/marketplace_package.rs`; `backend/src/services/marketplace_manifest.rs`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Package upload, object key/checksum/size rules, manifest validation, and immutable version trigger exist. |
 | Validation | IMPLEMENTED | `backend/migrations/0017_v3_phase_three_validation_pipeline.sql`; `backend/src/services/marketplace_validation.rs`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_THREE.md` | High | Static package validation and security scan produce stored reports and block unsafe submissions. |
 | Compatibility | IMPLEMENTED | `backend/migrations/0017_v3_phase_three_validation_pipeline.sql`; `backend/src/services/marketplace_validation.rs`; `backend/src/services/marketplace_catalog.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Compatibility reports include plan/version/feature checks and `install_eligible`. |
-| Reviews | PARTIALLY_IMPLEMENTED | `backend/migrations/0018_v3_phase_four_review_moderation.sql`; `backend/src/services/marketplace_review.rs`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Internal Marketplace review workflow exists. Public catalog product reviews have response/UI placeholders but no persistence or write API was found. |
+| Reviews | IMPLEMENTED | `backend/migrations/0018_v3_phase_four_review_moderation.sql`; `backend/migrations/0024_v3_phase_ten_ratings_abuse.sql`; `backend/src/services/marketplace_review.rs`; `backend/src/services/marketplace_feedback.rs`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx` | High | Internal package review and ownership-gated customer review workflows are distinct and implemented; published customer reviews feed catalog ratings. |
+| Abuse reporting | IMPLEMENTED | `backend/migrations/0024_v3_phase_ten_ratings_abuse.sql`; `backend/migrations/0025_v3_phase_ten_internal_notifications.sql`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_TEN.md` | High | Tenant reports enter a severity-prioritized admin queue; critical reports atomically create an unread internal notification and audit event. |
 | Moderation | IMPLEMENTED | `backend/migrations/0018_v3_phase_four_review_moderation.sql`; `backend/src/services/marketplace_review.rs`; `backend/src/routes/marketplace.rs`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_FOUR.md` | High | Admin moderation supports suspend listing, unpublish version, and emergency block; emergency block updates active installations. |
 | Catalog | IMPLEMENTED | `backend/src/routes/marketplace.rs`; `backend/src/services/marketplace_catalog.rs`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_FIVE.md`; `docs/API.md` | High | Tenant-aware catalog and detail APIs filter approved/safe/compatible listings and render catalog UI. Phase-6 lifecycle paths are registered in generated OpenAPI; older Marketplace handlers remain manually documented. |
 | Installations and runtime safety | IMPLEMENTED for Phase 6/7/8 host-owned boundary | `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql`; `backend/migrations/0019_v3_phase_six_installation_lifecycle.sql`; `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql`; `backend/migrations/0021_v3_phase_eight_runtime_adapters.sql`; `backend/src/routes/marketplace.rs`; `backend/src/routes/marketplace_runtime.rs`; `backend/src/routes/marketplace_adapters.rs`; `backend/src/services/marketplace_installation.rs`; `backend/src/services/marketplace_runtime.rs`; `backend/src/services/marketplace_adapters.rs`; `frontend/src/pages/PagesPage.tsx`; `frontend/src/pages/MarketplacePage.tsx`; `docs/V3_PHASE_SIX.md`; `docs/V3_PHASE_SEVEN.md`; `docs/V3_PHASE_EIGHT.md` | High | Free Component Pack registry, Design Template preview/import with tenant media mapping, public Plugin Hook contracts, permission catalog, allowlisted authorization, kill switches, audit, and tenant RLS are implemented. Uploaded code is not executed; paid entitlements and concrete external execution remain deferred. |
@@ -68,7 +69,7 @@ Status values:
 | `docs/ARCHITECTURE.md` described a future Page Builder, an API-gateway layer, and local/S3-compatible storage. | `docs/ARCHITECTURE.md`; `frontend/src/pages/PagesPage.tsx`; `backend/src/routes/pages.rs`; `backend/src/routes/media.rs`; `backend/src/routes/marketplace.rs` | Corrected to implemented Page Builder, modular monolith, and local filesystem storage. |
 | `env.example` is smaller than `.env.example` and omits current backend config fields. | `env.example`; `.env.example`; `backend/src/config.rs` | Configuration diagrams use `.env.example` and `config.rs`; the legacy template drift remains documented. |
 | `docker-compose.prod.yml` exposes only a subset of optional backend environment variables. | `docker-compose.prod.yml`; `.env.example`; `backend/src/config.rs` | Production diagram marks Stripe/email/rate-limit configuration as environment-dependent. |
-| Marketplace install/payment concepts appear in planning docs, while runtime install and payment paths are absent. | V3 phase/gap docs; `backend/src/routes/marketplace.rs`; `docs/V3_PHASE_SIX.md` | Phase-6 free installation lifecycle is implemented; paid purchase, entitlement, payout, sandbox/runtime execution, and customer-rating behavior remain planned and visually separated. |
+| Marketplace lifecycle concepts originated in planning docs. | V3 phase/gap docs; Marketplace routes/services; Phase 6-10 documents | Installation, runtime policy/adapters, one-time finance, customer ratings, and abuse reporting are implemented through Phase 10; arbitrary package execution and external notification delivery remain deferred. |
 
 ## Ambiguity Register Links
 
@@ -90,7 +91,7 @@ Status values:
 | AMB-014 | Marketplace Package Immutability | Artifact immutability is database-enforced for submitted/validated states. |
 | AMB-015 | Marketplace Artifact Cleanup | Cleanup after validation or persistence failure is decision-required; do not draw automatic cleanup. |
 | AMB-016 | Marketplace Review and Moderation | Appeal/restoration after moderation is decision-required; no restore path should be drawn. |
-| AMB-017 | Marketplace Reviews | Internal review events are implemented; customer ratings/reviews are placeholder behavior. |
+| AMB-017 | Marketplace Reviews | Internal package-review events and ownership-gated customer ratings/reviews are separate implemented workflows. |
 | AMB-018 | Stripe Billing | Event ordering is implemented for organization subscription billing only. |
 | AMB-019 | Stripe Billing | Webhook idempotency is implemented for organization subscription billing only. |
 | AMB-020 | Live Preview | Live preview is in-process WebSocket broadcast; do not draw cross-node pub/sub. |
@@ -145,7 +146,7 @@ Runtime context: tenant routes require `X-Organization-Id`, an access token, an 
 
 ## Final Step 20 Audit
 
-- Mermaid files reviewed: 36 (`00` through `35`).
+- Mermaid files reviewed: 38 (`00` through `37`).
 - Mermaid parser availability: no installed CLI or project-local Mermaid dependency
   was found; no package or browser was installed.
 - Static Mermaid validation: declaration count, fences, block closure, participants,
@@ -154,7 +155,7 @@ Runtime context: tenant routes require `X-Organization-Id`, an access token, an 
 - Ambiguities reviewed: 71 total; 63 `RESOLVED`, 8 `DECISION_REQUIRED`, 0
   `UNRESOLVED`.
 - Planned-only capabilities remain separated from implemented behavior:
-  executable package runtime, purchases/entitlements, customer ratings, and
-  creator payout execution.
+  arbitrary executable package runtime, external notification delivery, and
+  automated creator payout transfer execution.
 - Phase-6 source code and migration are included in the current implementation
   evidence; production database application remains environment-dependent.

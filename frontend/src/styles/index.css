@@ -960,6 +960,32 @@ input {
   overflow-wrap: anywhere;
 }
 
+.marketplace-feedback-form {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdfc;
+}
+
+.marketplace-feedback-form h3,
+.marketplace-feedback-form p {
+  margin: 0;
+}
+
+.marketplace-feedback-form label {
+  display: grid;
+  gap: 5px;
+  color: #45565d;
+  font-size: 0.86rem;
+}
+
+.marketplace-feedback-form textarea,
+.marketplace-feedback-form select {
+  width: 100%;
+}
+
 .catalog-screenshot-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

@@ -301,17 +301,17 @@ Paid entitlements and executable package runtime remain deferred.
 - Domain: Marketplace Reviews
 - Exact question: Are customer ratings implemented, or only internal review events?
 - Documentation claim: Catalog docs mention ratings/reviews in catalog responses, while review/moderation docs focus on internal review events.
-- Implementation evidence: `backend/src/routes/marketplace.rs` returns catalog rating fields and an empty review list, while internal review events are implemented through review services and routes.
-- Database evidence: `backend/migrations/0018_v3_phase_four_review_moderation.sql` creates `marketplace_review_events`; no customer review/rating table was found.
-- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` displays rating fields and review placeholders, but no customer review submission UI.
-- Test evidence: No customer review write test was found.
+- Implementation evidence: `backend/src/routes/marketplace.rs` now persists ownership-gated reviews, exposes published aggregation/catalog detail, and provides global-admin moderation routes.
+- Database evidence: migration `0024_v3_phase_ten_ratings_abuse.sql` creates forced-RLS customer-review and abuse-report tables; migration `0025` adds critical internal notifications.
+- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` includes review/report forms and global-admin feedback moderation queues.
+- Test evidence: backend validation/contract coverage and frontend Phase 10 interaction tests are present.
 - Conflict or missing information: Internal Marketplace review and customer product reviews are different concepts.
-- Safest interpretation: Treat internal review events as implemented and customer ratings as placeholder/read-only fields.
-- Representation to use in diagrams: Use `[PARTIAL] internal review implemented, customer ratings placeholder`.
+- Safest interpretation: Treat internal package-review events and customer product reviews as separate implemented workflows.
+- Representation to use in diagrams: Use `[IMPLEMENTED] customer ratings/reviews and moderation`.
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future catalog and review diagrams.
-- Step 15 update: `MarketplaceCatalogItemResponse` exposes rating fields and `MarketplaceCatalogDetailResponse` has `reviews`, but `get_catalog_listing` returns `reviews: Vec::new()` and no customer rating table or write route exists. Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
+- Phase 10 update: published customer reviews now populate catalog averages/detail; tenant identifiers remain outside the cross-tenant review response. Diagram `37-marketplace-feedback-abuse.mmd` is authoritative for this workflow.
 
 ## AMB-018
 
@@ -1252,7 +1252,7 @@ admin bypass transaction, and uploaded package code remains unexecuted.
 
 - Ambiguities added in step 15: AMB-064, AMB-065, AMB-066.
 - Existing Marketplace ambiguities updated in step 15: AMB-007, AMB-008, AMB-009, AMB-015, AMB-017.
-- Data model decisions represented: Package is conceptual and stored on `marketplace_versions`; validation/security/compatibility reports are JSONB columns; moderation is persisted through `marketplace_review_events`; free installation lifecycle is implemented through tenant-owned `marketplace_installations`; purchases, payouts, and customer ratings are planned only.
+- Historical step-15 decision: customer ratings were planned at that checkpoint; Phase 10 supersedes this with persisted customer reviews and moderation.
 - Production behavior changed: Phase 6 adds the free installation lifecycle; production database application remains environment-dependent.
 
 ## AMB-067
@@ -1364,7 +1364,7 @@ admin bypass transaction, and uploaded package code remains unexecuted.
 - Migration `0021_v3_phase_eight_runtime_adapters.sql` and adapter routes now provide the host-owned Component Pack registry, Template Import, and public Plugin Hook contracts.
 - The safe interpretation is explicit: adapter endpoints consume reviewed manifest JSON, enforce active installation/runtime status and tenant ownership, and never execute uploaded package code.
 - `35-marketplace-runtime-adapters.mmd` is the evidence diagram for the three Phase 8 subphases.
-- Future executable adapters, external network calls, paid entitlements, and customer ratings remain outside this implementation.
+- Historical Phase-8 boundary: customer ratings were outside Phase 8; paid entitlements arrived in Phase 9 and customer ratings in Phase 10.
 
 ## Final Step 20 Ambiguity Review
 

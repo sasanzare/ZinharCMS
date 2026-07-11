@@ -10,6 +10,12 @@ const apiMocks = vi.hoisted(() => ({
   installations: vi.fn(),
   purchases: vi.fn(),
   checkout: vi.fn(),
+  submitReview: vi.fn(),
+  reviewModerationQueue: vi.fn(),
+  moderateReview: vi.fn(),
+  submitAbuseReport: vi.fn(),
+  abuseReports: vi.fn(),
+  resolveAbuseReport: vi.fn(),
   permissions: vi.fn(),
   runtimeStatus: vi.fn(),
   hooks: vi.fn(),
@@ -43,6 +49,12 @@ vi.mock("../services/api", () => ({
       installations: apiMocks.installations,
       purchases: apiMocks.purchases,
       checkout: apiMocks.checkout,
+      submitReview: apiMocks.submitReview,
+      reviewModerationQueue: apiMocks.reviewModerationQueue,
+      moderateReview: apiMocks.moderateReview,
+      submitAbuseReport: apiMocks.submitAbuseReport,
+      abuseReports: apiMocks.abuseReports,
+      resolveAbuseReport: apiMocks.resolveAbuseReport,
       permissions: apiMocks.permissions,
       runtimeStatus: apiMocks.runtimeStatus,
       hooks: apiMocks.hooks,
@@ -188,6 +200,12 @@ beforeEach(() => {
     },
   ]);
   apiMocks.install.mockResolvedValue(installation);
+  apiMocks.submitReview.mockResolvedValue({ id: "review-1", status: "pending" });
+  apiMocks.reviewModerationQueue.mockResolvedValue([]);
+  apiMocks.moderateReview.mockResolvedValue({ id: "review-1", status: "published" });
+  apiMocks.submitAbuseReport.mockResolvedValue({ id: "report-1", status: "open" });
+  apiMocks.abuseReports.mockResolvedValue([]);
+  apiMocks.resolveAbuseReport.mockResolvedValue({ id: "report-1", status: "investigating" });
   apiMocks.installationUpdates.mockResolvedValue({
     installation_id: installation.id,
     current_version_id: installation.version_id,
@@ -359,5 +377,110 @@ describe("Marketplace Phase 6", () => {
 
     await waitFor(() => expect(apiMocks.activateOrganizationKillSwitch).toHaveBeenCalledWith("suspicious artifact"));
     prompt.mockRestore();
+  });
+});
+
+describe("Marketplace Phase 10", () => {
+  it("keeps review submission disabled when the organization has not installed or purchased the product", async () => {
+    render(<MarketplacePage />);
+
+    const catalogHeading = await screen.findByRole("heading", { name: "Free Pack" });
+    fireEvent.click(within(catalogHeading.closest("article")!).getByRole("button", { name: "Details" }));
+    await screen.findByText("Long free description");
+    fireEvent.change(screen.getByLabelText("Review"), { target: { value: "This should remain gated" } });
+
+    expect(screen.getByRole("button", { name: "Submit review" })).toBeDisabled();
+    expect(apiMocks.submitReview).not.toHaveBeenCalled();
+  });
+
+  it("submits a customer review only after the product is installed", async () => {
+    apiMocks.installations.mockResolvedValue([{ ...installation, listing_id: freeItem.id }]);
+    render(<MarketplacePage />);
+
+    const catalogHeading = await screen.findByRole("heading", { name: "Free Pack" });
+    fireEvent.click(within(catalogHeading.closest("article")!).getByRole("button", { name: "Details" }));
+    await screen.findByText("Long free description");
+    fireEvent.change(screen.getByLabelText("Review"), { target: { value: "Useful and reliable pack" } });
+    fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
+
+    await waitFor(() => expect(apiMocks.submitReview).toHaveBeenCalledWith("listing-free", {
+      version_id: "version-1",
+      rating: 5,
+      body: "Useful and reliable pack",
+    }));
+  });
+
+  it("allows any authenticated organization member to submit an abuse report", async () => {
+    setMembership("viewer");
+    render(<MarketplacePage />);
+
+    const catalogHeading = await screen.findByRole("heading", { name: "Free Pack" });
+    fireEvent.click(within(catalogHeading.closest("article")!).getByRole("button", { name: "Details" }));
+    await screen.findByText("Long free description");
+    const reportForm = screen.getByRole("heading", { name: "Report abuse" }).closest("div");
+    expect(reportForm).not.toBeNull();
+    fireEvent.change(within(reportForm!).getByLabelText("Description"), { target: { value: "This package contains suspicious copied code" } });
+    fireEvent.click(within(reportForm!).getByRole("button", { name: "Submit report" }));
+
+    await waitFor(() => expect(apiMocks.submitAbuseReport).toHaveBeenCalledWith("listing-free", {
+      version_id: "version-1",
+      report_type: "other",
+      severity: "medium",
+      description: "This package contains suspicious copied code",
+      evidence: {},
+    }));
+  });
+
+  it("lets global admins moderate customer reviews and investigate abuse reports", async () => {
+    setMembership("owner", "admin");
+    apiMocks.reviewModerationQueue.mockResolvedValue([{
+      id: "review-pending",
+      organization_id: "org-2",
+      listing_id: "listing-free",
+      version_id: "version-1",
+      author_id: "user-2",
+      author: "Reviewer",
+      rating: 2,
+      body: "Needs moderation",
+      status: "pending",
+      moderation_reason: null,
+      moderated_by: null,
+      moderated_at: null,
+      created_at: "2026-07-11T00:00:00Z",
+      updated_at: "2026-07-11T00:00:00Z",
+    }]);
+    apiMocks.abuseReports.mockResolvedValue([{
+      id: "report-open",
+      organization_id: "org-2",
+      listing_id: "listing-free",
+      version_id: "version-1",
+      reporter_id: "user-2",
+      report_type: "malware",
+      severity: "critical",
+      description: "Suspicious executable payload",
+      evidence: {},
+      status: "open",
+      resolution_note: null,
+      notification_status: "created",
+      critical_notified_at: "2026-07-11T00:00:00Z",
+      resolved_by: null,
+      resolved_at: null,
+      created_at: "2026-07-11T00:00:00Z",
+      updated_at: "2026-07-11T00:00:00Z",
+    }]);
+    render(<MarketplacePage />);
+
+    expect(await screen.findByRole("heading", { name: "Customer review queue" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Publish customer review" }));
+    await waitFor(() => expect(apiMocks.moderateReview).toHaveBeenCalledWith("review-pending", {
+      status: "published",
+      moderation_reason: undefined,
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Investigate abuse report" }));
+    await waitFor(() => expect(apiMocks.resolveAbuseReport).toHaveBeenCalledWith("report-open", {
+      status: "investigating",
+      resolution_note: undefined,
+    }));
   });
 });

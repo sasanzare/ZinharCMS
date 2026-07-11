@@ -264,6 +264,6 @@ only mirroring the directory tree.
 - RLS setup is migration-driven and runtime context is set by `backend/src/services/rls.rs`.
 - Filesystem paths appear in upload handling, package artifact object keys, Docker volumes, and static `/uploads` serving.
 - Redis is used for delivery cache, rate limiting, and readiness checks.
-- Stripe is implemented for organization subscription billing, not Marketplace purchases or payouts.
+- Stripe is implemented for organization subscription billing and one-time Marketplace checkout; automated Marketplace payout transfer execution remains deferred.
 - Webhook delivery is performed inline by backend services; no durable background queue was found.
-- Marketplace free installation persistence and lifecycle runtime exist with tenant RLS; paid entitlements and executable package runtime remain deferred.
+- Marketplace free/paid installation persistence, paid entitlements, and lifecycle runtime exist with tenant RLS; executable package runtime remains deferred.

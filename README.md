@@ -138,7 +138,7 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 
 - Tenant-aware public catalog API for approved, safe, compatible Marketplace listings.
 - Search and filters for query text, category, product type, and pricing type while excluding suspended or incompatible products.
-- Listing detail API and admin UI panels for description, screenshots, changelog, permissions, compatible versions, review placeholders, license, and support links.
+- Listing detail API and admin UI panels for description, screenshots, changelog, permissions, compatible versions, customer reviews, license, and support links.
 - Compatibility reports recalculated against the active organization's plan before catalog display.
 
 ## V3 Marketplace Phase 6 Scope
@@ -170,6 +170,13 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Idempotent revenue split ledger entries record platform commission, creator share, and refund reversals.
 - Creator payout-provider onboarding and admin verification prevent unverified creators from becoming payout eligible.
 - Marketplace finance remains separate from organization subscription billing.
+
+## V3 Marketplace Phase 10 Scope
+
+- Organization-installed or purchased products can receive one customer rating and review per organization, with pending/published/rejected moderation.
+- Catalog ratings use only published reviews; the ownership gate is enforced by the API and recorded in tenant audit logs.
+- Abuse reports collect violation type, severity, description, and JSON evidence in a global-admin moderation queue.
+- Critical reports create a persisted unread internal admin notification and audit event; external notification delivery and automatic takedown remain future work.
 
 ## Quick Start
 

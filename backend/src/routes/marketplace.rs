@@ -18,6 +18,10 @@ use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::marketplace_runtime;
 use crate::services::marketplace_catalog::{catalog_compatibility_report, is_catalog_compatible};
+use crate::services::marketplace_feedback::{
+    REPORT_DESCRIPTION_MAX, REVIEW_BODY_MAX, validate_rating, validate_report_type,
+    validate_severity, validate_text,
+};
 use crate::services::marketplace_installation::{
     CLEANUP_POLICY_PRESERVE, LifecycleAction, approved_permission_snapshot,
     canonicalize_permission_value, compare_semver, permission_reapproval_required,
@@ -47,6 +51,24 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/marketplace/catalog/{listing_slug}",
             get(get_catalog_listing),
+        )
+        .route(
+            "/api/marketplace/listings/{listing_id}/reviews",
+            get(list_product_reviews).post(create_product_review),
+        )
+        .route(
+            "/api/marketplace/reviews/{review_id}/moderation",
+            patch(moderate_product_review),
+        )
+        .route("/api/marketplace/reviews", get(list_product_review_queue))
+        .route(
+            "/api/marketplace/listings/{listing_id}/reports",
+            post(create_abuse_report),
+        )
+        .route("/api/marketplace/reports", get(list_abuse_reports))
+        .route(
+            "/api/marketplace/reports/{report_id}",
+            patch(resolve_abuse_report),
         )
         .route(
             "/api/marketplace/installations",
@@ -302,12 +324,91 @@ pub struct MarketplaceCatalogVersionResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize, FromRow, ToSchema)]
 pub struct MarketplaceCatalogReviewResponse {
     pub author: String,
     pub rating: i32,
     pub body: String,
     pub created_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MarketplaceProductReviewRequest {
+    pub version_id: Option<Uuid>,
+    pub rating: i32,
+    pub body: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MarketplaceProductReviewModerationRequest {
+    pub status: String,
+    pub moderation_reason: Option<String>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct MarketplaceProductReviewResponse {
+    pub id: Uuid,
+    pub organization_id: Uuid,
+    pub listing_id: Uuid,
+    pub version_id: Option<Uuid>,
+    pub author_id: Uuid,
+    pub author: String,
+    pub rating: i16,
+    pub body: String,
+    pub status: String,
+    pub moderation_reason: Option<String>,
+    pub moderated_by: Option<Uuid>,
+    pub moderated_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct MarketplaceProductReviewListResponse {
+    pub id: Uuid,
+    pub author: String,
+    pub rating: i16,
+    pub body: String,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MarketplaceAbuseReportRequest {
+    pub version_id: Option<Uuid>,
+    pub report_type: String,
+    pub severity: String,
+    pub description: String,
+    #[serde(default = "empty_json_object")]
+    pub evidence: Value,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MarketplaceAbuseReportResolutionRequest {
+    pub status: String,
+    pub resolution_note: Option<String>,
+}
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct MarketplaceAbuseReportResponse {
+    pub id: Uuid,
+    pub organization_id: Uuid,
+    pub listing_id: Uuid,
+    pub version_id: Option<Uuid>,
+    pub reporter_id: Uuid,
+    pub report_type: String,
+    pub severity: String,
+    pub description: String,
+    pub evidence: Value,
+    pub status: String,
+    pub resolution_note: Option<String>,
+    pub notification_status: String,
+    pub critical_notified_at: Option<DateTime<Utc>>,
+    pub resolved_by: Option<Uuid>,
+    pub resolved_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -486,6 +587,8 @@ struct MarketplaceCatalogRow {
     version: String,
     manifest_json: Value,
     active_installations: i64,
+    rating_average: f64,
+    rating_count: i64,
     updated_at: DateTime<Utc>,
 }
 
@@ -628,6 +731,8 @@ pub async fn list_catalog(
                version.version,
                version.manifest_json,
                COALESCE(installs.active_installations, 0)::BIGINT as active_installations,
+               COALESCE(ratings.rating_average, 0)::DOUBLE PRECISION as rating_average,
+               COALESCE(ratings.rating_count, 0)::BIGINT as rating_count,
                listing.updated_at
         FROM marketplace_listings listing
         JOIN marketplace_creators creator ON creator.id = listing.creator_id
@@ -647,6 +752,13 @@ pub async fn list_catalog(
             WHERE installation.listing_id = listing.id
               AND installation.status = 'active'
         ) installs ON true
+        LEFT JOIN LATERAL (
+            SELECT AVG(review.rating)::DOUBLE PRECISION as rating_average,
+                   COUNT(*)::BIGINT as rating_count
+            FROM marketplace_product_reviews review
+            WHERE review.listing_id = listing.id
+              AND review.status = 'published'
+        ) ratings ON true
         WHERE listing.status = 'approved'
           AND ($1::text IS NULL
                OR listing.title ILIKE ('%' || $1 || '%')
@@ -708,6 +820,8 @@ pub async fn get_catalog_listing(
                version.version,
                version.manifest_json,
                COALESCE(installs.active_installations, 0)::BIGINT as active_installations,
+               COALESCE(ratings.rating_average, 0)::DOUBLE PRECISION as rating_average,
+               COALESCE(ratings.rating_count, 0)::BIGINT as rating_count,
                listing.updated_at
         FROM marketplace_listings listing
         JOIN marketplace_creators creator ON creator.id = listing.creator_id
@@ -727,6 +841,13 @@ pub async fn get_catalog_listing(
             WHERE installation.listing_id = listing.id
               AND installation.status = 'active'
         ) installs ON true
+        LEFT JOIN LATERAL (
+            SELECT AVG(review.rating)::DOUBLE PRECISION as rating_average,
+                   COUNT(*)::BIGINT as rating_count
+            FROM marketplace_product_reviews review
+            WHERE review.listing_id = listing.id
+              AND review.status = 'published'
+        ) ratings ON true
         WHERE listing.status = 'approved'
           AND listing.slug = $1
         "#,
@@ -755,6 +876,19 @@ pub async fn get_catalog_listing(
     .iter()
     .filter_map(|version| catalog_version_from_row(version, &plan.slug))
     .collect::<Vec<_>>();
+    let reviews = sqlx::query_as::<_, MarketplaceCatalogReviewResponse>(
+        r#"
+        SELECT user_account.name as author, review.rating::integer as rating, review.body, review.created_at
+        FROM marketplace_product_reviews review
+        JOIN users user_account ON user_account.id = review.author_id
+        WHERE review.listing_id = $1
+          AND review.status = 'published'
+        ORDER BY review.created_at DESC
+        "#,
+    )
+    .bind(row.id)
+    .fetch_all(&mut *tx)
+    .await?;
     tx.commit().await?;
 
     Ok(Json(MarketplaceCatalogDetailResponse {
@@ -765,9 +899,467 @@ pub async fn get_catalog_listing(
         permissions: item.permissions.clone(),
         changelog: manifest_value(&row.manifest_json, "changelog"),
         versions,
-        reviews: Vec::new(),
+        reviews,
         item,
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/marketplace/listings/{listing_id}/reviews",
+    tag = "marketplace",
+    params(("listing_id" = Uuid, Path, description = "Marketplace listing id")),
+    responses((status = 200, description = "Published reviews and the caller organization's review", body = [MarketplaceProductReviewListResponse]))
+)]
+pub async fn list_product_reviews(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(listing_id): Path<Uuid>,
+) -> Result<Json<Vec<MarketplaceProductReviewListResponse>>, AppError> {
+    let mut tx = rls::begin_bypass_transaction(&state.db).await?;
+    let reviews = sqlx::query_as::<_, MarketplaceProductReviewListResponse>(
+        r#"
+        SELECT review.id, user_account.name as author, review.rating, review.body,
+               review.status, review.created_at, review.updated_at
+        FROM marketplace_product_reviews review
+        JOIN users user_account ON user_account.id = review.author_id
+        WHERE review.listing_id = $1
+          AND (review.status = 'published' OR review.organization_id = $2)
+        ORDER BY review.created_at DESC
+        "#,
+    )
+    .bind(listing_id)
+    .bind(tenant.organization_id)
+    .fetch_all(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(Json(reviews))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/marketplace/reviews",
+    tag = "marketplace",
+    responses((status = 200, description = "Pending customer-review moderation queue", body = [MarketplaceProductReviewResponse]))
+)]
+pub async fn list_product_review_queue(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<Vec<MarketplaceProductReviewResponse>>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    let mut tx = rls::begin_bypass_transaction(&state.db).await?;
+    let reviews = sqlx::query_as::<_, MarketplaceProductReviewResponse>(
+        r#"
+        SELECT review.id, review.organization_id, review.listing_id, review.version_id,
+               review.author_id, user_account.name as author, review.rating, review.body,
+               review.status, review.moderation_reason, review.moderated_by, review.moderated_at,
+               review.created_at, review.updated_at
+        FROM marketplace_product_reviews review
+        JOIN users user_account ON user_account.id = review.author_id
+        WHERE review.status = 'pending'
+        ORDER BY review.created_at ASC
+        "#,
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(Json(reviews))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/marketplace/listings/{listing_id}/reviews",
+    tag = "marketplace",
+    request_body = MarketplaceProductReviewRequest,
+    params(("listing_id" = Uuid, Path, description = "Marketplace listing id")),
+    responses((status = 201, description = "Review submitted for moderation", body = MarketplaceProductReviewResponse))
+)]
+pub async fn create_product_review(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(listing_id): Path<Uuid>,
+    Json(payload): Json<MarketplaceProductReviewRequest>,
+) -> Result<(StatusCode, Json<MarketplaceProductReviewResponse>), AppError> {
+    rbac::require_org_marketplace_installer(&tenant.role)?;
+    validate_rating(payload.rating).map_err(AppError::Validation)?;
+    validate_text(&payload.body, "review body", 3, REVIEW_BODY_MAX)
+        .map_err(AppError::Validation)?;
+
+    let body = payload.body.trim();
+    let mut tx = rls::begin_organization_transaction(
+        &state.db,
+        tenant.organization_id,
+        Some(tenant.user_id),
+    )
+    .await?;
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM marketplace_listings WHERE id = $1)")
+            .bind(listing_id)
+            .fetch_one(&mut *tx)
+            .await?;
+    if !exists {
+        return Err(AppError::NotFound(
+            "Marketplace listing not found".to_owned(),
+        ));
+    }
+    if let Some(version_id) = payload.version_id {
+        let version_matches: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM marketplace_versions WHERE id = $1 AND listing_id = $2)",
+        )
+        .bind(version_id)
+        .bind(listing_id)
+        .fetch_one(&mut *tx)
+        .await?;
+        if !version_matches {
+            return Err(AppError::Validation(
+                "review version does not belong to the listing".to_owned(),
+            ));
+        }
+    }
+    let owns_product: bool = sqlx::query_scalar(
+        r#"
+        SELECT EXISTS (
+            SELECT 1 FROM marketplace_installations
+            WHERE organization_id = $1 AND listing_id = $2 AND status <> 'uninstalled'
+        ) OR EXISTS (
+            SELECT 1 FROM marketplace_purchases
+            WHERE organization_id = $1 AND listing_id = $2 AND status = 'completed'
+        )
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .bind(listing_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if !owns_product {
+        return Err(AppError::Forbidden(
+            "only an organization that installed or purchased this product can leave a review"
+                .to_owned(),
+        ));
+    }
+    let review = sqlx::query_as::<_, MarketplaceProductReviewResponse>(
+        r#"
+        INSERT INTO marketplace_product_reviews (
+          organization_id, listing_id, version_id, author_id, rating, body, status,
+          moderation_reason, moderated_by, moderated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', NULL, NULL, NULL)
+        ON CONFLICT (organization_id, listing_id) DO UPDATE SET
+          version_id = EXCLUDED.version_id,
+          author_id = EXCLUDED.author_id,
+          rating = EXCLUDED.rating,
+          body = EXCLUDED.body,
+          status = 'pending',
+          moderation_reason = NULL,
+          moderated_by = NULL,
+          moderated_at = NULL,
+          updated_at = now()
+        RETURNING id, organization_id, listing_id, version_id, author_id,
+          (SELECT name FROM users WHERE id = author_id) as author, rating, body, status,
+          moderation_reason, moderated_by, moderated_at, created_at, updated_at
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .bind(listing_id)
+    .bind(payload.version_id)
+    .bind(tenant.user_id)
+    .bind(payload.rating as i16)
+    .bind(body)
+    .fetch_one(&mut *tx)
+    .await?;
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        "marketplace.customer_review.submit",
+        "marketplace_product_review",
+        Some(review.id),
+        json!({"listing_id": listing_id, "version_id": payload.version_id, "rating": payload.rating}),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok((StatusCode::CREATED, Json(review)))
+}
+
+#[utoipa::path(
+    patch,
+    path = "/api/marketplace/reviews/{review_id}/moderation",
+    tag = "marketplace",
+    request_body = MarketplaceProductReviewModerationRequest,
+    params(("review_id" = Uuid, Path, description = "Customer review id")),
+    responses((status = 200, description = "Moderated customer review", body = MarketplaceProductReviewResponse))
+)]
+pub async fn moderate_product_review(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(review_id): Path<Uuid>,
+    Json(payload): Json<MarketplaceProductReviewModerationRequest>,
+) -> Result<Json<MarketplaceProductReviewResponse>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    let status = payload.status.trim();
+    if !matches!(status, "published" | "rejected") {
+        return Err(AppError::Validation(
+            "review moderation status must be published or rejected".to_owned(),
+        ));
+    }
+    let reason = payload
+        .moderation_reason
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    if let Some(reason) = reason {
+        validate_text(reason, "moderation reason", 3, REVIEW_BODY_MAX)
+            .map_err(AppError::Validation)?;
+    }
+    let mut tx = rls::begin_bypass_transaction(&state.db).await?;
+    let review = sqlx::query_as::<_, MarketplaceProductReviewResponse>(
+        r#"
+        UPDATE marketplace_product_reviews review
+        SET status = $2, moderation_reason = $3, moderated_by = $4, moderated_at = now(), updated_at = now()
+        WHERE review.id = $1
+        RETURNING review.id, review.organization_id, review.listing_id, review.version_id,
+          review.author_id, (SELECT name FROM users WHERE id = review.author_id) as author,
+          review.rating, review.body, review.status, review.moderation_reason, review.moderated_by,
+          review.moderated_at, review.created_at, review.updated_at
+        "#,
+    )
+    .bind(review_id)
+    .bind(status)
+    .bind(reason)
+    .bind(claims.sub)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("customer review not found".to_owned()))?;
+    audit::record_in_transaction(
+        &mut tx,
+        review.organization_id,
+        Some(claims.sub),
+        "marketplace.customer_review.moderate",
+        "marketplace_product_review",
+        Some(review.id),
+        json!({"status": status}),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(review))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/marketplace/listings/{listing_id}/reports",
+    tag = "marketplace",
+    request_body = MarketplaceAbuseReportRequest,
+    params(("listing_id" = Uuid, Path, description = "Marketplace listing id")),
+    responses((status = 201, description = "Abuse report queued", body = MarketplaceAbuseReportResponse))
+)]
+pub async fn create_abuse_report(
+    State(state): State<AppState>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(listing_id): Path<Uuid>,
+    Json(payload): Json<MarketplaceAbuseReportRequest>,
+) -> Result<(StatusCode, Json<MarketplaceAbuseReportResponse>), AppError> {
+    validate_report_type(payload.report_type.trim()).map_err(AppError::Validation)?;
+    validate_severity(payload.severity.trim()).map_err(AppError::Validation)?;
+    validate_text(
+        &payload.description,
+        "report description",
+        10,
+        REPORT_DESCRIPTION_MAX,
+    )
+    .map_err(AppError::Validation)?;
+    if !payload.evidence.is_object() {
+        return Err(AppError::Validation(
+            "report evidence must be a JSON object".to_owned(),
+        ));
+    }
+    let report_type = payload.report_type.trim();
+    let severity = payload.severity.trim();
+    let description = payload.description.trim();
+    let is_critical = severity == "critical";
+    let mut tx = rls::begin_organization_transaction(
+        &state.db,
+        tenant.organization_id,
+        Some(tenant.user_id),
+    )
+    .await?;
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM marketplace_listings WHERE id = $1)")
+            .bind(listing_id)
+            .fetch_one(&mut *tx)
+            .await?;
+    if !exists {
+        return Err(AppError::NotFound(
+            "Marketplace listing not found".to_owned(),
+        ));
+    }
+    if let Some(version_id) = payload.version_id {
+        let version_matches: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM marketplace_versions WHERE id = $1 AND listing_id = $2)",
+        )
+        .bind(version_id)
+        .bind(listing_id)
+        .fetch_one(&mut *tx)
+        .await?;
+        if !version_matches {
+            return Err(AppError::Validation(
+                "report version does not belong to the listing".to_owned(),
+            ));
+        }
+    }
+    let report = sqlx::query_as::<_, MarketplaceAbuseReportResponse>(
+        r#"
+        INSERT INTO marketplace_abuse_reports (
+          organization_id, listing_id, version_id, reporter_id, report_type, severity,
+          description, evidence, notification_status, critical_notified_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+          CASE WHEN $6 = 'critical' THEN 'created' ELSE 'not_required' END,
+          CASE WHEN $6 = 'critical' THEN now() ELSE NULL END)
+        RETURNING id, organization_id, listing_id, version_id, reporter_id, report_type,
+          severity, description, evidence, status, resolution_note, notification_status,
+          critical_notified_at, resolved_by, resolved_at, created_at, updated_at
+        "#,
+    )
+    .bind(tenant.organization_id)
+    .bind(listing_id)
+    .bind(payload.version_id)
+    .bind(tenant.user_id)
+    .bind(report_type)
+    .bind(severity)
+    .bind(description)
+    .bind(&payload.evidence)
+    .fetch_one(&mut *tx)
+    .await?;
+    audit::record_in_transaction(
+        &mut tx,
+        tenant.organization_id,
+        Some(tenant.user_id),
+        "marketplace.abuse_report.submit",
+        "marketplace_abuse_report",
+        Some(report.id),
+        json!({"listing_id": listing_id, "version_id": payload.version_id, "report_type": report_type, "severity": severity}),
+    )
+    .await?;
+    if is_critical {
+        sqlx::query(
+            r#"
+            INSERT INTO marketplace_internal_notifications (
+              abuse_report_id, notification_type, recipient_role, payload
+            ) VALUES ($1, 'critical_abuse_report', 'admin', $2)
+            ON CONFLICT (abuse_report_id) DO NOTHING
+            "#,
+        )
+        .bind(report.id)
+        .bind(json!({"listing_id": listing_id, "organization_id": tenant.organization_id, "severity": severity}))
+        .execute(&mut *tx)
+        .await?;
+        audit::record_in_transaction(
+            &mut tx,
+            tenant.organization_id,
+            Some(tenant.user_id),
+            "marketplace.abuse_report.critical_notification",
+            "marketplace_abuse_report",
+            Some(report.id),
+            json!({"listing_id": listing_id, "notification_status": "created"}),
+        )
+        .await?;
+    }
+    tx.commit().await?;
+    Ok((StatusCode::CREATED, Json(report)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/marketplace/reports",
+    tag = "marketplace",
+    responses((status = 200, description = "Global abuse moderation queue", body = [MarketplaceAbuseReportResponse]))
+)]
+pub async fn list_abuse_reports(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<Vec<MarketplaceAbuseReportResponse>>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    let mut tx = rls::begin_bypass_transaction(&state.db).await?;
+    let reports = sqlx::query_as::<_, MarketplaceAbuseReportResponse>(
+        "SELECT id, organization_id, listing_id, version_id, reporter_id, report_type, severity, description, evidence, status, resolution_note, notification_status, critical_notified_at, resolved_by, resolved_at, created_at, updated_at FROM marketplace_abuse_reports WHERE status IN ('open', 'investigating') ORDER BY CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, created_at ASC",
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(Json(reports))
+}
+
+#[utoipa::path(
+    patch,
+    path = "/api/marketplace/reports/{report_id}",
+    tag = "marketplace",
+    request_body = MarketplaceAbuseReportResolutionRequest,
+    params(("report_id" = Uuid, Path, description = "Abuse report id")),
+    responses((status = 200, description = "Updated abuse report", body = MarketplaceAbuseReportResponse))
+)]
+pub async fn resolve_abuse_report(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(report_id): Path<Uuid>,
+    Json(payload): Json<MarketplaceAbuseReportResolutionRequest>,
+) -> Result<Json<MarketplaceAbuseReportResponse>, AppError> {
+    rbac::require_any(&claims, &[rbac::ADMIN])?;
+    let status = payload.status.trim();
+    if !matches!(status, "investigating" | "resolved" | "dismissed") {
+        return Err(AppError::Validation(
+            "report status must be investigating, resolved, or dismissed".to_owned(),
+        ));
+    }
+    let note = payload
+        .resolution_note
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    if let Some(note) = note {
+        validate_text(note, "resolution note", 3, REPORT_DESCRIPTION_MAX)
+            .map_err(AppError::Validation)?;
+    }
+    let mut tx = rls::begin_bypass_transaction(&state.db).await?;
+    let report = sqlx::query_as::<_, MarketplaceAbuseReportResponse>(
+        r#"
+        UPDATE marketplace_abuse_reports
+        SET status = $2,
+            resolution_note = $3,
+            notification_status = CASE WHEN notification_status = 'created' THEN 'acknowledged' ELSE notification_status END,
+            resolved_by = CASE WHEN $2 IN ('resolved', 'dismissed') THEN $4 ELSE NULL END,
+            resolved_at = CASE WHEN $2 IN ('resolved', 'dismissed') THEN now() ELSE NULL END,
+            updated_at = now()
+        WHERE id = $1
+        RETURNING id, organization_id, listing_id, version_id, reporter_id, report_type, severity,
+          description, evidence, status, resolution_note, notification_status, critical_notified_at,
+          resolved_by, resolved_at, created_at, updated_at
+        "#,
+    )
+    .bind(report_id)
+    .bind(status)
+    .bind(note)
+    .bind(claims.sub)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("abuse report not found".to_owned()))?;
+    if matches!(status, "resolved" | "dismissed") {
+        sqlx::query(
+            "UPDATE marketplace_internal_notifications SET status = 'acknowledged', acknowledged_at = now() WHERE abuse_report_id = $1 AND status = 'unread'",
+        )
+        .bind(report.id)
+        .execute(&mut *tx)
+        .await?;
+    }
+    audit::record_in_transaction(
+        &mut tx,
+        report.organization_id,
+        Some(claims.sub),
+        "marketplace.abuse_report.moderate",
+        "marketplace_abuse_report",
+        Some(report.id),
+        json!({"status": status}),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(report))
 }
 
 #[utoipa::path(
@@ -3159,8 +3751,8 @@ fn catalog_item_from_row(
         latest_version_id: row.version_id,
         latest_version: row.version.clone(),
         badge: "Compatible".to_owned(),
-        rating_average: 0.0,
-        rating_count: 0,
+        rating_average: row.rating_average,
+        rating_count: row.rating_count,
         active_installations: row.active_installations,
         compatibility_report,
         permissions: manifest_array(&row.manifest_json, "permissions"),
@@ -3187,6 +3779,10 @@ fn catalog_version_from_row(
         changelog: manifest_value(&row.manifest_json, "changelog"),
         created_at: row.created_at,
     })
+}
+
+fn empty_json_object() -> Value {
+    json!({})
 }
 
 fn manifest_array(manifest: &Value, key: &str) -> Value {

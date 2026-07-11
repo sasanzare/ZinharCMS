@@ -35,6 +35,7 @@ runtime configuration, and only then supporting documentation.
 | `34` | Phase-7 Marketplace permission, sandbox policy, and kill-switch flow. |
 | `35` | Phase-8 Component Pack registry, Template Import, and public Plugin Hook adapters. |
 | `36` | Phase-9 free/paid checkout, entitlement, revenue ledger, refund, and payout verification. |
+| `37` | Phase-10 customer reviews, abuse reporting, moderation queues, and critical notification. |
 
 ## Implementation Status Language
 
@@ -51,8 +52,9 @@ runtime configuration, and only then supporting documentation.
 - Every `.mmd` file contains exactly one standalone Mermaid declaration.
 - Markdown fences are not used inside `.mmd` files.
 - Evidence comments reference existing repository paths.
-- Automated payout transfers, customer ratings, partial refunds, and executable
-  sandbox/runtime capabilities remain visually separate from implemented finance.
+- Automated payout transfers, partial refunds, external notification delivery,
+  and executable sandbox/runtime capabilities remain visually separate from
+  implemented Marketplace finance and feedback.
 - No Mermaid parser or project-local Mermaid dependency was installed in the
   repository, so parser validation was unavailable.
 - All Mermaid files were independently checked with repository-local static

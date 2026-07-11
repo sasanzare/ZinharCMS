@@ -101,11 +101,11 @@ flowchart TD
 
     subgraph catalog_and_installation["Catalog and installation lifecycle [IMPLEMENTED/PARTIAL]"]
         catalog_filter["Catalog eligibility: listing approved, version approved, validation passed/warning, risk low/medium, install_eligible [IMPLEMENTED]"]
-        catalog_ui["MarketplacePage catalog, install dialog, and Installed Apps [IMPLEMENTED]<br/>customer ratings remain placeholders AMB-017"]
+        catalog_ui["MarketplacePage catalog, reviews, install dialog, and Installed Apps [IMPLEMENTED]<br/>published customer ratings feed catalog detail AMB-017"]
         install_gates["Install/enable/update/rollback gates [IMPLEMENTED] AMB-027<br/>owner/admin, exact permission approval, approved/safe version, compatibility, checksum, free entitlement"]
         install_runtime["List, install, enable, disable, soft uninstall, update-check, update, rollback APIs [IMPLEMENTED] AMB-007"]
         install_audit["Installation mutations and audit_logs in one tenant transaction [IMPLEMENTED]<br/>soft uninstall preserves organization data"]
-        purchase_runtime["Paid purchase/entitlement creation, payout, customer rating, sandbox/runtime execution [PLANNED] AMB-006 AMB-008 AMB-009 AMB-017"]
+        purchase_runtime["Paid checkout, entitlements, payout onboarding, and customer feedback [IMPLEMENTED/PARTIAL]<br/>executable sandbox/runtime remains planned AMB-006 AMB-008 AMB-009 AMB-017"]
     end
 
     frontend_ui --> api_router

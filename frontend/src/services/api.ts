@@ -46,6 +46,13 @@ import type {
   MediaDetailResponse,
   MarketplaceCatalogDetailResponse,
   MarketplaceCatalogItemResponse,
+  MarketplaceProductReviewRequest,
+  MarketplaceProductReviewModerationRequest,
+  MarketplaceProductReviewResponse,
+  MarketplaceProductReviewListResponse,
+  MarketplaceAbuseReportRequest,
+  MarketplaceAbuseReportResolutionRequest,
+  MarketplaceAbuseReportResponse,
   MarketplaceCreatorRequest,
   MarketplaceCreatorStateResponse,
   MarketplaceCreatorResponse,
@@ -358,6 +365,27 @@ changePlan: (payload: ChangePlanRequest) =>
       request<MarketplaceCatalogItemResponse[]>(`/api/marketplace/catalog${query(params)}`, { auth: true }),
     catalogDetail: (listingSlug: string) =>
       request<MarketplaceCatalogDetailResponse>(`/api/marketplace/catalog/${encodeURIComponent(listingSlug)}`, { auth: true }),
+    reviews: (listingId: string) =>
+      request<MarketplaceProductReviewListResponse[]>(`/api/marketplace/listings/${encodeURIComponent(listingId)}/reviews`, { auth: true }),
+    submitReview: (listingId: string, payload: MarketplaceProductReviewRequest) =>
+      request<MarketplaceProductReviewResponse>(`/api/marketplace/listings/${encodeURIComponent(listingId)}/reviews`, {
+        method: "POST", auth: true, body: payload,
+      }),
+    reviewModerationQueue: () =>
+      request<MarketplaceProductReviewResponse[]>("/api/marketplace/reviews", { auth: true }),
+    moderateReview: (reviewId: string, payload: MarketplaceProductReviewModerationRequest) =>
+      request<MarketplaceProductReviewResponse>(`/api/marketplace/reviews/${encodeURIComponent(reviewId)}/moderation`, {
+        method: "PATCH", auth: true, body: payload,
+      }),
+    submitAbuseReport: (listingId: string, payload: MarketplaceAbuseReportRequest) =>
+      request<MarketplaceAbuseReportResponse>(`/api/marketplace/listings/${encodeURIComponent(listingId)}/reports`, {
+        method: "POST", auth: true, body: payload,
+      }),
+    abuseReports: () => request<MarketplaceAbuseReportResponse[]>("/api/marketplace/reports", { auth: true }),
+    resolveAbuseReport: (reportId: string, payload: MarketplaceAbuseReportResolutionRequest) =>
+      request<MarketplaceAbuseReportResponse>(`/api/marketplace/reports/${encodeURIComponent(reportId)}`, {
+        method: "PATCH", auth: true, body: payload,
+      }),
     installations: () => request<MarketplaceInstallationResponse[]>("/api/marketplace/installations", { auth: true }),
     purchases: () => request<MarketplacePurchaseResponse[]>("/api/marketplace/purchases", { auth: true }),
     checkout: (listingId: string, versionId: string, currency = "usd") =>

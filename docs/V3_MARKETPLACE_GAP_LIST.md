@@ -41,6 +41,14 @@ ledger entries, and creator payout onboarding/verification. Subscription-style
 Marketplace add-ons, partial refunds, and automated payout transfer execution
 remain later work.
 
+## Phase 10 Update
+
+Phase 10 resolves customer review/rating ownership and moderation, plus the
+abuse-report intake and global moderation queue. Critical reports persist an
+unread internal admin notification and audit event. External notification delivery,
+automatic takedown, evidence-file upload, and appeals remain later operations
+work.
+
 ## Phase 8 Update
 
 Phase 8 resolves the first host-owned adapter surfaces: installed Component Pack

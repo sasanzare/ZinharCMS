@@ -94,10 +94,9 @@ subgraph marketplace["Marketplace submission, review, moderation, and catalog [P
 end
 
 subgraph excluded["Separated future Marketplace capabilities"]
-  install_future["Executable install/update/rollback [PLANNED] AMB-007"]
-  purchase_future["Purchases and entitlements [PLANNED] AMB-008"]
-  payout_future["Creator payout ledger/provider [PLANNED] AMB-009"]
-  rating_future["Customer ratings/reviews [PLANNED] AMB-017"]
+  install_future["Executable package runtime [PLANNED] AMB-007"]
+  payout_future["Automated payout transfers [PLANNED] AMB-009"]
+  notification_future["External abuse notification delivery [PLANNED] AMB-017"]
 end
 
 id_actor --> id_page --> id_api --> id_route --> id_mw --> id_handler --> id_data --> id_test --> id_doc
@@ -106,9 +105,8 @@ md_actor --> md_page --> md_api --> md_route --> md_mw --> md_handler --> md_dat
 bo_actor --> bo_page --> bo_api --> bo_route --> bo_mw --> bo_handler --> bo_data --> bo_external --> bo_test --> bo_doc
 mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_test --> mp_doc
 mp_doc -. "explicit future scope" .-> install_future
-mp_doc -. "explicit future scope" .-> purchase_future
 mp_doc -. "explicit future scope" .-> payout_future
-mp_doc -. "placeholder response/UI only" .-> rating_future
+mp_doc -. "external delivery deferred" .-> notification_future
 
 classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111;
 classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111;
@@ -117,5 +115,5 @@ classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
 
 class id_page,id_api,id_route,id_mw,id_handler,id_data,id_test,id_doc,cms_page,cms_api,cms_route,cms_mw,cms_handler,cms_data,cms_test,cms_doc,md_page,md_api,md_route,md_mw,md_handler,md_data,md_test,md_doc,bo_page,bo_api,bo_route,bo_mw,bo_handler,bo_data,bo_test,bo_doc,mp_page,mp_api,mp_route,mp_mw,mp_handler,mp_test,mp_doc implemented;
 class cms_cache,md_external,bo_external,mp_data,mp_storage partial;
-class install_future,purchase_future,payout_future,rating_future planned;
+class install_future,payout_future,notification_future planned;
 class id_actor,cms_actor,md_actor,bo_actor,mp_actor external;
