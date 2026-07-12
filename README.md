@@ -2,7 +2,7 @@
 
 ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
 This repository currently implements phases zero through ten from the original project
-proposal plus V3 Marketplace phases 0.1 through 14: a runnable monorepo foundation, local infrastructure, CI, environment
+proposal plus V3 Marketplace phases 0.1 through 15: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
@@ -212,6 +212,13 @@ npm run marketplace -- pack docs/marketplace-samples/component-pack --force
 - Customer Beta evidence uses existing Marketplace install, uninstall, purchase, support-feedback, and report paths for real organization testing.
 - `scripts/marketplace-phase14-beta-readiness.ps1` produces a read-only readiness summary over existing beta and Marketplace APIs.
 - No parallel Marketplace beta API is introduced; uploaded Marketplace package code remains unexecuted.
+
+## V3 Marketplace Phase 15 Scope
+
+- Launch Readiness is documented in `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md`, including support workflow, rollback, and incident checklist for broken install, malicious product, wrong payment, report abuse, and emergency block.
+- General Availability release notes live in `docs/V3_MARKETPLACE_RELEASE_NOTES.md` and point to public creator, policy, API, runbook, and phase docs.
+- `scripts/marketplace-phase15-ga-check.ps1` runs the Phase 15 contract checks, Marketplace regression, frontend lint/build, and optional live health/readiness/Marketplace smoke.
+- Marketplace GA uses existing approved-product install, analytics, report, purchase, and beta-readiness surfaces; no new launch API or uploaded-code execution is introduced.
 
 ## Quick Start
 

@@ -99,6 +99,19 @@ Published products can be suspended or taken down when:
 
 Emergency takedown must block new installations immediately. Existing installations may be disabled through a kill switch in later V3 phases.
 
+## Phase 15 Final Launch Policy
+
+This is the final policy baseline for Launch Readiness and General Availability.
+
+- Only reviewed and approved products can be installed in production.
+- Launch support must treat broken install, malicious product, wrong payment, refund/dispute, payout issue, and emergency block as first-class incident classes.
+- Support workflow must use existing Marketplace records first: installation, purchase, entitlement, revenue ledger, report, moderation queue, internal notification, beta feedback, and admin analytics.
+- Product rollback must use the installed-app rollback API when a safe rollback version exists; direct database edits are not a support workflow.
+- A malicious product must be suspended, unpublished, emergency blocked, or kill-switched using existing moderation/runtime controls.
+- Wrong payment handling must preserve purchase, entitlement, and ledger invariants; partial refunds and automated payout transfer execution remain outside the current runtime contract.
+- Public docs, release notes, and the operations runbook must be available before GA.
+- Marketplace GA does not enable uploaded package execution, approval bypass, anonymous install, or automated payout transfer execution.
+
 ## Phase 0.1 Decision Matrix
 
 | Submission | Decision |

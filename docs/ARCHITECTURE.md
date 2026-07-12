@@ -145,7 +145,11 @@ review abuse paths, plus catalog/search/listing/install performance indexes,
 private catalog cache headers, and a local latency baseline script. Phase 14
 uses the existing beta participant/feedback/blocker model and Marketplace
 analytics/lifecycle/finance/report APIs as a read-only evidence layer for
-Private Creator Beta and Customer Beta readiness. Uploaded package code is not executed:
+Private Creator Beta and Customer Beta readiness. Phase 15 packages those
+existing controls into Launch Readiness and General Availability operations:
+runbook, final policy, support workflow, rollback and incident checklist,
+release notes, public docs, monitoring dashboard, and support plan. Uploaded
+package code is not executed:
 installation and adapter authorization remain host-owned policy state protected
 by compatibility, permission approval, artifact integrity, audit, and forced-RLS
 gates. Partial-refund workflows, automated payout transfers, external

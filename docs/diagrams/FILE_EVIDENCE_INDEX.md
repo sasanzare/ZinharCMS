@@ -54,25 +54,27 @@ conflicts.
 | Marketplace creator tooling | N/A | Existing Marketplace upload route in `backend/src/routes/marketplace.rs` | `scripts/marketplace-cli.mjs`; backend manifest/validation services remain final authority | N/A | CLI submit uses the existing upload multipart API | CLI validate/pack smoke over sample packages | `docs/V3_PHASE_TWELVE.md`; `docs/MARKETPLACE_CREATOR_GUIDE.md`; `39-marketplace-creator-tooling.mmd`; `docs/marketplace-samples/*` | Local creator tooling is implemented; backend upload/review remains authoritative and uploaded code remains unexecuted. |
 | Marketplace QA and performance | `backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql`; existing Marketplace tables from `0015`-`0025` | `backend/src/routes/marketplace.rs`; `backend/src/routes/marketplace_finance.rs`; billing webhook route | `backend/src/services/marketplace_phase_thirteen.rs`; `backend/src/services/marketplace_performance.rs`; `backend/src/services/stripe_billing.rs` | N/A | Existing Marketplace APIs plus load smoke script | Backend Phase 13 security/performance tests; `scripts/marketplace-phase13-load-smoke.ps1` | `docs/V3_PHASE_THIRTEEN.md`; `40-marketplace-qa-performance.mmd` | P0 attack-path QA, query-aligned indexes, private catalog cache policy, and latency baseline tooling are implemented. |
 | Marketplace beta readiness | Existing beta tables from `0014`; existing Marketplace tables from `0015`-`0025` | `backend/src/routes/beta.rs`; `backend/src/routes/marketplace.rs`; `backend/src/routes/marketplace_finance.rs`; `backend/src/routes/marketplace_analytics.rs` | `backend/src/services/marketplace_phase_fourteen.rs`; existing beta and Marketplace handlers/services | N/A | `scripts/marketplace-phase14-beta-readiness.ps1` uses existing beta and Marketplace APIs | Backend Phase 14 static contract tests; readiness script parse check | `docs/V3_PHASE_FOURTEEN.md`; `41-marketplace-beta.mmd` | No new beta schema/API is introduced; readiness gates require real beta cohort/product/support data before sign-off. |
+| Marketplace launch readiness and GA | Existing beta tables from `0014`; existing Marketplace tables from `0015`-`0026` | `backend/src/routes/beta.rs`; `backend/src/routes/marketplace.rs`; `backend/src/routes/marketplace_finance.rs`; `backend/src/routes/marketplace_analytics.rs`; `/health`; `/ready` | `backend/src/services/marketplace_phase_fifteen.rs`; existing Marketplace handlers/services | N/A | `scripts/marketplace-phase15-ga-check.ps1` uses existing health, beta, Marketplace install, purchase, report, and analytics APIs | Backend Phase 15 static contract tests; GA check script parse check | `docs/V3_PHASE_FIFTEEN.md`; `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md`; `docs/V3_MARKETPLACE_RELEASE_NOTES.md`; `42-marketplace-launch-ga.mmd` | No launch/GA API is introduced; GA is an operational gate over approved-product install and existing monitoring/support surfaces. |
 | Marketplace OpenAPI coverage | N/A | `backend/src/routes/mod.rs`; `backend/src/routes/marketplace.rs` | N/A | N/A | N/A | Compile/OpenAPI generation by build | `docs/API.md`; `docs/V3_PHASE_SIX.md` | Phase-6 installation paths/schemas are registered; legacy Marketplace handlers remain manually documented. |
 | Background tasks or queues | N/A | Process-local route/service calls | `backend/src/services/webhooks.rs`; `backend/src/services/stripe_billing.rs`; `backend/src/state.rs` | N/A | N/A | N/A | `docs/V2_OPERATIONS_RUNBOOK.md` | Webhooks use transient spawned tasks; no durable queue/worker found. |
 | Observability | `0011` billing events; `0012` audit/email/alert records; `0017` validation reports | `/health`; `/ready`; operational domain routes | `main.rs`; tracing/request-id layers; audit/email/webhook/Stripe services | Dashboard/organization/billing/beta/Marketplace pages | `api.health`; `api.readiness`; operational API groups | GA/security/integration tests | `docs/ARCHITECTURE.md`; `31-observability-and-failure-recovery.mmd` | Process-local logs and persisted records exist; no metrics/exporter/collector integration. |
 | Failure recovery | No dedicated recovery migration | Affected media/Marketplace/webhook/billing routes | Cache fallback, webhook/email/Stripe failure paths | Error states in domain pages | Existing domain methods | Failure-path unit/static tests only | Operations runbook; `AMBIGUITIES.md` | No uniform retry, compensation, backup, or post-mutation recovery contract. |
-| Diagram traceability | `0001`-`0026` | All route modules | All major services | All major pages | All major API groups | Backend/frontend suites | `TRACEABILITY.md`; `32-end-to-end-traceability.mmd`; `37-marketplace-feedback-abuse.mmd`; `40-marketplace-qa-performance.mmd`; `41-marketplace-beta.mmd` | Planned capabilities are explicitly separated from runtime evidence. |
+| Diagram traceability | `0001`-`0026` | All route modules | All major services | All major pages | All major API groups | Backend/frontend suites | `TRACEABILITY.md`; `32-end-to-end-traceability.mmd`; `37-marketplace-feedback-abuse.mmd`; `40-marketplace-qa-performance.mmd`; `41-marketplace-beta.mmd`; `42-marketplace-launch-ga.mmd` | Planned capabilities are explicitly separated from runtime evidence. |
 
 ## Final Step 20 Update
 
 1. Current migrations: 26.
-2. Mermaid diagrams: 42 (`00` through `41`).
+2. Mermaid diagrams: 43 (`00` through `42`).
 3. Traceability: finalized in `TRACEABILITY.md`,
    `32-end-to-end-traceability.mmd`, `38-marketplace-analytics.mmd`,
    `39-marketplace-creator-tooling.mmd`, and
    `40-marketplace-qa-performance.mmd`, with Phase 14 beta evidence added in
-   `41-marketplace-beta.mmd`.
+   `41-marketplace-beta.mmd` and Phase 15 launch/GA operations added in
+   `42-marketplace-launch-ga.mmd`.
 4. Documentation conflicts corrected: Page Builder status, modular-monolith
    boundary, local storage, tenant-protected Marketplace catalog, and missing V2/V3
    manual API sections.
 5. Remaining generated-documentation conflict: Marketplace paths are not
    registered in `/openapi.json`.
-6. Current behavior includes Phase 14 code, script, Markdown, and Mermaid
+6. Current behavior includes Phase 15 code, scripts, Markdown, and Mermaid
    updates; generated OpenAPI coverage is still intentionally separate.

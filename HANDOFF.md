@@ -5,17 +5,17 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-12 11:38 +01:00 (Europe/London)
+- **Last updated:** 2026-07-12 16:27 +01:00 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `70d8f12 feat(marketplace): add v3 phase 13 QA and performance gates`
-- **Working tree at session start:** Clean Phase 13 commit `70d8f12`; Phase 14 beta readiness docs, static backend contract tests, readiness script, Mermaid diagram, and traceability updates are now present in the uncommitted working tree.
+- **Latest relevant commit:** `87bc6d0e feat(marketplace): add v3 phase 14 beta readiness`
+- **Working tree at session start:** Clean Phase 14 commit `87bc6d0e`; Phase 15 launch readiness and GA operations docs, static backend contract tests, GA check script, Mermaid diagram, and traceability updates are now present in the uncommitted working tree.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** V3 Marketplace Phase 14 — Private Creator Beta and Customer Beta
-- **Current subphase:** 14.1 Private Creator Beta and 14.2 Customer Beta implemented as a read-only beta evidence/readiness layer
-- **Overall status:** Phase 14 is complete in local validation. The working tree contains unstaged/uncommitted Phase 14 backend static contract tests, read-only readiness script, docs, diagram, traceability/index updates, and this handoff update. No stage or commit has been performed.
+- **Current phase:** V3 Marketplace Phase 15 - Launch Readiness and General Availability
+- **Current subphase:** 15.1 Launch Readiness and 15.2 General Availability implemented as an operational launch/GA readiness layer over existing Marketplace APIs
+- **Overall status:** Phase 15 is complete in local validation. The working tree contains unstaged/uncommitted Phase 15 backend static contract tests, GA check script, operations/release docs, diagram, traceability/index updates, and this handoff update. No stage or commit has been performed.
 
 ## 2. Project Overview
 
@@ -38,11 +38,12 @@ system of record, Redis for cache/rate-limit support, and local filesystem
 storage for CMS media and Marketplace package artifacts.
 
 The baseline includes the original CMS phases zero through ten, V2 organization,
-billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 14. The
+billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 15. The
 current V3 implementation includes installation lifecycle, runtime security
 policy, host-owned adapters, one-time purchases/entitlements, feedback/abuse
 moderation, read-only analytics, creator-side packaging tooling, Marketplace
-security/performance QA gates, and beta readiness evidence gates. Uploaded
+security/performance QA gates, beta readiness evidence gates, and launch/GA
+operations readiness. Uploaded
 package code is still never executed.
 
 ## 3. Technology Stack
@@ -57,7 +58,7 @@ package code is still never executed.
 - **Storage:** Local filesystem under `UPLOAD_DIR`; no S3/CDN implementation is present.
 - **Testing:** Rust unit/static contract tests, Vitest, Testing Library, ESLint, TypeScript build/typecheck.
 - **Build and deployment:** Cargo, npm, Docker Compose, Nginx production frontend image, GitHub Actions CI.
-- **Documentation:** Markdown phase/API/architecture documents and 42 Mermaid diagrams.
+- **Documentation:** Markdown phase/API/architecture documents and 43 Mermaid diagrams.
 - **Not implemented:** Durable queue/worker, search service, separately deployed gateway, automatic backups, monitoring vendor, executable Marketplace sandbox/runtime.
 
 ## 4. Repository Structure
@@ -82,7 +83,7 @@ and `frontend/dist` are not source-of-truth directories.
 
 | Document | Role | Authority / freshness |
 | --- | --- | --- |
-| `README.md` | Current repository scope and quick-start commands through V3 Phase 14. | Current summary; source code and migrations outrank it. |
+| `README.md` | Current repository scope and quick-start commands through V3 Phase 15. | Current summary; source code and migrations outrank it. |
 | `docs/V3_PHASE_SIX.md` | Phase 6 acceptance, install gates, lifecycle rules, update/rollback behavior, and deferred boundaries. | Current Phase 6 authority. |
 | `docs/V3_PHASE_SEVEN.md` | Phase 7 permission catalog, sandbox policy, runtime authorization, kill switch, and acceptance. | Current Phase 7 authority. |
 | `docs/V3_PHASE_TEN.md` | Phase 10 customer review/rating and abuse-reporting acceptance. | Current Phase 10 authority. |
@@ -90,12 +91,13 @@ and `frontend/dist` are not source-of-truth directories.
 | `docs/V3_PHASE_TWELVE.md`, `docs/MARKETPLACE_CREATOR_GUIDE.md`, `scripts/marketplace-cli.mjs`, `docs/marketplace-samples/*`, `docs/diagrams/39-marketplace-creator-tooling.mmd` | Phase 12 creator CLI, packaging workflow, submit handoff, guide, samples, and visual traceability. | Current Phase 12 authority. |
 | `docs/V3_PHASE_THIRTEEN.md`, `backend/src/services/marketplace_phase_thirteen.rs`, `backend/src/services/marketplace_performance.rs`, `backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql`, `scripts/marketplace-phase13-load-smoke.ps1`, `docs/diagrams/40-marketplace-qa-performance.mmd` | Phase 13 Marketplace security QA, index/cache performance contracts, load-smoke baseline, and visual traceability. | Current Phase 13 authority. |
 | `docs/V3_PHASE_FOURTEEN.md`, `backend/src/services/marketplace_phase_fourteen.rs`, `scripts/marketplace-phase14-beta-readiness.ps1`, `docs/diagrams/41-marketplace-beta.mmd` | Phase 14 Private Creator Beta and Customer Beta evidence gates over existing beta and Marketplace APIs. | Current Phase 14 authority. |
+| `docs/V3_PHASE_FIFTEEN.md`, `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md`, `docs/V3_MARKETPLACE_RELEASE_NOTES.md`, `backend/src/services/marketplace_phase_fifteen.rs`, `scripts/marketplace-phase15-ga-check.ps1`, `docs/diagrams/42-marketplace-launch-ga.mmd` | Phase 15 launch readiness, final policy, support workflow, incident/rollback runbook, release notes, GA checks, and visual traceability. | Current Phase 15 authority. |
 | `docs/V3_MARKETPLACE_SCOPE.md` | V3 scope lock and MVP/out-of-scope rules. | Current product-scope authority. |
 | `docs/V3_MARKETPLACE_GAP_LIST.md` | Resolved and deferred Marketplace gaps by phase. | Current gap/status record; verify against runtime. |
 | `docs/V3_MARKETPLACE_POLICY.md` and `docs/V3_PRODUCT_TAXONOMY.md` | Review, moderation, product classification, and safety policy. | Current policy authority. |
 | `docs/API.md` | Runtime route boundaries and Marketplace endpoint documentation. | Current, with older Marketplace routes manually documented. |
-| `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Updated through Phase 14 beta readiness. |
-| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd`, `36-marketplace-finance-lifecycle.mmd`, `37-marketplace-feedback-abuse.mmd`, `38-marketplace-analytics.mmd`, `39-marketplace-creator-tooling.mmd`, `40-marketplace-qa-performance.mmd`, `41-marketplace-beta.mmd` | Evidence links and visual Marketplace implementation state. | Updated through Phase 14; static Mermaid validation is available, but no Mermaid parser is installed. |
+| `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Updated through Phase 15 launch/GA readiness. |
+| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd`, `36-marketplace-finance-lifecycle.mmd`, `37-marketplace-feedback-abuse.mmd`, `38-marketplace-analytics.mmd`, `39-marketplace-creator-tooling.mmd`, `40-marketplace-qa-performance.mmd`, `41-marketplace-beta.mmd`, `42-marketplace-launch-ga.mmd` | Evidence links and visual Marketplace implementation state. | Updated through Phase 15; static Mermaid validation is available, but no Mermaid parser is installed. |
 | `D:\All projects\Zinhar_Doc\version_3_marketplace_proposal.html` | Original V3 Marketplace proposal and future lifecycle goals. | Planning authority; current migrations/routes/tests supersede it for implementation status. |
 | `D:\All projects\Zinhar_Doc\version_2_proposal.html` | V2 SaaS/organization/billing proposal. | Historical planning authority for V2 dependencies. |
 | `D:\All projects\Zinhar_Doc\headless_cms_proposal_polished.html` | Original CMS proposal. | Historical baseline; current repository documentation and code are newer. |
@@ -106,13 +108,23 @@ containment boundary; Phase 8 supplies host-owned Component Pack, Template, and
 public Hook adapters. Phase 9 supplies one-time purchases/entitlements and payout
 onboarding, Phase 10 supplies customer feedback/abuse reporting, Phase 11
 supplies read-only analytics, Phase 12 supplies creator-side packaging tooling
-plus sample packages, Phase 13 supplies security QA and performance gates, and
+plus sample packages, Phase 13 supplies security QA and performance gates,
 Phase 14 supplies Private Creator Beta and Customer Beta evidence/readiness
-gates over existing APIs.
+gates over existing APIs, and Phase 15 supplies launch readiness, incident
+response, rollback, release notes, monitoring/support planning, and GA check
+coverage over existing APIs.
 External execution, runtime error telemetry, automated payout transfer
 execution, and arbitrary package execution remain deferred.
 
 ## 6. Current Objective
+
+> **Phase 15 override (2026-07-12 16:27):** Phase 14 is committed at `87bc6d0e`.
+> The active objective is V3 Marketplace Phase 15: 15.1 Launch Readiness
+> and 15.2 General Availability. Implementation and local validation are
+> complete as an operational launch/GA readiness layer over existing
+> Marketplace APIs and documentation. The remaining action is user-authorized
+> review/stage/commit, plus optional live GA smoke only when a safe target
+> environment, token, organization, and approved products are available.
 
 > **Phase 14 override (2026-07-12 11:38):** Phase 13 is committed at `70d8f12`.
 > The active objective is V3 Marketplace Phase 14: 14.1 Private Creator Beta
@@ -145,7 +157,7 @@ execution, and arbitrary package execution remain deferred.
 > queue, and critical internal notification. The implementation and validation
 > are complete; the remaining action is user-authorized review/stage/commit.
 
-The historical Phase 8 objective below is superseded by the Phase 10 override.
+The historical Phase 8 objective below is superseded by the Phase 15 override.
 
 The active objective is to implement and validate V3 Marketplace Phase 8 without
 repeating the committed Phase 7 boundary. The implementation target is the
@@ -162,6 +174,37 @@ planned and authorized:
 - no background automatic update is enabled; installations remain explicitly pinned.
 
 ## 7. Completed and Verified Work
+
+### Phase 15 checkpoint override (2026-07-12 16:27)
+
+- Re-read `AGENTS.md` and `HANDOFF.md`; verified Git source of truth supersedes
+  the stale handoff: Phase 14 is committed at `87bc6d0e`, and the working tree
+  was clean before Phase 15 implementation.
+- Extracted Phase 15 from the V3 proposal: 15.1 Launch Readiness and 15.2
+  General Availability.
+- Implemented Phase 15 as an operational launch/GA readiness layer over existing
+  Marketplace APIs rather than a new schema, migration, or parallel launch API.
+- Added `backend/src/services/marketplace_phase_fifteen.rs` with static backend
+  contract tests that verify Phase 15 docs, final policy, operations runbook,
+  release notes, GA check script, diagram, and existing install/rollback/report/
+  finance/admin analytics/beta blocker route coverage.
+- Added `scripts/marketplace-phase15-ga-check.ps1`, a GA readiness script that
+  runs backend Marketplace checks, frontend lint/build gates, and optional
+  read-only live smoke against `/health`, `/ready`, installations, purchases,
+  reports, admin analytics, and beta blocker endpoints.
+- Added `docs/V3_PHASE_FIFTEEN.md`,
+  `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md`,
+  `docs/V3_MARKETPLACE_RELEASE_NOTES.md`, and
+  `docs/diagrams/42-marketplace-launch-ga.mmd`; updated README, API,
+  architecture, policy, gap list, repository inventory, diagram status map,
+  traceability, evidence index, architecture audit, and diagram catalog.
+- Validation passed: `cargo fmt --manifest-path backend/Cargo.toml`,
+  `cargo test --manifest-path backend/Cargo.toml marketplace_phase_fifteen`,
+  PowerShell script parse check, `git diff --check`, Mermaid diagram count
+  check, and `cargo test --manifest-path backend/Cargo.toml marketplace`
+  (79 tests).
+- No migration, database mutation, live API smoke, staged files, commit, reset,
+  or uploaded package execution was performed.
 
 ### Phase 14 checkpoint override (2026-07-12 11:38)
 
@@ -381,11 +424,11 @@ planned and authorized:
 
 ## 8. Completed but Not Verified
 
-- [ ] Live application of migration `0019` and end-to-end API/browser installation smoke test.
-  - **Files:** `backend/migrations/0019_v3_phase_six_installation_lifecycle.sql`, `backend/src/routes/marketplace.rs`, `frontend/src/pages/MarketplacePage.tsx`
-  - **Missing verification:** a running backend connected to the intended database, followed by authenticated tenant requests and artifact-backed install/update/rollback.
-  - **Recommended validation:** start the backend with the project environment, verify `/health`, `/ready`, `/openapi.json`, and exercise the Phase 6 endpoints against a test organization without resetting data.
-  - **Reason:** Docker infrastructure was visible with `docker compose ps`, but `docker compose exec` was denied Docker API access in this sandbox, and the local compose file does not include the backend service. Migration `0020` has therefore only static/compile coverage so far.
+- [ ] Optional Phase 15 live GA smoke against a safe target environment.
+  - **Files:** `scripts/marketplace-phase15-ga-check.ps1`, `docs/V3_PHASE_FIFTEEN.md`, `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md`.
+  - **Missing verification:** an authenticated production/staging-like environment with a safe organization, approved products, and support/incident evidence.
+  - **Recommended validation:** run the GA check script with `-ApiBaseUrl`, `-AccessToken`, `-OrganizationId`, and optionally `-AdminMode`; do not reset data or create destructive fixtures.
+  - **Reason:** Phase 15 local validation verifies the operational contract, script syntax, route coverage, and documentation. A meaningful GA pass/fail requires real launch data and credentials.
 
 - [ ] Mermaid parser/render validation.
   - **Files:** `docs/diagrams/*.mmd`
@@ -395,45 +438,48 @@ planned and authorized:
 
 ## 9. Work in Progress
 
-### Phase 8 active checkpoint override
+### Phase 15 active checkpoint override
 
-Phase 8 product code is implemented and statically validated. The remaining
-verification is live migration/API/browser smoke for migration `0021`; this is
-not a request to reimplement Phase 7.
+Phase 15 implementation and local validation are complete. The only active work
+is handoff maintenance, review, and user-authorized staging/commit. Optional live
+GA smoke is deferred until a safe authenticated environment is available.
 
 ### Active item
 
-Phase 7 product code is implemented; the remaining work is final validation and
-handoff maintenance, not another implementation pass.
+Review the uncommitted Phase 15 diff and commit only after explicit user
+authorization.
 
 ### Exact stopping point
 
-The Phase 7 implementation stopped after the 7.3 kill-switch routes/UI and
-documentation were added on top of commit `b1b3d05`. Backend tests and frontend
-tests/build have passed; live migration/API smoke is still pending.
+The Phase 15 implementation stopped after the launch readiness/GA docs, final
+policy update, operations runbook, release notes, GA check script, static backend
+contract tests, Mermaid diagram `42`, traceability/index updates, and local
+validation passed on top of commit `87bc6d0e`.
 
 ### Partially modified files
 
-| File | Current state | Remaining work |
-| --- | --- | --- |
-| `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql` | Additive permission catalog, runtime status, and kill-switch schema is present. | Apply and inspect it in a running test database. |
-| `backend/src/routes/marketplace_runtime.rs` | Runtime status, authorization decision, kill-switch activation/lift handlers are present. | Run authenticated tenant/global-admin API smoke. |
-| `frontend/src/pages/MarketplacePage.tsx` | Phase 7 runtime safety panel and kill-switch controls are present. | Verify against a live API and browser session. |
+No partially implemented Phase 15 product code remains. All current uncommitted
+files are Phase 15 docs, static contract tests, script, diagram/index updates,
+and this handoff update.
 
 ### Incomplete implementation markers
 
-- Marketplace purchase, entitlement, payout, customer-rating, concrete runtime adapters, arbitrary package execution, and fine-grained permission revocation remain intentionally planned/deferred, not stubs to finish in Phase 7.
-- The frontend production build reports a chunk-size warning over 500 kB; this is non-blocking technical debt.
+- Optional live GA smoke was not run because it requires real target
+  environment credentials and launch data.
+- Uploaded Marketplace package code remains intentionally unexecuted.
+- No Phase 15 migration or new GA/launch API was added; the phase uses existing
+  operational surfaces.
 
 ## 10. Current Git and Filesystem State
 
-### Actual state at Phase 14 checkpoint
+### Actual state at Phase 15 checkpoint
 
-- `HEAD` is `70d8f12` (`feat(marketplace): add v3 phase 13 QA and performance
-  gates`) on `main`, matching `origin/main` at inspection time.
-- No files are staged, deleted, reset, or committed for Phase 14.
+- `HEAD` is `87bc6d0e` (`feat(marketplace): add v3 phase 14 beta readiness`) on
+  `main`, matching `origin/main` at inspection time.
+- No files are staged, deleted, reset, or committed for Phase 15.
 - Modified tracked files are `README.md`, `backend/src/services/mod.rs`,
   `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/V3_MARKETPLACE_GAP_LIST.md`,
+  `docs/V3_MARKETPLACE_POLICY.md`,
   `docs/diagrams/00-implementation-status-map.mmd`,
   `docs/diagrams/01-project-scope.mmd`,
   `docs/diagrams/32-end-to-end-traceability.mmd`,
@@ -441,14 +487,15 @@ tests/build have passed; live migration/API smoke is still pending.
   `docs/diagrams/FILE_EVIDENCE_INDEX.md`,
   `docs/diagrams/README.md`, `docs/diagrams/REPOSITORY_INVENTORY.md`,
   `docs/diagrams/TRACEABILITY.md`, and this handoff update.
-- New Phase 14 files are `backend/src/services/marketplace_phase_fourteen.rs`,
-  `docs/V3_PHASE_FOURTEEN.md`,
-  `docs/diagrams/41-marketplace-beta.mmd`, and
-  `scripts/marketplace-phase14-beta-readiness.ps1`.
-- Phase 14 added no SQL migration and performed no database mutation. Live API
-  smoke was not run because the phase is a read-only evidence/readiness layer
-  over existing endpoints and requires real beta cohort/product/support data to
-  produce a meaningful pass/fail readiness result.
+- New Phase 15 files are `backend/src/services/marketplace_phase_fifteen.rs`,
+  `docs/V3_PHASE_FIFTEEN.md`,
+  `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md`,
+  `docs/V3_MARKETPLACE_RELEASE_NOTES.md`,
+  `docs/diagrams/42-marketplace-launch-ga.mmd`, and
+  `scripts/marketplace-phase15-ga-check.ps1`.
+- Phase 15 added no SQL migration, no new GA/launch API, and performed no
+  database mutation. Live API smoke was not run because it requires real
+  production/staging-like launch data and credentials.
 
 ### Actual state at Phase 12 checkpoint
 
@@ -552,6 +599,21 @@ should be created unless the user explicitly authorizes it.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
+
+### Phase 15 validation results (2026-07-12 16:27)
+
+- `cargo fmt --manifest-path backend/Cargo.toml`: passed.
+- `cargo test --manifest-path backend/Cargo.toml marketplace_phase_fifteen`:
+  passed, 4 targeted launch/GA contract tests with 0 failures.
+- PowerShell script parse check for
+  `scripts/marketplace-phase15-ga-check.ps1`: passed.
+- `git diff --check`: passed with line-ending warnings only.
+- Mermaid diagram count check: passed, 43 `.mmd` files (`00` through `42`).
+- `cargo test --manifest-path backend/Cargo.toml marketplace`: passed, 79
+  Marketplace tests with 0 failures.
+- Live GA smoke was not run because it requires a safe target environment,
+  access token, organization id, approved product data, and support/incident
+  evidence.
 
 ### Phase 14 validation results (2026-07-12 11:38)
 
@@ -784,64 +846,69 @@ should be created unless the user explicitly authorizes it.
 
 ### Blocking issues
 
-- None for the committed Phase 6 code path.
+- None for the locally validated Phase 15 work.
 
 ### Non-blocking issues
 
-- **Medium:** Live DB migration/API smoke for migration `0020` is still unverified because Docker API exec access was denied from this sandbox; use a development environment with Docker access.
+- **Medium:** Optional live Phase 15 GA smoke has not been run because it requires a safe target environment, authenticated token, organization id, approved products, and launch/support evidence.
 - **Medium:** `cargo clippy -D warnings` reports legacy warnings in older modules, so the backend CI clippy step is not currently a reliable green signal.
 - **Low:** Mermaid files have only repository-local structural validation; no parser/render dependency is installed.
 - **Low:** Vite emits a large output chunk warning (>500 kB).
-- **Low:** `docs/ARCHITECTURE.md` still says schema authority ends at migration `0018`; reconcile this documentation-only sentence to `0019` in a future maintenance pass.
 
 ### Security risks
 
 - **High if scope expands:** Phase 7 supplies policy decisions but not concrete package execution. Do not enable executable extensions before an isolated adapter/runtime, kill-switch, permission enforcement, and forced-RLS review are implemented.
-- **Medium operational:** Local filesystem artifact storage and non-atomic filesystem/database behavior require backup and cleanup procedures outside this repository.
+- **Medium operational:** Local filesystem artifact storage and non-atomic filesystem/database behavior require backup and cleanup procedures outside this repository; Phase 15 documents response/rollback workflow but does not provision external monitoring or backups.
 - **Low/known:** The frontend hides controls by role, but backend middleware/handler checks remain the security authority.
 
 ### Compatibility risks
 
-- Migration `0019` is additive but must be applied before calling Phase 6 routes in a deployed database.
+- Phase 15 adds no migration and no new GA/launch API; it validates and documents existing operational surfaces.
 - All Marketplace routes are tenant-aware and require authentication plus `X-Organization-Id`; older planning language that calls the catalog public must not be used as a runtime contract.
-- No anonymous catalog behavior, automatic updates, S3/CDN, durable queue, or multi-replica preview broadcast is implemented.
+- No anonymous catalog behavior, automatic updates, S3/CDN, durable queue, monitoring vendor integration, or multi-replica preview broadcast is implemented.
 
 ### Technical debt
 
 - Legacy clippy warnings across pre-Phase-6 modules.
-- No durable webhook retry worker, monitoring exporter, automatic backup, or operational incident runbook for the complete Marketplace lifecycle.
-- Marketplace purchases, entitlements, payouts, customer ratings, and executable runtime are future work.
+- No durable webhook retry worker, monitoring exporter, automatic backup, or vendor-backed dashboard provisioning.
+- Automated payout transfer execution, partial refunds, external runtime telemetry, and executable Marketplace runtime remain deferred.
 
 ## 14. Assumptions and Unknowns
 
 ### Confirmed facts
 
-- [x] `main` and `origin/main` point to `7f18d7b`.
-- [x] The repository was clean before adding this handoff documentation.
-- [x] Phase 6 routes, migration, service, frontend UI, tests, and docs are present in the latest commit.
-- [x] Phase 7 migration, runtime policy service/routes, frontend safety controls, tests, and docs are present in the current working tree.
+- [x] `main` and `origin/main` point to `87bc6d0e` at the Phase 15 checkpoint.
+- [x] The repository was clean before Phase 15 implementation began.
+- [x] Phase 14 is committed at `87bc6d0e`.
+- [x] Phase 15 docs, static contract tests, GA check script, final policy update, operations runbook, release notes, and diagram `42` are present in the current working tree.
+- [x] Phase 15 adds no migration and no new GA/launch API.
 - [x] Current manifests report version `0.1.0`.
 - [x] The local development compose file provides PostgreSQL, Redis, and pgAdmin; it does not run the backend/frontend services.
 
 ### Unconfirmed assumptions
 
-- [ ] The intended developer database has actually applied migrations `0019` and `0020`.
-- [ ] A deployed environment has the expected `UPLOAD_DIR` contents and artifact files needed for end-to-end installation smoke tests.
-- [ ] The exact V3 Phase 8 implementation order for concrete component/template/integration adapters has not been finalized in current repository docs.
-- [ ] The user has not authorized committing the newly created `AGENTS.md` and `HANDOFF.md`.
+- [ ] A production/staging-like environment has real approved products, support evidence, monitoring ownership, and credentials for meaningful Phase 15 live GA smoke.
+- [ ] A deployed environment has the expected `UPLOAD_DIR` contents and artifact files needed for end-to-end install/update/rollback smoke tests.
+- [ ] External monitoring/dashboard, backup, and support tooling are operationally provisioned outside this repository.
+- [ ] The user has not authorized committing the current Phase 15 working tree.
 
 ## 15. Remaining Work
 
+### Phase 15 remaining-work override
+
+1. Review the uncommitted Phase 15 diff.
+2. If and only if the user explicitly authorizes it, stage and commit the Phase
+   15 implementation.
+3. Do not repeat Phases 9 through 14 or already completed Phase 15 validation
+   unless review changes code, script, docs, or diagrams.
+4. When a safe production/staging-like environment exists, optionally run
+   `scripts/marketplace-phase15-ga-check.ps1` with the appropriate API base URL,
+   access token, organization id, and optional admin mode.
+
 ### Phase 14 remaining-work override
 
-1. Review the uncommitted Phase 14 diff.
-2. If and only if the user explicitly authorizes it, stage and commit the Phase
-   14 implementation.
-3. Do not repeat Phases 9, 10, 11, 12, 13, or already completed Phase 14
-   validation unless review changes code, script, docs, or diagrams.
-4. When real beta cohort/product/support data exists, optionally run
-   `scripts/marketplace-phase14-beta-readiness.ps1` with the appropriate tenant
-   token, organization id, and optional creator id/admin token context.
+Phase 14 is committed at `87bc6d0e`; no Phase 14 remaining implementation work
+is active.
 
 ### Phase 13 remaining-work override
 
@@ -922,11 +989,13 @@ active.
 
 ## 16. Exact Next Action
 
-Review the uncommitted Phase 14 diff and, only after explicit user
-authorization, stage and commit the Phase 14 implementation. Do not rerun
+Review the uncommitted Phase 15 diff and, only after explicit user
+authorization, stage and commit the Phase 15 implementation. Do not rerun
 completed validation unless review changes code, script, docs, or diagrams.
-Do not reset the database, invent a parallel Marketplace beta API, or execute
-uploaded package code.
+Do not reset the database, invent a parallel Marketplace launch/GA API, or
+execute uploaded package code. Optional live GA smoke should use
+`scripts/marketplace-phase15-ga-check.ps1` only against a safe authenticated
+target environment.
 
 The older Phase 7 instruction below is historical and superseded by the Phase 8
 action above.
@@ -942,6 +1011,25 @@ paid products, or create a commit. Record the actual migration `0020` and API
 results in this file before planning Phase 8 adapters.
 
 ## 17. Acceptance Criteria for the Current Phase
+
+### Phase 15 acceptance override
+
+- [x] 15.1 Launch Readiness is documented with a runbook, final policy,
+  support workflow, rollback plan, and incident checklist.
+- [x] The launch runbook covers broken install, malicious product, wrong
+  payment, refund/dispute/payout issue, abuse/review attack, and emergency block
+  scenarios.
+- [x] 15.2 General Availability is documented with release notes, public docs,
+  monitoring dashboard sources, support plan, and GA go/no-go checks.
+- [x] GA readiness uses existing install, rollback, purchase, report, admin
+  analytics, beta blocker, health, and ready endpoints rather than a new launch
+  API.
+- [x] Static backend tests verify docs, final policy, script, diagram, and route
+  coverage for both Phase 15 subphases.
+- [x] Diagram `42-marketplace-launch-ga.mmd` and traceability/index docs are
+  updated.
+- [x] Uploaded Marketplace package code remains unexecuted.
+- [ ] Optional live GA smoke is verified against a safe target environment.
 
 ### Phase 14 acceptance override
 
@@ -1320,4 +1408,24 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   performed.
 - **Exact Next Action:** review the uncommitted Phase 14 diff and only after
   explicit user authorization stage/commit it. Do not repeat completed Phase 14
+  validation unless code, script, docs, or diagrams change.
+
+### 2026-07-12 16:27 +01:00 - V3 Phase 15 launch readiness and GA checkpoint
+
+- Re-read `AGENTS.md` and `HANDOFF.md`; verified Git source of truth supersedes
+  the stale handoff: Phase 14 is committed at `87bc6d0e`, and the working tree
+  was clean before Phase 15 implementation.
+- Extracted Phase 15 from the V3 proposal: 15.1 Launch Readiness and 15.2
+  General Availability.
+- Implemented Phase 15 as launch/GA operations readiness over existing
+  Marketplace APIs: final policy update, operations runbook, incident checklist,
+  rollback/support workflow, release notes, public-doc references, monitoring
+  dashboard sources, GA check script, static contract tests, and diagram `42`.
+- Validation passed: backend format, targeted Phase 15 tests, PowerShell script
+  parse check, `git diff --check`, 43-diagram count check, and wider Marketplace
+  backend regression (79 tests).
+- No migration, new launch/GA API, live API smoke, database mutation, staging,
+  commit, reset, or uploaded-code execution was performed.
+- **Exact Next Action:** review the uncommitted Phase 15 diff and only after
+  explicit user authorization stage/commit it. Do not repeat completed Phase 15
   validation unless code, script, docs, or diagrams change.

@@ -16,10 +16,10 @@ Phase 3 resolves the package validation pipeline gap for uploaded versions. Stat
 
 ## Phase 4 Update
 
-Phase 4 resolves the initial human review and moderation workflow gap. Reviewers can open queue items, approve, reject, request changes, suspend listings, unpublish versions, and emergency block products. Later phases still need public catalog visibility, install runtime enforcement, abuse reporting, and full incident runbooks.
+Phase 4 resolves the initial human review and moderation workflow gap. Reviewers can open queue items, approve, reject, request changes, suspend listings, unpublish versions, and emergency block products. Later phases add public catalog visibility, install runtime enforcement, abuse reporting, and Phase 15 incident runbooks.
 ## Phase 5 Update
 
-Phase 5 resolves the public catalog visibility and catalog compatibility filtering gaps. The catalog API and admin UI now expose only approved, safe, install-eligible products for the active organization, with search, filters, and listing details that show permissions before install. Later phases still need install runtime APIs, permission approval enforcement, abuse reporting, and full incident runbooks.
+Phase 5 resolves the public catalog visibility and catalog compatibility filtering gaps. The catalog API and admin UI now expose only approved, safe, install-eligible products for the active organization, with search, filters, and listing details that show permissions before install. Later phases add install runtime APIs, permission approval enforcement, abuse reporting, and Phase 15 incident runbooks.
 
 ## Phase 6 Update
 
@@ -90,6 +90,18 @@ install, uninstall, purchase, support-feedback, and report paths for real
 organization testing. `scripts/marketplace-phase14-beta-readiness.ps1` provides a
 read-only readiness summary over those existing APIs.
 
+## Phase 15 Update
+
+Phase 15 resolves the Marketplace launch readiness and GA operations gap without
+adding a parallel launch API. The operations runbook now covers support workflow,
+rollback, and incident checklist for broken install, malicious product, wrong
+payment, refund/dispute, payout issue, abuse report, and emergency block.
+Release notes define public docs, monitoring dashboard, support plan, known
+limitations, and go/no-go criteria for enabling approved products in production.
+`scripts/marketplace-phase15-ga-check.ps1` provides static and optional live
+readiness checks over existing health, beta, installation, purchase, report, and
+admin analytics surfaces.
+
 ## Phase 8 Update
 
 Phase 8 resolves the first host-owned adapter surfaces: installed Component Pack
@@ -141,7 +153,8 @@ authorization remains policy-only and never executes uploaded package code.
 | Creator packaging docs and local tooling do not exist | Resolved | Phase 12 adds a local Marketplace CLI, creator guide, and sample packages for validating, packing, and submitting package versions. | 12.1, 12.2 |
 | Marketplace security/performance QA gate does not exist | Resolved | Phase 13 adds P0 attack-path contract tests, performance indexes, private catalog cache policy, and local P95 load-smoke tooling. | 13.1, 13.2 |
 | Marketplace beta readiness evidence does not exist | Resolved | Phase 14 adds a Private Creator Beta and Customer Beta evidence contract over existing beta and Marketplace APIs plus a read-only readiness script. | 14.1, 14.2 |
-| Marketplace incident runbook does not exist | P1 | Phase 4 adds emergency block primitives; later documentation must define support flow for malicious product, broken install, refund, dispute, and emergency block. | 15.1 |
+| Marketplace incident runbook does not exist | Resolved | Phase 15 adds the Marketplace operations runbook, support workflow, rollback plan, incident checklist, release notes, monitoring dashboard contract, and GA check script. | 15.1, 15.2 |
+| Marketplace GA launch evidence does not exist | Resolved | Phase 15 adds Launch Readiness and General Availability gates over existing approved-product install, beta, analytics, purchase, report, and support surfaces. | 15.1, 15.2 |
 
 ## Go/No-Go For Phase 1.1
 

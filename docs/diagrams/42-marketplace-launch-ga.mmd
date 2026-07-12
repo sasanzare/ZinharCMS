@@ -1,0 +1,64 @@
+%% Evidence: docs/V3_PHASE_FIFTEEN.md
+%% Evidence: docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md
+%% Evidence: docs/V3_MARKETPLACE_RELEASE_NOTES.md
+%% Evidence: docs/V3_MARKETPLACE_POLICY.md
+%% Evidence: scripts/marketplace-phase15-ga-check.ps1
+%% Evidence: backend/src/services/marketplace_phase_fifteen.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/routes/marketplace_finance.rs
+%% Evidence: backend/src/routes/marketplace_analytics.rs
+flowchart LR
+  proposal["V3 proposal Phase 15"]
+
+  subgraph launch_readiness["15.1 Launch Readiness"]
+    runbook["Runbook"]
+    final_policy["Final policy"]
+    support_workflow["Support workflow"]
+    rollback_plan["Rollback plan"]
+    incident_checklist["Incident checklist"]
+  end
+
+  subgraph ga["15.2 General Availability"]
+    release_notes["Release notes"]
+    public_docs["Public docs"]
+    monitoring_dashboard["Monitoring dashboard"]
+    support_plan["Support plan"]
+    approved_installs["Approved products install in production"]
+  end
+
+  subgraph existing_surfaces["Existing operational surfaces"]
+    health_ready["Health and readiness APIs"]
+    beta_evidence["Phase 14 beta evidence"]
+    analytics_api["Marketplace admin analytics"]
+    install_api["Install, update, rollback APIs"]
+    finance_api["Purchase, refund, entitlement evidence"]
+    report_api["Reports, moderation, emergency block"]
+    ga_script["Phase 15 GA check script"]
+  end
+
+  proposal --> runbook
+  proposal --> release_notes
+
+  runbook --> support_workflow
+  final_policy --> incident_checklist
+  support_workflow --> rollback_plan
+  rollback_plan --> incident_checklist
+
+  release_notes --> public_docs
+  public_docs --> support_plan
+  monitoring_dashboard --> support_plan
+  support_plan --> approved_installs
+
+  health_ready --> ga_script
+  beta_evidence --> ga_script
+  analytics_api --> monitoring_dashboard
+  install_api --> rollback_plan
+  finance_api --> support_workflow
+  report_api --> incident_checklist
+  ga_script --> approved_installs
+
+  classDef implemented fill:#e9f8ef,stroke:#1f8f4d,color:#143143;
+  classDef gate fill:#fff5df,stroke:#b7791f,color:#143143;
+
+  class health_ready,beta_evidence,analytics_api,install_api,finance_api,report_api,ga_script implemented;
+  class runbook,final_policy,support_workflow,rollback_plan,incident_checklist,release_notes,public_docs,monitoring_dashboard,support_plan,approved_installs gate;

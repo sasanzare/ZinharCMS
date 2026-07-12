@@ -126,6 +126,10 @@ flowchart TD
     beta_readiness["Marketplace beta readiness [IMPLEMENTED]<br/>Private Creator Beta and Customer Beta evidence gates"]
   end
 
+  subgraph launch_ga_group["Marketplace Launch and GA"]
+    launch_ga["Marketplace launch and GA [IMPLEMENTED]<br/>runbook, final policy, support workflow, rollback, incident checklist, release notes"]
+  end
+
   foundation --> auth
   foundation --> frontend_admin
   foundation --> api_docs
@@ -197,8 +201,11 @@ flowchart TD
   beta_feedback --> beta_readiness
   analytics --> beta_readiness
   qa_performance --> beta_readiness
+  beta_readiness --> launch_ga
+  qa_performance --> launch_ga
+  analytics --> launch_ga
 
-  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility,installation,installation_gates,installation_ui,purchase,analytics,creator_tooling,qa_performance,beta_readiness implemented
+  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility,installation,installation_gates,installation_ui,purchase,analytics,creator_tooling,qa_performance,beta_readiness,launch_ga implemented
   class global_rbac,uploads_access,live_preview,redis_cache,webhooks,plugins,localization,stripe_subscriptions,saas_alerts,internal_review,payout partial
   class api_docs conflict
   class artifact_cleanup,review_restoration decision

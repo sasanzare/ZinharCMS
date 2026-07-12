@@ -391,3 +391,9 @@ Phase 14 does not add a parallel Marketplace beta API. It uses the existing
 Marketplace creator analytics, admin analytics, installations, purchases, and
 reports. `scripts/marketplace-phase14-beta-readiness.ps1` reads those endpoints
 to summarize Private Creator Beta and Customer Beta evidence.
+
+Phase 15 does not add a parallel Marketplace launch or GA API. Launch Readiness
+and General Availability use existing `/health`, `/ready`, beta blocker,
+Marketplace installation/rollback, purchase, report, and admin analytics
+surfaces. `scripts/marketplace-phase15-ga-check.ps1` runs static and optional
+live checks for those existing endpoints before production enablement.

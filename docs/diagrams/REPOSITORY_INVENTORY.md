@@ -22,6 +22,7 @@ only mirroring the directory tree.
 | `scripts/phase8-load-smoke.ps1` | Tenant and load smoke helper. | Hardening, tenant checks | Script/test | Smoke paths, local endpoint checks | Hardening test flow |
 | `scripts/marketplace-phase13-load-smoke.ps1` | Marketplace catalog/listing/install latency smoke helper. | Marketplace QA/performance | Script/test | Authenticated catalog/search/listing checks, optional install mutation, P95 budget reporting | Marketplace QA/performance diagram |
 | `scripts/marketplace-phase14-beta-readiness.ps1` | Read-only Marketplace beta evidence helper. | Marketplace beta readiness | Script/test | Existing beta, install, purchase, report, and analytics endpoint checks with report-only mode | Marketplace beta readiness diagram |
+| `scripts/marketplace-phase15-ga-check.ps1` | Marketplace Launch Readiness and GA checklist runner. | Marketplace launch/GA readiness | Script/test | Phase 15 backend contracts, Marketplace regression, frontend lint/build, optional health/ready/install/purchase/report/analytics checks | Marketplace launch/GA diagram |
 
 ## Backend Cargo And Container Files
 
@@ -145,6 +146,7 @@ only mirroring the directory tree.
 | `backend/src/services/marketplace_performance.rs` | Marketplace cache policy, index, and latency budget contracts. | Marketplace QA/performance | Executable code/test | catalog cache headers, P95 targets, 0026 index assertions, load-smoke script evidence | Marketplace QA/performance diagram |
 | `backend/src/services/marketplace_phase_thirteen.rs` | Marketplace security QA regression contracts. | Marketplace QA/security | Test code | IDOR, permission bypass, malicious package, refund abuse, review abuse assertions | Marketplace QA/performance diagram |
 | `backend/src/services/marketplace_phase_fourteen.rs` | Marketplace beta readiness static contract checks. | Marketplace beta readiness | Test code | Private Creator Beta and Customer Beta evidence assertions against docs, script, diagram, and existing routes | Marketplace beta readiness diagram |
+| `backend/src/services/marketplace_phase_fifteen.rs` | Marketplace launch readiness and GA static contract checks. | Marketplace launch/GA readiness | Test code | Launch Readiness, runbook, final policy, support workflow, rollback, incident checklist, release notes, monitoring dashboard, and support plan assertions | Marketplace launch/GA diagram |
 | `backend/src/services/mod.rs` | Service module export. | Backend composition | Executable code | module exports | Backend module map |
 | `backend/src/plugins/mod.rs` | Built-in plugin trait and hook runner. | Plugins | Executable code | `CmsPlugin`, `builtin_plugins`, hook runners | Plugin hook diagram |
 | `backend/src/plugins/seo.rs` | Built-in SEO slug plugin. | Plugins, entries | Executable code/test | `SeoAutoPlugin`, `slugify` | Plugin hook diagram |
@@ -277,6 +279,9 @@ only mirroring the directory tree.
 | `docs/V3_PHASE_TWELVE.md` | Creator tooling and sample package notes. | Marketplace creator tooling | Documentation | Context for CLI packaging/validation helpers and sample marketplace assets. |
 | `docs/V3_PHASE_THIRTEEN.md` | Marketplace security QA and performance notes. | Marketplace QA/performance | Documentation | Context for abuse-path regression tests, catalog cache policy, index tuning, and load baseline. |
 | `docs/V3_PHASE_FOURTEEN.md` | Private Creator Beta and Customer Beta readiness notes. | Marketplace beta readiness | Documentation | Context for beta cohort evidence, creator feedback, install/uninstall/purchase/support/report gates, and read-only readiness script. |
+| `docs/V3_PHASE_FIFTEEN.md` | Marketplace Launch Readiness and General Availability notes. | Marketplace launch/GA readiness | Documentation | Context for runbook, final policy, support workflow, rollback, incident checklist, release notes, public docs, monitoring dashboard, and support plan. |
+| `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md` | Marketplace operational runbook. | Marketplace launch/GA readiness | Documentation | Support workflow, broken install, malicious product, wrong payment, refund/dispute/payout, abuse report, emergency block, rollback, and monitoring. |
+| `docs/V3_MARKETPLACE_RELEASE_NOTES.md` | Marketplace GA release notes. | Marketplace launch/GA readiness | Documentation | Public docs, monitoring dashboard, support plan, known limitations, go/no-go criteria, and approved-product production enablement. |
 
 ## Search And Inspection Notes
 
@@ -290,3 +295,4 @@ only mirroring the directory tree.
 - Webhook delivery is performed inline by backend services; no durable background queue was found.
 - Marketplace free/paid installation persistence, paid entitlements, and lifecycle runtime exist with tenant RLS; executable package runtime remains deferred.
 - Phase 14 Marketplace beta readiness is implemented as read-only evidence over existing beta and Marketplace APIs, not as a new schema or route group.
+- Phase 15 Marketplace launch readiness and GA are implemented as operational docs, static contract tests, a GA check script, and diagram evidence over existing Marketplace APIs, not as a new schema or route group.

@@ -33,11 +33,17 @@ flowchart LR
 %% Evidence: backend/src/services/marketplace_phase_thirteen.rs
 %% Evidence: backend/src/services/marketplace_performance.rs
 %% Evidence: backend/src/services/marketplace_phase_fourteen.rs
+%% Evidence: backend/src/services/marketplace_phase_fifteen.rs
 %% Evidence: scripts/marketplace-phase13-load-smoke.ps1
 %% Evidence: scripts/marketplace-phase14-beta-readiness.ps1
+%% Evidence: scripts/marketplace-phase15-ga-check.ps1
 %% Evidence: docs/API.md
 %% Evidence: docs/V3_PHASE_FOURTEEN.md
 %% Evidence: docs/diagrams/41-marketplace-beta.mmd
+%% Evidence: docs/V3_PHASE_FIFTEEN.md
+%% Evidence: docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md
+%% Evidence: docs/V3_MARKETPLACE_RELEASE_NOTES.md
+%% Evidence: docs/diagrams/42-marketplace-launch-ga.mmd
 
 subgraph identity["Identity and tenant administration [IMPLEMENTED]"]
   id_actor["Actor<br/>User or organization owner [EXTERNAL]"]
@@ -103,8 +109,9 @@ subgraph marketplace["Marketplace submission, review, moderation, and catalog [P
   mp_tooling["Creator tooling<br/>CLI validate, pack, submit, docs, samples [IMPLEMENTED]"]
   mp_qa["QA/performance<br/>P0 attack-path tests, query indexes, private cache policy, load baseline [IMPLEMENTED]"]
   mp_beta["Beta readiness<br/>Private Creator Beta and Customer Beta evidence gates [IMPLEMENTED]"]
-  mp_test["Tests<br/>Marketplace domain/manifest/package/validation/review/catalog/analytics/QA/beta tests [IMPLEMENTED]"]
-  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30/38/39/40/41 [IMPLEMENTED]"]
+  mp_ga["Launch and GA<br/>runbook, final policy, support, rollback, incident, release notes [IMPLEMENTED]"]
+  mp_test["Tests<br/>Marketplace domain/manifest/package/validation/review/catalog/analytics/QA/beta/GA tests [IMPLEMENTED]"]
+  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30/38/39/40/41/42 [IMPLEMENTED]"]
 end
 
 subgraph excluded["Separated future Marketplace capabilities"]
@@ -118,9 +125,10 @@ cms_actor --> cms_page --> cms_api --> cms_route --> cms_mw --> cms_handler --> 
 md_actor --> md_page --> md_api --> md_route --> md_mw --> md_handler --> md_data --> md_external --> md_test --> md_doc
 bo_actor --> bo_page --> bo_api --> bo_route --> bo_mw --> bo_handler --> bo_data --> bo_external --> bo_test --> bo_doc
 mp_actor --> mp_tooling --> mp_api
-mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_analytics --> mp_qa --> mp_beta --> mp_test --> mp_doc
+mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_analytics --> mp_qa --> mp_beta --> mp_ga --> mp_test --> mp_doc
 mp_tooling --> mp_doc
 bo_data -. "beta evidence" .-> mp_beta
+bo_data -. "support and readiness evidence" .-> mp_ga
 mp_doc -. "explicit future scope" .-> install_future
 mp_doc -. "explicit future scope" .-> payout_future
 mp_doc -. "external delivery deferred" .-> notification_future
@@ -130,7 +138,7 @@ classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 
 classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray: 2 4,color:#111;
 classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
 
-class id_page,id_api,id_route,id_mw,id_handler,id_data,id_test,id_doc,cms_page,cms_api,cms_route,cms_mw,cms_handler,cms_data,cms_test,cms_doc,md_page,md_api,md_route,md_mw,md_handler,md_data,md_test,md_doc,bo_page,bo_api,bo_route,bo_mw,bo_handler,bo_data,bo_test,bo_doc,mp_page,mp_api,mp_route,mp_mw,mp_handler,mp_tooling,mp_beta,mp_test,mp_doc implemented;
+class id_page,id_api,id_route,id_mw,id_handler,id_data,id_test,id_doc,cms_page,cms_api,cms_route,cms_mw,cms_handler,cms_data,cms_test,cms_doc,md_page,md_api,md_route,md_mw,md_handler,md_data,md_test,md_doc,bo_page,bo_api,bo_route,bo_mw,bo_handler,bo_data,bo_test,bo_doc,mp_page,mp_api,mp_route,mp_mw,mp_handler,mp_tooling,mp_beta,mp_ga,mp_test,mp_doc implemented;
 class cms_cache,md_external,bo_external,mp_data,mp_storage partial;
 class install_future,payout_future,notification_future planned;
 class id_actor,cms_actor,md_actor,bo_actor,mp_actor external;
