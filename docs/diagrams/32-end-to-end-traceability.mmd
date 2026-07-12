@@ -29,6 +29,10 @@ flowchart LR
 %% Evidence: backend/migrations/0010_v2_phase_five_billing_quota.sql
 %% Evidence: backend/migrations/0015_v3_phase_one_marketplace_foundation.sql
 %% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
+%% Evidence: backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql
+%% Evidence: backend/src/services/marketplace_phase_thirteen.rs
+%% Evidence: backend/src/services/marketplace_performance.rs
+%% Evidence: scripts/marketplace-phase13-load-smoke.ps1
 %% Evidence: docs/API.md
 
 subgraph identity["Identity and tenant administration [IMPLEMENTED]"]
@@ -93,8 +97,9 @@ subgraph marketplace["Marketplace submission, review, moderation, and catalog [P
   mp_storage["Storage<br/>local Marketplace artifact path [IMPLEMENTED] AMB-002"]
   mp_analytics["Analytics<br/>creator performance and admin health/risk dashboard [IMPLEMENTED]"]
   mp_tooling["Creator tooling<br/>CLI validate, pack, submit, docs, samples [IMPLEMENTED]"]
-  mp_test["Tests<br/>Marketplace domain/manifest/package/validation/review/catalog/analytics tests [IMPLEMENTED]"]
-  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30/38/39 [IMPLEMENTED]"]
+  mp_qa["QA/performance<br/>P0 attack-path tests, query indexes, private cache policy, load baseline [IMPLEMENTED]"]
+  mp_test["Tests<br/>Marketplace domain/manifest/package/validation/review/catalog/analytics/QA tests [IMPLEMENTED]"]
+  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30/38/39/40 [IMPLEMENTED]"]
 end
 
 subgraph excluded["Separated future Marketplace capabilities"]
@@ -108,7 +113,7 @@ cms_actor --> cms_page --> cms_api --> cms_route --> cms_mw --> cms_handler --> 
 md_actor --> md_page --> md_api --> md_route --> md_mw --> md_handler --> md_data --> md_external --> md_test --> md_doc
 bo_actor --> bo_page --> bo_api --> bo_route --> bo_mw --> bo_handler --> bo_data --> bo_external --> bo_test --> bo_doc
 mp_actor --> mp_tooling --> mp_api
-mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_analytics --> mp_test --> mp_doc
+mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_analytics --> mp_qa --> mp_test --> mp_doc
 mp_tooling --> mp_doc
 mp_doc -. "explicit future scope" .-> install_future
 mp_doc -. "explicit future scope" .-> payout_future

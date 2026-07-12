@@ -38,6 +38,7 @@ runtime configuration, and only then supporting documentation.
 | `37` | Phase-10 customer reviews, abuse reporting, moderation queues, and critical notification. |
 | `38` | Phase-11 creator analytics and internal Marketplace health/risk analytics. |
 | `39` | Phase-12 creator CLI, local packaging workflow, sample packages, and upload handoff. |
+| `40` | Phase-13 Marketplace security QA, load baseline, index tuning, and cache policy. |
 
 ## Implementation Status Language
 

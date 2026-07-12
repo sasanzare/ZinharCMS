@@ -20,6 +20,7 @@ only mirroring the directory tree.
 | `.github/workflows/frontend-ci.yml` | Frontend quality gate. | CI/CD | Configuration | Node 22, `npm install`, lint, typecheck, test, build | CI pipeline diagram |
 | `scripts/v2-ga-check.ps1` | GA release checklist runner. | GA readiness | Script/test | Backend tests, frontend lint/build, health/ready checks | Release readiness workflow |
 | `scripts/phase8-load-smoke.ps1` | Tenant and load smoke helper. | Hardening, tenant checks | Script/test | Smoke paths, local endpoint checks | Hardening test flow |
+| `scripts/marketplace-phase13-load-smoke.ps1` | Marketplace catalog/listing/install latency smoke helper. | Marketplace QA/performance | Script/test | Authenticated catalog/search/listing checks, optional install mutation, P95 budget reporting | Marketplace QA/performance diagram |
 
 ## Backend Cargo And Container Files
 
@@ -55,6 +56,11 @@ only mirroring the directory tree.
 | `backend/migrations/0019_v3_phase_six_installation_lifecycle.sql` | Marketplace installation lifecycle additions. | Marketplace installations | Schema | cleanup policy, version pinning, lifecycle timestamps, same-listing rollback FK | Marketplace lifecycle/data model diagrams |
 | `backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql` | Marketplace permission catalog, runtime status, and kill-switch state. | Marketplace security runtime | Schema | permission catalog, runtime blocking, global/organization kill switches, forced RLS | Marketplace security runtime diagram |
 | `backend/migrations/0021_v3_phase_eight_runtime_adapters.sql` | Component registry installation link, template import records, and public plugin hook records. | Marketplace runtime adapters | Schema | Component Pack registry, tenant template imports, public hook contracts, forced RLS | Marketplace runtime adapter diagram |
+| `backend/migrations/0022_v3_phase_nine_marketplace_finance.sql` | Marketplace purchases, paid entitlements, payouts, and finance ledgers. | Marketplace finance | Schema | purchases, entitlements, payout accounts/requests, account ledger, forced RLS | Marketplace finance diagram |
+| `backend/migrations/0023_v3_phase_nine_finance_hardening.sql` | Marketplace finance abuse guards and webhook idempotency. | Marketplace finance/security | Schema | provider event uniqueness, append-only ledger trigger, checkout/payout guards | Marketplace finance hardening diagram |
+| `backend/migrations/0024_v3_phase_ten_ratings_abuse.sql` | Ratings, reviews, abuse reports, and review moderation queues. | Marketplace feedback/trust | Schema | reviews, abuse reports, moderation queues, evidence objects, forced RLS | Marketplace feedback and abuse diagram |
+| `backend/migrations/0025_v3_phase_ten_internal_notifications.sql` | Internal notification persistence for Marketplace moderation signals. | Marketplace notifications | Schema | notification events and read state | Marketplace feedback and abuse diagram |
+| `backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql` | Marketplace catalog/search/install performance indexes. | Marketplace QA/performance | Schema | `pg_trgm`, catalog/search/listing/install indexes | Marketplace QA/performance diagram |
 
 ## Backend Application Composition
 
@@ -130,6 +136,11 @@ only mirroring the directory tree.
 | `backend/src/services/marketplace_installation.rs` | Installation lifecycle gates and artifact verification. | Marketplace installations | Executable code/test | permission snapshots, lifecycle transitions, SemVer, artifact size/SHA gates | Marketplace lifecycle diagrams |
 | `backend/src/services/marketplace_adapters.rs` | Pure manifest component, template, asset mapping, and public hook contract rules. | Marketplace runtime adapters | Executable code/test | component definitions, template JSON, tenant asset mapping, public hook allowlist | Marketplace runtime adapter diagram |
 | `backend/src/services/marketplace_runtime.rs` | Allowlisted runtime operations and sandbox policy validation. | Marketplace security runtime | Executable code/test | permission-bound operations, safe entry points, payload limit, runtime decision | Marketplace security runtime diagram |
+| `backend/src/services/marketplace_finance.rs` | Marketplace pricing, checkout, entitlement, payout, and finance invariants. | Marketplace finance | Executable code/test | pricing validation, checkout requests, entitlement checks, creator payout ownership | Marketplace finance diagram |
+| `backend/src/services/marketplace_feedback.rs` | Marketplace ratings, reviews, abuse reports, moderation queues, and internal notification contracts. | Marketplace feedback/trust | Test code | static coverage for review ownership, abuse evidence, moderation status, notification events | Marketplace feedback and abuse diagram |
+| `backend/src/services/marketplace_analytics.rs` | Marketplace analytics dashboard and creator tooling contract checks. | Marketplace analytics/creator tooling | Test code | install/purchase/review aggregations, creator samples, CLI evidence | Marketplace analytics diagram |
+| `backend/src/services/marketplace_performance.rs` | Marketplace cache policy, index, and latency budget contracts. | Marketplace QA/performance | Executable code/test | catalog cache headers, P95 targets, 0026 index assertions, load-smoke script evidence | Marketplace QA/performance diagram |
+| `backend/src/services/marketplace_phase_thirteen.rs` | Marketplace security QA regression contracts. | Marketplace QA/security | Test code | IDOR, permission bypass, malicious package, refund abuse, review abuse assertions | Marketplace QA/performance diagram |
 | `backend/src/services/mod.rs` | Service module export. | Backend composition | Executable code | module exports | Backend module map |
 | `backend/src/plugins/mod.rs` | Built-in plugin trait and hook runner. | Plugins | Executable code | `CmsPlugin`, `builtin_plugins`, hook runners | Plugin hook diagram |
 | `backend/src/plugins/seo.rs` | Built-in SEO slug plugin. | Plugins, entries | Executable code/test | `SeoAutoPlugin`, `slugify` | Plugin hook diagram |
@@ -255,6 +266,12 @@ only mirroring the directory tree.
 | `docs/V3_PHASE_FIVE.md` | Catalog notes. | Marketplace catalog | Documentation | Context for public catalog and deferred install. |
 | `docs/V3_PHASE_SIX.md` | Installation lifecycle notes. | Marketplace installations | Documentation | Context for free install, permission approval, lifecycle, update, rollback, audit, and deferred paid/runtime boundaries. |
 | `docs/V3_PHASE_SEVEN.md` | Permission, sandbox policy, and kill-switch notes. | Marketplace security runtime | Documentation | Context for permission catalog, bounded host API decisions, runtime blocking, and global/organization emergency controls. |
+| `docs/V3_PHASE_EIGHT.md` | Runtime adapter notes. | Marketplace runtime adapters | Documentation | Context for Component Pack, Template, and public Plugin Hook adapter contracts. |
+| `docs/V3_PHASE_NINE.md` | Marketplace finance notes. | Marketplace finance | Documentation | Context for pricing, checkout, entitlement, ledger, and payout hardening. |
+| `docs/V3_PHASE_TEN.md` | Ratings, reviews, and abuse-management notes. | Marketplace feedback/trust | Documentation | Context for reviews, abuse queue, and internal notification contracts. |
+| `docs/V3_PHASE_ELEVEN.md` | Marketplace analytics notes. | Marketplace analytics | Documentation | Context for dashboard metrics and analytics evidence. |
+| `docs/V3_PHASE_TWELVE.md` | Creator tooling and sample package notes. | Marketplace creator tooling | Documentation | Context for CLI packaging/validation helpers and sample marketplace assets. |
+| `docs/V3_PHASE_THIRTEEN.md` | Marketplace security QA and performance notes. | Marketplace QA/performance | Documentation | Context for abuse-path regression tests, catalog cache policy, index tuning, and load baseline. |
 
 ## Search And Inspection Notes
 

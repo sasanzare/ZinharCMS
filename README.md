@@ -199,6 +199,13 @@ npm run marketplace -- validate docs/marketplace-samples/component-pack
 npm run marketplace -- pack docs/marketplace-samples/component-pack --force
 ```
 
+## V3 Marketplace Phase 13 Scope
+
+- P0 Marketplace security QA now covers IDOR, permission bypass, malicious package, refund abuse, and review abuse contracts.
+- Catalog/listing performance has query-aligned index tuning for search, latest approved versions, active install counts, entitlement gates, and existing checkout detection.
+- Catalog and listing detail responses use a private 60-second cache policy because compatibility depends on the authenticated organization plan.
+- `scripts/marketplace-phase13-load-smoke.ps1` records catalog/search/listing P95 latency baselines and can opt into install mutation sampling only when explicitly requested.
+
 ## Quick Start
 
 Copy the environment template and start the local stack:

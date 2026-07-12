@@ -54,7 +54,7 @@ as `HttpOnly`, `SameSite=Lax` cookies scoped to `/api/auth`.
 
 ## Data And Tenant Isolation
 
-The final schema is migration-authoritative through migration `0025`.
+The final schema is migration-authoritative through migration `0026`.
 
 - Core identity: users, roles, user roles, refresh tokens, login attempts.
 - Core CMS: content types, entries, pages, page versions, components, media,
@@ -139,7 +139,11 @@ creator-owned product analytics and global-admin Marketplace health analytics
 over persisted install, purchase, revenue, review, report, package, submission,
 and review-event records. Phase 12 adds a creator-side CLI, creator guide, and
 sample packages for local manifest validation, packaging, and upload submission
-against the existing version upload API. Uploaded package code is not executed:
+against the existing version upload API. Phase 13 adds Marketplace security QA
+contracts for IDOR, permission bypass, malicious package, refund abuse, and
+review abuse paths, plus catalog/search/listing/install performance indexes,
+private catalog cache headers, and a local latency baseline script. Uploaded
+package code is not executed:
 installation and adapter authorization remain host-owned policy state protected
 by compatibility, permission approval, artifact integrity, audit, and forced-RLS
 gates. Partial-refund workflows, automated payout transfers, external

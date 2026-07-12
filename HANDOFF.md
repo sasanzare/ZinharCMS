@@ -5,17 +5,17 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-12 09:24 +01:00 (Europe/London)
+- **Last updated:** 2026-07-12 10:52 +01:00 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `beb4cf2 feat(marketplace): complete v3 phase 11 creator and admin analytics`
-- **Working tree at session start:** Clean Phase 11 commit `beb4cf2`; Phase 12 creator tooling, docs, samples, and diagram changes are now present in the uncommitted working tree.
+- **Latest relevant commit:** `19f6673 feat(marketplace): add v3 phase 12 CLI and creator samples`
+- **Working tree at session start:** Clean Phase 12 commit `19f6673`; Phase 13 security QA, performance, migration, script, docs, and diagram changes are now present in the uncommitted working tree.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** V3 Marketplace Phase 12 — Creator Tooling and Samples
-- **Current subphase:** 12.1 CLI/SDK packaging and 12.2 documentation/sample packages implemented and locally validated
-- **Overall status:** Phase 12 is complete in local validation. The working tree contains unstaged/uncommitted Phase 12 CLI, docs, samples, diagram, and handoff changes. No stage or commit has been performed.
+- **Current phase:** V3 Marketplace Phase 13 — Security QA, Load, and Performance
+- **Current subphase:** 13.1 Marketplace security QA and 13.2 load/performance implemented and locally validated
+- **Overall status:** Phase 13 is complete in local validation. The working tree contains unstaged/uncommitted Phase 13 backend security/performance tests, migration, cache policy, load-smoke script, docs, diagram, and handoff changes. No stage or commit has been performed.
 
 ## 2. Project Overview
 
@@ -38,11 +38,12 @@ system of record, Redis for cache/rate-limit support, and local filesystem
 storage for CMS media and Marketplace package artifacts.
 
 The baseline includes the original CMS phases zero through ten, V2 organization,
-billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 12. The
+billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 13. The
 current V3 implementation includes installation lifecycle, runtime security
 policy, host-owned adapters, one-time purchases/entitlements, feedback/abuse
-moderation, read-only analytics, and creator-side packaging tooling. Uploaded
-package code is still never executed.
+moderation, read-only analytics, creator-side packaging tooling, and
+Marketplace security/performance QA gates. Uploaded package code is still never
+executed.
 
 ## 3. Technology Stack
 
@@ -56,7 +57,7 @@ package code is still never executed.
 - **Storage:** Local filesystem under `UPLOAD_DIR`; no S3/CDN implementation is present.
 - **Testing:** Rust unit/static contract tests, Vitest, Testing Library, ESLint, TypeScript build/typecheck.
 - **Build and deployment:** Cargo, npm, Docker Compose, Nginx production frontend image, GitHub Actions CI.
-- **Documentation:** Markdown phase/API/architecture documents and 39 Mermaid diagrams.
+- **Documentation:** Markdown phase/API/architecture documents and 41 Mermaid diagrams.
 - **Not implemented:** Durable queue/worker, search service, separately deployed gateway, automatic backups, monitoring vendor, executable Marketplace sandbox/runtime.
 
 ## 4. Repository Structure
@@ -64,7 +65,7 @@ package code is still never executed.
 | Path | Purpose |
 | --- | --- |
 | `backend/src/` | Rust/Axum routes, middleware, services, plugins, configuration, and application startup. |
-| `backend/migrations/` | SQLx migrations; `0019_v3_phase_six_installation_lifecycle.sql` is the current Phase 6 migration. |
+| `backend/migrations/` | SQLx migrations through `0026_v3_phase_thirteen_marketplace_qa_performance.sql`. |
 | `frontend/src/` | React routes/pages, API client, state, types, translations, styles, and frontend tests. |
 | `docs/` | API, architecture, phase, V2/V3 Marketplace, operations, and localization documentation. |
 | `docs/diagrams/` | Evidence-based Mermaid architecture set, audit, traceability, and ambiguity records. |
@@ -87,12 +88,13 @@ and `frontend/dist` are not source-of-truth directories.
 | `docs/V3_PHASE_TEN.md` | Phase 10 customer review/rating and abuse-reporting acceptance. | Current Phase 10 authority. |
 | `docs/V3_PHASE_ELEVEN.md` | Phase 11 creator analytics and Marketplace admin analytics acceptance, data sources, and deliberate boundaries. | Current Phase 11 authority. |
 | `docs/V3_PHASE_TWELVE.md`, `docs/MARKETPLACE_CREATOR_GUIDE.md`, `scripts/marketplace-cli.mjs`, `docs/marketplace-samples/*`, `docs/diagrams/39-marketplace-creator-tooling.mmd` | Phase 12 creator CLI, packaging workflow, submit handoff, guide, samples, and visual traceability. | Current Phase 12 authority. |
+| `docs/V3_PHASE_THIRTEEN.md`, `backend/src/services/marketplace_phase_thirteen.rs`, `backend/src/services/marketplace_performance.rs`, `backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql`, `scripts/marketplace-phase13-load-smoke.ps1`, `docs/diagrams/40-marketplace-qa-performance.mmd` | Phase 13 Marketplace security QA, index/cache performance contracts, load-smoke baseline, and visual traceability. | Current Phase 13 authority. |
 | `docs/V3_MARKETPLACE_SCOPE.md` | V3 scope lock and MVP/out-of-scope rules. | Current product-scope authority. |
 | `docs/V3_MARKETPLACE_GAP_LIST.md` | Resolved and deferred Marketplace gaps by phase. | Current gap/status record; verify against runtime. |
 | `docs/V3_MARKETPLACE_POLICY.md` and `docs/V3_PRODUCT_TAXONOMY.md` | Review, moderation, product classification, and safety policy. | Current policy authority. |
 | `docs/API.md` | Runtime route boundaries and Marketplace endpoint documentation. | Current, with older Marketplace routes manually documented. |
 | `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Updated through Phase 11 analytics. |
-| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd`, `36-marketplace-finance-lifecycle.mmd`, `37-marketplace-feedback-abuse.mmd`, `38-marketplace-analytics.mmd`, `39-marketplace-creator-tooling.mmd` | Evidence links and visual Marketplace implementation state. | Updated through Phase 12; static Mermaid validation is available, but no Mermaid parser is installed. |
+| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd`, `36-marketplace-finance-lifecycle.mmd`, `37-marketplace-feedback-abuse.mmd`, `38-marketplace-analytics.mmd`, `39-marketplace-creator-tooling.mmd`, `40-marketplace-qa-performance.mmd` | Evidence links and visual Marketplace implementation state. | Updated through Phase 13; static Mermaid validation is available, but no Mermaid parser is installed. |
 | `D:\All projects\Zinhar_Doc\version_3_marketplace_proposal.html` | Original V3 Marketplace proposal and future lifecycle goals. | Planning authority; current migrations/routes/tests supersede it for implementation status. |
 | `D:\All projects\Zinhar_Doc\version_2_proposal.html` | V2 SaaS/organization/billing proposal. | Historical planning authority for V2 dependencies. |
 | `D:\All projects\Zinhar_Doc\headless_cms_proposal_polished.html` | Original CMS proposal. | Historical baseline; current repository documentation and code are newer. |
@@ -102,12 +104,18 @@ products and executable/runtime concepts. Phase 7 established the permission and
 containment boundary; Phase 8 supplies host-owned Component Pack, Template, and
 public Hook adapters. Phase 9 supplies one-time purchases/entitlements and payout
 onboarding, Phase 10 supplies customer feedback/abuse reporting, Phase 11
-supplies read-only analytics, and Phase 12 supplies creator-side packaging
-tooling plus sample packages. External execution, runtime error telemetry,
-automated payout transfer execution, and arbitrary package execution remain
-deferred.
+supplies read-only analytics, Phase 12 supplies creator-side packaging tooling
+plus sample packages, and Phase 13 supplies security QA and performance gates.
+External execution, runtime error telemetry, automated payout transfer
+execution, and arbitrary package execution remain deferred.
 
 ## 6. Current Objective
+
+> **Phase 13 override (2026-07-12 10:52):** Phase 12 is committed at `19f6673`.
+> The active objective is V3 Marketplace Phase 13: 13.1 Marketplace security QA
+> and 13.2 load/performance. Implementation, local backend validation, SQLx
+> migration `0026`, and release-mode catalog/search/listing performance smoke
+> are complete. The remaining action is user-authorized review/stage/commit.
 
 > **Phase 12 override (2026-07-12 09:24):** Phase 11 is committed at `beb4cf2`.
 > The active objective is V3 Marketplace Phase 12: 12.1 CLI/SDK packaging and
@@ -145,6 +153,40 @@ planned and authorized:
 - no background automatic update is enabled; installations remain explicitly pinned.
 
 ## 7. Completed and Verified Work
+
+### Phase 13 checkpoint override (2026-07-12 10:52)
+
+- Phase 13.1 is implemented: backend security QA covers the main Marketplace
+  abuse paths from the proposal: IDOR on creator/listing access, permission
+  bypass, malicious package blocking, refund abuse/idempotency, and review/abuse
+  reporting guards.
+- Phase 13.2 is implemented: migration
+  `0026_v3_phase_thirteen_marketplace_qa_performance.sql` adds catalog/search,
+  latest-version, active-install, entitlement, and checkout indexes; catalog and
+  listing-detail responses emit a private bounded cache policy.
+- Added `backend/src/services/marketplace_phase_thirteen.rs`,
+  `backend/src/services/marketplace_performance.rs`,
+  `scripts/marketplace-phase13-load-smoke.ps1`,
+  `docs/V3_PHASE_THIRTEEN.md`, and
+  `docs/diagrams/40-marketplace-qa-performance.mmd`.
+- Updated README, API, architecture, gap list, repository inventory, diagram
+  status map, traceability, evidence index, audit, and diagram catalog docs for
+  Phase 13.
+- Local validation passed: `cargo fmt --manifest-path backend/Cargo.toml`,
+  `cargo test --manifest-path backend/Cargo.toml marketplace_phase_thirteen`,
+  `cargo test --manifest-path backend/Cargo.toml marketplace_performance`,
+  `cargo test --manifest-path backend/Cargo.toml marketplace`, and
+  `git diff --check`.
+- Live/release-mode performance validation passed against local Docker
+  PostgreSQL/Redis with SQLx migration `26` applied: catalog P95 144 ms, catalog
+  search P95 195 ms, and listing detail P95 162 ms. A temporary
+  `phase13-smoke-*` fixture was created only for listing-detail smoke and then
+  removed; verification showed zero remaining fixture rows.
+- Debug-build smoke was intentionally not used as the final performance gate:
+  it exceeded the absolute latency budgets on local Windows, while `/health`
+  showed the debug/runtime environment itself had high baseline overhead.
+- No files were staged or committed. Uploaded Marketplace package code remains
+  unexecuted.
 
 ### Phase 12 checkpoint override (2026-07-12 09:24)
 
@@ -348,6 +390,33 @@ tests/build have passed; live migration/API smoke is still pending.
 
 ## 10. Current Git and Filesystem State
 
+### Actual state at Phase 13 checkpoint
+
+- `HEAD` is `19f6673` (`feat(marketplace): add v3 phase 12 CLI and creator
+  samples`) on `main`, matching `origin/main` at inspection time.
+- No files are staged, deleted, reset, or committed for Phase 13.
+- Modified tracked files are `README.md`, `backend/src/routes/marketplace.rs`,
+  `backend/src/services/mod.rs`, `docs/API.md`, `docs/ARCHITECTURE.md`,
+  `docs/V3_MARKETPLACE_GAP_LIST.md`,
+  `docs/diagrams/00-implementation-status-map.mmd`,
+  `docs/diagrams/01-project-scope.mmd`,
+  `docs/diagrams/32-end-to-end-traceability.mmd`,
+  `docs/diagrams/ARCHITECTURE_AUDIT.md`,
+  `docs/diagrams/FILE_EVIDENCE_INDEX.md`,
+  `docs/diagrams/README.md`, `docs/diagrams/REPOSITORY_INVENTORY.md`,
+  `docs/diagrams/TRACEABILITY.md`, and this handoff update.
+- New Phase 13 files are
+  `backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql`,
+  `backend/src/services/marketplace_performance.rs`,
+  `backend/src/services/marketplace_phase_thirteen.rs`,
+  `docs/V3_PHASE_THIRTEEN.md`,
+  `docs/diagrams/40-marketplace-qa-performance.mmd`, and
+  `scripts/marketplace-phase13-load-smoke.ps1`.
+- Local Docker PostgreSQL/Redis are running and healthy. SQLx migration version
+  `26` was applied during validation. The temporary Phase 13 fixture rows were
+  removed. The temporary backend processes on ports `8083` and `8084` were
+  stopped; port `8084` only had a transient `TIME_WAIT` connection afterward.
+
 ### Actual state at Phase 12 checkpoint
 
 - `HEAD` is `beb4cf2` (`feat(marketplace): complete v3 phase 11 creator and
@@ -450,6 +519,37 @@ should be created unless the user explicitly authorizes it.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
+
+### Phase 13 validation results (2026-07-12 10:52)
+
+- `cargo fmt --manifest-path backend/Cargo.toml`: passed.
+- `cargo test --manifest-path backend/Cargo.toml marketplace_phase_thirteen`:
+  passed, 3 targeted security QA tests with 0 failures.
+- `cargo test --manifest-path backend/Cargo.toml marketplace_performance`:
+  passed, 2 targeted performance/cache/script contract tests with 0 failures.
+- `cargo test --manifest-path backend/Cargo.toml marketplace`: passed, 72
+  Marketplace tests with 0 failures.
+- `git diff --check`: passed with line-ending notices only.
+- Docker infrastructure: `docker compose ps` showed PostgreSQL and Redis
+  healthy before live validation.
+- SQLx migration check: `_sqlx_migrations` reports version `26`
+  (`v3 phase thirteen marketplace qa performance`) applied successfully.
+- Release-mode backend smoke: a release backend was compiled and run in an
+  isolated target directory on port `8084`; `/ready` returned 200.
+- Phase 13 load smoke against the release backend passed:
+  - catalog: 10 requests, HTTP `200:10`, average 135.2 ms, P95 144 ms, max
+    144 ms, budget 300 ms;
+  - catalog search: 10 requests, HTTP `200:10`, average 152.1 ms, P95 195 ms,
+    max 195 ms, budget 300 ms;
+  - listing detail: 10 requests, HTTP `200:10`, average 145.4 ms, P95 162 ms,
+    max 162 ms, budget 250 ms.
+- Temporary smoke fixture: inserted `phase13-smoke-creator` and
+  `phase13-smoke-listing` only to exercise listing detail, then deleted both;
+  verification query returned count `0` for both slugs.
+- Earlier debug-build smoke was not treated as final acceptance: the debug
+  backend on local Windows exceeded budgets, and public `/health`/`/ready`
+  calls showed high environment/runtime overhead. The final gate used the
+  release backend.
 
 ### Phase 12 local validation results (2026-07-12 09:24)
 
@@ -686,6 +786,14 @@ should be created unless the user explicitly authorizes it.
 
 ## 15. Remaining Work
 
+### Phase 13 remaining-work override
+
+1. Review the uncommitted Phase 13 diff.
+2. If and only if the user explicitly authorizes it, stage and commit the Phase
+   13 implementation.
+3. Do not repeat Phases 9, 10, 11, 12, or already completed Phase 13 validation
+   unless review changes code, migration, script, or docs.
+
 ### Phase 12 remaining-work override
 
 1. Review the uncommitted Phase 12 diff.
@@ -760,11 +868,10 @@ should be created unless the user explicitly authorizes it.
 
 ## 16. Exact Next Action
 
-Review the uncommitted Phase 12 diff and, only after explicit user authorization,
-stage and commit the Phase 12 implementation. Do not rerun completed validation
-unless review changes code. If live submit validation is requested, use a safe
-approved creator/listing fixture and the existing upload API; do not reset the
-database or execute uploaded package code.
+Review the uncommitted Phase 13 diff and, only after explicit user
+authorization, stage and commit the Phase 13 implementation. Do not rerun
+completed validation unless review changes code, migration, script, or docs.
+Do not reset the database or execute uploaded package code.
 
 The older Phase 7 instruction below is historical and superseded by the Phase 8
 action above.
@@ -780,6 +887,24 @@ paid products, or create a commit. Record the actual migration `0020` and API
 results in this file before planning Phase 8 adapters.
 
 ## 17. Acceptance Criteria for the Current Phase
+
+### Phase 13 acceptance override
+
+- [x] Security QA covers IDOR, permission bypass, malicious package, refund
+  abuse, and review/abuse-reporting abuse paths.
+- [x] No targeted Phase 13 P0 security test fails.
+- [x] Catalog and listing-detail responses expose a private bounded cache
+  policy.
+- [x] Migration `0026` adds catalog/search/latest-version/installation/
+  entitlement/checkout performance indexes.
+- [x] Load-smoke script measures catalog, search, listing detail, and optional
+  install mutation with P95 budgets.
+- [x] Load-smoke script fails non-2xx/3xx samples and disables localhost proxy
+  overhead.
+- [x] Release-mode local smoke passed catalog, search, and listing-detail P95
+  budgets against PostgreSQL/Redis with migration `26` applied.
+- [x] Phase 13 README/API/architecture/gap/Mermaid traceability is updated.
+- [x] Uploaded Marketplace package code remains unexecuted.
 
 ### Phase 12 acceptance override
 
@@ -1080,3 +1205,28 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - **Exact Next Action:** review the uncommitted Phase 12 diff and only after
   explicit user authorization stage/commit it. Do not repeat completed Phase 12
   validation unless code changes.
+
+### 2026-07-12 10:52 +01:00 - V3 Phase 13 security QA and performance checkpoint
+
+- Re-read `AGENTS.md` and `HANDOFF.md`; verified Git source of truth supersedes
+  the stale handoff: Phase 12 is committed at `19f6673`, and the working tree
+  contains only uncommitted Phase 13 changes.
+- Extracted Phase 13 from the V3 proposal: 13.1 Marketplace security QA and
+  13.2 load/performance.
+- Implemented targeted security QA for IDOR, permission bypass, malicious
+  package blocking, refund abuse/idempotency, and review/abuse-reporting abuse
+  contracts.
+- Implemented performance contracts: migration `0026`, catalog cache headers,
+  load-smoke script, Phase 13 docs, diagram `40`, and updated README/API/
+  architecture/gap/traceability/evidence/inventory docs.
+- Fixed two smoke-script validation mistakes discovered during live checks:
+  Windows PowerShell now loads `System.Net.Http`, and the script fails any HTTP
+  sample outside the 2xx/3xx range.
+- Validation passed: targeted Phase 13 backend tests, wider Marketplace backend
+  tests, `git diff --check`, SQLx migration `26`, and release-mode load smoke
+  for catalog/search/listing detail. The temporary `phase13-smoke-*` fixture was
+  removed and temporary backend processes were stopped.
+- No files were staged or committed. Uploaded package code remains unexecuted.
+- **Exact Next Action:** review the uncommitted Phase 13 diff and only after
+  explicit user authorization stage/commit it. Do not repeat completed Phase 13
+  validation unless code, migration, script, or docs change.

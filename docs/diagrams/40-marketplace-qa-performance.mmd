@@ -1,0 +1,38 @@
+%% Evidence: backend/src/services/marketplace_phase_thirteen.rs
+%% Evidence: backend/src/services/marketplace_performance.rs
+%% Evidence: backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql
+%% Evidence: scripts/marketplace-phase13-load-smoke.ps1
+%% Evidence: docs/V3_PHASE_THIRTEEN.md
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/services/stripe_billing.rs
+flowchart LR
+  security_suite["Phase 13.1 security QA [IMPLEMENTED]<br/>P0 attack-path tests"]
+  idor["IDOR checks [IMPLEMENTED]<br/>creator/listing ownership predicates"]
+  permission["Permission bypass checks [IMPLEMENTED]<br/>runtime allowlist, approved permission, kill switch"]
+  malicious["Malicious package checks [IMPLEMENTED]<br/>secret files and high-risk permissions block review"]
+  refund["Refund abuse checks [IMPLEMENTED]<br/>locked purchase, provider-event idempotency, entitlement revoke"]
+  review["Review abuse checks [IMPLEMENTED]<br/>ownership gate, one review per org/listing, evidence object"]
+
+  performance_suite["Phase 13.2 load and performance [IMPLEMENTED]<br/>baseline latency, index tuning, cache policy"]
+  load_script["Load smoke script [IMPLEMENTED]<br/>catalog/search/listing and opt-in install P95 budgets"]
+  indexes["Performance indexes [IMPLEMENTED]<br/>trigram search, latest approved version, active install count, entitlement gate"]
+  cache_policy["Private catalog cache policy [IMPLEMENTED]<br/>Cache-Control max-age 60 with stale-while-revalidate"]
+  catalog_paths["Catalog and listing paths [IMPLEMENTED]<br/>search and detail reads"]
+  install_gate["Install path [IMPLEMENTED]<br/>paid entitlement and package safety gates"]
+
+  security_suite --> idor
+  security_suite --> permission
+  security_suite --> malicious
+  security_suite --> refund
+  security_suite --> review
+  performance_suite --> load_script
+  performance_suite --> indexes
+  performance_suite --> cache_policy
+  load_script --> catalog_paths
+  load_script --> install_gate
+  indexes --> catalog_paths
+  indexes --> install_gate
+  cache_policy --> catalog_paths
+
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
+  class security_suite,idor,permission,malicious,refund,review,performance_suite,load_script,indexes,cache_policy,catalog_paths,install_gate implemented

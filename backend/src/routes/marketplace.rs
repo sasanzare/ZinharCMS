@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::path::PathBuf;
 
 use axum::extract::{Extension, Multipart, Path, Query, State};
+use axum::http::HeaderMap;
 use axum::http::StatusCode;
 use axum::routing::{get, patch, post, put};
 use axum::{Json, Router};
@@ -32,6 +33,7 @@ use crate::services::marketplace_manifest::MARKETPLACE_MANIFEST_SCHEMA_VERSION;
 use crate::services::marketplace_package::{
     marketplace_package_object_key, sha256_hex, validate_package_size,
 };
+use crate::services::marketplace_performance::marketplace_catalog_cache_headers;
 use crate::services::marketplace_review::{
     MODERATION_EMERGENCY_BLOCK, MODERATION_SUSPEND_LISTING, MODERATION_UNPUBLISH_VERSION,
     validate_moderation_action, validate_review_decision,
@@ -704,7 +706,7 @@ pub async fn list_catalog(
     State(state): State<AppState>,
     Extension(tenant): Extension<TenantContext>,
     Query(query): Query<CatalogQuery>,
-) -> Result<Json<Vec<MarketplaceCatalogItemResponse>>, AppError> {
+) -> Result<(HeaderMap, Json<Vec<MarketplaceCatalogItemResponse>>), AppError> {
     let plan = quota::load_current_plan(&state.db, &tenant).await?;
     let search = clean_query_param(query.search);
     let category = clean_query_param(query.category);
@@ -786,14 +788,14 @@ pub async fn list_catalog(
         .filter_map(|row| catalog_item_from_row(row, &plan.slug))
         .collect();
 
-    Ok(Json(items))
+    Ok((marketplace_catalog_cache_headers(), Json(items)))
 }
 
 pub async fn get_catalog_listing(
     State(state): State<AppState>,
     Extension(tenant): Extension<TenantContext>,
     Path(listing_slug): Path<String>,
-) -> Result<Json<MarketplaceCatalogDetailResponse>, AppError> {
+) -> Result<(HeaderMap, Json<MarketplaceCatalogDetailResponse>), AppError> {
     let slug = listing_slug.trim().to_ascii_lowercase();
     if slug.is_empty() {
         return Err(AppError::BadRequest("listing slug is required".to_owned()));
@@ -891,17 +893,20 @@ pub async fn get_catalog_listing(
     .await?;
     tx.commit().await?;
 
-    Ok(Json(MarketplaceCatalogDetailResponse {
-        description: row.description,
-        license: row.license,
-        support_url: row.support_url.clone(),
-        screenshots: row.screenshots.clone(),
-        permissions: item.permissions.clone(),
-        changelog: manifest_value(&row.manifest_json, "changelog"),
-        versions,
-        reviews,
-        item,
-    }))
+    Ok((
+        marketplace_catalog_cache_headers(),
+        Json(MarketplaceCatalogDetailResponse {
+            description: row.description,
+            license: row.license,
+            support_url: row.support_url.clone(),
+            screenshots: row.screenshots.clone(),
+            permissions: item.permissions.clone(),
+            changelog: manifest_value(&row.manifest_json, "changelog"),
+            versions,
+            reviews,
+            item,
+        }),
+    ))
 }
 
 #[utoipa::path(

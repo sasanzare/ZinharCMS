@@ -378,3 +378,10 @@ Phase 12 does not add backend routes. It adds creator-side tooling in
 to the existing `POST /api/marketplace/listings/{listing_id}/versions/upload`
 multipart API. The CLI sends the same `manifest` and `file` fields used by the
 admin UI; backend validation and review remain authoritative.
+
+Phase 13 does not add new API routes. It hardens and validates existing
+Marketplace boundaries with P0 security QA tests, query-aligned performance
+indexes, private catalog/listing `Cache-Control`, and
+`scripts/marketplace-phase13-load-smoke.ps1` for catalog/search/listing P95
+latency baselines. Optional install latency sampling is explicit because
+`POST /api/marketplace/installations` mutates state.

@@ -118,6 +118,10 @@ flowchart TD
     creator_tooling["Marketplace creator tooling [IMPLEMENTED]<br/>CLI validate, pack, submit, docs, samples"]
   end
 
+  subgraph qa_performance_group["Marketplace QA and Performance"]
+    qa_performance["Marketplace QA and performance [IMPLEMENTED]<br/>P0 security QA, index tuning, cache policy, load baseline"]
+  end
+
   foundation --> auth
   foundation --> frontend_admin
   foundation --> api_docs
@@ -182,8 +186,12 @@ flowchart TD
   internal_review --> analytics
   package_validation --> creator_tooling
   creator_tooling --> listing_submission
+  creator_tooling --> qa_performance
+  analytics --> qa_performance
+  qa_performance --> catalog
+  qa_performance --> installation
 
-  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility,installation,installation_gates,installation_ui,purchase,analytics,creator_tooling implemented
+  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility,installation,installation_gates,installation_ui,purchase,analytics,creator_tooling,qa_performance implemented
   class global_rbac,uploads_access,live_preview,redis_cache,webhooks,plugins,localization,stripe_subscriptions,saas_alerts,internal_review,payout partial
   class api_docs conflict
   class artifact_cleanup,review_restoration decision

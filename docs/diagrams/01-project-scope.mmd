@@ -23,14 +23,23 @@
 %% Evidence: docs/V3_PHASE_FOUR.md
 %% Evidence: docs/V3_PHASE_FIVE.md
 %% Evidence: docs/V3_PHASE_SEVEN.md
+%% Evidence: docs/V3_PHASE_EIGHT.md
+%% Evidence: docs/V3_PHASE_NINE.md
+%% Evidence: docs/V3_PHASE_TEN.md
+%% Evidence: docs/V3_PHASE_ELEVEN.md
+%% Evidence: docs/V3_PHASE_TWELVE.md
+%% Evidence: docs/V3_PHASE_THIRTEEN.md
 %% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
 %% Evidence: backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql
 %% Evidence: backend/migrations/0021_v3_phase_eight_runtime_adapters.sql
+%% Evidence: backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql
 %% Evidence: backend/src/services/marketplace_runtime.rs
 %% Evidence: backend/src/routes/marketplace_runtime.rs
 %% Evidence: backend/src/services/marketplace_adapters.rs
 %% Evidence: backend/src/routes/marketplace_adapters.rs
-%% Evidence: docs/V3_PHASE_EIGHT.md
+%% Evidence: backend/src/services/marketplace_phase_thirteen.rs
+%% Evidence: backend/src/services/marketplace_performance.rs
+%% Evidence: scripts/marketplace-phase13-load-smoke.ps1
 %% Evidence: backend/src/services/marketplace_installation.rs
 %% Evidence: backend/src/routes/marketplace.rs
 %% Evidence: frontend/src/pages/MarketplacePage.tsx
@@ -41,7 +50,7 @@ flowchart TD
   subgraph historical_docs["Historical documentation sources [DOCUMENTED ONLY]"]
     hist_v1["V1 phase docs [DOCUMENTED ONLY]<br/>docs/PHASE_ZERO.md through docs/PHASE_SEVEN.md"]
     hist_v2["V2 phase docs [DOCUMENTED ONLY]<br/>docs/V2_PHASE_ZERO.md through docs/V2_PHASE_TEN.md"]
-    hist_v3["V3 phase docs [DOCUMENTED ONLY]<br/>docs/V3_PHASE_0_1.md through docs/V3_PHASE_EIGHT.md"]
+    hist_v3["V3 phase docs [DOCUMENTED ONLY]<br/>docs/V3_PHASE_0_1.md through docs/V3_PHASE_THIRTEEN.md"]
   end
 
   subgraph v1_scope["V1 CMS implementation scope"]
@@ -80,6 +89,8 @@ flowchart TD
     v3_finance["Phase 9 finance [IMPLEMENTED]<br/>free/paid checkout, entitlements, ledger, payout onboarding"]
     v3_feedback["Phase 10 feedback [IMPLEMENTED]<br/>customer reviews, abuse reports, critical notifications"]
     v3_analytics["Phase 11 analytics [IMPLEMENTED]<br/>creator performance and internal health/risk dashboard"]
+    v3_creator_tooling["Phase 12 creator tooling [IMPLEMENTED]<br/>CLI validate, pack, submit, docs, samples"]
+    v3_qa_performance["Phase 13 QA and performance [IMPLEMENTED]<br/>P0 security QA, indexes, private cache policy, load baseline"]
     v3_future["Planned future Marketplace capabilities [PLANNED]<br/>executable external adapters, automated transfers, runtime telemetry, incident runbooks"]
   end
 
@@ -129,10 +140,12 @@ flowchart TD
   v3_adapters --> v3_finance
   v3_finance --> v3_feedback
   v3_feedback --> v3_analytics
-  v3_analytics --> v3_future
+  v3_analytics --> v3_creator_tooling
+  v3_creator_tooling --> v3_qa_performance
+  v3_qa_performance --> v3_future
 
   class hist_v1,hist_v2,hist_v3 documented
-  class phase_zero,phase_one,phase_two,phase_three,phase_four,phase_five,phase_seven,v2_orgs,v2_tenant,v2_billing_quotas,v2_hardening,v2_beta,v2_ga,v3_scope_ready,v3_foundation,v3_creator_submission,v3_validation,v3_catalog,v3_install,v3_security implemented
+  class phase_zero,phase_one,phase_two,phase_three,phase_four,phase_five,phase_seven,v2_orgs,v2_tenant,v2_billing_quotas,v2_hardening,v2_beta,v2_ga,v3_scope_ready,v3_foundation,v3_creator_submission,v3_validation,v3_catalog,v3_install,v3_security,v3_adapters,v3_finance,v3_feedback,v3_analytics,v3_creator_tooling,v3_qa_performance implemented
   class phase_six,v2_stripe,v2_saas_ops,v3_review partial
   class v3_future planned
   class phase_three_caveat conflict
