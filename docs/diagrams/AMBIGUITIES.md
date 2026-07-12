@@ -136,36 +136,38 @@ Paid entitlements and executable package runtime remain deferred.
 - ID: AMB-008
 - Domain: Marketplace Purchases
 - Exact question: Do paid listing fields mean purchase flow is implemented?
-- Documentation claim: Marketplace readiness and gap docs describe purchases as future work.
-- Implementation evidence: `backend/src/routes/marketplace.rs` exposes pricing metadata but no checkout, purchase, entitlement, or payment route for Marketplace products.
-- Database evidence: `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql` stores `pricing_type` and `price_cents`; no purchase table was found.
-- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` renders prices but does not start a product purchase flow.
-- Test evidence: No Marketplace purchase test was found.
-- Conflict or missing information: Paid listing metadata exists without purchase runtime.
-- Safest interpretation: Treat Marketplace purchases as planned only.
-- Representation to use in diagrams: Use `[PLANNED] Marketplace purchase`; do not draw purchase tables, checkout routes, or entitlements.
+- Documentation claim: Marketplace readiness and gap docs originally described purchases as future work.
+- Implementation evidence: Phase 9 supersedes the original ambiguity with `backend/src/routes/marketplace_finance.rs`, paid install entitlement gates in `backend/src/routes/marketplace.rs`, and Marketplace purchase UI in `frontend/src/pages/MarketplacePage.tsx`.
+- Database evidence: migration `0022_v3_phase_nine_marketplace_finance.sql` creates purchases, entitlements, revenue ledger, payout accounts, and payout records.
+- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` starts paid checkout and passes completed purchase context into install.
+- Test evidence: Backend finance tests and frontend Marketplace tests cover the Phase 9 purchase flow.
+- Conflict or missing information: Partial refunds and subscription-style Marketplace add-ons remain deferred.
+- Safest interpretation: Treat free/paid one-time Marketplace purchase and entitlement as implemented; keep partial refunds and add-ons planned.
+- Representation to use in diagrams: Use `[IMPLEMENTED] Marketplace purchase and entitlement`; keep `[PLANNED] partial refunds/subscription add-ons`.
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future purchase and billing diagrams.
 - Step 15 update: `marketplace_listings.pricing_type` and `price_cents` exist, and paid metadata is validated, but migrations `0015` through `0018` still have no purchase, entitlement, checkout, refund, or ledger table. Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
+- Phase 9 update: migration `0022`, finance routes, Stripe metadata-scoped payment/refund handling, and frontend purchase surfaces now implement the one-time purchase lifecycle.
 
 ## AMB-009
 
 - ID: AMB-009
 - Domain: Creator Payouts
 - Exact question: Is creator payout implemented or only represented by creator status metadata?
-- Documentation claim: `docs/V3_V2_MARKETPLACE_READINESS_AUDIT.md` and `docs/V3_MARKETPLACE_GAP_LIST.md` identify payouts and Stripe Connect style flows as future work.
-- Implementation evidence: No payout service, payout route, ledger, or provider integration was found in `backend/src/routes/marketplace.rs` or service modules.
-- Database evidence: `backend/migrations/0015_v3_phase_one_marketplace_foundation.sql` stores `marketplace_creators.payout_status`, but no payout or ledger table was found.
-- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` does not expose payout management or payout history.
-- Test evidence: No payout test was found.
-- Conflict or missing information: Payout status field exists without payout processing.
-- Safest interpretation: Treat creator payout as planned only.
-- Representation to use in diagrams: Use `[PLANNED] payout status only`; do not invent payout provider or payout entity.
+- Documentation claim: Early Marketplace docs identified payouts and Stripe Connect style flows as future work.
+- Implementation evidence: Phase 9 supersedes the original ambiguity with payout onboarding, provider-attested verification, balance, and payout-request handlers in `backend/src/routes/marketplace_finance.rs`.
+- Database evidence: migration `0022_v3_phase_nine_marketplace_finance.sql` creates payout accounts and payout records plus the revenue ledger.
+- Frontend evidence: `frontend/src/pages/MarketplacePage.tsx` exposes payout onboarding/request controls for creator owners.
+- Test evidence: Backend finance tests cover payout eligibility and the frontend suite covers Marketplace payout surfaces indirectly through the page load/API contract.
+- Conflict or missing information: Automated provider transfer execution remains deferred.
+- Safest interpretation: Treat payout onboarding, eligibility, balances, and payout request records as implemented; keep automated transfer execution planned.
+- Representation to use in diagrams: Use `[PARTIAL] creator payout`; do not draw automated transfer execution.
 - Confidence: HIGH
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future payout and Marketplace finance diagrams.
 - Step 15 update: `marketplace_creators.payout_status` remains the only persisted payout-related field; no payout provider onboarding route, ledger table, or payout table exists in Marketplace code or migrations. Affected diagram files: `19-marketplace-data-model.mmd`, `20-marketplace-package-review-pipeline.mmd`.
+- Phase 9 update: payout account, balance, verification, and payout request records now exist; actual transfer execution remains future work.
 
 ## AMB-010
 
@@ -312,6 +314,7 @@ Paid entitlements and executable package runtime remain deferred.
 - Status: RESOLVED
 - Affected diagram files: `00-implementation-status-map.mmd`, future catalog and review diagrams.
 - Phase 10 update: published customer reviews now populate catalog averages/detail; tenant identifiers remain outside the cross-tenant review response. Diagram `37-marketplace-feedback-abuse.mmd` is authoritative for this workflow.
+- Phase 11 update: customer reviews, abuse reports, review events, purchases, installs, and version states now feed read-only creator/admin analytics in `38-marketplace-analytics.mmd`; runtime execution error telemetry is still not implemented.
 
 ## AMB-018
 

@@ -922,6 +922,73 @@ export type MarketplaceCreatorBalanceResponse = {
   settlement_days: number;
 };
 
+export type MarketplaceCreatorProductAnalyticsResponse = {
+  listing_id: string;
+  title: string;
+  slug: string;
+  status: MarketplaceListingStatus;
+  product_type: MarketplaceProductType;
+  pricing_type: MarketplacePricingType;
+  total_installs: number;
+  active_installs: number;
+  purchase_attempts: number;
+  completed_purchases: number;
+  refunded_purchases: number;
+  gross_revenue_cents: number;
+  creator_revenue_cents: number;
+  conversion_rate: number;
+  error_count: number;
+  report_count: number;
+  average_rating: number;
+  rating_count: number;
+  last_activity_at: string | null;
+};
+
+export type MarketplaceCreatorAnalyticsResponse = {
+  creator_id: string;
+  listing_count: number;
+  total_installs: number;
+  active_installs: number;
+  purchase_attempts: number;
+  completed_purchases: number;
+  refunded_purchases: number;
+  gross_revenue_cents: number;
+  creator_revenue_cents: number;
+  conversion_rate: number;
+  error_count: number;
+  products: MarketplaceCreatorProductAnalyticsResponse[];
+};
+
+export type MarketplaceAdminRiskProductResponse = {
+  listing_id: string;
+  title: string;
+  slug: string;
+  creator_display_name: string;
+  status: MarketplaceListingStatus;
+  product_type: MarketplaceProductType;
+  security_risk_level: MarketplaceSecurityRiskLevel;
+  report_count: number;
+  critical_report_count: number;
+  blocked_package_count: number;
+  refund_count: number;
+  error_count: number;
+  active_installs: number;
+};
+
+export type MarketplaceAdminAnalyticsResponse = {
+  generated_at: string;
+  submission_count_30d: number;
+  submission_rate_per_day: number;
+  average_approval_hours: number;
+  total_installs: number;
+  active_installs: number;
+  refund_count: number;
+  report_count: number;
+  critical_report_count: number;
+  blocked_package_count: number;
+  risky_products: MarketplaceAdminRiskProductResponse[];
+};
+
 export type MarketplacePayoutResponse = {
   id: string;
   creator_id: string;

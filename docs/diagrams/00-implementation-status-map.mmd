@@ -103,11 +103,15 @@ flowchart TD
   end
 
   subgraph purchase_group["Purchase"]
-    purchase["Purchase [PLANNED] AMB-008<br/>pricing metadata only, no purchase table/API"]
+    purchase["Purchase [IMPLEMENTED] AMB-008<br/>free/paid checkout, entitlement, ledger, refund handling"]
   end
 
   subgraph payout_group["Creator Payout"]
-    payout["Creator payout [PLANNED] AMB-009<br/>payout_status only, no payout ledger/provider"]
+    payout["Creator payout [PARTIAL] AMB-009<br/>provider onboarding and eligibility; automated transfers deferred"]
+  end
+
+  subgraph analytics_group["Marketplace Analytics"]
+    analytics["Marketplace analytics [IMPLEMENTED]<br/>creator performance plus admin health/risk dashboard"]
   end
 
   foundation --> auth
@@ -167,12 +171,14 @@ flowchart TD
   installation_gates --> installation
   installation --> installation_ui
   audit_logs --> installation
-  catalog -. future paid listing .-> purchase
-  purchase -. future revenue .-> payout
+  catalog --> purchase
+  purchase --> payout
+  purchase --> analytics
+  installation --> analytics
+  internal_review --> analytics
 
-  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility,installation,installation_gates,installation_ui implemented
-  class global_rbac,uploads_access,live_preview,redis_cache,webhooks,plugins,localization,stripe_subscriptions,saas_alerts,internal_review partial
-  class purchase,payout planned
+  class foundation,content_types,entries,media,page_builder,page_versions,delivery_api,workflow,comments,auth,security_hardening,rls,frontend_admin,organizations,memberships,tenant_middleware,super_admin,billing_plans,quotas,audit_logs,email_deliveries,beta_feedback,ga_readiness,marketplace_creators,marketplace_listing_schema,marketplace_storage,creator_profile,listing_submission,package_validation,package_immutability,moderation,catalog,compatibility,installation,installation_gates,installation_ui,purchase,analytics implemented
+  class global_rbac,uploads_access,live_preview,redis_cache,webhooks,plugins,localization,stripe_subscriptions,saas_alerts,internal_review,payout partial
   class api_docs conflict
   class artifact_cleanup,review_restoration decision
   classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111

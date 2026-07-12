@@ -7,6 +7,7 @@ pub mod hardening;
 pub mod health;
 pub mod jwt;
 pub mod marketplace_adapters;
+pub mod marketplace_analytics;
 pub mod marketplace_catalog;
 pub mod marketplace_domain;
 pub mod marketplace_feedback;

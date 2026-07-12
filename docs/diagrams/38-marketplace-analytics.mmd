@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Creator as Marketplace creator
+    participant Admin as Global marketplace admin
+    participant UI as Marketplace UI
+    participant API as Analytics API
+    participant DB as PostgreSQL marketplace tables
+    Creator->>UI: Open creator dashboard
+    UI->>API: GET /api/marketplace/creators/{creator_id}/analytics
+    API->>DB: Verify creator ownership by user id
+    API->>DB: Aggregate installs, purchases, ledger, reviews, reports, package signals
+    DB-->>API: Creator product performance
+    API-->>UI: Installs, revenue, conversion, errors
+    Admin->>UI: Open internal marketplace dashboard
+    UI->>API: GET /api/marketplace/analytics/admin
+    API->>API: Require global admin or super admin
+    API->>DB: Aggregate submissions, approval time, installs, refunds, reports, blocked packages
+    DB-->>API: Health and risky-product signals
+    API-->>UI: Marketplace health analytics and ranked risk list

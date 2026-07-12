@@ -5,17 +5,17 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-11 14:54 +01:00 (Europe/London)
+- **Last updated:** 2026-07-12 05:30 +01:00 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `dffe515 feat(marketplace): complete v3 phase 9 monetization`
-- **Working tree at session start:** Phase 9 was committed at `dffe515`; the current tree contains the uncommitted Phase 10 implementation, migration `0025`, frontend/admin feedback surfaces, and documentation corrections.
+- **Latest relevant commit:** `e77e2f7 feat(marketplace): complete v3 phase 10 feedback and abuse reporting`
+- **Working tree at session start:** Phase 10 was committed at `e77e2f7`; the current tree contains the uncommitted Phase 11 analytics implementation, frontend/admin analytics surfaces, Phase 11 docs, and diagram `38`.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** V3 Marketplace Phase 10 — Customer feedback and abuse reporting
-- **Current subphase:** 10.1 and 10.2 implementation and validation complete
-- **Overall status:** Phase 10 is complete in the local environment; changes remain unstaged and uncommitted pending explicit user authorization
+- **Current phase:** V3 Marketplace Phase 11 — Analytics
+- **Current subphase:** 11.1 Creator Analytics and 11.2 Marketplace Admin Analytics implementation, local validation, and live API smoke complete
+- **Overall status:** Phase 11 is complete, including authenticated live analytics API smoke against local Docker PostgreSQL/Redis. Changes remain unstaged and uncommitted pending explicit user authorization.
 
 ## 2. Project Overview
 
@@ -38,12 +38,11 @@ system of record, Redis for cache/rate-limit support, and local filesystem
 storage for CMS media and Marketplace package artifacts.
 
 The baseline includes the original CMS phases zero through ten, V2 organization,
-billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 7. The
-current V3 implementation has reached the Phase 7 security boundary: reviewed
-free Component Packs and Design Templates can be installed and managed, while a
-permission catalog, allowlisted runtime policy, bounded sandbox decision, and
-global/organization kill switch prevent unauthorized or unsafe runtime actions.
-Uploaded package code is still never executed.
+billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 11. The
+current V3 implementation includes installation lifecycle, runtime security
+policy, host-owned adapters, one-time purchases/entitlements, feedback/abuse
+moderation, and read-only analytics. Uploaded package code is still never
+executed.
 
 ## 3. Technology Stack
 
@@ -57,7 +56,7 @@ Uploaded package code is still never executed.
 - **Storage:** Local filesystem under `UPLOAD_DIR`; no S3/CDN implementation is present.
 - **Testing:** Rust unit/static contract tests, Vitest, Testing Library, ESLint, TypeScript build/typecheck.
 - **Build and deployment:** Cargo, npm, Docker Compose, Nginx production frontend image, GitHub Actions CI.
-- **Documentation:** Markdown phase/API/architecture documents and 34 Mermaid diagrams.
+- **Documentation:** Markdown phase/API/architecture documents and 39 Mermaid diagrams.
 - **Not implemented:** Durable queue/worker, search service, separately deployed gateway, automatic backups, monitoring vendor, executable Marketplace sandbox/runtime.
 
 ## 4. Repository Structure
@@ -82,27 +81,37 @@ and `frontend/dist` are not source-of-truth directories.
 
 | Document | Role | Authority / freshness |
 | --- | --- | --- |
-| `README.md` | Current repository scope and quick-start commands through V3 Phase 10. | Current summary; source code and migrations outrank it. |
+| `README.md` | Current repository scope and quick-start commands through V3 Phase 11. | Current summary; source code and migrations outrank it. |
 | `docs/V3_PHASE_SIX.md` | Phase 6 acceptance, install gates, lifecycle rules, update/rollback behavior, and deferred boundaries. | Current Phase 6 authority. |
 | `docs/V3_PHASE_SEVEN.md` | Phase 7 permission catalog, sandbox policy, runtime authorization, kill switch, and acceptance. | Current Phase 7 authority. |
 | `docs/V3_PHASE_TEN.md` | Phase 10 customer review/rating and abuse-reporting acceptance. | Current Phase 10 authority. |
+| `docs/V3_PHASE_ELEVEN.md` | Phase 11 creator analytics and Marketplace admin analytics acceptance, data sources, and deliberate boundaries. | Current Phase 11 authority. |
 | `docs/V3_MARKETPLACE_SCOPE.md` | V3 scope lock and MVP/out-of-scope rules. | Current product-scope authority. |
 | `docs/V3_MARKETPLACE_GAP_LIST.md` | Resolved and deferred Marketplace gaps by phase. | Current gap/status record; verify against runtime. |
 | `docs/V3_MARKETPLACE_POLICY.md` and `docs/V3_PRODUCT_TAXONOMY.md` | Review, moderation, product classification, and safety policy. | Current policy authority. |
 | `docs/API.md` | Runtime route boundaries and Marketplace endpoint documentation. | Current, with older Marketplace routes manually documented. |
-| `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Updated through migration `0021` and Phase 8 host-owned adapters. |
-| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd` | Evidence links and visual Phase 6/7/8 implementation state. | Updated with Phase 8 evidence; static Mermaid validation is available, but no Mermaid parser is installed. |
+| `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Updated through Phase 11 analytics. |
+| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd`, `36-marketplace-finance-lifecycle.mmd`, `37-marketplace-feedback-abuse.mmd`, `38-marketplace-analytics.mmd` | Evidence links and visual Marketplace implementation state. | Updated through Phase 11; static Mermaid validation is available, but no Mermaid parser is installed. |
 | `D:\All projects\Zinhar_Doc\version_3_marketplace_proposal.html` | Original V3 Marketplace proposal and future lifecycle goals. | Planning authority; current migrations/routes/tests supersede it for implementation status. |
 | `D:\All projects\Zinhar_Doc\version_2_proposal.html` | V2 SaaS/organization/billing proposal. | Historical planning authority for V2 dependencies. |
 | `D:\All projects\Zinhar_Doc\headless_cms_proposal_polished.html` | Original CMS proposal. | Historical baseline; current repository documentation and code are newer. |
 
 The proposals describe the complete future Marketplace lifecycle, including paid
 products and executable/runtime concepts. Phase 7 established the permission and
-containment boundary; Phase 8 now supplies host-owned Component Pack, Template,
-and public Hook adapters. Paid entitlements, payouts, customer ratings, external
-execution, and arbitrary package execution remain deferred.
+containment boundary; Phase 8 supplies host-owned Component Pack, Template, and
+public Hook adapters. Phase 9 supplies one-time purchases/entitlements and payout
+onboarding, Phase 10 supplies customer feedback/abuse reporting, and Phase 11
+supplies read-only analytics. External execution, runtime error telemetry,
+automated payout transfer execution, and arbitrary package execution remain
+deferred.
 
 ## 6. Current Objective
+
+> **Phase 11 override (2026-07-11 18:58):** Phase 10 is committed at `e77e2f7`.
+> The active objective is V3 Marketplace Phase 11: 11.1 creator analytics and
+> 11.2 Marketplace admin analytics. The implementation and local validation are
+> complete, and authenticated live API smoke passed on 2026-07-12 after Docker
+> became available. The remaining action is user-authorized review/stage/commit.
 
 > **Phase 10 override (2026-07-11 14:54):** Phase 9 is committed at `dffe515`.
 > The active objective is V3 Marketplace Phase 10: 10.1 customer rating/review
@@ -127,6 +136,45 @@ planned and authorized:
 - no background automatic update is enabled; installations remain explicitly pinned.
 
 ## 7. Completed and Verified Work
+
+### Phase 11 checkpoint override (2026-07-11 18:58)
+
+- Phase 11.1 is implemented: creator owners can read product analytics only for
+  their own creator profile via `/api/marketplace/creators/{creator_id}/analytics`.
+  Metrics include listing count, total installs, active installs, purchase
+  attempts, completed/refunded purchases, gross revenue, creator revenue,
+  conversion rate, ratings, reports, and persisted error signals.
+- Phase 11.2 is implemented: global admins/super admins can read internal
+  Marketplace health analytics via `/api/marketplace/analytics/admin`. Metrics
+  include 30-day submission count/rate, average approval time, installs, refunds,
+  reports, critical reports, blocked packages, and a ranked risky/repetitive
+  product list.
+- No new migration was required. Phase 11 aggregates existing tables from phases
+  1 through 10: installs, purchases, revenue ledger, product reviews, abuse
+  reports, versions/package risk, submissions, and review events.
+- Frontend Marketplace UI now renders a creator analytics panel and a global-admin
+  Marketplace health/risk panel, with API methods, TypeScript types, translations,
+  and Phase 11 test coverage.
+- Added `backend/src/routes/marketplace_analytics.rs`,
+  `backend/src/services/marketplace_analytics.rs`, `docs/V3_PHASE_ELEVEN.md`,
+  and `docs/diagrams/38-marketplace-analytics.mmd`; updated API, architecture,
+  gap, ambiguity, traceability, diagram index, README, frontend API/types/UI/tests,
+  and OpenAPI registration.
+- Validation passed: `cargo fmt -- --check`, `cargo test marketplace_analytics`,
+  `cargo test --all-features` (105 backend tests plus doc tests), `npm run lint`,
+  `npm run typecheck`, `npm test -- MarketplacePage`, full `npm test` (3 files,
+  14 tests), `npm run build`, `git diff --check`, and 39-file Mermaid static
+  validation. Frontend Vitest/build required sandbox escalation because esbuild
+  otherwise failed with `spawn EPERM`; the Vite >500 kB chunk warning remains
+  pre-existing/non-blocking.
+- Live PostgreSQL/API smoke passed on 2026-07-12: Docker PostgreSQL/Redis were
+  healthy; backend `/health` returned 200; `/ready` returned 200 with PostgreSQL
+  and Redis reachable; `/openapi.json` contained both Phase 11 analytics paths.
+  Authenticated creator-owner analytics returned 200, author access to admin
+  analytics returned 403, global-admin analytics returned 200, and non-owner
+  access to creator analytics returned 403. The temporary test user/creator data
+  was removed, the backend process was stopped, and no stage or commit was
+  performed.
 
 ### Phase 10 final checkpoint override (2026-07-11 14:54)
 
@@ -259,6 +307,30 @@ tests/build have passed; live migration/API smoke is still pending.
 
 ## 10. Current Git and Filesystem State
 
+### Actual state at Phase 11 checkpoint
+
+- `HEAD` is `e77e2f7` (`feat(marketplace): complete v3 phase 10 feedback and
+  abuse reporting`) on `main`, matching `origin/main` at inspection time.
+- No files are staged, deleted, reset, or committed for Phase 11.
+- Modified tracked files are Phase 11 implementation/documentation/UI/test files
+  plus this handoff update.
+- New Phase 11 files are `backend/src/routes/marketplace_analytics.rs`,
+  `backend/src/services/marketplace_analytics.rs`, `docs/V3_PHASE_ELEVEN.md`,
+  and `docs/diagrams/38-marketplace-analytics.mmd`.
+- Modified Phase 11 files are `README.md`, `backend/src/routes/mod.rs`,
+  `backend/src/services/mod.rs`, `docs/API.md`, `docs/ARCHITECTURE.md`,
+  `docs/V3_MARKETPLACE_GAP_LIST.md`, `docs/diagrams/00-implementation-status-map.mmd`,
+  `docs/diagrams/01-project-scope.mmd`, `docs/diagrams/19-marketplace-data-model.mmd`,
+  `docs/diagrams/32-end-to-end-traceability.mmd`, `docs/diagrams/AMBIGUITIES.md`,
+  `docs/diagrams/ARCHITECTURE_AUDIT.md`, `docs/diagrams/FILE_EVIDENCE_INDEX.md`,
+  `docs/diagrams/README.md`, `docs/diagrams/TRACEABILITY.md`,
+  `frontend/src/i18n/messages.ts`, `frontend/src/pages/MarketplacePage.test.tsx`,
+  `frontend/src/pages/MarketplacePage.tsx`, `frontend/src/services/api.ts`, and
+  `frontend/src/types/api.ts`.
+- Phase 11 live DB/API smoke passed on 2026-07-12 against local Docker
+  PostgreSQL/Redis. The temporary backend process was stopped; Docker
+  PostgreSQL/Redis remained healthy at the end of the smoke.
+
 ### Actual state at Phase 10 final checkpoint
 
 - `HEAD` is `dffe515` (`feat(marketplace): complete v3 phase 9 monetization`) on
@@ -317,6 +389,29 @@ should be created unless the user explicitly authorizes it.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
+
+### Phase 11 local validation results (2026-07-11 18:58)
+
+- `cargo fmt -- --check` from `backend/`: passed.
+- `cargo test marketplace_analytics` from `backend/`: passed, 3 targeted
+  analytics tests with 0 failures.
+- `cargo test --all-features` from `backend/`: passed, 105 backend tests plus
+  doc tests with 0 failures.
+- `npm run lint` from `frontend/`: passed.
+- `npm run typecheck` from `frontend/`: passed.
+- `npm test -- MarketplacePage` from `frontend/`: passed under approved
+  escalation, 1 file and 12 tests. Escalation was required because Vitest/esbuild
+  failed in the sandbox with `spawn EPERM`.
+- `npm test` from `frontend/`: passed under approved escalation, 3 files and
+  14 tests.
+- `npm run build` from `frontend/`: passed under approved escalation with the
+  existing >500 kB Vite chunk warning.
+- `git diff --check`: passed with line-ending notices only.
+- Mermaid static validation: passed, 39 `.mmd` files, one declaration each and no
+  Markdown fences.
+- Environment smoke: `docker compose ps` failed because Docker Desktop was not
+  running (`dockerDesktopLinuxEngine` pipe missing). No live PostgreSQL/API smoke
+  was run for Phase 11.
 
 ### Phase 10 final validation results (2026-07-11 14:54)
 
@@ -499,6 +594,14 @@ should be created unless the user explicitly authorizes it.
 
 ## 15. Remaining Work
 
+### Phase 11 remaining-work override
+
+1. Review the uncommitted Phase 11 diff.
+2. If and only if the user explicitly authorizes it, stage and commit the Phase
+   11 implementation.
+3. Do not repeat Phases 9, 10, or already completed Phase 11 implementation and
+   validation.
+
 ### Phase 10 remaining-work override
 
 1. Review the uncommitted Phase 10 diff.
@@ -555,10 +658,11 @@ should be created unless the user explicitly authorizes it.
 
 ## 16. Exact Next Action
 
-Review the uncommitted Phase 10 diff and, only after explicit user authorization,
-stage and commit the Phase 10 implementation. Do not rerun completed validation
+Review the uncommitted Phase 11 diff and, only after explicit user authorization,
+stage and commit the Phase 11 implementation. Do not rerun completed validation
 unless review changes code. If work resumes without a commit request, begin the
-next explicitly authorized proposal phase; do not repeat Phases 9 or 10.
+next explicitly authorized proposal phase; do not repeat Phases 9, 10, or the
+completed Phase 11 implementation.
 
 The older Phase 7 instruction below is historical and superseded by the Phase 8
 action above.
@@ -574,6 +678,25 @@ paid products, or create a commit. Record the actual migration `0020` and API
 results in this file before planning Phase 8 adapters.
 
 ## 17. Acceptance Criteria for the Current Phase
+
+### Phase 11 acceptance override
+
+- [x] Creator analytics expose installs, active installs, revenue, conversion,
+  ratings, reports, and persisted error signals.
+- [x] Creator analytics are scoped to the creator owner; non-owners receive
+  forbidden behavior from the backend ownership check.
+- [x] Marketplace admin analytics expose submission rate, approval time, installs,
+  refunds, reports, critical reports, blocked packages, and risky/repetitive
+  products.
+- [x] Admin analytics require global admin/super admin authorization.
+- [x] Frontend Marketplace UI renders creator analytics and admin health/risk
+  analytics with typed API clients and translations.
+- [x] Phase 11 API, architecture, gap, traceability, ambiguity, README, and
+  Mermaid documentation is updated.
+- [x] Backend formatting/tests and frontend lint/typecheck/tests/build passed.
+- [x] No new migration was required and uploaded package code remains unexecuted.
+- [x] Live authenticated analytics API smoke is verified against a running local
+  PostgreSQL/Redis-backed backend.
 
 ### Phase 8 acceptance override
 
@@ -752,3 +875,62 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   healthy. No commit, reset, cleanup, or destructive action was performed.
 - **Exact Next Action:** review the uncommitted Phase 10 diff and only after
   explicit user authorization stage/commit it. Do not repeat completed work.
+
+### 2026-07-11 18:58 +01:00 - V3 Phase 11 analytics checkpoint
+
+- Verified Git source of truth: Phase 10 is committed at `e77e2f7`; no Phase 10
+  implementation was repeated.
+- Implemented Phase 11.1 creator analytics with owner-only backend access and
+  product-level installs, active installs, revenue, conversion, ratings, reports,
+  and persisted error signals.
+- Implemented Phase 11.2 global-admin Marketplace analytics with submission
+  rate, approval time, installs, refunds, reports, critical reports, blocked
+  packages, and ranked risky/repetitive products.
+- Added analytics route/service modules, frontend API/types/UI/test coverage,
+  i18n keys, `docs/V3_PHASE_ELEVEN.md`, diagram `38`, and related API,
+  architecture, gap, ambiguity, traceability, and README updates.
+- Local validation passed: backend format, 105 backend tests plus doc tests,
+  frontend lint/typecheck/build, 14 frontend tests, `git diff --check`, and
+  39-file Mermaid static validation.
+- Live DB/API smoke was not run because Docker Desktop was not running. No stage,
+  commit, reset, cleanup, destructive command, or database mutation was performed.
+- **Exact Next Action:** review the uncommitted Phase 11 diff and only after
+  explicit user authorization stage/commit it. If live validation is requested
+  first, start Docker Desktop/PostgreSQL/Redis and smoke the two analytics
+  endpoints against safe test data.
+
+### 2026-07-12 05:10 +01:00 - Phase 11 live smoke retry still blocked
+
+- Re-read `AGENTS.md` and `HANDOFF.md`; verified Git source of truth remains
+  Phase 10 commit `e77e2f7` plus uncommitted Phase 11 analytics changes.
+- Rechecked Docker for the remaining live analytics smoke. `docker compose ps`
+  failed because the Docker Desktop Linux engine pipe is missing
+  (`dockerDesktopLinuxEngine` not running).
+- No source code, database, staging, commit, reset, cleanup, or destructive action
+  was performed during this retry.
+- **Exact Next Action:** either start Docker Desktop and run the live Phase 11
+  analytics API smoke, or review/stage/commit the already locally validated Phase
+  11 implementation if live environment smoke is not required before commit.
+
+### 2026-07-12 05:30 +01:00 - Phase 11 live analytics smoke completed
+
+- Re-read `AGENTS.md` and `HANDOFF.md`; verified Git source of truth remains
+  Phase 10 commit `e77e2f7` plus uncommitted Phase 11 analytics changes.
+- Started/verified Docker PostgreSQL and Redis with `docker compose up -d
+  postgres redis`; both services were healthy.
+- Started a temporary backend on port `8082` with local development environment
+  values. `/health` returned 200, `/ready` returned 200 with PostgreSQL and
+  Redis reachable, and `/openapi.json` contained both Phase 11 analytics paths.
+- Authenticated live analytics smoke passed: creator-owner analytics returned
+  200 with zero-count safe test data; author access to admin analytics returned
+  403; global-admin analytics returned 200; global-admin/non-owner access to the
+  creator-owned analytics endpoint returned 403.
+- The temporary smoke user/creator data was removed from the local database and
+  verified absent. The temporary backend process was stopped; port `8082` was
+  closed. Docker PostgreSQL/Redis remain running and healthy.
+- No source code was changed during smoke validation. `HANDOFF.md` was updated
+  to record the completed live smoke. No files were staged, committed, reset, or
+  discarded.
+- **Exact Next Action:** review the uncommitted Phase 11 diff and only after
+  explicit user authorization stage/commit it. Do not repeat completed Phase 11
+  validation unless review changes code.

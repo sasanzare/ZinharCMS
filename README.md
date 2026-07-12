@@ -178,6 +178,12 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Abuse reports collect violation type, severity, description, and JSON evidence in a global-admin moderation queue.
 - Critical reports create a persisted unread internal admin notification and audit event; external notification delivery and automatic takedown remain future work.
 
+## V3 Marketplace Phase 11 Scope
+
+- Creator analytics summarize each creator's own listings, installs, active installs, revenue, conversion, ratings, reports, and persisted error signals.
+- Internal admin analytics summarize Marketplace submission rate, approval time, installs, refunds, reports, critical reports, blocked packages, and risky/repetitive products.
+- Analytics are read-only projections over existing Marketplace tables; runtime execution error telemetry, warehouse export, and anomaly alerting remain future work.
+
 ## Quick Start
 
 Copy the environment template and start the local stack:

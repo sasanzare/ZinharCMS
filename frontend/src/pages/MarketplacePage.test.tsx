@@ -5,6 +5,11 @@ import { useAppStore } from "../stores/useAppStore";
 import { MarketplacePage } from "./MarketplacePage";
 
 const apiMocks = vi.hoisted(() => ({
+  creator: vi.fn(),
+  creatorBalance: vi.fn(),
+  creatorAnalytics: vi.fn(),
+  adminAnalytics: vi.fn(),
+  listings: vi.fn(),
   catalog: vi.fn(),
   catalogDetail: vi.fn(),
   installations: vi.fn(),
@@ -42,8 +47,8 @@ vi.mock("../services/api", () => ({
   api: {
     baseUrl: "http://localhost:8080",
     marketplace: {
-      creator: vi.fn().mockResolvedValue({ creator: null }),
-      listings: vi.fn().mockResolvedValue([]),
+      creator: apiMocks.creator,
+      listings: apiMocks.listings,
       catalog: apiMocks.catalog,
       catalogDetail: apiMocks.catalogDetail,
       installations: apiMocks.installations,
@@ -55,6 +60,9 @@ vi.mock("../services/api", () => ({
       submitAbuseReport: apiMocks.submitAbuseReport,
       abuseReports: apiMocks.abuseReports,
       resolveAbuseReport: apiMocks.resolveAbuseReport,
+      creatorBalance: apiMocks.creatorBalance,
+      creatorAnalytics: apiMocks.creatorAnalytics,
+      adminAnalytics: apiMocks.adminAnalytics,
       permissions: apiMocks.permissions,
       runtimeStatus: apiMocks.runtimeStatus,
       hooks: apiMocks.hooks,
@@ -164,6 +172,44 @@ function setMembership(role: string, globalRole = "viewer") {
 beforeEach(() => {
   vi.clearAllMocks();
   setMembership("owner");
+  apiMocks.creator.mockResolvedValue({ creator: null });
+  apiMocks.listings.mockResolvedValue([]);
+  apiMocks.creatorBalance.mockResolvedValue({
+    creator_id: "creator-1",
+    currency: "usd",
+    pending_cents: 0,
+    available_cents: 0,
+    paid_cents: 0,
+    net_earned_cents: 0,
+    settlement_days: 7,
+  });
+  apiMocks.creatorAnalytics.mockResolvedValue({
+    creator_id: "creator-1",
+    listing_count: 0,
+    total_installs: 0,
+    active_installs: 0,
+    purchase_attempts: 0,
+    completed_purchases: 0,
+    refunded_purchases: 0,
+    gross_revenue_cents: 0,
+    creator_revenue_cents: 0,
+    conversion_rate: 0,
+    error_count: 0,
+    products: [],
+  });
+  apiMocks.adminAnalytics.mockResolvedValue({
+    generated_at: "2026-07-11T00:00:00Z",
+    submission_count_30d: 0,
+    submission_rate_per_day: 0,
+    average_approval_hours: 0,
+    total_installs: 0,
+    active_installs: 0,
+    refund_count: 0,
+    report_count: 0,
+    critical_report_count: 0,
+    blocked_package_count: 0,
+    risky_products: [],
+  });
   apiMocks.catalog.mockResolvedValue([freeItem]);
   apiMocks.catalogDetail.mockResolvedValue(freeDetail);
   apiMocks.installations.mockResolvedValue([]);
@@ -482,5 +528,103 @@ describe("Marketplace Phase 10", () => {
       status: "investigating",
       resolution_note: undefined,
     }));
+  });
+});
+
+describe("Marketplace Phase 11", () => {
+  it("shows creator product performance and admin Marketplace health analytics", async () => {
+    setMembership("owner", "admin");
+    apiMocks.creator.mockResolvedValue({
+      creator: {
+        id: "creator-1",
+        user_id: "user-1",
+        slug: "zinhar",
+        display_name: "Zinhar Creator",
+        bio: "Builds safe extensions",
+        status: "approved",
+        payout_status: "verified",
+        support_email: "creator@example.com",
+        verification_notes: null,
+        verified_by: "admin-1",
+        verified_at: "2026-07-11T00:00:00Z",
+        metadata: {},
+        requested_at: "2026-07-11T00:00:00Z",
+        created_at: "2026-07-11T00:00:00Z",
+        updated_at: "2026-07-11T00:00:00Z",
+      },
+    });
+    apiMocks.creatorAnalytics.mockResolvedValue({
+      creator_id: "creator-1",
+      listing_count: 1,
+      total_installs: 12,
+      active_installs: 10,
+      purchase_attempts: 8,
+      completed_purchases: 4,
+      refunded_purchases: 1,
+      gross_revenue_cents: 19900,
+      creator_revenue_cents: 12345,
+      conversion_rate: 0.5,
+      error_count: 2,
+      products: [{
+        listing_id: "listing-analytics",
+        title: "SaaS Hero Pack",
+        slug: "saas-hero-pack",
+        status: "approved",
+        product_type: "component_pack",
+        pricing_type: "paid",
+        total_installs: 12,
+        active_installs: 10,
+        purchase_attempts: 8,
+        completed_purchases: 4,
+        refunded_purchases: 1,
+        gross_revenue_cents: 19900,
+        creator_revenue_cents: 12345,
+        conversion_rate: 0.5,
+        error_count: 2,
+        report_count: 1,
+        average_rating: 4.5,
+        rating_count: 6,
+        last_activity_at: "2026-07-11T00:00:00Z",
+      }],
+    });
+    apiMocks.adminAnalytics.mockResolvedValue({
+      generated_at: "2026-07-11T00:00:00Z",
+      submission_count_30d: 75,
+      submission_rate_per_day: 2.5,
+      average_approval_hours: 12,
+      total_installs: 40,
+      active_installs: 33,
+      refund_count: 3,
+      report_count: 5,
+      critical_report_count: 1,
+      blocked_package_count: 2,
+      risky_products: [{
+        listing_id: "listing-risky",
+        title: "Risky Plugin",
+        slug: "risky-plugin",
+        creator_display_name: "Repeat Creator",
+        status: "blocked",
+        product_type: "integration_plugin",
+        security_risk_level: "critical",
+        report_count: 4,
+        critical_report_count: 1,
+        blocked_package_count: 2,
+        refund_count: 1,
+        error_count: 8,
+        active_installs: 0,
+      }],
+    });
+
+    render(<MarketplacePage />);
+
+    expect(await screen.findByRole("heading", { name: "Creator analytics" })).toBeInTheDocument();
+    expect(screen.getByText("SaaS Hero Pack")).toBeInTheDocument();
+    expect(screen.getByText("$123.45")).toBeInTheDocument();
+    expect(screen.getAllByText("50.0%").length).toBeGreaterThan(0);
+    expect(await screen.findByRole("heading", { name: "Marketplace health analytics" })).toBeInTheDocument();
+    expect(screen.getByText("Risky Plugin")).toBeInTheDocument();
+    expect(screen.getByText("2.5/day")).toBeInTheDocument();
+    await waitFor(() => expect(apiMocks.creatorAnalytics).toHaveBeenCalledWith("creator-1"));
+    await waitFor(() => expect(apiMocks.adminAnalytics).toHaveBeenCalled());
   });
 });

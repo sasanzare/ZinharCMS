@@ -134,11 +134,15 @@ and public plugin-hook contracts. Phase 9 adds separate Marketplace purchases,
 paid entitlements, auditable revenue splits/refund reversals, and payout account
 verification. Phase 10 adds ownership-gated customer ratings/reviews, global-admin
 review moderation, abuse-report intake and an actionable moderation queue, plus a
-persisted internal notification for every critical report. Uploaded package code is not executed:
+persisted internal notification for every critical report. Phase 11 adds
+creator-owned product analytics and global-admin Marketplace health analytics
+over persisted install, purchase, revenue, review, report, package, submission,
+and review-event records. Uploaded package code is not executed:
 installation and adapter authorization remain host-owned policy state protected
 by compatibility, permission approval, artifact integrity, audit, and forced-RLS
 gates. Partial-refund workflows, automated payout transfers, external
-notification delivery, and subscription-style Marketplace add-ons remain planned only.
+notification delivery, runtime error telemetry, and subscription-style
+Marketplace add-ons remain planned only.
 
 ## Observability And Recovery
 

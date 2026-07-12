@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BadgeCheck, CheckCircle2, Eye, FileCheck, History, MessageSquare, PackagePlus, Power, RefreshCw, RotateCcw, Save, Search, Send, ShieldAlert, Star, Store, Tag, Trash2, Upload, X, XCircle } from "lucide-react";
+import { AlertTriangle, BadgeCheck, BarChart3, CheckCircle2, Eye, FileCheck, History, MessageSquare, PackagePlus, Power, RefreshCw, RotateCcw, Save, Search, Send, ShieldAlert, Star, Store, Tag, Trash2, Upload, X, XCircle } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
@@ -18,6 +18,8 @@ import type {
   MarketplacePermissionCatalogResponse,
   MarketplaceProductReviewResponse,
   MarketplaceAbuseReportResponse,
+  MarketplaceAdminAnalyticsResponse,
+  MarketplaceCreatorAnalyticsResponse,
   MarketplacePurchaseResponse,
   MarketplaceListingRequest,
   MarketplaceListingResponse,
@@ -230,6 +232,8 @@ export function MarketplacePage() {
   const activeOrganizationId = useAppStore((state) => state.activeOrganizationId);
   const [creator, setCreator] = useState<MarketplaceCreatorResponse | null>(null);
   const [creatorBalance, setCreatorBalance] = useState<MarketplaceCreatorBalanceResponse | null>(null);
+  const [creatorAnalytics, setCreatorAnalytics] = useState<MarketplaceCreatorAnalyticsResponse | null>(null);
+  const [adminAnalytics, setAdminAnalytics] = useState<MarketplaceAdminAnalyticsResponse | null>(null);
   const [creatorDraft, setCreatorDraft] = useState<CreatorDraft>(defaultCreatorDraft);
   const [listings, setListings] = useState<MarketplaceListingResponse[]>([]);
   const [listingDraft, setListingDraft] = useState<ListingDraft>(defaultListingDraft);
@@ -290,6 +294,14 @@ export function MarketplacePage() {
     return `$${(item.price_cents / 100).toFixed(2)}`;
   }
 
+  function formatAnalyticsMoney(cents: number) {
+    return `$${(cents / 100).toFixed(2)}`;
+  }
+
+  function formatAnalyticsRate(value: number) {
+    return `${(value * 100).toFixed(1)}%`;
+  }
+
   const loadCatalog = useCallback(async function loadCatalog() {
     setCatalogLoading(true);
     setError(null);
@@ -344,13 +356,21 @@ export function MarketplacePage() {
       setCreator(creatorState.creator);
       setListings(nextListings);
       if (creatorState.creator) {
-        setCreatorBalance(await api.marketplace.creatorBalance(creatorState.creator.id));
+        const [balance, analytics] = await Promise.all([
+          api.marketplace.creatorBalance(creatorState.creator.id),
+          api.marketplace.creatorAnalytics(creatorState.creator.id),
+        ]);
+        setCreatorBalance(balance);
+        setCreatorAnalytics(analytics);
         setCreatorDraft({
           slug: creatorState.creator.slug,
           display_name: creatorState.creator.display_name,
           bio: creatorState.creator.bio ?? "",
           support_email: creatorState.creator.support_email ?? "",
         });
+      } else {
+        setCreatorBalance(null);
+        setCreatorAnalytics(null);
       }
       if (!selectedListingId && nextListings.length > 0) {
         setSelectedListingId(nextListings[0].id);
@@ -456,6 +476,19 @@ export function MarketplacePage() {
     }
   }, [canReviewMarketplace, t]);
 
+  const loadAdminAnalytics = useCallback(async function loadAdminAnalytics() {
+    if (!canReviewMarketplace) {
+      setAdminAnalytics(null);
+      return;
+    }
+
+    try {
+      setAdminAnalytics(await api.marketplace.adminAnalytics());
+    } catch (caught) {
+      setError(apiMessage(caught, t("marketplace.error.analytics")));
+    }
+  }, [canReviewMarketplace, t]);
+
   useEffect(() => {
     void loadSubmissionReports();
   }, [loadSubmissionReports]);
@@ -472,8 +505,12 @@ export function MarketplacePage() {
     void loadCustomerModerationQueues();
   }, [loadCustomerModerationQueues]);
 
+  useEffect(() => {
+    void loadAdminAnalytics();
+  }, [loadAdminAnalytics]);
+
   async function refreshMarketplace() {
-    await Promise.all([loadMarketplace(), loadCatalog(), loadInstallations(), loadRuntimeControls()]);
+    await Promise.all([loadMarketplace(), loadCatalog(), loadInstallations(), loadRuntimeControls(), loadAdminAnalytics()]);
   }
 
   async function openCatalogDetail(item: MarketplaceCatalogItemResponse) {
@@ -655,7 +692,7 @@ export function MarketplacePage() {
         moderation_reason: cleanOptional(customerReviewReasons[reviewId] ?? ""),
       });
       setMessage(t("marketplace.feedback.reviewModerated"));
-      await loadCustomerModerationQueues();
+      await Promise.all([loadCustomerModerationQueues(), loadAdminAnalytics()]);
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.feedback.error.moderation")));
     } finally {
@@ -672,7 +709,7 @@ export function MarketplacePage() {
         resolution_note: cleanOptional(abuseResolutionNotes[reportId] ?? ""),
       });
       setMessage(t("marketplace.feedback.reportUpdated"));
-      await loadCustomerModerationQueues();
+      await Promise.all([loadCustomerModerationQueues(), loadAdminAnalytics()]);
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.feedback.error.resolution")));
     } finally {
@@ -704,7 +741,12 @@ export function MarketplacePage() {
     try {
       await api.marketplace.requestPayout(creator.id);
       setMessage(t("marketplace.payout.requested"));
-      setCreatorBalance(await api.marketplace.creatorBalance(creator.id));
+      const [balance, analytics] = await Promise.all([
+        api.marketplace.creatorBalance(creator.id),
+        api.marketplace.creatorAnalytics(creator.id),
+      ]);
+      setCreatorBalance(balance);
+      setCreatorAnalytics(analytics);
     } catch (caught) {
       setError(apiMessage(caught, t("marketplace.error.payoutRequest")));
     } finally {
@@ -938,6 +980,7 @@ export function MarketplacePage() {
     await loadSubmissionReports();
     await loadReviewReports();
     await loadReviewEvents();
+    await loadAdminAnalytics();
   }
 
   async function decideSubmission(report: MarketplaceValidationReportResponse, decision: MarketplaceReviewDecision) {
@@ -1818,6 +1861,63 @@ export function MarketplacePage() {
         </div>
       </section>
 
+      {creatorAnalytics && (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>{t("marketplace.analytics.creatorTitle")}</h2>
+              <span>{t("marketplace.analytics.creatorDescription")}</span>
+            </div>
+            <BarChart3 size={18} aria-hidden="true" />
+          </div>
+          <div className="padded validation-report-list">
+            <div className="metric-grid" aria-label={t("marketplace.metrics.aria")}>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.listings")}</span>
+                <strong>{creatorAnalytics.listing_count}</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.installs")}</span>
+                <strong>{creatorAnalytics.active_installs}/{creatorAnalytics.total_installs}</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.revenue")}</span>
+                <strong>{formatAnalyticsMoney(creatorAnalytics.creator_revenue_cents)}</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.conversion")}</span>
+                <strong>{formatAnalyticsRate(creatorAnalytics.conversion_rate)}</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.errors")}</span>
+                <strong>{creatorAnalytics.error_count}</strong>
+              </article>
+            </div>
+            <div className="validation-report-list">
+              {creatorAnalytics.products.map((product) => (
+                <article className="validation-report-card" key={product.listing_id}>
+                  <div className="validation-report-card-header">
+                    <div>
+                      <strong>{product.title}</strong>
+                      <span>{product.product_type} · {product.pricing_type}</span>
+                    </div>
+                    <StatusBadge label={product.status} tone={listingTone(product.status)} />
+                  </div>
+                  <div className="validation-report-badges">
+                    <StatusBadge label={t("marketplace.analytics.productInstalls", { active: product.active_installs, total: product.total_installs })} tone="neutral" />
+                    <StatusBadge label={t("marketplace.analytics.productRevenue", { amount: formatAnalyticsMoney(product.creator_revenue_cents) })} tone="success" />
+                    <StatusBadge label={t("marketplace.analytics.productConversion", { rate: formatAnalyticsRate(product.conversion_rate) })} tone="neutral" />
+                    <StatusBadge label={t("marketplace.analytics.productErrors", { count: product.error_count, reports: product.report_count })} tone={product.error_count > 0 ? "warning" : "success"} />
+                    <StatusBadge label={t("marketplace.analytics.productRating", { rating: product.average_rating.toFixed(1), count: product.rating_count })} tone="neutral" />
+                  </div>
+                </article>
+              ))}
+              {creatorAnalytics.products.length === 0 && <p className="empty-state">{t("marketplace.analytics.noProducts")}</p>}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="panel">
         <div className="panel-header">
           <div>
@@ -1931,6 +2031,68 @@ export function MarketplacePage() {
           </div>
         )}
       </section>
+
+      {canReviewMarketplace && adminAnalytics && (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>{t("marketplace.analytics.adminTitle")}</h2>
+              <span>{t("marketplace.analytics.adminDescription")}</span>
+            </div>
+            <ShieldAlert size={18} aria-hidden="true" />
+          </div>
+          <div className="padded validation-report-list">
+            <div className="metric-grid" aria-label={t("marketplace.metrics.aria")}>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.submissionRate")}</span>
+                <strong>{adminAnalytics.submission_rate_per_day.toFixed(1)}/day</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.approvalTime")}</span>
+                <strong>{adminAnalytics.average_approval_hours.toFixed(1)}h</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.installs")}</span>
+                <strong>{adminAnalytics.active_installs}/{adminAnalytics.total_installs}</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.refunds")}</span>
+                <strong>{adminAnalytics.refund_count}</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.reports")}</span>
+                <strong>{adminAnalytics.report_count}</strong>
+              </article>
+              <article className="metric-card metric-card--strong">
+                <span>{t("marketplace.analytics.blockedPackages")}</span>
+                <strong>{adminAnalytics.blocked_package_count}</strong>
+              </article>
+            </div>
+            <div className="validation-report-list">
+              <strong>{t("marketplace.analytics.riskyProducts")}</strong>
+              {adminAnalytics.risky_products.map((product) => (
+                <article className="validation-report-card" key={product.listing_id}>
+                  <div className="validation-report-card-header">
+                    <div>
+                      <strong>{product.title}</strong>
+                      <span>{t("marketplace.analytics.riskCreator", { creator: product.creator_display_name })}</span>
+                    </div>
+                    <StatusBadge label={product.security_risk_level} tone={riskTone(product.security_risk_level)} />
+                  </div>
+                  <div className="validation-report-badges">
+                    <StatusBadge label={product.status} tone={listingTone(product.status)} />
+                    <StatusBadge label={t("marketplace.analytics.riskReports", { count: product.report_count, critical: product.critical_report_count })} tone={product.critical_report_count > 0 ? "danger" : "warning"} />
+                    <StatusBadge label={t("marketplace.analytics.riskBlocked", { count: product.blocked_package_count })} tone={product.blocked_package_count > 0 ? "danger" : "neutral"} />
+                    <StatusBadge label={t("marketplace.analytics.riskRefunds", { count: product.refund_count })} tone="warning" />
+                    <StatusBadge label={t("marketplace.analytics.activeInstalls", { count: product.active_installs })} tone="neutral" />
+                  </div>
+                </article>
+              ))}
+              {adminAnalytics.risky_products.length === 0 && <p className="empty-state">{t("marketplace.analytics.riskEmpty")}</p>}
+            </div>
+          </div>
+        </section>
+      )}
 
       {canReviewMarketplace && (
         <section className="two-column-workspace marketplace-report-grid">

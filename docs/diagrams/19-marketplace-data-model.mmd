@@ -4,6 +4,9 @@ erDiagram
     %% Evidence: backend/migrations/0017_v3_phase_three_validation_pipeline.sql
     %% Evidence: backend/migrations/0018_v3_phase_four_review_moderation.sql
     %% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
+    %% Evidence: backend/migrations/0022_v3_phase_nine_marketplace_finance.sql
+    %% Evidence: backend/migrations/0024_v3_phase_ten_ratings_abuse.sql
+    %% Evidence: backend/migrations/0025_v3_phase_ten_internal_notifications.sql
     %% Evidence: backend/src/routes/marketplace.rs
     %% Evidence: backend/src/services/marketplace_manifest.rs
     %% Evidence: backend/src/services/marketplace_package.rs
@@ -14,11 +17,12 @@ erDiagram
     %% Evidence: frontend/src/pages/MarketplacePage.tsx
     %% Evidence: docs/V3_MARKETPLACE_DOMAIN_MODEL.md
     %% Evidence: docs/V3_MARKETPLACE_GAP_LIST.md
-    %% [IMPLEMENTED] Creator, listing, version, submission, installation lifecycle, internal review events, validation reports, and moderation state are persisted.
+    %% [IMPLEMENTED] Creator, listing, version, submission, installation lifecycle, internal review events, validation reports, finance records, customer feedback, and moderation state are persisted.
     %% [IMPLEMENTED] marketplace_installations is tenant-RLS protected and supports install, enable, disable, soft uninstall, update, and rollback with transactional audit.
     %% [PARTIAL] Package metadata is stored on marketplace_versions; there is no package table.
     %% [PARTIAL] Moderation uses marketplace_review_events plus listing/version/installation status updates; there is no separate moderation table.
-    %% [PLANNED] Paid purchase/entitlement creation, creator payout ledger, external sandbox/runtime execution, and customer ratings are documented but no tables/runtime exist.
+    %% [IMPLEMENTED] Paid purchase/entitlement creation, creator payout ledger, customer ratings, abuse reports, and internal notifications are persisted in later Marketplace migrations.
+    %% [PLANNED] External sandbox/runtime execution, runtime error telemetry, and automated payout transfers remain future work.
 
     users {
         UUID id PK

@@ -49,6 +49,16 @@ unread internal admin notification and audit event. External notification delive
 automatic takedown, evidence-file upload, and appeals remain later operations
 work.
 
+## Phase 11 Update
+
+Phase 11 resolves creator-owned product analytics and the internal Marketplace
+health dashboard. Creator analytics aggregate installs, active installs, revenue,
+conversion, ratings, reports, and persisted error signals for the creator's own
+products only. Admin analytics aggregate submission rate, approval time, installs,
+refunds, reports, critical reports, blocked packages, and risky/repetitive
+products. Runtime execution telemetry, warehouse export, and anomaly alerting
+remain later operations work.
+
 ## Phase 8 Update
 
 Phase 8 resolves the first host-owned adapter surfaces: installed Component Pack
@@ -96,7 +106,7 @@ authorization remains policy-only and never executes uploaded package code.
 | Gap | Severity | Required V3 work | Target phase |
 | --- | --- | --- | --- |
 | Marketplace audit action taxonomy does not exist | Partially resolved | Phase 6 defines organization-scoped install, enable, disable, uninstall, update, and rollback actions; purchase, payout, abuse, and kill-switch actions remain later-phase work. | 1.1, 4.2, 6.1 |
-| Platform-level Marketplace audit view is partial | P1 | Phase 4 adds review event logs and audit records; later analytics must aggregate creators, listings, decisions, reports, and blocked packages. | 4.1, 11.2 |
+| Platform-level Marketplace audit view is partial | Resolved for Phase 11 analytics | Phase 11 adds internal aggregate health and risky-product analytics across submissions, approvals, installs, refunds, reports, and blocked packages. | 4.1, 11.2 |
 | Marketplace incident runbook does not exist | P1 | Phase 4 adds emergency block primitives; later documentation must define support flow for malicious product, broken install, refund, dispute, and emergency block. | 15.1 |
 
 ## Go/No-Go For Phase 1.1

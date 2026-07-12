@@ -89,8 +89,9 @@ subgraph marketplace["Marketplace submission, review, moderation, and catalog [P
   mp_handler["Handlers/services<br/>submission, manifest, package, validation, review, catalog [IMPLEMENTED]"]
   mp_data["Tables<br/>marketplace_creators, listings, versions, submissions, review_events, installations [IMPLEMENTED/PARTIAL]"]
   mp_storage["Storage<br/>local Marketplace artifact path [IMPLEMENTED] AMB-002"]
-  mp_test["Tests<br/>Marketplace domain/manifest/package/validation/review/catalog tests [IMPLEMENTED]"]
-  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30 [IMPLEMENTED]"]
+  mp_analytics["Analytics<br/>creator performance and admin health/risk dashboard [IMPLEMENTED]"]
+  mp_test["Tests<br/>Marketplace domain/manifest/package/validation/review/catalog/analytics tests [IMPLEMENTED]"]
+  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30/38 [IMPLEMENTED]"]
 end
 
 subgraph excluded["Separated future Marketplace capabilities"]
@@ -103,7 +104,7 @@ id_actor --> id_page --> id_api --> id_route --> id_mw --> id_handler --> id_dat
 cms_actor --> cms_page --> cms_api --> cms_route --> cms_mw --> cms_handler --> cms_data --> cms_cache --> cms_test --> cms_doc
 md_actor --> md_page --> md_api --> md_route --> md_mw --> md_handler --> md_data --> md_external --> md_test --> md_doc
 bo_actor --> bo_page --> bo_api --> bo_route --> bo_mw --> bo_handler --> bo_data --> bo_external --> bo_test --> bo_doc
-mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_test --> mp_doc
+mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_analytics --> mp_test --> mp_doc
 mp_doc -. "explicit future scope" .-> install_future
 mp_doc -. "explicit future scope" .-> payout_future
 mp_doc -. "external delivery deferred" .-> notification_future

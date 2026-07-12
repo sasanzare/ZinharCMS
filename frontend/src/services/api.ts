@@ -53,7 +53,9 @@ import type {
   MarketplaceAbuseReportRequest,
   MarketplaceAbuseReportResolutionRequest,
   MarketplaceAbuseReportResponse,
+  MarketplaceAdminAnalyticsResponse,
   MarketplaceCreatorRequest,
+  MarketplaceCreatorAnalyticsResponse,
   MarketplaceCreatorStateResponse,
   MarketplaceCreatorResponse,
   MarketplaceCheckoutResponse,
@@ -404,6 +406,9 @@ changePlan: (payload: ChangePlanRequest) =>
       }),
     creatorBalance: (creatorId: string) =>
       request<MarketplaceCreatorBalanceResponse>(`/api/marketplace/creators/${encodeURIComponent(creatorId)}/balance`, { auth: true }),
+    creatorAnalytics: (creatorId: string) =>
+      request<MarketplaceCreatorAnalyticsResponse>(`/api/marketplace/creators/${encodeURIComponent(creatorId)}/analytics`, { auth: true }),
+    adminAnalytics: () => request<MarketplaceAdminAnalyticsResponse>("/api/marketplace/analytics/admin", { auth: true }),
     requestPayout: (creatorId: string) =>
       request<MarketplacePayoutResponse>(`/api/marketplace/creators/${encodeURIComponent(creatorId)}/payout/request`, {
         method: "POST",

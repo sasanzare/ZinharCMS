@@ -6,6 +6,7 @@ pub mod content;
 pub mod delivery;
 pub mod marketplace;
 pub mod marketplace_adapters;
+pub mod marketplace_analytics;
 pub mod marketplace_finance;
 pub mod marketplace_runtime;
 pub mod media;
@@ -50,6 +51,7 @@ pub fn router(state: AppState) -> Router {
         .merge(media::router())
         .merge(marketplace::router())
         .merge(marketplace_adapters::router())
+        .merge(marketplace_analytics::router())
         .merge(marketplace_finance::router())
         .merge(marketplace_runtime::router())
         .merge(organizations::tenant_router())
@@ -221,6 +223,8 @@ pub fn router(state: AppState) -> Router {
         marketplace_finance::verify_payout_account,
         marketplace_finance::get_creator_balance,
         marketplace_finance::request_payout,
+        marketplace_analytics::get_creator_analytics,
+        marketplace_analytics::get_admin_analytics,
         plugins::list_plugins,
         plugins::get_plugin,
         plugins::update_plugin,
@@ -344,6 +348,10 @@ pub fn router(state: AppState) -> Router {
         marketplace_finance::PayoutVerificationRequest,
         marketplace_finance::MarketplaceCreatorBalanceResponse,
         marketplace_finance::MarketplacePayoutResponse,
+        marketplace_analytics::MarketplaceCreatorAnalyticsResponse,
+        marketplace_analytics::MarketplaceCreatorProductAnalyticsResponse,
+        marketplace_analytics::MarketplaceAdminAnalyticsResponse,
+        marketplace_analytics::MarketplaceAdminRiskProductResponse,
         plugins::PluginUpdateRequest,
         plugins::PluginResponse
     )),

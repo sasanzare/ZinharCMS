@@ -297,6 +297,8 @@ Every Marketplace route currently requires authentication and
 | `POST` | `/api/marketplace/listings/{listing_id}/reports` | Submit a Marketplace abuse report with evidence |
 | `GET` | `/api/marketplace/reports` | Read severity-prioritized abuse reports (global admin) |
 | `PATCH` | `/api/marketplace/reports/{report_id}` | Investigate, resolve, or dismiss an abuse report (global admin) |
+| `GET` | `/api/marketplace/creators/{creator_id}/analytics` | Read creator-owned product installs, revenue, conversion, ratings, reports, and error signals |
+| `GET` | `/api/marketplace/analytics/admin` | Read internal Marketplace health and risky-product analytics (global admin) |
 | `GET`, `POST` | `/api/marketplace/installations` | List current installs or install an approved free product |
 | `GET` | `/api/marketplace/installations/{installation_id}/updates` | Check for a newer compatible approved version |
 | `POST` | `/api/marketplace/installations/{installation_id}/enable` | Re-enable a safe disabled installation |
@@ -365,3 +367,8 @@ Phase 9 adds these generated OpenAPI paths:
 The existing signed `/api/billing/webhook` endpoint processes both subscription
 events and metadata-scoped Marketplace payment/refund events while persisting
 their effects in separate domain tables.
+
+Phase 11 adds generated OpenAPI paths for creator-owned analytics and
+global-admin Marketplace health analytics. These are read-only aggregate
+projections over existing Marketplace install, purchase, ledger, review, report,
+version, submission, and review-event tables.
