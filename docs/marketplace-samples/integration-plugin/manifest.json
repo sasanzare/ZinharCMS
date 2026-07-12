@@ -1,0 +1,30 @@
+{
+  "manifest_version": "2026-07",
+  "name": "Demo Webhook Adapter",
+  "version": "1.0.0",
+  "type": "integration_plugin",
+  "permissions": ["webhook.send"],
+  "compatibility": {
+    "min_zinhar_version": "3.0.0",
+    "required_features": ["integration_plugins"]
+  },
+  "entry_points": {
+    "hooks": "hooks/index.json"
+  },
+  "assets": [
+    "hooks/index.json",
+    "assets/readme.txt"
+  ],
+  "hooks": [
+    {
+      "key": "demo-webhook-adapter",
+      "type": "webhook.adapter",
+      "label": "Demo Webhook Adapter",
+      "contract_version": "2026-07",
+      "config": {
+        "events": ["entry.published"],
+        "execution": "not_executed"
+      }
+    }
+  ]
+}

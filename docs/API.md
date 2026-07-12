@@ -372,3 +372,9 @@ Phase 11 adds generated OpenAPI paths for creator-owned analytics and
 global-admin Marketplace health analytics. These are read-only aggregate
 projections over existing Marketplace install, purchase, ledger, review, report,
 version, submission, and review-event tables.
+
+Phase 12 does not add backend routes. It adds creator-side tooling in
+`scripts/marketplace-cli.mjs` for validating, packing, and submitting packages
+to the existing `POST /api/marketplace/listings/{listing_id}/versions/upload`
+multipart API. The CLI sends the same `manifest` and `file` fields used by the
+admin UI; backend validation and review remain authoritative.

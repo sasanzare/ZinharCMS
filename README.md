@@ -2,7 +2,7 @@
 
 ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
 This repository currently implements phases zero through ten from the original project
-proposal plus V3 Marketplace phases 0.1 through 6: a runnable monorepo foundation, local infrastructure, CI, environment
+proposal plus V3 Marketplace phases 0.1 through 12: a runnable monorepo foundation, local infrastructure, CI, environment
 configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
 page JSON storage, component registry, page versioning, live preview streaming,
 delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
@@ -183,6 +183,21 @@ management, security hardening, i18n-ready admin localization, V2 multi-tenant S
 - Creator analytics summarize each creator's own listings, installs, active installs, revenue, conversion, ratings, reports, and persisted error signals.
 - Internal admin analytics summarize Marketplace submission rate, approval time, installs, refunds, reports, critical reports, blocked packages, and risky/repetitive products.
 - Analytics are read-only projections over existing Marketplace tables; runtime execution error telemetry, warehouse export, and anomaly alerting remain future work.
+
+## V3 Marketplace Phase 12 Scope
+
+- Creator-side CLI tooling validates Marketplace manifests, package file trees, permissions, compatibility, adapter declarations, and security findings before upload.
+- The CLI packs validated package directories into ZIP artifacts and can submit them to the existing Marketplace version upload API.
+- Creator documentation covers manifest requirements, permissions, review policy, CLI workflow, and sample packages.
+- Component Pack and Integration Plugin sample packages are available under `docs/marketplace-samples`.
+- Backend review remains the final authority and uploaded Marketplace package code is still never executed.
+
+Creator tooling quick check:
+
+```powershell
+npm run marketplace -- validate docs/marketplace-samples/component-pack
+npm run marketplace -- pack docs/marketplace-samples/component-pack --force
+```
 
 ## Quick Start
 

@@ -51,6 +51,7 @@ conflicts.
 | Purchases | `0022` purchase, entitlement, and ledger tables | `routes/marketplace_finance.rs`; billing webhook; paid install gate | `marketplace_finance.rs`; `stripe_billing.rs` | `MarketplacePage.tsx` | `api.marketplace.purchases/checkout/install` | Finance and full backend/frontend suites | `docs/V3_PHASE_NINE.md` | Implemented one-time free/paid flow; subscription add-ons deferred. |
 | Creator payouts | `0022` payout account and payout tables | Creator payout onboarding and admin verification routes | `marketplace_finance.rs` eligibility policy | Creator status remains visible in Marketplace UI | Payout endpoints are OpenAPI registered | Finance tests | `docs/V3_PHASE_NINE.md` | Onboarding/verification implemented; transfer execution deferred. |
 | Marketplace analytics | Existing Marketplace tables from `0015`-`0025` | `backend/src/routes/marketplace_analytics.rs`; `backend/src/routes/mod.rs` | `backend/src/services/marketplace_analytics.rs`; RLS/RBAC | `frontend/src/pages/MarketplacePage.tsx` | `api.marketplace.creatorAnalytics`; `api.marketplace.adminAnalytics` | Backend analytics tests and frontend Phase 11 test | `docs/V3_PHASE_ELEVEN.md`; `38-marketplace-analytics.mmd` | Read-only aggregate analytics implemented; runtime error telemetry and warehouse export deferred. |
+| Marketplace creator tooling | N/A | Existing Marketplace upload route in `backend/src/routes/marketplace.rs` | `scripts/marketplace-cli.mjs`; backend manifest/validation services remain final authority | N/A | CLI submit uses the existing upload multipart API | CLI validate/pack smoke over sample packages | `docs/V3_PHASE_TWELVE.md`; `docs/MARKETPLACE_CREATOR_GUIDE.md`; `39-marketplace-creator-tooling.mmd`; `docs/marketplace-samples/*` | Local creator tooling is implemented; backend upload/review remains authoritative and uploaded code remains unexecuted. |
 | Marketplace OpenAPI coverage | N/A | `backend/src/routes/mod.rs`; `backend/src/routes/marketplace.rs` | N/A | N/A | N/A | Compile/OpenAPI generation by build | `docs/API.md`; `docs/V3_PHASE_SIX.md` | Phase-6 installation paths/schemas are registered; legacy Marketplace handlers remain manually documented. |
 | Background tasks or queues | N/A | Process-local route/service calls | `backend/src/services/webhooks.rs`; `backend/src/services/stripe_billing.rs`; `backend/src/state.rs` | N/A | N/A | N/A | `docs/V2_OPERATIONS_RUNBOOK.md` | Webhooks use transient spawned tasks; no durable queue/worker found. |
 | Observability | `0011` billing events; `0012` audit/email/alert records; `0017` validation reports | `/health`; `/ready`; operational domain routes | `main.rs`; tracing/request-id layers; audit/email/webhook/Stripe services | Dashboard/organization/billing/beta/Marketplace pages | `api.health`; `api.readiness`; operational API groups | GA/security/integration tests | `docs/ARCHITECTURE.md`; `31-observability-and-failure-recovery.mmd` | Process-local logs and persisted records exist; no metrics/exporter/collector integration. |
@@ -60,9 +61,10 @@ conflicts.
 ## Final Step 20 Update
 
 1. Current migrations: 25.
-2. Mermaid diagrams: 39 (`00` through `38`).
+2. Mermaid diagrams: 40 (`00` through `39`).
 3. Traceability: finalized in `TRACEABILITY.md` and
-   `32-end-to-end-traceability.mmd` and `38-marketplace-analytics.mmd`.
+   `32-end-to-end-traceability.mmd`, `38-marketplace-analytics.mmd`, and
+   `39-marketplace-creator-tooling.mmd`.
 4. Documentation conflicts corrected: Page Builder status, modular-monolith
    boundary, local storage, tenant-protected Marketplace catalog, and missing V2/V3
    manual API sections.

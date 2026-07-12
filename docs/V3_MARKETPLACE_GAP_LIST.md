@@ -59,6 +59,16 @@ refunds, reports, critical reports, blocked packages, and risky/repetitive
 products. Runtime execution telemetry, warehouse export, and anomaly alerting
 remain later operations work.
 
+## Phase 12 Update
+
+Phase 12 resolves the creator onboarding/tooling gap for package preparation.
+Creators can now run local `validate`, `pack`, and `submit` commands through the
+repository CLI before uploading a package version. The creator guide documents
+manifest fields, permissions, review policy, CLI workflow, and sample packages.
+Component Pack and Integration Plugin samples are present and validate locally.
+The backend upload/review pipeline remains the final authority, and uploaded
+package code remains unexecuted.
+
 ## Phase 8 Update
 
 Phase 8 resolves the first host-owned adapter surfaces: installed Component Pack
@@ -107,6 +117,7 @@ authorization remains policy-only and never executes uploaded package code.
 | --- | --- | --- | --- |
 | Marketplace audit action taxonomy does not exist | Partially resolved | Phase 6 defines organization-scoped install, enable, disable, uninstall, update, and rollback actions; purchase, payout, abuse, and kill-switch actions remain later-phase work. | 1.1, 4.2, 6.1 |
 | Platform-level Marketplace audit view is partial | Resolved for Phase 11 analytics | Phase 11 adds internal aggregate health and risky-product analytics across submissions, approvals, installs, refunds, reports, and blocked packages. | 4.1, 11.2 |
+| Creator packaging docs and local tooling do not exist | Resolved | Phase 12 adds a local Marketplace CLI, creator guide, and sample packages for validating, packing, and submitting package versions. | 12.1, 12.2 |
 | Marketplace incident runbook does not exist | P1 | Phase 4 adds emergency block primitives; later documentation must define support flow for malicious product, broken install, refund, dispute, and emergency block. | 15.1 |
 
 ## Go/No-Go For Phase 1.1

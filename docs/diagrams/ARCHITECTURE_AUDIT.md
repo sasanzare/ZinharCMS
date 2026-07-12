@@ -147,7 +147,7 @@ Runtime context: tenant routes require `X-Organization-Id`, an access token, an 
 
 ## Final Step 20 Audit
 
-- Mermaid files reviewed: 38 (`00` through `37`).
+- Mermaid files reviewed: 40 (`00` through `39`).
 - Mermaid parser availability: no installed CLI or project-local Mermaid dependency
   was found; no package or browser was installed.
 - Static Mermaid validation: declaration count, fences, block closure, participants,
@@ -156,7 +156,7 @@ Runtime context: tenant routes require `X-Organization-Id`, an access token, an 
 - Ambiguities reviewed: 71 total; 63 `RESOLVED`, 8 `DECISION_REQUIRED`, 0
   `UNRESOLVED`.
 - Planned-only capabilities remain separated from implemented behavior:
-  arbitrary executable package runtime, external notification delivery, and
-  automated creator payout transfer execution.
+  arbitrary executable package runtime, external notification delivery,
+  automated creator payout transfer execution, and runtime error telemetry.
 - Phase-6 source code and migration are included in the current implementation
   evidence; production database application remains environment-dependent.

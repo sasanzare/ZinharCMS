@@ -1,0 +1,8 @@
+{
+  "type": "section",
+  "component": "hero-banner",
+  "props": {
+    "headline": "Launch faster with ZinharCMS",
+    "cta": "Get started"
+  }
+}

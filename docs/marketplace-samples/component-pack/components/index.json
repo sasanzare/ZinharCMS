@@ -1,0 +1,8 @@
+{
+  "components": [
+    {
+      "key": "hero-banner",
+      "source": "components/hero-banner.json"
+    }
+  ]
+}

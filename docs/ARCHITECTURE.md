@@ -137,7 +137,9 @@ review moderation, abuse-report intake and an actionable moderation queue, plus 
 persisted internal notification for every critical report. Phase 11 adds
 creator-owned product analytics and global-admin Marketplace health analytics
 over persisted install, purchase, revenue, review, report, package, submission,
-and review-event records. Uploaded package code is not executed:
+and review-event records. Phase 12 adds a creator-side CLI, creator guide, and
+sample packages for local manifest validation, packaging, and upload submission
+against the existing version upload API. Uploaded package code is not executed:
 installation and adapter authorization remain host-owned policy state protected
 by compatibility, permission approval, artifact integrity, audit, and forced-RLS
 gates. Partial-refund workflows, automated payout transfers, external

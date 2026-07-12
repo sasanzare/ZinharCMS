@@ -1,0 +1,41 @@
+%% Evidence: scripts/marketplace-cli.mjs
+%% Evidence: docs/MARKETPLACE_CREATOR_GUIDE.md
+%% Evidence: docs/V3_PHASE_TWELVE.md
+%% Evidence: docs/marketplace-samples/component-pack/manifest.json
+%% Evidence: docs/marketplace-samples/integration-plugin/manifest.json
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/services/marketplace_manifest.rs
+%% Evidence: backend/src/services/marketplace_validation.rs
+flowchart LR
+  creator["Creator [EXTERNAL]<br/>builds local package"]
+  guide["Creator guide [IMPLEMENTED]<br/>manifest, permissions, review policy"]
+  samples["Sample packages [IMPLEMENTED]<br/>component pack and integration plugin"]
+  package_dir["Package directory [IMPLEMENTED]<br/>manifest.json, entry points, assets"]
+  cli_validate["CLI validate [IMPLEMENTED]<br/>manifest, paths, adapter declarations, security findings"]
+  local_report["Local report [IMPLEMENTED]<br/>errors, warnings, risk level, file tree"]
+  cli_pack["CLI pack [IMPLEMENTED]<br/>ZIP artifact plus SHA-256"]
+  artifact["ZIP artifact [IMPLEMENTED]<br/>marketplace-dist output"]
+  cli_submit["CLI submit [IMPLEMENTED]<br/>multipart manifest and file"]
+  upload_api["Existing upload API [IMPLEMENTED]<br/>POST /api/marketplace/listings/{listing_id}/versions/upload"]
+  backend_review["Backend validation and review [IMPLEMENTED]<br/>final authority for version/submission state"]
+  no_exec["Uploaded code execution [PLANNED]<br/>still not executed by ZinharCMS"]
+
+  creator --> guide
+  creator --> samples
+  guide --> package_dir
+  samples --> package_dir
+  package_dir --> cli_validate
+  cli_validate --> local_report
+  local_report --> cli_pack
+  cli_pack --> artifact
+  artifact --> cli_submit
+  cli_submit --> upload_api
+  upload_api --> backend_review
+  backend_review -. "does not execute uploaded code" .-> no_exec
+
+  classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
+  classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray: 2 4,color:#111
+  classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111
+  class guide,samples,package_dir,cli_validate,local_report,cli_pack,artifact,cli_submit,upload_api,backend_review implemented
+  class no_exec planned
+  class creator external

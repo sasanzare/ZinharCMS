@@ -1,0 +1,38 @@
+{
+  "manifest_version": "2026-07",
+  "name": "Demo Component Pack",
+  "version": "1.0.0",
+  "type": "component_pack",
+  "permissions": ["page.read"],
+  "compatibility": {
+    "min_zinhar_version": "3.0.0",
+    "required_features": ["component_packs", "page_builder"]
+  },
+  "entry_points": {
+    "components": "components/index.json"
+  },
+  "assets": [
+    "components/index.json",
+    "components/hero-banner.json",
+    "assets/preview.txt"
+  ],
+  "components": [
+    {
+      "key": "hero-banner",
+      "name": "Hero Banner",
+      "category": "sections",
+      "props_schema": {
+        "headline": {
+          "type": "text",
+          "label": "Headline",
+          "default": "Launch faster with ZinharCMS"
+        },
+        "cta": {
+          "type": "text",
+          "label": "CTA",
+          "default": "Get started"
+        }
+      }
+    }
+  ]
+}

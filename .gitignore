@@ -6,6 +6,7 @@
 /frontend/dist
 /frontend/node_modules
 /frontend/.vite
+/marketplace-dist
 /uploads
 *.log
 *.tmp

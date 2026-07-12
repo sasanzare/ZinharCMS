@@ -37,6 +37,7 @@ runtime configuration, and only then supporting documentation.
 | `36` | Phase-9 free/paid checkout, entitlement, revenue ledger, refund, and payout verification. |
 | `37` | Phase-10 customer reviews, abuse reporting, moderation queues, and critical notification. |
 | `38` | Phase-11 creator analytics and internal Marketplace health/risk analytics. |
+| `39` | Phase-12 creator CLI, local packaging workflow, sample packages, and upload handoff. |
 
 ## Implementation Status Language
 
@@ -55,7 +56,8 @@ runtime configuration, and only then supporting documentation.
 - Evidence comments reference existing repository paths.
 - Automated payout transfers, partial refunds, external notification delivery,
   runtime error telemetry, and executable sandbox/runtime capabilities remain
-  visually separate from implemented Marketplace finance, feedback, and analytics.
+  visually separate from implemented Marketplace finance, feedback, analytics,
+  and creator tooling.
 - No Mermaid parser or project-local Mermaid dependency was installed in the
   repository, so parser validation was unavailable.
 - All Mermaid files were independently checked with repository-local static

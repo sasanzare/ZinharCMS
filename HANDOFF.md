@@ -5,17 +5,17 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-12 05:30 +01:00 (Europe/London)
+- **Last updated:** 2026-07-12 09:24 +01:00 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `e77e2f7 feat(marketplace): complete v3 phase 10 feedback and abuse reporting`
-- **Working tree at session start:** Phase 10 was committed at `e77e2f7`; the current tree contains the uncommitted Phase 11 analytics implementation, frontend/admin analytics surfaces, Phase 11 docs, and diagram `38`.
+- **Latest relevant commit:** `beb4cf2 feat(marketplace): complete v3 phase 11 creator and admin analytics`
+- **Working tree at session start:** Clean Phase 11 commit `beb4cf2`; Phase 12 creator tooling, docs, samples, and diagram changes are now present in the uncommitted working tree.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** V3 Marketplace Phase 11 — Analytics
-- **Current subphase:** 11.1 Creator Analytics and 11.2 Marketplace Admin Analytics implementation, local validation, and live API smoke complete
-- **Overall status:** Phase 11 is complete, including authenticated live analytics API smoke against local Docker PostgreSQL/Redis. Changes remain unstaged and uncommitted pending explicit user authorization.
+- **Current phase:** V3 Marketplace Phase 12 — Creator Tooling and Samples
+- **Current subphase:** 12.1 CLI/SDK packaging and 12.2 documentation/sample packages implemented and locally validated
+- **Overall status:** Phase 12 is complete in local validation. The working tree contains unstaged/uncommitted Phase 12 CLI, docs, samples, diagram, and handoff changes. No stage or commit has been performed.
 
 ## 2. Project Overview
 
@@ -38,11 +38,11 @@ system of record, Redis for cache/rate-limit support, and local filesystem
 storage for CMS media and Marketplace package artifacts.
 
 The baseline includes the original CMS phases zero through ten, V2 organization,
-billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 11. The
+billing, beta, and GA operations, and V3 Marketplace phases 0.1 through 12. The
 current V3 implementation includes installation lifecycle, runtime security
 policy, host-owned adapters, one-time purchases/entitlements, feedback/abuse
-moderation, and read-only analytics. Uploaded package code is still never
-executed.
+moderation, read-only analytics, and creator-side packaging tooling. Uploaded
+package code is still never executed.
 
 ## 3. Technology Stack
 
@@ -86,12 +86,13 @@ and `frontend/dist` are not source-of-truth directories.
 | `docs/V3_PHASE_SEVEN.md` | Phase 7 permission catalog, sandbox policy, runtime authorization, kill switch, and acceptance. | Current Phase 7 authority. |
 | `docs/V3_PHASE_TEN.md` | Phase 10 customer review/rating and abuse-reporting acceptance. | Current Phase 10 authority. |
 | `docs/V3_PHASE_ELEVEN.md` | Phase 11 creator analytics and Marketplace admin analytics acceptance, data sources, and deliberate boundaries. | Current Phase 11 authority. |
+| `docs/V3_PHASE_TWELVE.md`, `docs/MARKETPLACE_CREATOR_GUIDE.md`, `scripts/marketplace-cli.mjs`, `docs/marketplace-samples/*`, `docs/diagrams/39-marketplace-creator-tooling.mmd` | Phase 12 creator CLI, packaging workflow, submit handoff, guide, samples, and visual traceability. | Current Phase 12 authority. |
 | `docs/V3_MARKETPLACE_SCOPE.md` | V3 scope lock and MVP/out-of-scope rules. | Current product-scope authority. |
 | `docs/V3_MARKETPLACE_GAP_LIST.md` | Resolved and deferred Marketplace gaps by phase. | Current gap/status record; verify against runtime. |
 | `docs/V3_MARKETPLACE_POLICY.md` and `docs/V3_PRODUCT_TAXONOMY.md` | Review, moderation, product classification, and safety policy. | Current policy authority. |
 | `docs/API.md` | Runtime route boundaries and Marketplace endpoint documentation. | Current, with older Marketplace routes manually documented. |
 | `docs/ARCHITECTURE.md` | Runtime containers, tenant boundaries, RLS, and Marketplace architecture. | Updated through Phase 11 analytics. |
-| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd`, `36-marketplace-finance-lifecycle.mmd`, `37-marketplace-feedback-abuse.mmd`, `38-marketplace-analytics.mmd` | Evidence links and visual Marketplace implementation state. | Updated through Phase 11; static Mermaid validation is available, but no Mermaid parser is installed. |
+| `docs/diagrams/ARCHITECTURE_AUDIT.md`, `TRACEABILITY.md`, `FILE_EVIDENCE_INDEX.md`, `33-marketplace-installation-lifecycle.mmd`, `34-marketplace-security-runtime.mmd`, `35-marketplace-runtime-adapters.mmd`, `36-marketplace-finance-lifecycle.mmd`, `37-marketplace-feedback-abuse.mmd`, `38-marketplace-analytics.mmd`, `39-marketplace-creator-tooling.mmd` | Evidence links and visual Marketplace implementation state. | Updated through Phase 12; static Mermaid validation is available, but no Mermaid parser is installed. |
 | `D:\All projects\Zinhar_Doc\version_3_marketplace_proposal.html` | Original V3 Marketplace proposal and future lifecycle goals. | Planning authority; current migrations/routes/tests supersede it for implementation status. |
 | `D:\All projects\Zinhar_Doc\version_2_proposal.html` | V2 SaaS/organization/billing proposal. | Historical planning authority for V2 dependencies. |
 | `D:\All projects\Zinhar_Doc\headless_cms_proposal_polished.html` | Original CMS proposal. | Historical baseline; current repository documentation and code are newer. |
@@ -100,12 +101,20 @@ The proposals describe the complete future Marketplace lifecycle, including paid
 products and executable/runtime concepts. Phase 7 established the permission and
 containment boundary; Phase 8 supplies host-owned Component Pack, Template, and
 public Hook adapters. Phase 9 supplies one-time purchases/entitlements and payout
-onboarding, Phase 10 supplies customer feedback/abuse reporting, and Phase 11
-supplies read-only analytics. External execution, runtime error telemetry,
+onboarding, Phase 10 supplies customer feedback/abuse reporting, Phase 11
+supplies read-only analytics, and Phase 12 supplies creator-side packaging
+tooling plus sample packages. External execution, runtime error telemetry,
 automated payout transfer execution, and arbitrary package execution remain
 deferred.
 
 ## 6. Current Objective
+
+> **Phase 12 override (2026-07-12 09:24):** Phase 11 is committed at `beb4cf2`.
+> The active objective is V3 Marketplace Phase 12: 12.1 CLI/SDK packaging and
+> 12.2 documentation/sample packages. Implementation and local validation are
+> complete. The remaining action is user-authorized review/stage/commit, or an
+> optional live API submit smoke if the user provides/authorizes a safe approved
+> creator listing.
 
 > **Phase 11 override (2026-07-11 18:58):** Phase 10 is committed at `e77e2f7`.
 > The active objective is V3 Marketplace Phase 11: 11.1 creator analytics and
@@ -136,6 +145,38 @@ planned and authorized:
 - no background automatic update is enabled; installations remain explicitly pinned.
 
 ## 7. Completed and Verified Work
+
+### Phase 12 checkpoint override (2026-07-12 09:24)
+
+- Phase 12.1 is implemented: `scripts/marketplace-cli.mjs` provides a
+  dependency-free Node CLI with `validate`, `pack`, and `submit` commands. The
+  CLI validates Marketplace manifests, package file trees, entry points, assets,
+  permissions, compatibility, Phase 8 adapter declarations, and security
+  findings before upload.
+- The `pack` command creates ZIP artifacts with SHA-256 reporting under the
+  ignored `marketplace-dist/` output directory by default. Generated ZIPs were
+  verified readable with `tar -tf` and by validating the generated archives with
+  the CLI.
+- The `submit` command targets the existing
+  `POST /api/marketplace/listings/{listing_id}/versions/upload` API and sends
+  the same multipart `manifest` and `file` fields used by the frontend upload
+  flow. It requires token, organization id, and listing id from flags or
+  environment variables.
+- Phase 12.2 is implemented: added `docs/V3_PHASE_TWELVE.md`,
+  `docs/MARKETPLACE_CREATOR_GUIDE.md`, Component Pack and Integration Plugin
+  sample packages under `docs/marketplace-samples/`, and Mermaid diagram
+  `docs/diagrams/39-marketplace-creator-tooling.mmd`.
+- Updated README, API, architecture, gap list, diagram status map, traceability,
+  evidence index, and diagram catalog to include Phase 12.
+- Validation passed: `node --check scripts/marketplace-cli.mjs`, CLI help,
+  sample-package validation for both samples, sample-package packing for both
+  samples, generated-archive validation for both ZIPs, `tar -tf` archive listing,
+  package/sample JSON parsing, `git diff --check`, and 40-file Mermaid static
+  validation. The Integration Plugin sample reports one expected medium finding
+  for `webhook.send`; this is non-blocking and matches review-policy behavior.
+- No backend runtime code, migration, database row, stage, commit, reset, or
+  destructive action was performed for Phase 12. Uploaded package code remains
+  unexecuted.
 
 ### Phase 11 checkpoint override (2026-07-11 18:58)
 
@@ -307,6 +348,26 @@ tests/build have passed; live migration/API smoke is still pending.
 
 ## 10. Current Git and Filesystem State
 
+### Actual state at Phase 12 checkpoint
+
+- `HEAD` is `beb4cf2` (`feat(marketplace): complete v3 phase 11 creator and
+  admin analytics`) on `main`, matching `origin/main` at inspection time.
+- No files are staged, deleted, reset, or committed for Phase 12.
+- Modified tracked files are `.gitignore`, `package.json`, `README.md`,
+  `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/V3_MARKETPLACE_GAP_LIST.md`,
+  `docs/diagrams/00-implementation-status-map.mmd`,
+  `docs/diagrams/32-end-to-end-traceability.mmd`,
+  `docs/diagrams/ARCHITECTURE_AUDIT.md`,
+  `docs/diagrams/FILE_EVIDENCE_INDEX.md`, `docs/diagrams/README.md`,
+  `docs/diagrams/TRACEABILITY.md`, and this handoff update.
+- New Phase 12 files are `scripts/marketplace-cli.mjs`,
+  `docs/V3_PHASE_TWELVE.md`, `docs/MARKETPLACE_CREATOR_GUIDE.md`,
+  `docs/diagrams/39-marketplace-creator-tooling.mmd`,
+  `docs/marketplace-samples/component-pack/*`, and
+  `docs/marketplace-samples/integration-plugin/*`.
+- Generated ZIPs were written under `marketplace-dist/`; this directory is
+  ignored by Git and is not source of truth.
+
 ### Actual state at Phase 11 checkpoint
 
 - `HEAD` is `e77e2f7` (`feat(marketplace): complete v3 phase 10 feedback and
@@ -389,6 +450,37 @@ should be created unless the user explicitly authorizes it.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
+
+### Phase 12 local validation results (2026-07-12 09:24)
+
+- `node --check scripts\marketplace-cli.mjs`: passed.
+- `npm run marketplace -- --help`: passed and printed validate/pack/submit usage.
+- `npm run marketplace -- validate docs/marketplace-samples/component-pack`:
+  passed; 4 files, low risk, 0 errors, 0 warnings, 0 findings.
+- `npm run marketplace -- validate docs/marketplace-samples/integration-plugin`:
+  passed; 3 files, medium risk, 0 errors, 0 warnings, 1 expected finding for
+  sensitive permission `webhook.send`.
+- `npm run marketplace -- pack docs/marketplace-samples/component-pack --force`:
+  passed; created `marketplace-dist/demo-component-pack-1.0.0.zip` with SHA-256
+  `c8ec262783ecea58671922ef931c45c481c528437d460b78448438b73e9a453f`.
+- `npm run marketplace -- pack docs/marketplace-samples/integration-plugin
+  --force`: passed; created
+  `marketplace-dist/demo-webhook-adapter-1.0.0.zip` with SHA-256
+  `377d60ef18594523dc8389b40d085d70fc0c36714c3b6f4bcc6df539644d8cb7`.
+- `npm run marketplace -- validate marketplace-dist\demo-component-pack-1.0.0.zip
+  --manifest docs\marketplace-samples\component-pack\manifest.json`: passed.
+- `npm run marketplace -- validate
+  marketplace-dist\demo-webhook-adapter-1.0.0.zip --manifest
+  docs\marketplace-samples\integration-plugin\manifest.json`: passed with the
+  same expected medium `webhook.send` finding.
+- `tar -tf` on both generated ZIP files: passed; listed expected package entries.
+- Node JSON parse check for `package.json` and both sample manifests: passed.
+- `git diff --check`: passed with line-ending notices only.
+- Mermaid static validation: passed for 40 `.mmd` files, one declaration each
+  and no Markdown fences.
+- Live `submit` against a real approved creator listing was not run because it
+  requires a safe authenticated creator/listing fixture. The command path is
+  implemented and documented, and uses the existing version upload API.
 
 ### Phase 11 local validation results (2026-07-11 18:58)
 
@@ -594,6 +686,16 @@ should be created unless the user explicitly authorizes it.
 
 ## 15. Remaining Work
 
+### Phase 12 remaining-work override
+
+1. Review the uncommitted Phase 12 diff.
+2. If and only if the user explicitly authorizes it, stage and commit the Phase
+   12 implementation.
+3. Optionally run a live `submit` smoke against a safe approved creator/listing
+   fixture if credentials and fixture scope are explicitly provided/authorized.
+4. Do not repeat Phases 9, 10, 11, or already completed Phase 12 local
+   validation unless code changes.
+
 ### Phase 11 remaining-work override
 
 1. Review the uncommitted Phase 11 diff.
@@ -658,11 +760,11 @@ should be created unless the user explicitly authorizes it.
 
 ## 16. Exact Next Action
 
-Review the uncommitted Phase 11 diff and, only after explicit user authorization,
-stage and commit the Phase 11 implementation. Do not rerun completed validation
-unless review changes code. If work resumes without a commit request, begin the
-next explicitly authorized proposal phase; do not repeat Phases 9, 10, or the
-completed Phase 11 implementation.
+Review the uncommitted Phase 12 diff and, only after explicit user authorization,
+stage and commit the Phase 12 implementation. Do not rerun completed validation
+unless review changes code. If live submit validation is requested, use a safe
+approved creator/listing fixture and the existing upload API; do not reset the
+database or execute uploaded package code.
 
 The older Phase 7 instruction below is historical and superseded by the Phase 8
 action above.
@@ -678,6 +780,23 @@ paid products, or create a commit. Record the actual migration `0020` and API
 results in this file before planning Phase 8 adapters.
 
 ## 17. Acceptance Criteria for the Current Phase
+
+### Phase 12 acceptance override
+
+- [x] Creator CLI exposes `validate`, `pack`, and `submit` commands.
+- [x] Local validation reports manifest, permission, compatibility, file-tree,
+  adapter declaration, and security findings before upload.
+- [x] Pack creates readable ZIP artifacts and reports SHA-256.
+- [x] Submit targets the existing Marketplace version upload API with multipart
+  `manifest` and `file` fields.
+- [x] Creator guide documents manifest, permissions, review policy, CLI workflow,
+  and sample packages.
+- [x] Component Pack and Integration Plugin sample packages are present.
+- [x] Both sample packages pass local validation and packing.
+- [x] Phase 12 API/architecture/gap/README/Mermaid traceability is updated.
+- [x] Uploaded Marketplace package code remains unexecuted.
+- [ ] Optional live submit smoke is verified against a safe approved
+  creator/listing fixture.
 
 ### Phase 11 acceptance override
 
@@ -934,3 +1053,30 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - **Exact Next Action:** review the uncommitted Phase 11 diff and only after
   explicit user authorization stage/commit it. Do not repeat completed Phase 11
   validation unless review changes code.
+
+### 2026-07-12 09:24 +01:00 - V3 Phase 12 creator tooling checkpoint
+
+- Re-read `AGENTS.md` and `HANDOFF.md`; verified Git source of truth supersedes
+  the stale handoff: Phase 11 is committed at `beb4cf2`, and the working tree
+  was clean before Phase 12 implementation.
+- Extracted Phase 12 from the V3 proposal: 12.1 CLI/SDK packaging and 12.2
+  documentation/sample packages.
+- Implemented `scripts/marketplace-cli.mjs` with `validate`, `pack`, and
+  `submit`. The CLI performs local manifest, permission, compatibility, file-tree,
+  adapter-declaration, and security preflight checks; `pack` writes ZIP artifacts
+  with SHA-256; `submit` targets the existing version upload API.
+- Added `docs/V3_PHASE_TWELVE.md`, `docs/MARKETPLACE_CREATOR_GUIDE.md`, sample
+  Component Pack and Integration Plugin packages, and
+  `docs/diagrams/39-marketplace-creator-tooling.mmd`; updated README, API,
+  architecture, gap, status map, traceability, evidence, and diagram catalog docs.
+- Validation passed: Node syntax check, CLI help, sample validate/pack, generated
+  ZIP validation and listing, JSON parsing, `git diff --check`, and 40-file
+  Mermaid static validation. Live submit smoke was not run because it requires a
+  safe authenticated approved creator/listing fixture.
+- Recorded a lesson in `D:\All projects\Mistakes\mistakes.md` for a SemVer parser
+  bug caught and fixed in the new CLI.
+- No files were staged or committed. No backend runtime code, migration, database
+  reset, or uploaded-code execution was performed.
+- **Exact Next Action:** review the uncommitted Phase 12 diff and only after
+  explicit user authorization stage/commit it. Do not repeat completed Phase 12
+  validation unless code changes.

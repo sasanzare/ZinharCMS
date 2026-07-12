@@ -1,0 +1,8 @@
+{
+  "hooks": [
+    {
+      "key": "demo-webhook-adapter",
+      "type": "webhook.adapter"
+    }
+  ]
+}

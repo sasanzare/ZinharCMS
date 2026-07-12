@@ -1,0 +1,3 @@
+Preview placeholder for the Demo Component Pack.
+
+Replace this text file with a real preview image before publishing a production package.

@@ -16,6 +16,8 @@ flowchart LR
 %% Evidence: backend/src/services/quota.rs
 %% Evidence: backend/src/services/stripe_billing.rs
 %% Evidence: backend/src/services/marketplace_validation.rs
+%% Evidence: scripts/marketplace-cli.mjs
+%% Evidence: docs/MARKETPLACE_CREATOR_GUIDE.md
 %% Evidence: frontend/src/router.tsx
 %% Evidence: frontend/src/services/api.ts
 %% Evidence: frontend/src/stores/useAppStore.ts
@@ -90,8 +92,9 @@ subgraph marketplace["Marketplace submission, review, moderation, and catalog [P
   mp_data["Tables<br/>marketplace_creators, listings, versions, submissions, review_events, installations [IMPLEMENTED/PARTIAL]"]
   mp_storage["Storage<br/>local Marketplace artifact path [IMPLEMENTED] AMB-002"]
   mp_analytics["Analytics<br/>creator performance and admin health/risk dashboard [IMPLEMENTED]"]
+  mp_tooling["Creator tooling<br/>CLI validate, pack, submit, docs, samples [IMPLEMENTED]"]
   mp_test["Tests<br/>Marketplace domain/manifest/package/validation/review/catalog/analytics tests [IMPLEMENTED]"]
-  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30/38 [IMPLEMENTED]"]
+  mp_doc["Docs<br/>V3 phase/gap docs and diagrams 19/20/25/30/38/39 [IMPLEMENTED]"]
 end
 
 subgraph excluded["Separated future Marketplace capabilities"]
@@ -104,7 +107,9 @@ id_actor --> id_page --> id_api --> id_route --> id_mw --> id_handler --> id_dat
 cms_actor --> cms_page --> cms_api --> cms_route --> cms_mw --> cms_handler --> cms_data --> cms_cache --> cms_test --> cms_doc
 md_actor --> md_page --> md_api --> md_route --> md_mw --> md_handler --> md_data --> md_external --> md_test --> md_doc
 bo_actor --> bo_page --> bo_api --> bo_route --> bo_mw --> bo_handler --> bo_data --> bo_external --> bo_test --> bo_doc
+mp_actor --> mp_tooling --> mp_api
 mp_actor --> mp_page --> mp_api --> mp_route --> mp_mw --> mp_handler --> mp_data --> mp_storage --> mp_analytics --> mp_test --> mp_doc
+mp_tooling --> mp_doc
 mp_doc -. "explicit future scope" .-> install_future
 mp_doc -. "explicit future scope" .-> payout_future
 mp_doc -. "external delivery deferred" .-> notification_future
@@ -114,7 +119,7 @@ classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 
 classDef planned fill:#f4f4f4,stroke:#666,stroke-width:2px,stroke-dasharray: 2 4,color:#111;
 classDef external fill:#eef6ff,stroke:#3367a8,stroke-width:2px,color:#111;
 
-class id_page,id_api,id_route,id_mw,id_handler,id_data,id_test,id_doc,cms_page,cms_api,cms_route,cms_mw,cms_handler,cms_data,cms_test,cms_doc,md_page,md_api,md_route,md_mw,md_handler,md_data,md_test,md_doc,bo_page,bo_api,bo_route,bo_mw,bo_handler,bo_data,bo_test,bo_doc,mp_page,mp_api,mp_route,mp_mw,mp_handler,mp_test,mp_doc implemented;
+class id_page,id_api,id_route,id_mw,id_handler,id_data,id_test,id_doc,cms_page,cms_api,cms_route,cms_mw,cms_handler,cms_data,cms_test,cms_doc,md_page,md_api,md_route,md_mw,md_handler,md_data,md_test,md_doc,bo_page,bo_api,bo_route,bo_mw,bo_handler,bo_data,bo_test,bo_doc,mp_page,mp_api,mp_route,mp_mw,mp_handler,mp_tooling,mp_test,mp_doc implemented;
 class cms_cache,md_external,bo_external,mp_data,mp_storage partial;
 class install_future,payout_future,notification_future planned;
 class id_actor,cms_actor,md_actor,bo_actor,mp_actor external;

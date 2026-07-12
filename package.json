@@ -7,6 +7,7 @@
     "dev": "docker compose up --build",
     "dev:backend": "cargo run --manifest-path backend/Cargo.toml",
     "dev:frontend": "npm --prefix frontend run dev",
+    "marketplace": "node scripts/marketplace-cli.mjs",
     "test:backend": "cargo test --manifest-path backend/Cargo.toml --all-features",
     "test:frontend": "npm --prefix frontend test",
     "build:frontend": "npm --prefix frontend run build"
