@@ -80,6 +80,16 @@ private 60-second cache policy, and `scripts/marketplace-phase13-load-smoke.ps1`
 records local P95 latency baselines without mutating install state unless the
 operator explicitly opts in.
 
+## Phase 14 Update
+
+Phase 14 resolves the Marketplace beta evidence gap without adding a parallel
+beta API. Private Creator Beta evidence uses the existing beta participant,
+feedback, blocker, and creator analytics paths to validate 5 to 10 real products,
+creator feedback, and bug-list triage. Customer Beta evidence uses existing
+install, uninstall, purchase, support-feedback, and report paths for real
+organization testing. `scripts/marketplace-phase14-beta-readiness.ps1` provides a
+read-only readiness summary over those existing APIs.
+
 ## Phase 8 Update
 
 Phase 8 resolves the first host-owned adapter surfaces: installed Component Pack
@@ -130,6 +140,7 @@ authorization remains policy-only and never executes uploaded package code.
 | Platform-level Marketplace audit view is partial | Resolved for Phase 11 analytics | Phase 11 adds internal aggregate health and risky-product analytics across submissions, approvals, installs, refunds, reports, and blocked packages. | 4.1, 11.2 |
 | Creator packaging docs and local tooling do not exist | Resolved | Phase 12 adds a local Marketplace CLI, creator guide, and sample packages for validating, packing, and submitting package versions. | 12.1, 12.2 |
 | Marketplace security/performance QA gate does not exist | Resolved | Phase 13 adds P0 attack-path contract tests, performance indexes, private catalog cache policy, and local P95 load-smoke tooling. | 13.1, 13.2 |
+| Marketplace beta readiness evidence does not exist | Resolved | Phase 14 adds a Private Creator Beta and Customer Beta evidence contract over existing beta and Marketplace APIs plus a read-only readiness script. | 14.1, 14.2 |
 | Marketplace incident runbook does not exist | P1 | Phase 4 adds emergency block primitives; later documentation must define support flow for malicious product, broken install, refund, dispute, and emergency block. | 15.1 |
 
 ## Go/No-Go For Phase 1.1

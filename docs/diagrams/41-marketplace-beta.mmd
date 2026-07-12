@@ -1,0 +1,69 @@
+%% Evidence: docs/V3_PHASE_FOURTEEN.md
+%% Evidence: scripts/marketplace-phase14-beta-readiness.ps1
+%% Evidence: backend/src/services/marketplace_phase_fourteen.rs
+%% Evidence: backend/src/routes/beta.rs
+%% Evidence: backend/src/routes/marketplace.rs
+%% Evidence: backend/src/routes/marketplace_finance.rs
+%% Evidence: backend/src/routes/marketplace_analytics.rs
+flowchart LR
+  proposal["V3 proposal Phase 14"]
+
+  subgraph creator_beta["14.1 Private Creator Beta"]
+    creator_cohort["Selected creators"]
+    creator_products["5 to 10 real products"]
+    creator_feedback["Creator feedback"]
+    bug_list["Bug list and blockers"]
+    creator_analytics["Creator analytics"]
+  end
+
+  subgraph customer_beta["14.2 Customer Beta"]
+    customer_orgs["Real customer organizations"]
+    installs["Install data"]
+    uninstalls["Uninstall data"]
+    purchases["Purchase data"]
+    support_issues["Support issues"]
+    customer_reports["Marketplace reports"]
+  end
+
+  subgraph existing_runtime["Existing runtime evidence"]
+    beta_api["Beta APIs<br/>participants, feedback, blockers"]
+    marketplace_api["Marketplace APIs<br/>installations, purchases, reports"]
+    analytics_api["Marketplace analytics<br/>creator and admin"]
+    readiness_script["Phase 14 readiness script"]
+  end
+
+  proposal --> creator_cohort
+  proposal --> customer_orgs
+
+  creator_cohort --> creator_products
+  creator_products --> creator_analytics
+  creator_cohort --> creator_feedback
+  creator_feedback --> bug_list
+
+  customer_orgs --> installs
+  installs --> uninstalls
+  customer_orgs --> purchases
+  customer_orgs --> support_issues
+  customer_orgs --> customer_reports
+
+  beta_api --> creator_feedback
+  beta_api --> support_issues
+  beta_api --> bug_list
+  marketplace_api --> installs
+  marketplace_api --> uninstalls
+  marketplace_api --> purchases
+  marketplace_api --> customer_reports
+  analytics_api --> creator_analytics
+
+  creator_analytics --> readiness_script
+  bug_list --> readiness_script
+  installs --> readiness_script
+  purchases --> readiness_script
+  support_issues --> readiness_script
+  customer_reports --> readiness_script
+
+  classDef implemented fill:#e9f8ef,stroke:#1f8f4d,color:#143143;
+  classDef gate fill:#fff5df,stroke:#b7791f,color:#143143;
+
+  class beta_api,marketplace_api,analytics_api,readiness_script implemented;
+  class creator_products,bug_list,installs,purchases,support_issues,customer_reports gate;

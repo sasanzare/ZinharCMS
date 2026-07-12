@@ -385,3 +385,9 @@ indexes, private catalog/listing `Cache-Control`, and
 `scripts/marketplace-phase13-load-smoke.ps1` for catalog/search/listing P95
 latency baselines. Optional install latency sampling is explicit because
 `POST /api/marketplace/installations` mutates state.
+
+Phase 14 does not add a parallel Marketplace beta API. It uses the existing
+`/api/beta/*` cohort, feedback, and blocker routes together with existing
+Marketplace creator analytics, admin analytics, installations, purchases, and
+reports. `scripts/marketplace-phase14-beta-readiness.ps1` reads those endpoints
+to summarize Private Creator Beta and Customer Beta evidence.

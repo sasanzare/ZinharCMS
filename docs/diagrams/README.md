@@ -39,6 +39,7 @@ runtime configuration, and only then supporting documentation.
 | `38` | Phase-11 creator analytics and internal Marketplace health/risk analytics. |
 | `39` | Phase-12 creator CLI, local packaging workflow, sample packages, and upload handoff. |
 | `40` | Phase-13 Marketplace security QA, load baseline, index tuning, and cache policy. |
+| `41` | Phase-14 Private Creator Beta and Customer Beta evidence/readiness gates. |
 
 ## Implementation Status Language
 

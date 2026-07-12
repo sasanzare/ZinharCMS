@@ -21,6 +21,7 @@ only mirroring the directory tree.
 | `scripts/v2-ga-check.ps1` | GA release checklist runner. | GA readiness | Script/test | Backend tests, frontend lint/build, health/ready checks | Release readiness workflow |
 | `scripts/phase8-load-smoke.ps1` | Tenant and load smoke helper. | Hardening, tenant checks | Script/test | Smoke paths, local endpoint checks | Hardening test flow |
 | `scripts/marketplace-phase13-load-smoke.ps1` | Marketplace catalog/listing/install latency smoke helper. | Marketplace QA/performance | Script/test | Authenticated catalog/search/listing checks, optional install mutation, P95 budget reporting | Marketplace QA/performance diagram |
+| `scripts/marketplace-phase14-beta-readiness.ps1` | Read-only Marketplace beta evidence helper. | Marketplace beta readiness | Script/test | Existing beta, install, purchase, report, and analytics endpoint checks with report-only mode | Marketplace beta readiness diagram |
 
 ## Backend Cargo And Container Files
 
@@ -101,6 +102,8 @@ only mirroring the directory tree.
 | `backend/src/routes/marketplace.rs` | Marketplace catalog, creator profile, listings, package upload, validation reports, review decisions, moderation, and installation lifecycle. | Marketplace | Executable code | `/api/marketplace/catalog`, `/creator`, `/listings`, `/versions/upload`, `/review/*`, `/installations/*` | Marketplace catalog/submission/review/lifecycle diagrams |
 | `backend/src/routes/marketplace_adapters.rs` | Component Pack registry, Template preview/import, and public Plugin Hook authorization. | Marketplace runtime adapters | Executable code | `/api/marketplace/runtime/components`, `/templates/*`, `/hooks/*` | Marketplace runtime adapter diagram |
 | `backend/src/routes/marketplace_runtime.rs` | Permission catalog, sandbox authorization, runtime status, and kill-switch handlers. | Marketplace security runtime | Executable code | `/api/marketplace/permissions`, `/runtime/status`, `/runtime/authorize`, `/kill-switches/*` | Marketplace security runtime diagram |
+| `backend/src/routes/marketplace_finance.rs` | Marketplace purchases, checkout, paid install gate, payouts, and finance admin flows. | Marketplace finance | Executable code | `/api/marketplace/purchases`, `/checkout`, `/install`, payout account/request/admin verification routes | Marketplace finance and beta readiness diagrams |
+| `backend/src/routes/marketplace_analytics.rs` | Creator-owned analytics and admin Marketplace health/risk analytics. | Marketplace analytics | Executable code | `/api/marketplace/creators/{creator_id}/analytics`, `/api/marketplace/analytics/admin` | Marketplace analytics and beta readiness diagrams |
 
 ## Backend Services And Plugins
 
@@ -141,6 +144,7 @@ only mirroring the directory tree.
 | `backend/src/services/marketplace_analytics.rs` | Marketplace analytics dashboard and creator tooling contract checks. | Marketplace analytics/creator tooling | Test code | install/purchase/review aggregations, creator samples, CLI evidence | Marketplace analytics diagram |
 | `backend/src/services/marketplace_performance.rs` | Marketplace cache policy, index, and latency budget contracts. | Marketplace QA/performance | Executable code/test | catalog cache headers, P95 targets, 0026 index assertions, load-smoke script evidence | Marketplace QA/performance diagram |
 | `backend/src/services/marketplace_phase_thirteen.rs` | Marketplace security QA regression contracts. | Marketplace QA/security | Test code | IDOR, permission bypass, malicious package, refund abuse, review abuse assertions | Marketplace QA/performance diagram |
+| `backend/src/services/marketplace_phase_fourteen.rs` | Marketplace beta readiness static contract checks. | Marketplace beta readiness | Test code | Private Creator Beta and Customer Beta evidence assertions against docs, script, diagram, and existing routes | Marketplace beta readiness diagram |
 | `backend/src/services/mod.rs` | Service module export. | Backend composition | Executable code | module exports | Backend module map |
 | `backend/src/plugins/mod.rs` | Built-in plugin trait and hook runner. | Plugins | Executable code | `CmsPlugin`, `builtin_plugins`, hook runners | Plugin hook diagram |
 | `backend/src/plugins/seo.rs` | Built-in SEO slug plugin. | Plugins, entries | Executable code/test | `SeoAutoPlugin`, `slugify` | Plugin hook diagram |
@@ -272,6 +276,7 @@ only mirroring the directory tree.
 | `docs/V3_PHASE_ELEVEN.md` | Marketplace analytics notes. | Marketplace analytics | Documentation | Context for dashboard metrics and analytics evidence. |
 | `docs/V3_PHASE_TWELVE.md` | Creator tooling and sample package notes. | Marketplace creator tooling | Documentation | Context for CLI packaging/validation helpers and sample marketplace assets. |
 | `docs/V3_PHASE_THIRTEEN.md` | Marketplace security QA and performance notes. | Marketplace QA/performance | Documentation | Context for abuse-path regression tests, catalog cache policy, index tuning, and load baseline. |
+| `docs/V3_PHASE_FOURTEEN.md` | Private Creator Beta and Customer Beta readiness notes. | Marketplace beta readiness | Documentation | Context for beta cohort evidence, creator feedback, install/uninstall/purchase/support/report gates, and read-only readiness script. |
 
 ## Search And Inspection Notes
 
@@ -284,3 +289,4 @@ only mirroring the directory tree.
 - Stripe is implemented for organization subscription billing and one-time Marketplace checkout; automated Marketplace payout transfer execution remains deferred.
 - Webhook delivery is performed inline by backend services; no durable background queue was found.
 - Marketplace free/paid installation persistence, paid entitlements, and lifecycle runtime exist with tenant RLS; executable package runtime remains deferred.
+- Phase 14 Marketplace beta readiness is implemented as read-only evidence over existing beta and Marketplace APIs, not as a new schema or route group.

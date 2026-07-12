@@ -16,6 +16,7 @@ pub mod marketplace_installation;
 pub mod marketplace_manifest;
 pub mod marketplace_package;
 pub mod marketplace_performance;
+pub mod marketplace_phase_fourteen;
 pub mod marketplace_phase_thirteen;
 pub mod marketplace_policy;
 pub mod marketplace_readiness;

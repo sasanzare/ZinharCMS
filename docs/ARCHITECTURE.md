@@ -142,8 +142,10 @@ sample packages for local manifest validation, packaging, and upload submission
 against the existing version upload API. Phase 13 adds Marketplace security QA
 contracts for IDOR, permission bypass, malicious package, refund abuse, and
 review abuse paths, plus catalog/search/listing/install performance indexes,
-private catalog cache headers, and a local latency baseline script. Uploaded
-package code is not executed:
+private catalog cache headers, and a local latency baseline script. Phase 14
+uses the existing beta participant/feedback/blocker model and Marketplace
+analytics/lifecycle/finance/report APIs as a read-only evidence layer for
+Private Creator Beta and Customer Beta readiness. Uploaded package code is not executed:
 installation and adapter authorization remain host-owned policy state protected
 by compatibility, permission approval, artifact integrity, audit, and forced-RLS
 gates. Partial-refund workflows, automated payout transfers, external
