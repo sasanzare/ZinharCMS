@@ -1,0 +1,25 @@
+%% Title: ZinharCMS System Context
+%% Source evidence: backend/src/routes/mod.rs; backend/src/config.rs; backend/src/services/stripe_billing.rs; backend/src/services/email.rs; backend/src/routes/webhooks.rs; backend/src/services/webhooks.rs; frontend/src/main.tsx; docker-compose.prod.yml
+flowchart LR
+    admin["Administrator or Creator"]
+    consumer["Public Content Consumer"]
+    spa["ZinharCMS React SPA"]
+    backend["ZinharCMS Rust Backend"]
+    postgres[("PostgreSQL")]
+    redis[("Redis")]
+    files[("Upload Filesystem")]
+    stripe["Stripe API and Webhooks"]
+    email["Configured Email Webhook"]
+    targets["Configured CMS Webhook Targets"]
+
+    admin -->|"Browser interaction"| spa
+    spa -->|"HTTP JSON multipart and WebSocket"| backend
+    consumer -->|"Public delivery HTTP"| backend
+    backend -->|"SQL"| postgres
+    backend -->|"Cache and rate-limit operations"| redis
+    backend -->|"Media package and static file operations"| files
+    consumer -->|"Public uploaded-file HTTP request"| backend
+    backend -->|"HTTPS API"| stripe
+    stripe -->|"Signed webhook"| backend
+    backend -->|"JSON webhook when configured"| email
+    backend -->|"Signed HTTP webhook"| targets

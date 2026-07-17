@@ -1,0 +1,51 @@
+%% Title: ZinharCMS Backend Request Flow
+%% Source evidence: backend/src/main.rs; backend/src/routes/mod.rs; backend/src/middleware/auth.rs; backend/src/middleware/tenant.rs; backend/src/error.rs; backend/src/services/rls.rs
+sequenceDiagram
+    participant Client
+    participant Layers as Global Layers
+    participant Router
+    participant Guard as Auth and Tenant Middleware
+    participant Handler
+    participant Service as Service or Plugin
+    participant Redis
+    participant Data as SQLx and RLS Data Access
+    participant Database as PostgreSQL
+
+    Client->>Layers: HTTP request
+    Layers->>Router: Apply timeout security CORS ID and tracing
+    alt Public route
+        Router->>Handler: Dispatch without application identity middleware
+    else Authenticated route
+        Router->>Guard: Verify bearer token
+        Guard->>Handler: Attach claims and dispatch
+    else Tenant-protected route
+        Router->>Guard: Verify claims and organization membership
+        Guard->>Redis: Apply tenant rate limit
+        Redis-->>Guard: Rate-limit result
+        Guard->>Database: Load membership and quota state
+        Database-->>Guard: Tenant authorization result
+        Guard->>Handler: Attach claims and TenantContext
+    end
+    opt Reusable service or plugin operation
+        Handler->>Service: Invoke reusable behavior
+        opt Cache operation
+            Service->>Redis: Read write or invalidate
+            Redis-->>Service: Cache result or error
+        end
+        opt Service data operation
+            Service->>Data: Issue SQLx or RLS-aware operation
+            Data->>Database: Execute SQL
+            Database-->>Data: Query result or error
+            Data-->>Service: Data result or error
+        end
+        Service-->>Handler: Result or error
+    end
+    opt Handler data operation
+        Handler->>Data: Issue direct or RLS-aware operation
+        Data->>Database: Execute SQL
+        Database-->>Data: Query result or error
+        Data-->>Handler: Data result or error
+    end
+    Handler-->>Router: Response or AppError
+    Router-->>Layers: HTTP result
+    Layers-->>Client: Status headers and JSON or file response

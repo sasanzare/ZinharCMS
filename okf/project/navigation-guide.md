@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "49b2c1886168497e99f7086e4941b21616985656"
+last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "README.md"
@@ -24,6 +24,15 @@ related_documents:
   - "project/repository-map.md"
   - "project/glossary.md"
   - "references/source-register.md"
+  - "architecture/README.md"
+  - "architecture/overview.md"
+  - "architecture/boundaries.md"
+  - "architecture/components.md"
+  - "architecture/dependency-model.md"
+  - "architecture/runtime-flows.md"
+  - "architecture/integration-points.md"
+  - "architecture/architecture-risks.md"
+  - "architecture/decisions/decision-register.md"
 uncertainty_markers:
   - "UNKNOWN U-06"
   - "UNKNOWN U-07"
@@ -39,6 +48,8 @@ uncertainty_markers:
   - "DOCUMENTATION_CODE_CONFLICT"
   - "PLANNED_NOT_IMPLEMENTED"
   - "IMPLEMENTATION_STATUS_UNCLEAR"
+  - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
+  - "DEPENDENCY_DIRECTION_UNCLEAR DDU-01"
 ---
 
 # Navigation Guide
@@ -51,15 +62,25 @@ Use this guide to choose the shortest evidence path for a common repository task
 2. Read the [Project Overview](overview.md) for the evidence-based Phase 1 summary and system boundary.
 3. Use the [Repository Map](repository-map.md) to locate application, infrastructure, test, and documentation areas.
 4. Check the [Project Glossary](glossary.md) before introducing or interpreting domain terminology.
-5. Consult the [Source Register](../references/source-register.md) to distinguish primary evidence from supporting or conflicting documentation.
-6. Review the [Machine-Readable Index](../index.yaml) for document status, relationships, and uncertainty markers.
-7. When a claim remains unresolved, follow its marker into [Phase Zero Knowledge Gaps](../../okf-bootstrap/09-knowledge-gaps.md) or [Owner Questions](../../okf-bootstrap/12-owner-questions.md).
+5. Read the [Architecture Overview](../architecture/overview.md) for system classification, runtime shape, and deployment-evidence limits.
+6. Use the [System Architecture](../architecture/README.md) reading order for boundaries, components, dependencies, flows, integrations, risks, decisions, and diagrams.
+7. Consult the [Source Register](../references/source-register.md) to distinguish primary evidence from supporting or conflicting documentation.
+8. Review the [Machine-Readable Index](../index.yaml) for document status, relationships, and uncertainty markers.
+9. When a claim remains unresolved, follow its marker into [Phase Zero Knowledge Gaps](../../okf-bootstrap/09-knowledge-gaps.md) or [Owner Questions](../../okf-bootstrap/12-owner-questions.md).
 
 ## Navigate by Task
 
 | Task | Start with | Continue with | Important note |
 |---|---|---|---|
 | Understand the product and implemented scope | `README.md` | `okf/project/overview.md`; `docs/V3_MARKETPLACE_SCOPE.md` | Treat product claims as supporting evidence until confirmed in code, configuration, or migrations. |
+| Understand the current architecture | `okf/architecture/overview.md` | `okf/architecture/diagrams/system-context.mmd`; `okf/architecture/diagrams/container-view.mmd` | The backend is one modular-monolith process, not a microservice set. |
+| Identify a system or trust boundary | `okf/architecture/boundaries.md` | `okf/architecture/components.md`; `backend/src/routes/mod.rs` | Tenant enforcement is distributed across middleware, handlers, services, and RLS-aware paths. |
+| Modify backend request flow | `okf/architecture/runtime-flows.md`; `okf/architecture/diagrams/backend-request-flow.mmd` | `backend/src/main.rs`; `backend/src/routes/mod.rs`; relevant middleware, handler, and service | Select public, authenticated, or tenant-protected flow before changing composition. |
+| Modify frontend-backend communication | `okf/architecture/diagrams/frontend-backend-flow.mmd`; `frontend/src/services/api.ts` | `frontend/src/types/api.ts`; matching backend route and response types | Validate both manually maintained contract representations. |
+| Add a major integration | `okf/architecture/integration-points.md` | `okf/architecture/boundaries.md`; configuration, adapter, route, migration, and failure behavior | Configuration capability is not proof of live production wiring. |
+| Review dependency direction | `okf/architecture/dependency-model.md` | `okf/architecture/diagrams/dependency-direction.mmd`; exact Rust and TypeScript imports | Preserve DDU markers where the apparent layer direction is reversed or duplicated. |
+| Investigate architecture risks | `okf/architecture/architecture-risks.md` | `okf/architecture/decisions/decision-register.md`; affected implementation | Risk ratings are evidence-based design risks, not production incident claims. |
+| Check an existing architecture choice | `okf/architecture/decisions/decision-register.md` | Entry evidence and review trigger | Most decisions are observed and inferred; rationale remains unknown unless explicitly sourced. |
 | Run the local stack | `README.md`; `package.json` | `docker-compose.yml`; `.env.example`; `env.example` | The root `npm run dev` invokes the default Compose file, which currently defines infrastructure services rather than both application processes. |
 | Start backend development | `backend/Cargo.toml`; `backend/src/main.rs` | `backend/src/lib.rs`; `backend/src/state.rs`; `backend/src/routes/mod.rs` | Backend configuration is environment-driven. |
 | Start frontend development | `frontend/package.json`; `frontend/src/main.tsx` | `frontend/src/router.tsx`; `frontend/src/services/api.ts`; `frontend/src/stores/useAppStore.ts` | Vite configuration and environment variables control the API base behavior. |
@@ -111,3 +132,12 @@ Use this guide to choose the shortest evidence path for a common repository task
 - [Repository Map](repository-map.md)
 - [Project Glossary](glossary.md)
 - [Source Register](../references/source-register.md)
+- [System Architecture](../architecture/README.md)
+- [Architecture Overview](../architecture/overview.md)
+- [System Boundaries](../architecture/boundaries.md)
+- [Components and Responsibilities](../architecture/components.md)
+- [Dependency Model](../architecture/dependency-model.md)
+- [Runtime Flows](../architecture/runtime-flows.md)
+- [Integration Points](../architecture/integration-points.md)
+- [Architecture Risks](../architecture/architecture-risks.md)
+- [Architecture Decision Register](../architecture/decisions/decision-register.md)

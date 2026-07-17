@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "49b2c1886168497e99f7086e4941b21616985656"
+last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "README.md"
@@ -29,6 +29,16 @@ related_documents:
   - "project/repository-map.md"
   - "project/glossary.md"
   - "project/navigation-guide.md"
+  - "architecture/README.md"
+  - "architecture/overview.md"
+  - "architecture/boundaries.md"
+  - "architecture/components.md"
+  - "architecture/dependency-model.md"
+  - "architecture/runtime-flows.md"
+  - "architecture/integration-points.md"
+  - "architecture/architecture-risks.md"
+  - "architecture/decisions/README.md"
+  - "architecture/decisions/decision-register.md"
 uncertainty_markers:
   - "UNKNOWN U-01"
   - "UNKNOWN U-02"
@@ -81,13 +91,19 @@ uncertainty_markers:
   - "IMPLEMENTATION_STATUS_UNCLEAR ISU-01"
   - "IMPLEMENTATION_STATUS_UNCLEAR ISU-02"
   - "IMPLEMENTATION_STATUS_UNCLEAR ISU-03"
+  - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
+  - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-02"
+  - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-03"
+  - "DEPENDENCY_DIRECTION_UNCLEAR DDU-01"
+  - "DEPENDENCY_DIRECTION_UNCLEAR DDU-02"
+  - "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
 ---
 
 # Source Register
 
-This register records the material evidence used by the Phase 1 OKF documents. It supports the [Project Overview](../project/overview.md), [Repository Map](../project/repository-map.md), [Project Glossary](../project/glossary.md), [Navigation Guide](../project/navigation-guide.md), [OKF Entry Point](../README.md), and [Machine-Readable Index](../index.yaml).
+This register records the material evidence used by the current Phase 1 project documents and Phase 2 architecture documents. It supports the [Project Overview](../project/overview.md), [System Architecture](../architecture/README.md), [Repository Map](../project/repository-map.md), [Project Glossary](../project/glossary.md), [Navigation Guide](../project/navigation-guide.md), [OKF Entry Point](../README.md), and [Machine-Readable Index](../index.yaml).
 
-All entries were checked against commit `49b2c1886168497e99f7086e4941b21616985656` on `2026-07-17`. The register does not promote narrative documentation to implementation authority.
+The Phase 1 baseline entries were checked against commit `49b2c1886168497e99f7086e4941b21616985656`; the Phase 2 architecture-specific entries were checked against commit `17e69e266c558c8568ec65524560d52d7cb89d4c`. Both verifications occurred on `2026-07-17`. The register does not promote narrative documentation to implementation authority.
 
 ## Reliability Scale
 
@@ -277,9 +293,25 @@ Phase Zero documents are evidence-backed inventories created at the verified com
 | `okf-bootstrap/12-owner-questions.md` | Phase Zero question register | NOC-01 through NOC-18 | SUPPORTING | `49b2c188` | Requires owner answers or primary evidence. |
 | `okf-bootstrap/phase-zero-summary.md` | Phase Zero summary | Consolidated findings, validations and next recommendation | SUPPORTING | `49b2c188` | Entry point to the full Phase Zero evidence set. |
 
+## Phase 2 Architecture-Specific Verification
+
+The following sources were inspected at commit `17e69e266c558c8568ec65524560d52d7cb89d4c` to establish process boundaries, dependency direction, runtime flows, integration semantics, risks, and inferred decisions. Rows supplement the broader Phase 1 inventory; they do not change the source-of-truth priority.
+
+| Path | Source type | Architecture information derived | Reliability | Verified commit | Notes and conflicts |
+|---|---|---|---|---|---|
+| `backend/src/services/health.rs` | Service implementation | Reverse dependency on route-owned `DependencyCheck` | PRIMARY | `17e69e26` | Registered as DDU-02. |
+| `backend/src/services/cache.rs` | Redis adapter | Cache fallback, best-effort invalidation, and prefix scan behavior | PRIMARY | `17e69e26` | Redis criticality differs from rate limiting and readiness. |
+| `backend/src/services/email.rs` | Integration adapter | Log, disabled, and webhook email modes and strict failure behavior | PRIMARY | `17e69e26` | Production provider and retries remain unknown. |
+| `backend/src/services/stripe_billing.rs` | Integration adapter | Stripe API endpoint, bearer authentication, and provider error mapping | PRIMARY | `17e69e26` | Pair with billing and Marketplace finance routes. |
+| `backend/src/routes/webhooks.rs` and `backend/src/services/webhooks.rs` | Route and delivery implementation | Webhook configuration plus signed outbound task, timeout, and one recorded attempt | PRIMARY | `17e69e26` | No durable queue or automatic retry worker was found. |
+| `backend/src/services/media_processing.rs` | Processing service | Blocking image work and WebP variant generation | PRIMARY | `17e69e26` | Pair with the already registered media route sources. |
+| `backend/src/services/marketplace_adapters.rs` | Marketplace host adapter | Allowlisted host capabilities and adapter policy boundary | PRIMARY | `17e69e26` | In-process policy adapter, not a separate runtime service. |
+| `frontend/src/pages/WorkspaceRedirectPage.tsx` | Client navigation page | Organization-slug resolution and workspace redirect behavior | PRIMARY | `17e69e26` | Client navigation is not a backend authorization control. |
+| `docs/diagrams/09-request-middleware-pipeline.mmd` | Historical diagram | Prior request and middleware flow representation | SUPPORTING | `17e69e26` | Phase 2 rebuilt the verified request flow from current source. |
+
 ## Conflict Handling
 
-The Phase 1 documents preserve `DCC-01` through `DCC-10` from the Phase Zero documentation audit. When a registered narrative or diagram conflicts with implementation evidence:
+The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero documentation audit. When a registered narrative or diagram conflicts with implementation evidence:
 
 1. Prefer current executable code, migrations, manifests, configuration, workflows, and Git state.
 2. Keep the conflicting source registered for historical context.
@@ -295,3 +327,13 @@ The Phase 1 documents preserve `DCC-01` through `DCC-10` from the Phase Zero doc
 - [Repository Map](../project/repository-map.md)
 - [Project Glossary](../project/glossary.md)
 - [Navigation Guide](../project/navigation-guide.md)
+- [System Architecture](../architecture/README.md)
+- [Architecture Overview](../architecture/overview.md)
+- [System Boundaries](../architecture/boundaries.md)
+- [Components and Responsibilities](../architecture/components.md)
+- [Dependency Model](../architecture/dependency-model.md)
+- [Runtime Flows](../architecture/runtime-flows.md)
+- [Integration Points](../architecture/integration-points.md)
+- [Architecture Risks](../architecture/architecture-risks.md)
+- [Architecture Decisions](../architecture/decisions/README.md)
+- [Architecture Decision Register](../architecture/decisions/decision-register.md)

@@ -1,0 +1,40 @@
+%% Title: ZinharCMS Container View
+%% Source evidence: backend/src/main.rs; backend/src/state.rs; backend/src/routes/mod.rs; frontend/src/main.tsx; frontend/nginx.conf; docker-compose.yml; docker-compose.prod.yml
+flowchart TB
+    browser["Browser"]
+
+    subgraph frontend_container["Frontend Container or Development Process"]
+        nginx["Nginx Static Server in Production-like Image"]
+        spa["React Single-Page Application"]
+        nginx -->|"Serves built assets and route fallback"| spa
+    end
+
+    subgraph backend_container["Single Rust Backend Process"]
+        global["Global Tower Layers"]
+        router["Axum Router"]
+        middleware["Authentication and Tenant Middleware"]
+        handlers["Route Handlers"]
+        services["Services and Infrastructure Adapters"]
+        plugins["Built-in Plugins and Marketplace Policy Adapters"]
+        memory["In-Memory Preview Channels and Spawned Tasks"]
+
+        global --> router
+        router --> middleware
+        middleware --> handlers
+        handlers --> services
+        handlers --> plugins
+        handlers --> memory
+    end
+
+    postgres[("PostgreSQL 16")]
+    redis[("Redis 7")]
+    files[("Upload Filesystem")]
+    providers["External HTTPS Providers"]
+
+    browser -->|"Loads SPA"| nginx
+    spa -->|"HTTP JSON multipart and WebSocket"| global
+    handlers -->|"Direct SQL and RLS-aware SQL"| postgres
+    services -->|"SQL"| postgres
+    services -->|"Cache and rate limiting"| redis
+    handlers -->|"Media package and static files"| files
+    services -->|"Stripe email and CMS webhooks"| providers

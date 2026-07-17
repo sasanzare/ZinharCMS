@@ -1,0 +1,50 @@
+%% Title: ZinharCMS Dependency Direction
+%% Source evidence: backend/src/lib.rs; backend/src/routes/mod.rs; backend/src/middleware/auth.rs; backend/src/middleware/tenant.rs; backend/src/services/jwt.rs; backend/src/services/health.rs; frontend/src/router.tsx; frontend/src/services/api.ts; frontend/src/types/api.ts
+flowchart TB
+    subgraph backend["Backend Source Dependencies"]
+        bootstrap["Process Bootstrap"]
+        routes["Routes and HTTP Types"]
+        middleware["Middleware and Context Types"]
+        services["Services and Policies"]
+        plugins["Built-in Plugins and Runtime Adapters"]
+        state["Shared AppState"]
+        infrastructure["SQLx Redis Files and HTTP Clients"]
+
+        bootstrap --> routes
+        bootstrap --> state
+        routes --> middleware
+        routes --> services
+        routes --> plugins
+        routes --> state
+        routes --> infrastructure
+        middleware --> services
+        middleware --> state
+        services --> state
+        services --> infrastructure
+    end
+
+    subgraph frontend["Frontend Source Dependencies"]
+        entry["Main and Router"]
+        pages["Pages and Shared Components"]
+        store["Zustand Store"]
+        api["Central API Client"]
+        types["Manual API Types"]
+
+        entry --> pages
+        pages --> store
+        pages --> api
+        pages --> types
+        store --> types
+        api --> store
+        api --> types
+    end
+
+    subgraph legend["Legend"]
+        observed["Solid arrow means observed dominant dependency"]
+        unclear["Dashed arrow means reverse unclear or duplicated dependency"]
+    end
+
+    api -->|"HTTP runtime contract"| routes
+    services -.->|"DDU-01 imports Claims and TenantContext"| middleware
+    services -.->|"DDU-02 imports route response type"| routes
+    types -.->|"DDU-03 manually mirrors contracts"| routes

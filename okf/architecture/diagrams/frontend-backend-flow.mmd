@@ -1,0 +1,40 @@
+%% Title: ZinharCMS Frontend to Backend Flow
+%% Source evidence: frontend/src/main.tsx; frontend/src/router.tsx; frontend/src/components/RequireAuth.tsx; frontend/src/pages/WorkspaceRedirectPage.tsx; frontend/src/stores/useAppStore.ts; frontend/src/services/api.ts; frontend/src/types/api.ts; backend/src/routes/mod.rs
+sequenceDiagram
+    actor User
+    participant Page as Router and Page
+    participant Store as Zustand Store
+    participant API as Central API Client
+    participant Backend as Axum Backend
+    participant Data as PostgreSQL and Redis
+
+    User->>Page: Open application route
+    Page->>Store: Read user token and organization state
+    alt No authenticated session
+        Page-->>User: Show login route
+        User->>Page: Submit credentials
+        Page->>API: Login request
+        API->>Backend: HTTP JSON credentials
+        Backend->>Data: Verify account and load state
+        Data-->>Backend: User and organization data
+        Backend-->>API: Tokens user and response data
+        API->>Store: Persist session state
+        Store-->>Page: Updated authenticated state
+    else Authenticated session
+        Page-->>User: Render protected route
+    end
+    Page->>API: Invoke typed client method
+    API->>API: Add bearer and organization headers
+    API->>Backend: HTTP JSON or multipart request
+    Backend->>Data: Authorized cache or database work
+    Data-->>Backend: Result or failure
+    alt Successful backend response
+        Backend-->>API: Success JSON
+        API-->>Page: Parsed TypeScript view
+        Page-->>User: Updated interface
+    else Backend error response
+        Backend-->>API: Status and application error JSON
+        API-->>Page: Parsed client error
+        Page-->>User: Error state
+    end
+    Note over API,Backend: Contracts are manually mirrored and automatic refresh retry is not verified
