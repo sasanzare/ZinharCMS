@@ -1,0 +1,27 @@
+flowchart TD
+    Enter["Open /pages"] --> Load["Load pages, system components, Marketplace components, and installations"]
+    Load --> Merge["Merge palette and select active design templates"]
+    Merge --> Draft["Create new draft or edit saved page"]
+    Draft --> Interaction{"Builder interaction"}
+    Interaction -- "Add or reorder" --> Canvas["Mutate normalized page JSON layout"]
+    Interaction -- "Edit property or metadata" --> Props["Mutate selected node or metadata"]
+    Canvas --> Dirty["Mark draft dirty"]
+    Props --> Dirty
+    Dirty --> Preview["Render local React preview"]
+    Dirty --> Existing{"Saved page has ID"}
+    Existing -- "Yes" --> Delay["Schedule ten-second autosave"]
+    Existing -- "No" --> Manual["Wait for manual first save"]
+    Delay --> Save["Create or update normalized page JSON"]
+    Manual --> Save
+    Save --> SaveResult{"Save succeeds"}
+    SaveResult -- "Yes" --> Reload["Replace draft, clear dirty state, reload list"]
+    SaveResult -- "No" --> Error["Keep draft and show save failure"]
+    Reload --> Actions{"Additional action"}
+    Actions -- "Workflow" --> Transition["Submit review, publish, archive, or restore"]
+    Actions -- "Version" --> Restore["Load snapshots and restore selected version"]
+    Actions -- "Template" --> Template["Preview asset mappings and import template"]
+    Actions -- "Preview socket" --> Copy["Copy backend WebSocket URL with session context"]
+    Transition --> Load
+    Restore --> Load
+    Template --> Load
+

@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "README.md"
@@ -34,6 +34,9 @@ related_documents:
   - "backend/overview.md"
   - "backend/module-catalog.md"
   - "backend/backend-risks.md"
+  - "frontend/README.md"
+  - "frontend/feature-catalog.md"
+  - "frontend/frontend-risks.md"
 uncertainty_markers:
   - "UNKNOWN"
   - "NEEDS_OWNER_CONFIRMATION"
@@ -46,6 +49,15 @@ uncertainty_markers:
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR"
   - "DEPENDENCY_DIRECTION_UNCLEAR"
   - "PROPOSED_NOT_IMPLEMENTED"
+  - "FEATURE_BOUNDARY_UNCLEAR"
+  - "COMPONENT_OWNERSHIP_UNCLEAR"
+  - "ROUTING_BEHAVIOR_UNCLEAR"
+  - "STATE_OWNERSHIP_UNCLEAR"
+  - "API_CONTRACT_UNCLEAR"
+  - "AUTHORIZATION_BEHAVIOR_UNVERIFIED"
+  - "DUPLICATED_CONTRACT"
+  - "DEAD_OR_UNUSED_CODE_UNCONFIRMED"
+  - "UI_BEHAVIOR_UNVERIFIED"
 ---
 
 # ZinharCMS Open Knowledge Format
@@ -106,12 +118,23 @@ The cumulative ../HANDOFF.md file is operational recovery history, not canonical
 | INFERRED_FROM_CODE | The conclusion follows from current implementation but is not explicitly governed |
 | INFERRED_FROM_STRUCTURE | The conclusion follows from repository organization only |
 | INFERRED_FROM_CONFIGURATION | The conclusion follows from tracked executable configuration, not a verified deployed environment |
+| INFERRED_FROM_TESTS | The conclusion follows from the exercised test setup and assertions only |
 | DOCUMENTATION_CODE_CONFLICT | Documentation and current implementation disagree |
 | PLANNED_NOT_IMPLEMENTED | A source identifies future work, but current implementation evidence is absent |
 | PROPOSED_NOT_IMPLEMENTED | A target architecture decision is documented but is not implemented |
 | IMPLEMENTATION_STATUS_UNCLEAR | Some evidence exists, but the complete capability cannot be verified |
 | ARCHITECTURAL_BOUNDARY_UNCLEAR | Component or responsibility ownership is not consistently defined by current structure |
 | DEPENDENCY_DIRECTION_UNCLEAR | Source or contract dependencies cross the apparent layer direction |
+| FEATURE_BOUNDARY_UNCLEAR | Frontend responsibility does not map to one stable feature owner |
+| COMPONENT_OWNERSHIP_UNCLEAR | Shared UI/component ownership or supported interface is not governed |
+| ROUTING_BEHAVIOR_UNCLEAR | Route behavior is only partially established across source and actual hosting |
+| STATE_OWNERSHIP_UNCLEAR | Reactive, persistent, transport, or server-state ownership is distributed or undefined |
+| API_CONTRACT_UNCLEAR | Frontend and backend contract equivalence is not enforced or verified |
+| AUTHORIZATION_BEHAVIOR_UNVERIFIED | Browser visibility or guards do not prove backend authorization |
+| RESPONSIBILITY_OVERLAP | More than one feature or module owns adjacent behavior |
+| DUPLICATED_CONTRACT | The same contract is maintained independently in more than one source area |
+| DEAD_OR_UNUSED_CODE_UNCONFIRMED | Usage was not found, but removal safety or dead-code status is not proven |
+| UI_BEHAVIOR_UNVERIFIED | Browser, responsive, accessibility, direction, or visual behavior was not executed |
 
 Never remove or weaken a marker without stronger evidence or an explicit owner decision.
 
@@ -152,9 +175,17 @@ Recommended backend reading order: [Backend Overview](backend/overview.md), [Mod
 
 For a feature change, select the owning document from the [Module Catalog](backend/module-catalog.md) or browse [individual module documents](backend/modules/). The module map, request lifecycle, dependency flow, and state composition diagrams are indexed from the backend entry point.
 
+## Phase 4 Frontend Documents
+
+The [Frontend Architecture](frontend/README.md) entry point records the one verified frontend application, 13 significant features, route and layout composition, shared components, state ownership, API integration, browser access cues, forms, styling, loading and failure behavior, Page Builder, configuration, tests, risks, and five frontend-specific diagrams.
+
+Recommended frontend reading order: [Frontend Overview](frontend/overview.md), [Application Catalog](frontend/application-catalog.md), [Feature Catalog](frontend/feature-catalog.md), [Feature Boundaries](frontend/feature-boundaries.md), [Routing](frontend/routing.md), [Pages and Layouts](frontend/pages-and-layouts.md), [Component Architecture](frontend/component-architecture.md), [State Management](frontend/state-management.md), [API Client](frontend/api-client.md), [Authentication and Access](frontend/authentication-and-access.md), [Forms and Validation](frontend/forms-and-validation.md), [Styling and Design System](frontend/styling-and-design-system.md), [Loading, Errors, and Notifications](frontend/loading-errors-and-notifications.md), [Page Builder](frontend/page-builder.md), [Configuration and Build](frontend/configuration-and-build.md), [Testing Map](frontend/testing-map.md), and [Frontend Risks](frontend/frontend-risks.md).
+
+For a feature change, select the owning document from the [Frontend Feature Catalog](frontend/feature-catalog.md) or browse [individual feature documents](frontend/features/). Use the [Application Map](frontend/diagrams/frontend-application-map.mmd), [Routing Flow](frontend/diagrams/frontend-routing-flow.mmd), [State Flow](frontend/diagrams/frontend-state-flow.mmd), [API Flow](frontend/diagrams/frontend-api-flow.mmd), and [Page Builder Flow](frontend/diagrams/page-builder-flow.mmd) for visual navigation.
+
 ## Using the Index
 
-Start with [index.yaml](index.yaml). Its documents list records every current Phase 1, Phase 2, and Phase 3 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
+Start with [index.yaml](index.yaml). Its documents list records every current Phase 1 through Phase 4 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
 
 Paths in index.yaml are relative to the okf directory unless a field explicitly identifies a repository-relative evidence path.
 
@@ -164,10 +195,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 2. Use the [Repository Map](project/repository-map.md) to locate implementation and tests.
 3. Read the [Architecture Overview](architecture/overview.md) before changing a cross-cutting runtime or dependency boundary.
 4. Read the [Backend Overview](backend/overview.md) and owning [module document](backend/module-catalog.md) before changing backend behavior.
-5. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
-6. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
-7. Verify behavior against current code, migrations, configuration, and tests.
-8. Record conflicts instead of silently treating a historical document as current.
+5. Read the [Frontend Overview](frontend/overview.md) and owning [feature document](frontend/feature-catalog.md) before changing frontend behavior.
+6. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
+7. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
+8. Verify behavior against current code, migrations, configuration, and tests.
+9. Record conflicts instead of silently treating a historical document as current.
 
 ## For AI Coding Agents
 
@@ -176,10 +208,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 3. Use okf/project/repository-map.md to locate code.
 4. Read okf/architecture/overview.md and the relevant boundary, component, dependency, flow, integration, risk, or decision document.
 5. For backend work, read okf/backend/README.md, the catalog entry, and the owning module document.
-6. Read relevant specialized OKF documents before modifying a subsystem.
-7. Verify critical claims against source code.
-8. Update related OKF documents when implementation changes invalidate them.
-9. Never invent undocumented business rules.
+6. For frontend work, read okf/frontend/README.md, the feature catalog entry, and the owning feature document.
+7. Read relevant specialized OKF documents before modifying a subsystem.
+8. Verify critical claims against source code.
+9. Update related OKF documents when implementation changes invalidate them.
+10. Never invent undocumented business rules.
 
 If a specialized OKF document is still planned, use [Navigation Guide - Missing Documentation](project/navigation-guide.md#when-documentation-is-missing), then consult current source, tests, existing documentation, and Phase Zero evidence.
 
@@ -187,7 +220,6 @@ If a specialized OKF document is still planned, use [Navigation Guide - Missing 
 
 | Target phase | Planned area |
 | ---: | --- |
-| 4 | Frontend routing, state, API client, builder, localization, and accessibility |
 | 5 | Database schema, relationships, RLS, constraints, migrations, and retention |
 | 6 | API route and contract inventory, errors, realtime/provider contracts, and OpenAPI coverage |
 | 7 | Authentication, authorization, tenant isolation, upload security, and threat model |
@@ -214,4 +246,4 @@ During a review:
 
 ## Phase Status
 
-Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 is complete: it adds the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Frontend, database, API, security, business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 4 through 12.
+Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 is complete: it adds the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Database, API, security, business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 5 through 12.

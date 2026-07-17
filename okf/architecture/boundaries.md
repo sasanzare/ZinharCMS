@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/routes/mod.rs"
@@ -19,6 +19,10 @@ primary_sources:
   - "backend/src/plugins/mod.rs"
   - "backend/src/services/marketplace_runtime.rs"
   - "frontend/src/services/api.ts"
+  - "frontend/src/router.tsx"
+  - "frontend/src/components"
+  - "frontend/src/stores/useAppStore.ts"
+  - "frontend/src/pages"
   - "docker-compose.prod.yml"
 related_documents:
   - "architecture/README.md"
@@ -32,11 +36,17 @@ related_documents:
   - "backend/module-catalog.md"
   - "backend/module-boundaries.md"
   - "backend/backend-risks.md"
+  - "frontend/feature-boundaries.md"
+  - "frontend/authentication-and-access.md"
+  - "frontend/api-client.md"
+  - "frontend/frontend-risks.md"
 related_diagrams:
   - "architecture/diagrams/system-context.mmd"
   - "architecture/diagrams/container-view.mmd"
   - "architecture/diagrams/backend-request-flow.mmd"
   - "backend/diagrams/backend-module-map.mmd"
+  - "frontend/diagrams/frontend-application-map.mmd"
+  - "frontend/diagrams/frontend-api-flow.mmd"
 uncertainty_markers:
   - "UNKNOWN U-01"
   - "UNKNOWN U-08"
@@ -46,6 +56,12 @@ uncertainty_markers:
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-02"
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-03"
   - "IMPLEMENTATION_STATUS_UNCLEAR ISU-01"
+  - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+  - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+  - "API_CONTRACT_UNCLEAR ACU-01"
+  - "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
+  - "COMPONENT_OWNERSHIP_UNCLEAR COU-01"
+  - "UI_BEHAVIOR_UNVERIFIED UBU-01"
 ---
 
 # System Boundaries
@@ -91,6 +107,8 @@ The SPA owns browser presentation, route selection, local state, and request con
 
 No shared code package, generated API client, or generated schema contract joins the frontend and backend.
 
+The frontend route guard checks only for a stored access token. Static navigation is visible to all client-authenticated users, while selected pages hide or disable actions using membership/global roles. These are experience boundaries, not security boundaries, and remain `AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01` until the Phase 7 route/action matrix is verified against backend enforcement.
+
 ## Plugin and Marketplace Boundaries
 
 Built-in plugins implement the Rust `CmsPlugin` abstraction and run inside the backend process. They share its trust and resource boundary.
@@ -130,12 +148,18 @@ The public delivery handler currently resolves the active organization with the 
 
 | Boundary | Responsibility | Paths | Interfaces and dependencies | Status |
 |---|---|---|---|---|
-| Application shell | Providers, shared layout, global presentation | `frontend/src/main.tsx`; `frontend/src/components/AppShell.tsx` | Router, store, health hook, i18n, shared components | `OBSERVED` |
-| Routing and guards | Public, authenticated, organization-scoped navigation | `frontend/src/router.tsx`; `frontend/src/components/RequireAuth.tsx`; `frontend/src/pages/WorkspaceRedirectPage.tsx` | Route definitions, store state, navigation | `EXPLICIT` |
-| Feature pages | Admin, CMS, page-builder, SaaS, and Marketplace UI orchestration | `frontend/src/pages` | Components, hooks, i18n, store, API client, API types | `OBSERVED` |
+| Application boundary | One React/Vite management SPA and production-like Nginx image | `frontend/`; `frontend/src/main.tsx`; frontend Dockerfiles/Nginx | Browser entry, one build artifact, backend base URL | `EXPLICIT`; deployment state unclear |
+| Application shell | Providers, shared layout, global presentation | `frontend/src/main.tsx`; `frontend/src/components/AppShell.tsx` | Router, store, health hook, i18n, shared components | `OVERLAPPING` under FBU-02/FRO-02 |
+| Routing and guards | Public login, token-admitted protected routes, workspace selection | `frontend/src/router.tsx`; `frontend/src/components/RequireAuth.tsx`; `frontend/src/pages/WorkspaceRedirectPage.tsx` | Eager route definitions, token state, navigation | `EXPLICIT`; authorization remains ABV-01 |
+| Feature pages | Admin, CMS, page-builder, SaaS, and Marketplace UI orchestration | `frontend/src/pages` | Components, hooks, i18n, store, API client, API types | `OBSERVED` to `OVERLAPPING`; see Phase 4 catalog |
 | Shared UI | Reusable layout and presentation components | `frontend/src/components` | Props, hooks, styles, i18n | `OBSERVED` |
 | State and authentication persistence | User, token, organization, and shared application state | `frontend/src/stores/useAppStore.ts`; API storage setters | Zustand API and `localStorage` | `UNCLEAR` ownership because persistence crosses store and API module |
 | Backend integration | Central request construction and response parsing | `frontend/src/services/api.ts`; `frontend/src/types/api.ts` | HTTP/JSON/multipart/WebSocket URLs and manual types | `OBSERVED`; contract authority remains DDU-03 |
+| Localization and direction | Locale selection, fallback, translation, document direction | `frontend/src/i18n`; direction-aware CSS | React context, browser storage, global styles | `EXPLICIT`; browser behavior UBU-01 |
+| Styling and design vocabulary | Global semantic classes, Tailwind tooling, responsive and RTL rules | `frontend/src/styles/index.css`; Vite config | Global class names and feature markup | `UNCLEAR` formal ownership under COU-01 |
+| Page Builder | Page composition, local preview, persistence, workflow, versions, templates, preview handoff | `frontend/src/pages/PagesPage.tsx` | dnd-kit, page/component/Marketplace APIs, store session context | `OVERLAPPING` under FRO-01 |
+
+The detailed route/page/component/state/API/schema/test/permission/asset ownership matrix is maintained in [Frontend Feature Boundaries](../frontend/feature-boundaries.md). It selects 13 significant frontend features without treating each source file as an independent boundary.
 
 ## Shared-Code Boundaries
 
@@ -147,6 +171,8 @@ The public delivery handler currently resolves the active organization with the 
 | Tests | Rust tests colocated with backend modules; frontend test setup and page tests share testing utilities | Clear at tooling level; coverage is selective |
 | Repository tooling | Root scripts, Marketplace CLI, Compose, Dockerfiles, and CI workflows | Repository-level ownership is not identified under U-12/NOC-15 |
 | Plugins | Built-in Rust trait and registry; Marketplace allowlisted host adapters | Two distinct trust models; arbitrary server package execution remains PNI-01 |
+
+Frontend source sharing is not package-enforced. Route pages can import the central store, API, types, i18n, shared components, and global class names directly. Marketplace, Pages, and Organization are high-overlap boundaries, while `i18n/index.ts` is the clearest explicit frontend module interface.
 
 ## Data Ownership Boundaries
 

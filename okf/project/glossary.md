@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "49b2c1886168497e99f7086e4941b21616985656"
+last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "README.md"
@@ -24,6 +24,10 @@ related_documents:
   - "project/repository-map.md"
   - "project/navigation-guide.md"
   - "references/source-register.md"
+  - "frontend/README.md"
+  - "frontend/application-catalog.md"
+  - "frontend/feature-catalog.md"
+  - "frontend/state-management.md"
 uncertainty_markers:
   - "UNKNOWN U-04"
   - "UNKNOWN U-05"
@@ -32,6 +36,10 @@ uncertainty_markers:
   - "DOCUMENTATION_CODE_CONFLICT DCC-01"
   - "DOCUMENTATION_CODE_CONFLICT DCC-03"
   - "DOCUMENTATION_CODE_CONFLICT DCC-04"
+  - "DOCUMENTATION_CODE_CONFLICT DCC-11"
+  - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+  - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+  - "API_CONTRACT_UNCLEAR ACU-01"
   - "INFERRED_FROM_CODE"
   - "AMBIGUOUS"
   - "PLANNED_NOT_IMPLEMENTED"
@@ -50,7 +58,7 @@ For the broader context, see [Project Identity](overview.md#1-project-identity),
 | Organization | The primary persisted tenant and ownership boundary. | Organization IDs scope content, members, roles, billing, quotas, and Marketplace installations. | `backend/migrations/0008_v2_phase_one_organizations.sql`; `backend/src/middleware/tenant.rs` | Tenant, Organization Member, TenantContext | VERIFIED |
 | Tenant | The security and data-isolation interpretation of an organization. | Middleware, ownership checks, and PostgreSQL RLS use the organization as the tenant boundary. | `backend/src/middleware/tenant.rs`; `backend/src/services/rls.rs`; `backend/migrations/0009_v2_phase_three_rls.sql` | Organization, RLS, TenantContext | VERIFIED |
 | TenantContext | Request-scoped backend context containing the resolved organization and authenticated membership information. | Created by tenant middleware and consumed by organization-scoped handlers. | `backend/src/middleware/tenant.rs`; `backend/src/routes/mod.rs` | Tenant, Organization Member | VERIFIED |
-| Workspace | A frontend routing and presentation label for an organization-scoped area. | The UI redirects into organization-slug routes; no separate workspace persistence model was found. | `frontend/src/pages/WorkspaceRedirectPage.tsx`; `frontend/src/router.tsx`; `frontend/src/stores/useAppStore.ts` | Organization, Tenant | INFERRED_FROM_CODE |
+| Workspace | A frontend routing and presentation label for selecting an organization context. | `/workspace/:slug` resolves a membership and redirects to the dashboard; normal feature URLs use the active organization from browser state rather than a nested workspace route tree. No separate workspace persistence model was found. | `frontend/src/pages/WorkspaceRedirectPage.tsx`; `frontend/src/router.tsx`; `frontend/src/stores/useAppStore.ts` | Organization, Tenant | INFERRED_FROM_CODE |
 | Site | A possible public-delivery target or custom-domain concept, but not a confirmed first-class entity. | Public routing intent is documented while the complete domain-to-tenant lifecycle remains unresolved. | `backend/src/routes/delivery.rs`; `docs/diagrams/02-system-context.mmd`; `okf-bootstrap/09-knowledge-gaps.md` | Delivery API, Organization | AMBIGUOUS |
 | Project | A generic name for the repository or implementation effort, not a confirmed persisted business entity. | No project table, route family, or domain model was identified. | `README.md`; `backend/migrations` | ZinharCMS, Workspace | AMBIGUOUS |
 | User | An authenticated account represented in the identity model. | Users authenticate and obtain organization membership and role context. | `backend/migrations/0001_initial_schema.sql`; `backend/src/middleware/auth.rs` | Organization Member, Global Role | VERIFIED |
@@ -84,6 +92,16 @@ For the broader context, see [Project Identity](overview.md#1-project-identity),
 | RLS | PostgreSQL Row-Level Security used as a database-level tenant-isolation control. | Request code establishes tenant context used by RLS policies. | `backend/migrations/0009_v2_phase_three_rls.sql`; `backend/src/services/rls.rs`; `backend/src/db/mod.rs` | Tenant, Organization | VERIFIED |
 | Extension | A broad product term covering Marketplace offerings and possible integration types. | Existing taxonomy and implementation use overlapping concepts; it is not interchangeable with the built-in CMS plugin abstraction. | `docs/V3_PRODUCT_TAXONOMY.md`; `docs/V3_MARKETPLACE_SCOPE.md`; `backend/src/plugins/mod.rs` | Plugin, Package, Backend Extension | AMBIGUOUS |
 | Backend Extension | A proposed Marketplace extension category that would require safe server-side execution. | Official scope defers arbitrary uploaded server-side code; the current runtime is an allowlisted host API rather than arbitrary uploaded-code execution. | `docs/V3_MARKETPLACE_SCOPE.md`; `backend/src/routes/marketplace_runtime.rs`; `backend/src/services/marketplace_runtime.rs`; `okf-bootstrap/09-knowledge-gaps.md` | Extension, Marketplace Permission, Package | PLANNED_NOT_IMPLEMENTED |
+| Frontend Application | A separately started, built, or deployed browser application. | The repository has one verified frontend application, FE-APP-001; pages and source directories are not separate applications. | `frontend/package.json`; `frontend/src/main.tsx`; `frontend/Dockerfile.prod`; `okf/frontend/application-catalog.md` | SPA, Route Page | VERIFIED |
+| SPA | A single-page application that uses browser-side routing after loading one frontend entry document. | The ZinharCMS management frontend uses React Router and an Nginx history fallback. | `frontend/src/main.tsx`; `frontend/src/router.tsx`; `frontend/nginx.conf` | Frontend Application, Route Page | VERIFIED |
+| Route Page | A React component selected directly by the frontend route table and used as the dominant current feature composition boundary. | Route pages generally own presentation, API orchestration, server data, drafts, loading, and errors. | `frontend/src/router.tsx`; `frontend/src/pages`; `okf/frontend/feature-boundaries.md` | AppShell, Frontend Feature | INFERRED_FROM_STRUCTURE |
+| Frontend Feature | A significant user workflow or cross-cutting browser responsibility selected by the Phase 4 feature catalog. | Thirteen features map routes, source ownership, state, API usage, access cues, and tests without implying separate packages. | `okf/frontend/feature-catalog.md`; `okf/frontend/features` | Route Page, Frontend Application | VERIFIED |
+| AppShell | The shared protected React layout that renders navigation, organization and locale controls, readiness, user status, logout, and the active route outlet. | It integrates several cross-cutting concerns and is not a backend authorization boundary. | `frontend/src/components/AppShell.tsx`; `frontend/src/components/RequireAuth.tsx` | Route Page, Workspace, Client State | VERIFIED |
+| Client State | Browser-owned reactive or persistent data used to render and construct requests. | Zustand owns session/organization/shell state, i18n context owns locale, and route pages own feature-local state. | `frontend/src/stores/useAppStore.ts`; `frontend/src/i18n/I18nProvider.tsx`; `frontend/src/pages` | Server State, API Client | VERIFIED |
+| Server State | Backend-owned data copied into page-local frontend state after API calls. | No shared query cache was found; pages load and refresh their own server responses. | `frontend/src/pages`; `frontend/src/hooks/useHealth.ts`; `okf/frontend/state-management.md` | Client State, API Client | INFERRED_FROM_CODE |
+| API Client | The central browser module that constructs HTTP requests, adds session/organization context, parses JSON, and throws `ApiError`. | Its TypeScript types manually duplicate backend contracts under ACU-01/DC-01. | `frontend/src/services/api.ts`; `frontend/src/types/api.ts` | Client State, Server State | VERIFIED |
+| Local Preview | The Page Builder's in-page React rendering of the current page JSON. | It is distinct from the copied backend WebSocket preview URL and does not prove public-renderer parity. | `frontend/src/pages/PagesPage.tsx`; `okf/frontend/page-builder.md` | Page, Component Registry | VERIFIED |
+| Page Builder | The frontend feature that composes page JSON from registered component definitions through a palette, sortable canvas, property editor, preview, and persistence workflow. | It is implemented inside `PagesPage`, not as a separate frontend application or package. | `frontend/src/pages/PagesPage.tsx`; `frontend/src/pages/PagesPage.test.tsx`; `okf/frontend/page-builder.md` | Page, Component Registry, Local Preview | VERIFIED |
 
 ## Usage Rules
 
@@ -100,3 +118,6 @@ For the broader context, see [Project Identity](overview.md#1-project-identity),
 - [Repository Map](repository-map.md)
 - [Navigation Guide](navigation-guide.md)
 - [Source Register](../references/source-register.md)
+- [Frontend Architecture](../frontend/README.md)
+- [Frontend Application Catalog](../frontend/application-catalog.md)
+- [Frontend Feature Catalog](../frontend/feature-catalog.md)

@@ -4,9 +4,9 @@ project:
   repository: "https://github.com/sasanzare/ZinharCMS"
   repository_name: "ZinharCMS"
   knowledge_status: "in_progress"
-  current_phase: 3
+  current_phase: 4
   current_phase_status: "complete"
-  last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+  last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
   last_verified_date: "2026-07-17"
 
 authority:
@@ -39,6 +39,10 @@ entry_points:
       purpose: "Phase 3 backend documentation entry point and reading order"
     - path: "backend/module-catalog.md"
       purpose: "Catalog of significant backend modules and owning documents"
+    - path: "frontend/README.md"
+      purpose: "Phase 4 frontend architecture entry point and reading order"
+    - path: "frontend/feature-catalog.md"
+      purpose: "Catalog of significant frontend features and owning documents"
     - path: "project/navigation-guide.md"
       purpose: "Short task-oriented navigation guide"
   ai:
@@ -58,6 +62,14 @@ entry_points:
       purpose: "Significant module selection, ownership, and source paths"
     - path: "backend/dependency-map.md"
       purpose: "Backend module, infrastructure, persistence, and provider dependencies"
+    - path: "frontend/overview.md"
+      purpose: "Verified frontend runtime shape, application boundary, and major findings"
+    - path: "frontend/feature-catalog.md"
+      purpose: "Significant frontend feature selection, ownership, and source paths"
+    - path: "frontend/feature-boundaries.md"
+      purpose: "Frontend route, page, component, state, API, test, permission, and asset ownership"
+    - path: "frontend/state-management.md"
+      purpose: "Reactive, persistent, route-local, and transport state ownership"
     - path: "project/navigation-guide.md"
       purpose: "Task-to-source navigation and AI agent rules"
 
@@ -70,7 +82,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "README.md"
@@ -97,6 +109,9 @@ documents:
       - "backend/overview.md"
       - "backend/module-catalog.md"
       - "backend/backend-risks.md"
+      - "frontend/README.md"
+      - "frontend/feature-catalog.md"
+      - "frontend/frontend-risks.md"
     known_uncertainty_markers:
       - "UNKNOWN"
       - "NEEDS_OWNER_CONFIRMATION"
@@ -109,6 +124,11 @@ documents:
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR"
       - "DEPENDENCY_DIRECTION_UNCLEAR"
       - "PROPOSED_NOT_IMPLEMENTED"
+      - "FEATURE_BOUNDARY_UNCLEAR"
+      - "STATE_OWNERSHIP_UNCLEAR"
+      - "API_CONTRACT_UNCLEAR"
+      - "AUTHORIZATION_BEHAVIOR_UNVERIFIED"
+      - "UI_BEHAVIOR_UNVERIFIED"
 
   - id: "okf-index"
     path: "index.yaml"
@@ -118,7 +138,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "okf-bootstrap/09-knowledge-gaps.md"
@@ -131,6 +151,8 @@ documents:
       - "architecture/overview.md"
       - "backend/README.md"
       - "backend/module-catalog.md"
+      - "frontend/README.md"
+      - "frontend/feature-catalog.md"
     known_uncertainty_markers:
       - "UNKNOWN"
       - "NEEDS_OWNER_CONFIRMATION"
@@ -139,6 +161,9 @@ documents:
       - "IMPLEMENTATION_STATUS_UNCLEAR"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR"
       - "DEPENDENCY_DIRECTION_UNCLEAR"
+      - "FEATURE_BOUNDARY_UNCLEAR"
+      - "STATE_OWNERSHIP_UNCLEAR"
+      - "API_CONTRACT_UNCLEAR"
 
   - id: "project-overview"
     path: "project/overview.md"
@@ -209,7 +234,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - ".gitignore"
@@ -232,6 +257,9 @@ documents:
       - "backend/README.md"
       - "backend/module-catalog.md"
       - "backend/dependency-map.md"
+      - "frontend/README.md"
+      - "frontend/application-catalog.md"
+      - "frontend/feature-catalog.md"
     known_uncertainty_markers:
       - "UNKNOWN U-01"
       - "UNKNOWN U-04"
@@ -246,6 +274,9 @@ documents:
       - "NEEDS_OWNER_CONFIRMATION NOC-17"
       - "DOCUMENTATION_CODE_CONFLICT DCC-09"
       - "INFERRED_FROM_STRUCTURE"
+      - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+      - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+      - "API_CONTRACT_UNCLEAR ACU-01"
 
   - id: "project-glossary"
     path: "project/glossary.md"
@@ -255,7 +286,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "49b2c1886168497e99f7086e4941b21616985656"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "README.md"
@@ -272,6 +303,9 @@ documents:
       - "project/repository-map.md"
       - "project/navigation-guide.md"
       - "references/source-register.md"
+      - "frontend/README.md"
+      - "frontend/application-catalog.md"
+      - "frontend/feature-catalog.md"
     known_uncertainty_markers:
       - "UNKNOWN U-04"
       - "UNKNOWN U-05"
@@ -280,10 +314,14 @@ documents:
       - "DOCUMENTATION_CODE_CONFLICT DCC-01"
       - "DOCUMENTATION_CODE_CONFLICT DCC-03"
       - "DOCUMENTATION_CODE_CONFLICT DCC-04"
+      - "DOCUMENTATION_CODE_CONFLICT DCC-11"
       - "INFERRED_FROM_CODE"
       - "AMBIGUOUS"
       - "PLANNED_NOT_IMPLEMENTED"
       - "PLANNED_NOT_IMPLEMENTED PNI-01"
+      - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+      - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+      - "API_CONTRACT_UNCLEAR ACU-01"
 
   - id: "navigation-guide"
     path: "project/navigation-guide.md"
@@ -293,7 +331,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "README.md"
@@ -323,6 +361,12 @@ documents:
       - "backend/module-catalog.md"
       - "backend/testing-map.md"
       - "backend/backend-risks.md"
+      - "frontend/README.md"
+      - "frontend/feature-catalog.md"
+      - "frontend/routing.md"
+      - "frontend/state-management.md"
+      - "frontend/testing-map.md"
+      - "frontend/frontend-risks.md"
     known_uncertainty_markers:
       - "UNKNOWN U-06"
       - "UNKNOWN U-07"
@@ -340,6 +384,10 @@ documents:
       - "IMPLEMENTATION_STATUS_UNCLEAR"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-01"
+      - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+      - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+      - "API_CONTRACT_UNCLEAR ACU-01"
+      - "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
 
   - id: "source-register"
     path: "references/source-register.md"
@@ -349,7 +397,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "README.md"
@@ -384,6 +432,11 @@ documents:
       - "backend/README.md"
       - "backend/module-catalog.md"
       - "backend/testing-map.md"
+      - "frontend/README.md"
+      - "frontend/application-catalog.md"
+      - "frontend/feature-catalog.md"
+      - "frontend/testing-map.md"
+      - "frontend/frontend-risks.md"
     known_uncertainty_markers:
       - "UNKNOWN U-01"
       - "UNKNOWN U-02"
@@ -428,6 +481,7 @@ documents:
       - "DOCUMENTATION_CODE_CONFLICT DCC-08"
       - "DOCUMENTATION_CODE_CONFLICT DCC-09"
       - "DOCUMENTATION_CODE_CONFLICT DCC-10"
+      - "DOCUMENTATION_CODE_CONFLICT DCC-11"
       - "PLANNED_NOT_IMPLEMENTED PNI-01"
       - "PLANNED_NOT_IMPLEMENTED PNI-02"
       - "PLANNED_NOT_IMPLEMENTED PNI-03"
@@ -442,6 +496,14 @@ documents:
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-01"
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-02"
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
+      - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+      - "COMPONENT_OWNERSHIP_UNCLEAR COU-01"
+      - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+      - "API_CONTRACT_UNCLEAR ACU-01"
+      - "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
+      - "DUPLICATED_CONTRACT DC-01"
+      - "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-02"
+      - "UI_BEHAVIOR_UNVERIFIED UBU-01"
 
   - id: "architecture-readme"
     path: "architecture/README.md"
@@ -542,7 +604,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/routes/mod.rs"
@@ -566,11 +628,17 @@ documents:
       - "backend/module-catalog.md"
       - "backend/module-boundaries.md"
       - "backend/backend-risks.md"
+      - "frontend/feature-boundaries.md"
+      - "frontend/authentication-and-access.md"
+      - "frontend/api-client.md"
+      - "frontend/frontend-risks.md"
     related_diagrams:
       - "architecture/diagrams/system-context.mmd"
       - "architecture/diagrams/container-view.mmd"
       - "architecture/diagrams/backend-request-flow.mmd"
       - "backend/diagrams/backend-module-map.mmd"
+      - "frontend/diagrams/frontend-application-map.mmd"
+      - "frontend/diagrams/frontend-api-flow.mmd"
     known_uncertainty_markers:
       - "UNKNOWN U-01"
       - "UNKNOWN U-08"
@@ -580,6 +648,12 @@ documents:
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-02"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-03"
       - "IMPLEMENTATION_STATUS_UNCLEAR ISU-01"
+      - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+      - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+      - "API_CONTRACT_UNCLEAR ACU-01"
+      - "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
+      - "COMPONENT_OWNERSHIP_UNCLEAR COU-01"
+      - "UI_BEHAVIOR_UNVERIFIED UBU-01"
 
   - id: "architecture-components"
     path: "architecture/components.md"
@@ -590,7 +664,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "observed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/main.rs"
@@ -603,6 +677,10 @@ documents:
       - "frontend/src/router.tsx"
       - "frontend/src/services/api.ts"
       - "frontend/src/stores/useAppStore.ts"
+      - "frontend/src/components"
+      - "frontend/src/pages"
+      - "frontend/src/i18n"
+      - "frontend/src/styles/index.css"
     related_documents:
       - "architecture/README.md"
       - "architecture/overview.md"
@@ -615,17 +693,24 @@ documents:
       - "backend/README.md"
       - "backend/module-catalog.md"
       - "backend/shared-infrastructure.md"
+      - "frontend/README.md"
+      - "frontend/application-catalog.md"
+      - "frontend/feature-catalog.md"
+      - "frontend/component-architecture.md"
     related_diagrams:
       - "architecture/diagrams/container-view.mmd"
       - "architecture/diagrams/backend-request-flow.mmd"
       - "architecture/diagrams/frontend-backend-flow.mmd"
       - "backend/diagrams/backend-module-map.mmd"
       - "backend/diagrams/application-state-composition.mmd"
+      - "frontend/diagrams/frontend-application-map.mmd"
     known_uncertainty_markers:
       - "INFERRED_FROM_CODE"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-02"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-03"
+      - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+      - "COMPONENT_OWNERSHIP_UNCLEAR COU-01"
 
   - id: "architecture-dependency-model"
     path: "architecture/dependency-model.md"
@@ -636,7 +721,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/lib.rs"
@@ -650,6 +735,9 @@ documents:
       - "frontend/src/router.tsx"
       - "frontend/src/services/api.ts"
       - "frontend/src/types/api.ts"
+      - "frontend/src/stores/useAppStore.ts"
+      - "frontend/src/components/AppShell.tsx"
+      - "frontend/src/pages"
     related_documents:
       - "architecture/README.md"
       - "architecture/overview.md"
@@ -660,10 +748,16 @@ documents:
       - "backend/dependency-map.md"
       - "backend/module-boundaries.md"
       - "backend/shared-infrastructure.md"
+      - "frontend/feature-boundaries.md"
+      - "frontend/state-management.md"
+      - "frontend/api-client.md"
+      - "frontend/frontend-risks.md"
     related_diagrams:
       - "architecture/diagrams/dependency-direction.mmd"
       - "architecture/diagrams/container-view.mmd"
       - "backend/diagrams/backend-dependency-flow.mmd"
+      - "frontend/diagrams/frontend-state-flow.mmd"
+      - "frontend/diagrams/frontend-api-flow.mmd"
     known_uncertainty_markers:
       - "INFERRED_FROM_STRUCTURE"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
@@ -673,6 +767,10 @@ documents:
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-05"
+      - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+      - "STATE_OWNERSHIP_UNCLEAR SOU-02"
+      - "API_CONTRACT_UNCLEAR ACU-01"
+      - "DUPLICATED_CONTRACT DC-01"
 
   - id: "architecture-runtime-flows"
     path: "architecture/runtime-flows.md"
@@ -683,7 +781,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "observed"
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/main.rs"
@@ -702,6 +800,9 @@ documents:
       - "frontend/src/router.tsx"
       - "frontend/src/services/api.ts"
       - "frontend/src/stores/useAppStore.ts"
+      - "frontend/src/components/AppShell.tsx"
+      - "frontend/src/pages/PagesPage.tsx"
+      - "frontend/src/i18n/I18nProvider.tsx"
     related_documents:
       - "architecture/README.md"
       - "architecture/overview.md"
@@ -710,16 +811,28 @@ documents:
       - "architecture/dependency-model.md"
       - "architecture/integration-points.md"
       - "architecture/architecture-risks.md"
+      - "frontend/routing.md"
+      - "frontend/state-management.md"
+      - "frontend/api-client.md"
+      - "frontend/page-builder.md"
     related_diagrams:
       - "architecture/diagrams/backend-request-flow.mmd"
       - "architecture/diagrams/frontend-backend-flow.mmd"
       - "architecture/diagrams/system-context.mmd"
+      - "frontend/diagrams/frontend-routing-flow.mmd"
+      - "frontend/diagrams/frontend-state-flow.mmd"
+      - "frontend/diagrams/frontend-api-flow.mmd"
+      - "frontend/diagrams/page-builder-flow.mmd"
     known_uncertainty_markers:
       - "UNKNOWN U-08"
       - "NEEDS_OWNER_CONFIRMATION NOC-01"
       - "NEEDS_OWNER_CONFIRMATION NOC-09"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-03"
       - "IMPLEMENTATION_STATUS_UNCLEAR ISU-01"
+      - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+      - "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
+      - "API_CONTRACT_UNCLEAR ACU-01"
+      - "ROUTING_BEHAVIOR_UNCLEAR RBU-01"
 
   - id: "architecture-integration-points"
     path: "architecture/integration-points.md"
@@ -2345,6 +2458,629 @@ documents:
       - "backend/overview.md"
       - "backend/request-handling.md"
 
+  - id: "frontend-readme"
+    path: "frontend/README.md"
+    title: "Frontend Architecture"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/package.json", "frontend/src"]
+    related_documents: ["frontend/overview.md", "frontend/feature-catalog.md", "frontend/frontend-risks.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
+    known_uncertainty_markers: ["FEATURE_BOUNDARY_UNCLEAR FBU-01", "STATE_OWNERSHIP_UNCLEAR SOU-01", "API_CONTRACT_UNCLEAR ACU-01"]
+
+  - id: "frontend-overview"
+    path: "frontend/overview.md"
+    title: "Frontend Overview"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/package.json", "frontend/src/main.tsx", "frontend/src/router.tsx", "frontend/src/services/api.ts"]
+    related_documents: ["frontend/application-catalog.md", "frontend/feature-catalog.md", "frontend/state-management.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
+    known_uncertainty_markers: ["INFERRED_FROM_STRUCTURE", "IMPLEMENTATION_STATUS_UNCLEAR ISU-03", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
+  - id: "frontend-application-catalog"
+    path: "frontend/application-catalog.md"
+    title: "Frontend Application Catalog"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/package.json", "frontend/src/main.tsx", "frontend/Dockerfile.prod", "frontend/nginx.conf"]
+    related_documents: ["frontend/overview.md", "frontend/feature-catalog.md", "frontend/configuration-and-build.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
+    known_uncertainty_markers: ["INFERRED_FROM_STRUCTURE", "IMPLEMENTATION_STATUS_UNCLEAR ISU-03"]
+
+  - id: "frontend-feature-catalog"
+    path: "frontend/feature-catalog.md"
+    title: "Frontend Feature Catalog"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/router.tsx", "frontend/src/pages", "frontend/src/components", "frontend/src/services/api.ts"]
+    related_documents: ["frontend/feature-boundaries.md", "frontend/routing.md", "frontend/testing-map.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
+    known_uncertainty_markers: ["FEATURE_BOUNDARY_UNCLEAR FBU-01", "FEATURE_BOUNDARY_UNCLEAR FBU-02", "COMPONENT_OWNERSHIP_UNCLEAR COU-01"]
+
+  - id: "frontend-feature-boundaries"
+    path: "frontend/feature-boundaries.md"
+    title: "Frontend Feature Boundaries"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/router.tsx", "frontend/src/pages", "frontend/src/components", "frontend/src/stores/useAppStore.ts"]
+    related_documents: ["frontend/feature-catalog.md", "frontend/component-architecture.md", "frontend/state-management.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd", "frontend/diagrams/frontend-state-flow.mmd"]
+    known_uncertainty_markers: ["FEATURE_BOUNDARY_UNCLEAR FBU-01", "STATE_OWNERSHIP_UNCLEAR SOU-01", "RESPONSIBILITY_OVERLAP FRO-01"]
+
+  - id: "frontend-routing"
+    path: "frontend/routing.md"
+    title: "Frontend Routing"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/router.tsx", "frontend/src/components/RequireAuth.tsx", "frontend/src/components/AppShell.tsx", "frontend/nginx.conf"]
+    related_documents: ["frontend/pages-and-layouts.md", "frontend/authentication-and-access.md"]
+    related_diagrams: ["frontend/diagrams/frontend-routing-flow.mmd"]
+    known_uncertainty_markers: ["ROUTING_BEHAVIOR_UNCLEAR RBU-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"]
+
+  - id: "frontend-pages-layouts"
+    path: "frontend/pages-and-layouts.md"
+    title: "Frontend Pages and Layouts"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/router.tsx", "frontend/src/components/AppShell.tsx", "frontend/src/pages", "frontend/src/styles/index.css"]
+    related_documents: ["frontend/routing.md", "frontend/component-architecture.md"]
+    related_diagrams: ["frontend/diagrams/frontend-routing-flow.mmd"]
+    known_uncertainty_markers: ["COMPONENT_OWNERSHIP_UNCLEAR COU-01", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
+  - id: "frontend-component-architecture"
+    path: "frontend/component-architecture.md"
+    title: "Frontend Component Architecture"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/components", "frontend/src/pages", "frontend/src/hooks/useHealth.ts", "frontend/src/i18n"]
+    related_documents: ["frontend/pages-and-layouts.md", "frontend/feature-boundaries.md", "frontend/styling-and-design-system.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
+    known_uncertainty_markers: ["COMPONENT_OWNERSHIP_UNCLEAR COU-01", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
+  - id: "frontend-state-management"
+    path: "frontend/state-management.md"
+    title: "Frontend State Management"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/stores/useAppStore.ts", "frontend/src/services/api.ts", "frontend/src/i18n/I18nProvider.tsx", "frontend/src/pages"]
+    related_documents: ["frontend/api-client.md", "frontend/authentication-and-access.md", "frontend/loading-errors-and-notifications.md"]
+    related_diagrams: ["frontend/diagrams/frontend-state-flow.mmd"]
+    known_uncertainty_markers: ["STATE_OWNERSHIP_UNCLEAR SOU-01", "STATE_OWNERSHIP_UNCLEAR SOU-02", "DUPLICATED_CONTRACT DC-01"]
+
+  - id: "frontend-api-client"
+    path: "frontend/api-client.md"
+    title: "Frontend API Client"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/services/api.ts", "frontend/src/types/api.ts", "frontend/src/stores/useAppStore.ts"]
+    related_documents: ["frontend/state-management.md", "frontend/authentication-and-access.md", "backend/request-handling.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-01", "DUPLICATED_CONTRACT DC-01", "STATE_OWNERSHIP_UNCLEAR SOU-01"]
+
+  - id: "frontend-authentication-access"
+    path: "frontend/authentication-and-access.md"
+    title: "Frontend Authentication and Access"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/pages/AuthPage.tsx", "frontend/src/components/RequireAuth.tsx", "frontend/src/stores/useAppStore.ts", "frontend/src/services/api.ts"]
+    related_documents: ["frontend/routing.md", "frontend/state-management.md", "backend/modules/authentication.md", "backend/modules/tenant-authorization.md"]
+    related_diagrams: ["frontend/diagrams/frontend-routing-flow.mmd", "frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "STATE_OWNERSHIP_UNCLEAR SOU-01", "NEEDS_OWNER_CONFIRMATION NOC-12"]
+
+  - id: "frontend-forms-validation"
+    path: "frontend/forms-and-validation.md"
+    title: "Frontend Forms and Validation"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/package.json", "frontend/src/components/DynamicForm.tsx", "frontend/src/pages"]
+    related_documents: ["frontend/component-architecture.md", "frontend/loading-errors-and-notifications.md"]
+    related_diagrams: ["frontend/diagrams/frontend-state-flow.mmd"]
+    known_uncertainty_markers: ["DOCUMENTATION_CODE_CONFLICT DCC-11", "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-02", "API_CONTRACT_UNCLEAR ACU-01"]
+
+  - id: "frontend-styling-design-system"
+    path: "frontend/styling-and-design-system.md"
+    title: "Frontend Styling and Design System"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/styles/index.css", "frontend/vite.config.ts", "frontend/src/components", "frontend/src/pages"]
+    related_documents: ["frontend/component-architecture.md", "frontend/features/localization-and-direction.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
+    known_uncertainty_markers: ["COMPONENT_OWNERSHIP_UNCLEAR COU-01", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
+  - id: "frontend-loading-errors-notifications"
+    path: "frontend/loading-errors-and-notifications.md"
+    title: "Frontend Loading, Errors, and Notifications"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/components/StatusBadge.tsx", "frontend/src/hooks/useHealth.ts", "frontend/src/services/api.ts", "frontend/src/pages"]
+    related_documents: ["frontend/state-management.md", "frontend/api-client.md", "frontend/testing-map.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["UI_BEHAVIOR_UNVERIFIED UBU-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"]
+
+  - id: "frontend-page-builder"
+    path: "frontend/page-builder.md"
+    title: "Frontend Page Builder"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/pages/PagesPage.tsx", "frontend/src/pages/PagesPage.test.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    related_documents: ["frontend/features/pages-and-page-builder.md", "backend/modules/pages-builder-preview.md", "backend/modules/marketplace-runtime-adapters.md"]
+    related_diagrams: ["frontend/diagrams/page-builder-flow.mmd"]
+    known_uncertainty_markers: ["RESPONSIBILITY_OVERLAP FRO-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
+  - id: "frontend-configuration-build"
+    path: "frontend/configuration-and-build.md"
+    title: "Frontend Configuration and Build"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/package.json", "frontend/vite.config.ts", "frontend/tsconfig.app.json", "frontend/Dockerfile.prod", ".github/workflows/frontend-ci.yml"]
+    related_documents: ["frontend/application-catalog.md", "frontend/testing-map.md", "frontend/api-client.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
+    known_uncertainty_markers: ["UNKNOWN U-06", "UNKNOWN U-09", "IMPLEMENTATION_STATUS_UNCLEAR ISU-03"]
+
+  - id: "frontend-testing-map"
+    path: "frontend/testing-map.md"
+    title: "Frontend Testing Map"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/vitest.config.ts", "frontend/src/test/setup.ts", "frontend/src/pages/DashboardPage.test.tsx", "frontend/src/pages/PagesPage.test.tsx", "frontend/src/pages/MarketplacePage.test.tsx"]
+    related_documents: ["frontend/feature-catalog.md", "frontend/page-builder.md", "frontend/frontend-risks.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
+    known_uncertainty_markers: ["UI_BEHAVIOR_UNVERIFIED UBU-01", "UNKNOWN"]
+
+  - id: "frontend-risks"
+    path: "frontend/frontend-risks.md"
+    title: "Frontend Risks"
+    category: "frontend"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src", "frontend/package.json", "frontend/vite.config.ts", "frontend/vitest.config.ts"]
+    related_documents: ["frontend/feature-boundaries.md", "frontend/authentication-and-access.md", "frontend/api-client.md", "frontend/testing-map.md"]
+    related_diagrams: ["frontend/diagrams/frontend-state-flow.mmd", "frontend/diagrams/frontend-api-flow.mmd", "frontend/diagrams/page-builder-flow.mmd"]
+    known_uncertainty_markers: ["FEATURE_BOUNDARY_UNCLEAR FBU-01", "STATE_OWNERSHIP_UNCLEAR SOU-01", "API_CONTRACT_UNCLEAR ACU-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"]
+
+  - id: "frontend-feature-authentication-session"
+    path: "frontend/features/authentication-and-session.md"
+    title: "Authentication and Session"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-001"
+    feature_name: "Authentication and Session"
+    feature_paths: ["frontend/src/pages/AuthPage.tsx", "frontend/src/components/RequireAuth.tsx", "frontend/src/stores/useAppStore.ts", "frontend/src/services/api.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/authentication-and-access.md", "frontend/routing.md", "backend/modules/authentication.md"]
+    related_diagrams: ["frontend/diagrams/frontend-routing-flow.mmd", "frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "STATE_OWNERSHIP_UNCLEAR SOU-01"]
+
+  - id: "frontend-feature-dashboard-application-shell"
+    path: "frontend/features/dashboard-and-application-shell.md"
+    title: "Dashboard and Application Shell"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-002"
+    feature_name: "Dashboard and Application Shell"
+    feature_paths: ["frontend/src/components/AppShell.tsx", "frontend/src/pages/DashboardPage.tsx", "frontend/src/hooks/useHealth.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/pages-and-layouts.md", "frontend/component-architecture.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd", "frontend/diagrams/frontend-routing-flow.mmd"]
+    known_uncertainty_markers: ["FEATURE_BOUNDARY_UNCLEAR FBU-02", "RESPONSIBILITY_OVERLAP FRO-02"]
+
+  - id: "frontend-feature-organizations-workspaces"
+    path: "frontend/features/organizations-and-workspaces.md"
+    title: "Organizations and Workspaces"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-003"
+    feature_name: "Organizations and Workspaces"
+    feature_paths: ["frontend/src/pages/OrganizationPage.tsx", "frontend/src/pages/WorkspaceRedirectPage.tsx", "frontend/src/components/AppShell.tsx", "frontend/src/stores/useAppStore.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/state-management.md", "backend/modules/organizations.md", "backend/modules/tenant-authorization.md"]
+    related_diagrams: ["frontend/diagrams/frontend-state-flow.mmd", "frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["STATE_OWNERSHIP_UNCLEAR SOU-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "IMPLEMENTATION_STATUS_UNCLEAR ISU-01"]
+
+  - id: "frontend-feature-content-modeling"
+    path: "frontend/features/content-modeling.md"
+    title: "Content Modeling"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-004"
+    feature_name: "Content Modeling"
+    feature_paths: ["frontend/src/pages/ContentTypesPage.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    boundary_status: "OBSERVED"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/forms-and-validation.md", "frontend/features/content-entries.md", "backend/modules/content-workflow.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "API_CONTRACT_UNCLEAR ACU-01", "NEEDS_OWNER_CONFIRMATION NOC-12"]
+
+  - id: "frontend-feature-content-entries"
+    path: "frontend/features/content-entries.md"
+    title: "Content Entries"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-005"
+    feature_name: "Content Entries"
+    feature_paths: ["frontend/src/pages/EntriesPage.tsx", "frontend/src/components/DynamicForm.tsx", "frontend/src/services/api.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/features/content-modeling.md", "frontend/features/editorial-workflow-and-collaboration.md", "backend/modules/content-workflow.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["RESPONSIBILITY_OVERLAP FRO-01", "API_CONTRACT_UNCLEAR ACU-01"]
+
+  - id: "frontend-feature-media-library"
+    path: "frontend/features/media-library.md"
+    title: "Media Library"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-006"
+    feature_name: "Media Library"
+    feature_paths: ["frontend/src/pages/MediaPage.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    boundary_status: "OBSERVED"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/api-client.md", "backend/modules/media.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "API_CONTRACT_UNCLEAR ACU-01", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
+  - id: "frontend-feature-pages-page-builder"
+    path: "frontend/features/pages-and-page-builder.md"
+    title: "Pages and Page Builder"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-007"
+    feature_name: "Pages and Page Builder"
+    feature_paths: ["frontend/src/pages/PagesPage.tsx", "frontend/src/pages/PagesPage.test.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/page-builder.md", "frontend/features/marketplace.md", "backend/modules/pages-builder-preview.md"]
+    related_diagrams: ["frontend/diagrams/page-builder-flow.mmd"]
+    known_uncertainty_markers: ["RESPONSIBILITY_OVERLAP FRO-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
+  - id: "frontend-feature-editorial-workflow-collaboration"
+    path: "frontend/features/editorial-workflow-and-collaboration.md"
+    title: "Editorial Workflow and Collaboration"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-008"
+    feature_name: "Editorial Workflow and Collaboration"
+    feature_paths: ["frontend/src/pages/WorkflowPage.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/features/content-entries.md", "frontend/features/pages-and-page-builder.md", "backend/modules/comments.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["RESPONSIBILITY_OVERLAP FRO-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"]
+
+  - id: "frontend-feature-billing-usage"
+    path: "frontend/features/billing-and-usage.md"
+    title: "Billing and Usage"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-009"
+    feature_name: "Billing and Usage"
+    feature_paths: ["frontend/src/pages/BillingPage.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    boundary_status: "OBSERVED"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/authentication-and-access.md", "backend/modules/billing-quotas.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "API_CONTRACT_UNCLEAR ACU-01"]
+
+  - id: "frontend-feature-beta-operations"
+    path: "frontend/features/beta-operations.md"
+    title: "Beta Operations"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-010"
+    feature_name: "Beta Operations"
+    feature_paths: ["frontend/src/pages/BetaPage.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/features/organizations-and-workspaces.md", "backend/modules/beta-release-operations.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "IMPLEMENTATION_STATUS_UNCLEAR ISU-03", "RESPONSIBILITY_OVERLAP RO-06"]
+
+  - id: "frontend-feature-marketplace"
+    path: "frontend/features/marketplace.md"
+    title: "Marketplace"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-011"
+    feature_name: "Marketplace"
+    feature_paths: ["frontend/src/pages/MarketplacePage.tsx", "frontend/src/pages/MarketplacePage.test.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/feature-boundaries.md", "frontend/features/pages-and-page-builder.md", "backend/modules/marketplace-catalog-installation.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd", "frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["FEATURE_BOUNDARY_UNCLEAR FBU-01", "RESPONSIBILITY_OVERLAP FRO-01", "API_CONTRACT_UNCLEAR ACU-01"]
+
+  - id: "frontend-feature-settings-webhooks"
+    path: "frontend/features/settings-and-webhooks.md"
+    title: "Settings and Webhooks"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-012"
+    feature_name: "Settings and Webhooks"
+    feature_paths: ["frontend/src/pages/SettingsPage.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    boundary_status: "OVERLAPPING"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/features/authentication-and-session.md", "backend/modules/cms-webhooks.md"]
+    related_diagrams: ["frontend/diagrams/frontend-api-flow.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "RESPONSIBILITY_OVERLAP FRO-02"]
+
+  - id: "frontend-feature-localization-direction"
+    path: "frontend/features/localization-and-direction.md"
+    title: "Localization and Direction"
+    category: "frontend-feature"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    feature_id: "FE-FEAT-013"
+    feature_name: "Localization and Direction"
+    feature_paths: ["frontend/src/i18n", "frontend/src/main.tsx", "frontend/src/styles/index.css", "frontend/public/fonts"]
+    boundary_status: "EXPLICIT"
+    implementation_status: "IMPLEMENTED"
+    related_documents: ["frontend/styling-and-design-system.md", "frontend/component-architecture.md"]
+    related_diagrams: ["frontend/diagrams/frontend-application-map.mmd", "frontend/diagrams/frontend-state-flow.mmd"]
+    known_uncertainty_markers: ["DOCUMENTATION_CODE_CONFLICT DCC-02", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
+  - id: "frontend-diagram-application-map"
+    path: "frontend/diagrams/frontend-application-map.mmd"
+    title: "ZinharCMS Frontend Application Map"
+    category: "frontend-diagram"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/main.tsx", "frontend/src/router.tsx", "frontend/src/pages", "frontend/src/components"]
+    related_documents: ["frontend/application-catalog.md", "frontend/feature-catalog.md", "frontend/component-architecture.md"]
+    known_uncertainty_markers: ["FEATURE_BOUNDARY_UNCLEAR FBU-01", "COMPONENT_OWNERSHIP_UNCLEAR COU-01"]
+
+  - id: "frontend-diagram-routing-flow"
+    path: "frontend/diagrams/frontend-routing-flow.mmd"
+    title: "ZinharCMS Frontend Routing Flow"
+    category: "frontend-diagram"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/router.tsx", "frontend/src/components/RequireAuth.tsx", "frontend/src/components/AppShell.tsx"]
+    related_documents: ["frontend/routing.md", "frontend/pages-and-layouts.md", "frontend/authentication-and-access.md"]
+    known_uncertainty_markers: ["ROUTING_BEHAVIOR_UNCLEAR RBU-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"]
+
+  - id: "frontend-diagram-state-flow"
+    path: "frontend/diagrams/frontend-state-flow.mmd"
+    title: "ZinharCMS Frontend State Flow"
+    category: "frontend-diagram"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/stores/useAppStore.ts", "frontend/src/services/api.ts", "frontend/src/i18n/I18nProvider.tsx", "frontend/src/pages"]
+    related_documents: ["frontend/state-management.md", "frontend/feature-boundaries.md"]
+    known_uncertainty_markers: ["STATE_OWNERSHIP_UNCLEAR SOU-01", "STATE_OWNERSHIP_UNCLEAR SOU-02"]
+
+  - id: "frontend-diagram-api-flow"
+    path: "frontend/diagrams/frontend-api-flow.mmd"
+    title: "ZinharCMS Frontend API Flow"
+    category: "frontend-diagram"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/services/api.ts", "frontend/src/stores/useAppStore.ts", "frontend/src/types/api.ts", "frontend/src/pages"]
+    related_documents: ["frontend/api-client.md", "frontend/state-management.md", "frontend/loading-errors-and-notifications.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-01", "DUPLICATED_CONTRACT DC-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"]
+
+  - id: "frontend-diagram-page-builder-flow"
+    path: "frontend/diagrams/page-builder-flow.mmd"
+    title: "ZinharCMS Page Builder Flow"
+    category: "frontend-diagram"
+    status: "current"
+    phase: 4
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths: ["frontend/src/pages/PagesPage.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
+    related_documents: ["frontend/page-builder.md", "frontend/features/pages-and-page-builder.md", "backend/modules/pages-builder-preview.md"]
+    known_uncertainty_markers: ["RESPONSIBILITY_OVERLAP FRO-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
+
 
 uncertainty_register:
   unknown:
@@ -2410,6 +3146,7 @@ uncertainty_register:
     - "DOCUMENTATION_CODE_CONFLICT DCC-08"
     - "DOCUMENTATION_CODE_CONFLICT DCC-09"
     - "DOCUMENTATION_CODE_CONFLICT DCC-10"
+    - "DOCUMENTATION_CODE_CONFLICT DCC-11"
 
   planned_not_implemented:
     - id: "PLANNED_NOT_IMPLEMENTED PNI-01"
@@ -2440,6 +3177,44 @@ uncertainty_register:
       summary: "The conclusion follows from current repository or module organization"
     - id: "INFERRED_FROM_CONFIGURATION"
       summary: "The conclusion follows from tracked executable configuration but is not deployed-environment evidence"
+    - id: "INFERRED_FROM_TESTS"
+      summary: "The conclusion follows from current tests but is limited to the exercised setup and assertions"
+
+  feature_boundary_unclear:
+    - id: "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+      summary: "The Marketplace route page owns many customer, creator, review, runtime, finance, and analytics lifecycles"
+    - id: "FEATURE_BOUNDARY_UNCLEAR FBU-02"
+      summary: "Dashboard and AppShell responsibilities overlap navigation, health, organization, session, and localization concerns"
+
+  component_ownership_unclear:
+    - id: "COMPONENT_OWNERSHIP_UNCLEAR COU-01"
+      summary: "Shared components and global semantic classes form an informal UI vocabulary without a governed component-library boundary"
+
+  routing_behavior_unclear:
+    - id: "ROUTING_BEHAVIOR_UNCLEAR RBU-01"
+      summary: "The repository Nginx image has SPA fallback, but equivalent behavior in every actual frontend host is not established"
+
+  state_ownership_unclear:
+    - id: "STATE_OWNERSHIP_UNCLEAR SOU-01"
+      summary: "Session and active-organization state is synchronized across Zustand, API module variables, and browser storage"
+    - id: "STATE_OWNERSHIP_UNCLEAR SOU-02"
+      summary: "Server responses are page-local without a shared cache, tenant-keying, invalidation, cancellation, or deduplication contract"
+
+  api_contract_unclear:
+    - id: "API_CONTRACT_UNCLEAR ACU-01"
+      summary: "The handwritten frontend client and TypeScript types have no generated or runtime-validated equivalence to backend contracts"
+
+  authorization_behavior_unverified:
+    - id: "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
+      summary: "Frontend route admission and role cues are not security boundaries and are not a complete action-by-action proof of backend enforcement"
+
+  duplicated_contract:
+    - id: "DUPLICATED_CONTRACT DC-01"
+      summary: "Frontend request and response types duplicate backend contracts without one shared schema authority"
+
+  ui_behavior_unverified:
+    - id: "UI_BEHAVIOR_UNVERIFIED UBU-01"
+      summary: "Responsive, RTL, accessibility, keyboard, visual, and cross-browser behavior was not executed or certified in Phase 4"
 
   architectural_boundary_unclear:
     - id: "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
@@ -2508,6 +3283,10 @@ uncertainty_register:
       summary: "Marketplace runtime policy and host adapters overlap Pages integration"
     - id: "RESPONSIBILITY_OVERLAP RO-10"
       summary: "Marketplace feedback, analytics, performance, and readiness consume shared lifecycle data"
+    - id: "RESPONSIBILITY_OVERLAP FRO-01"
+      summary: "Frontend Pages overlaps Page Builder, workflow, versions, preview, and Marketplace adapter behavior"
+    - id: "RESPONSIBILITY_OVERLAP FRO-02"
+      summary: "Frontend AppShell overlaps session, organization, health, localization, navigation, and layout responsibilities"
 
   business_rule_location_unclear:
     - id: "BUSINESS_RULE_LOCATION_UNCLEAR BRU-01"
@@ -2546,6 +3325,8 @@ uncertainty_register:
   code_usage_unclear:
     - id: "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-01"
       summary: "The registered health service has no verified production caller, but dead-code status is unconfirmed"
+    - id: "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-02"
+      summary: "React Hook Form, Hook Form resolvers, and Zod are declared dependencies without verified imports under frontend/src"
 
 current_sections:
   - id: "project-overview"
@@ -2560,12 +3341,12 @@ current_sections:
     title: "Backend Modules"
     status: "current"
     completed_phase: 3
-
-planned_sections:
   - id: "frontend"
     title: "Frontend Architecture"
-    status: "planned"
-    target_phase: 4
+    status: "current"
+    completed_phase: 4
+
+planned_sections:
   - id: "database"
     title: "Database"
     status: "planned"

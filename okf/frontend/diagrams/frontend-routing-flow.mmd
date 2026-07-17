@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Browser URL"] --> Router["React Router browser router"]
+    Router --> LoginCheck{"Path is /login"}
+    LoginCheck -- "Yes" --> AuthPage["Render AuthPage without AppShell"]
+    LoginCheck -- "No" --> Guard["RequireAuth reads Zustand access token"]
+    Guard --> HasToken{"Token string is present"}
+    HasToken -- "No" --> LoginRedirect["Replace navigation to /login"]
+    HasToken -- "Yes" --> Shell["Render AppShell"]
+    Shell --> Match{"Protected child route matches"}
+    Match -- "Dashboard or feature route" --> Page["Render eager route page in Outlet"]
+    Match -- "Workspace slug" --> Workspace["Resolve membership and set active organization"]
+    Workspace --> DashboardRedirect["Replace navigation to /"]
+    Match -- "No match" --> Fallback["Replace navigation to /"]
+    Page --> ActionGate["Optional in-page role or lifecycle cue"]
+    ActionGate --> Backend["Backend remains authoritative for access"]
+

@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "README.md"
@@ -42,6 +42,11 @@ related_documents:
   - "backend/README.md"
   - "backend/module-catalog.md"
   - "backend/testing-map.md"
+  - "frontend/README.md"
+  - "frontend/application-catalog.md"
+  - "frontend/feature-catalog.md"
+  - "frontend/testing-map.md"
+  - "frontend/frontend-risks.md"
 uncertainty_markers:
   - "UNKNOWN U-01"
   - "UNKNOWN U-02"
@@ -100,6 +105,15 @@ uncertainty_markers:
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-01"
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-02"
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
+  - "DOCUMENTATION_CODE_CONFLICT DCC-11"
+  - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+  - "COMPONENT_OWNERSHIP_UNCLEAR COU-01"
+  - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+  - "API_CONTRACT_UNCLEAR ACU-01"
+  - "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
+  - "DUPLICATED_CONTRACT DC-01"
+  - "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-02"
+  - "UI_BEHAVIOR_UNVERIFIED UBU-01"
 ---
 
 # Source Register
@@ -167,17 +181,25 @@ The Phase 1 baseline entries were checked against commit `49b2c1886168497e99f708
 
 | Path | Source type | Information derived | Reliability | Verified commit | Notes and conflicts |
 |---|---|---|---|---|---|
-| `frontend/src/main.tsx` | Frontend entry | React root, providers, router startup and styles | PRIMARY | `49b2c188` | Canonical UI entry point. |
-| `frontend/src/router.tsx` | Route configuration | Public, authenticated and organization-scoped UI routes | PRIMARY | `49b2c188` | Supports inferred Workspace terminology. |
-| `frontend/src/components/AppShell.tsx` | Layout component | Navigation shell and organization-aware presentation | PRIMARY | `49b2c188` | Check router and store for state ownership. |
-| `frontend/src/components/RequireAuth.tsx` | Route guard | Client-side authenticated-route handling | PRIMARY | `49b2c188` | Not a substitute for backend authorization. |
-| `frontend/src/stores/useAppStore.ts` | Zustand store | Shared authentication, organization and application state | PRIMARY | `49b2c188` | The only current file in `frontend/src/stores`. |
-| `frontend/src/services/api.ts` | API client | HTTP methods, headers, endpoint calls and error handling | PRIMARY | `49b2c188` | Pair with `frontend/src/types/api.ts`. |
-| `frontend/src/types/api.ts` | Type declarations | Frontend view of backend request and response shapes | PRIMARY | `49b2c188` | May lag backend unless validated by tests or generated contracts. |
-| `frontend/src/i18n` | i18n module directory | Locale selection, messages, direction and provider behavior | PRIMARY | `49b2c188` | Current source conflicts with details in `docs/I18N.md`; DCC-02. |
-| `frontend/src/pages` | Page component directory | Implemented UI surfaces for CMS, SaaS and Marketplace features | PRIMARY | `49b2c188` | UI presence does not prove complete backend or deployment readiness. |
-| `frontend/vite.config.ts` | Build configuration | Vite development/build behavior | PRIMARY | `49b2c188` | Use with package scripts. |
-| `frontend/vitest.config.ts` | Test configuration | Frontend test environment and setup | PRIMARY | `49b2c188` | Test cases are in page-level `.test.tsx` files. |
+| `frontend/package.json` | Frontend manifest | One package boundary, runtime/testing dependencies, and scripts | PRIMARY | `7d25e4cb` | React Hook Form, resolvers, and Zod are declared but have no verified source import; DCC-11/DU-02. |
+| `frontend/src/main.tsx` | Frontend entry | React root, providers, router startup and styles | PRIMARY | `7d25e4cb` | Canonical UI entry point. |
+| `frontend/src/router.tsx` | Route configuration | Public login, protected parent, eager feature routes, and wildcard redirect | PRIMARY | `7d25e4cb` | No lazy route, loader, action, or route error element was found. |
+| `frontend/src/components/AppShell.tsx` | Layout component | Navigation, organization/locale controls, health, identity, logout, and outlet | PRIMARY | `7d25e4cb` | Static menu is not filtered by feature permission. |
+| `frontend/src/components/RequireAuth.tsx` | Route guard | Token-presence route admission | PRIMARY | `7d25e4cb` | Not a substitute for backend authorization; ABV-01. |
+| `frontend/src/components/DynamicForm.tsx` | Shared form component | Field-schema-driven entry controls and value conversion | PRIMARY | `7d25e4cb` | Uses controlled inputs/native required, not React Hook Form or Zod. |
+| `frontend/src/hooks/useHealth.ts` | Shared hook | Health/readiness polling and local async state | PRIMARY | `7d25e4cb` | No request abort; Shell and Dashboard can both instantiate it. |
+| `frontend/src/stores/useAppStore.ts` | Zustand store | Shared authentication, organization and shell state | PRIMARY | `7d25e4cb` | Coordinates with API module variables and browser storage under SOU-01. |
+| `frontend/src/services/api.ts` | API client | HTTP methods, headers, endpoint calls, uploads, and error handling | PRIMARY | `7d25e4cb` | No automatic refresh/retry, cancellation, or runtime schema validation. |
+| `frontend/src/types/api.ts` | Type declarations | Frontend view of backend request and response shapes | PRIMARY | `7d25e4cb` | Manual duplicated contract under ACU-01/DC-01/DDU-03. |
+| `frontend/src/i18n` | i18n module directory | Locale selection, messages, fallback, direction, and provider behavior | PRIMARY | `7d25e4cb` | Current source is broader than `docs/I18N.md` coverage text; DCC-02. |
+| `frontend/src/pages` | Page component directory | Implemented UI surfaces and dominant feature composition boundaries | PRIMARY | `7d25e4cb` | Marketplace, Pages, and Organization have broad responsibility. |
+| `frontend/src/pages/PagesPage.tsx` | Route page and editor | Visual Page Builder, local preview, persistence, versions, workflow, template and preview handoff | PRIMARY | `7d25e4cb` | Confirms implemented builder; local and WebSocket previews are distinct. |
+| `frontend/src/styles/index.css` | Global stylesheet | Semantic UI classes, responsive breakpoints, RTL behavior, and Tailwind import | PRIMARY | `7d25e4cb` | No formal token/design-system boundary; COU-01. |
+| `frontend/vite.config.ts` | Build configuration | React/Tailwind plugins and development server | PRIMARY | `7d25e4cb` | No proxy, alias, explicit route split, or bundle budget. |
+| `frontend/vitest.config.ts` and `frontend/src/test/setup.ts` | Test configuration | jsdom and jest-dom test environment | PRIMARY | `7d25e4cb` | Test cases are page-level. |
+| `frontend/src/pages/*.test.tsx` | Frontend tests | Dashboard, Pages shell, and selected Marketplace behavior | PRIMARY | `7d25e4cb` | Three files and 14 observed cases; no coverage artifact. |
+| `frontend/Dockerfile`, `frontend/Dockerfile.prod`, `frontend/nginx.conf` | Packaging and static-host configuration | Development Vite image, production-like Nginx image, SPA fallback | PRIMARY | `7d25e4cb` | Packaging capability is not deployment proof. |
+| `.github/workflows/frontend-ci.yml` | CI workflow | Node 22 install, lint, typecheck, test, and build gates | PRIMARY | `7d25e4cb` | Docker images use Node 24; supported matrix remains unknown. |
 
 ## Database Sources
 
@@ -328,11 +350,26 @@ The following sources were inspected at commit `debde2021c029d1827abaa38bcc32c68
 | `backend/src/config.rs` | Exact environment contract, defaults, validation, and configuration tests | PRIMARY | `debde202` | Secret names may be documented; secret values must not be copied. |
 | `backend/src/state.rs` | Exact application-state composition and preview-channel lifecycle | PRIMARY | `debde202` | Preview channels are process-local and not stored in Redis. |
 | `.github/workflows/backend-ci.yml` | Explicit format, lint, and test commands plus CI PostgreSQL/Redis services | PRIMARY | `debde202` | No coverage report or separate end-to-end suite is defined here. |
-| `backend/migrations` | Supporting persistence, enum, constraint, and RLS evidence | PRIMARY | `debde202` | Detailed schema documentation is deferred to Phase 4. |
+| `backend/migrations` | Supporting persistence, enum, constraint, and RLS evidence | PRIMARY | `debde202` | Detailed schema documentation is deferred to Phase 5. |
+
+## Phase 4 Frontend-Specific Verification
+
+The following evidence was inspected at commit `7d25e4cbc53284a78033478e2681d8e9ebeb2fb1` for the Phase 4 application and feature catalogs, routing, layout/components, state, API integration, access cues, forms, styling, failures, Page Builder, build, tests, and risks:
+
+| Evidence group | Frontend information derived | Reliability | Notes |
+|---|---|---|---|
+| Manifest, lockfile, Vite, TypeScript, ESLint, Vitest | Package boundary, dependency/tool versions, scripts, strict build, lint/test behavior | PRIMARY | Declared dependencies do not establish source usage. |
+| `main.tsx`, `router.tsx`, shared components and hook | Root/provider order, eager routes, protected shell, navigation, shared health/form/status behavior | PRIMARY | Client admission and role cues are not backend authorization. |
+| Store, API client, and API types | State persistence, header context, request/error behavior, manual contracts | PRIMARY | SOU-01, ACU-01, DC-01, and DDU-03 apply. |
+| All route pages | Thirteen significant feature responsibilities, UI composition, local state, access cues, and failure handling | PRIMARY | Catalog groups by responsibility rather than creating one feature per file. |
+| Three page test files | Selected jsdom behavior and major coverage gaps | PRIMARY | Coverage percentage remains unknown. |
+| Global CSS, i18n, and font assets | Semantic styling, responsive intent, locale/fallback, and LTR/RTL behavior | PRIMARY | Runtime browser/accessibility quality remains UBU-01. |
+| Dockerfiles, Nginx, frontend CI | Build/package capability, SPA fallback, and validation gates | PRIMARY | Actual deployment state remains ISU-03. |
+| `docs/I18N.md` and Phase Zero frontend inventories | Earlier intended/current narratives | SUPPORTING_OR_CONFLICTING | DCC-02 and DCC-11 record narrowed conflicts. |
 
 ## Conflict Handling
 
-The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero documentation audit. When a registered narrative or diagram conflicts with implementation evidence:
+The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero documentation audit and add `DCC-11` for the unsupported React Hook Form/Zod source-usage claim. When a registered narrative or diagram conflicts with implementation evidence:
 
 1. Prefer current executable code, migrations, manifests, configuration, workflows, and Git state.
 2. Keep the conflicting source registered for historical context.
@@ -361,3 +398,8 @@ The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero
 - [Backend Documentation](../backend/README.md)
 - [Backend Module Catalog](../backend/module-catalog.md)
 - [Backend Testing Map](../backend/testing-map.md)
+- [Frontend Architecture](../frontend/README.md)
+- [Frontend Application Catalog](../frontend/application-catalog.md)
+- [Frontend Feature Catalog](../frontend/feature-catalog.md)
+- [Frontend Testing Map](../frontend/testing-map.md)
+- [Frontend Risks](../frontend/frontend-risks.md)

@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "observed"
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/main.rs"
@@ -27,6 +27,9 @@ primary_sources:
   - "frontend/src/router.tsx"
   - "frontend/src/services/api.ts"
   - "frontend/src/stores/useAppStore.ts"
+  - "frontend/src/components/AppShell.tsx"
+  - "frontend/src/pages/PagesPage.tsx"
+  - "frontend/src/i18n/I18nProvider.tsx"
 related_documents:
   - "architecture/README.md"
   - "architecture/overview.md"
@@ -35,16 +38,28 @@ related_documents:
   - "architecture/dependency-model.md"
   - "architecture/integration-points.md"
   - "architecture/architecture-risks.md"
+  - "frontend/routing.md"
+  - "frontend/state-management.md"
+  - "frontend/api-client.md"
+  - "frontend/page-builder.md"
 related_diagrams:
   - "architecture/diagrams/backend-request-flow.mmd"
   - "architecture/diagrams/frontend-backend-flow.mmd"
   - "architecture/diagrams/system-context.mmd"
+  - "frontend/diagrams/frontend-routing-flow.mmd"
+  - "frontend/diagrams/frontend-state-flow.mmd"
+  - "frontend/diagrams/frontend-api-flow.mmd"
+  - "frontend/diagrams/page-builder-flow.mmd"
 uncertainty_markers:
   - "UNKNOWN U-08"
   - "NEEDS_OWNER_CONFIRMATION NOC-01"
   - "NEEDS_OWNER_CONFIRMATION NOC-09"
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-03"
   - "IMPLEMENTATION_STATUS_UNCLEAR ISU-01"
+  - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+  - "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
+  - "API_CONTRACT_UNCLEAR ACU-01"
+  - "ROUTING_BEHAVIOR_UNCLEAR RBU-01"
 ---
 
 # Runtime Flows
@@ -59,6 +74,9 @@ uncertainty_markers:
 | Authentication request | Login or protected bearer request through auth routes/middleware | Credentials or JWT; user and claims data | Password/JWT verification; invalid credentials/token rejected | `backend/src/routes/auth.rs`; `middleware/auth.rs`; `services/jwt.rs`; `services/password.rs` | High; [Backend Request Flow](diagrams/backend-request-flow.mmd) |
 | Tenant request | Protected request with token and organization header | Claims, organization ID, membership, rate/quota state, `TenantContext` | Membership, rate, and quota checks; Redis/DB failure can reject request | `backend/src/middleware/tenant.rs`; `backend/src/services/quota.rs`; `backend/src/services/rate_limit.rs`; `backend/src/services/rls.rs` | High; [Backend Request Flow](diagrams/backend-request-flow.mmd) |
 | Frontend-to-backend request | Page calls `frontend/src/services/api.ts` | Typed request data, tokens, organization header, JSON/multipart response | Client guards are advisory; backend enforces auth/tenant; error JSON becomes client error; no automatic refresh retry verified | `frontend/src/services/api.ts`; `frontend/src/stores/useAppStore.ts`; `frontend/src/types/api.ts`; `backend/src/routes/mod.rs` | High; [Frontend-Backend Flow](diagrams/frontend-backend-flow.mmd) |
+| Frontend navigation | Browser router matches login or protected child | Stored token, AppShell, eager page, optional workspace context | Missing token redirects to login; unmatched protected path redirects home; no route error boundary | `frontend/src/router.tsx`; `components/RequireAuth.tsx`; `components/AppShell.tsx` | High; [Frontend Routing Flow](../frontend/diagrams/frontend-routing-flow.mmd) |
+| Frontend organization switch | Shell or workspace redirect selects membership | Zustand, API module organization ID, browser storage, remounted route page | Unknown ID is ignored; page refetch depends on remount/effects; backend validates header membership | `useAppStore.ts`; `AppShell.tsx`; `WorkspaceRedirectPage.tsx` | High; [Frontend State Flow](../frontend/diagrams/frontend-state-flow.mmd) |
+| Frontend Page Builder | User changes palette/canvas/props or page actions | Local page JSON draft, dnd-kit, component registry, page/Marketplace APIs, versions | Save/template/workflow errors are page-local; preview URL carries session query context | `frontend/src/pages/PagesPage.tsx`; page/API types | High; [Page Builder Flow](../frontend/diagrams/page-builder-flow.mmd) |
 | Database access | Handler/service issues SQLx call or requests RLS-scoped connection/transaction | SQL parameters, organization/user session context, rows and transaction results | Ownership checks and RLS context where used; SQL/connection failure maps through `AppError` | Route/service queries; `backend/src/services/rls.rs`; migrations | High for mechanisms, medium for complete coverage; [Backend Request Flow](diagrams/backend-request-flow.mmd) |
 | Error propagation | Handler, service, database, cache, file, or provider operation returns error | `AppError`, status, stable JSON error/message | Error mapping prevents raw internal response by default; exact source error handling varies | `backend/src/error.rs`; route/service call sites | High; [Backend Request Flow](diagrams/backend-request-flow.mmd) |
 | Configuration loading | Backend process constructs `Config` from environment | Server, DB, Redis, JWT, CORS, upload, email, Stripe, and related settings | Missing/invalid required values fail configuration or later integration use; secrets are not documented here | `backend/src/config.rs`; environment templates | High for repository capability, unknown for production values; [Container View](diagrams/container-view.mmd) |
@@ -124,6 +142,54 @@ The presence of tenant middleware does not prove every downstream query uses the
 
 The central client parses non-success responses into frontend errors. No verified automatic refresh-and-retry interceptor was found; refresh is an explicit API operation.
 
+## Frontend Startup and Navigation Flow
+
+1. The browser loads `index.html` and the Vite entry bundle.
+2. `main.tsx` mounts a strict React root, then `I18nProvider`, then the router.
+3. The i18n provider resolves stored/browser/default locale and later synchronizes document `lang`, `dir`, and locale storage.
+4. The router renders `/login` directly or passes any other route through `RequireAuth`.
+5. The guard renders `AppShell` only when the Zustand access-token string is present; it does not verify or refresh the token.
+6. The shell renders static navigation, organization and locale selectors, readiness, identity, logout, and the matched eager page.
+7. Page effects load route-owned server data.
+8. An unmatched protected child redirects to `/`; there is no dedicated route error/not-found component.
+
+The production-like Nginx configuration provides history fallback, but equivalent behavior in an actual host remains `ROUTING_BEHAVIOR_UNCLEAR RBU-01`.
+
+## Frontend Organization Transition Flow
+
+1. Login/session restoration supplies membership summaries and a selected organization.
+2. The shell selector changes organization by ID, or `/workspace/:slug` resolves a membership and redirects to `/`.
+3. The Zustand action validates the ID against memberships.
+4. The action updates the API module's active organization, persistent storage, and reactive state.
+5. `AppShell` changes the key on its main route area, remounting the page subtree.
+6. Page effects reload data; authenticated client methods add the new organization header.
+7. Backend tenant middleware remains authoritative for membership and scope.
+
+State is distributed across Zustand, API module variables, and browser storage under `SOU-01`. No cross-tab storage synchronization or shared tenant-keyed server cache was found.
+
+## Frontend API Request Flow
+
+1. A route page or shared hook calls a method on the central API object.
+2. The request helper serializes JSON or passes `FormData`, opts into browser credentials, and conditionally attaches bearer and organization headers.
+3. The backend handles the request under its public, authenticated, or tenant route stack.
+4. A successful body is parsed as JSON and cast to the handwritten TypeScript type.
+5. A non-success body is reduced to status plus message and thrown as `ApiError`.
+6. The caller normally places the result, loading state, or error message in route-local state.
+
+No automatic refresh/replay, abort, timeout, retry, query cache, or runtime response validation was found. Manual client/server contract duplication remains `ACU-01`/`DC-01`/`DDU-03`.
+
+## Frontend Page Builder Flow
+
+1. `/pages` loads pages, system components, Marketplace components, and Marketplace installations.
+2. System and Marketplace definitions form the palette; active design templates form the template list.
+3. The user creates or selects a page draft, then adds, selects, edits, removes, or reorders component nodes.
+4. Every mutation normalizes page JSON, marks the draft dirty, and updates a local React preview.
+5. New pages require manual first save; existing dirty pages schedule save after ten seconds.
+6. Page actions can transition workflow, load/restore versions, preview/import templates, or copy a backend preview WebSocket URL.
+7. The in-page local preview does not open that WebSocket and does not prove public-renderer parity.
+
+See [Frontend Page Builder](../frontend/page-builder.md) for implemented and unverified capabilities.
+
 ## Public Delivery Flow
 
 1. A public consumer requests delivered content.
@@ -165,7 +231,7 @@ No durable queue, independent worker, or automatic retry scheduler was found. Pr
 
 ## Page Preview Flow
 
-1. The client opens a WebSocket using preview authorization and organization parameters.
+1. `PagesPage` can construct and copy a WebSocket URL containing preview authorization and organization parameters; an external preview client opens it.
 2. The backend authorizes access to the page and locates or creates a broadcast channel in `AppState`.
 3. Editor changes publish messages to the process-local channel.
 4. Connected preview clients receive broadcast messages.
@@ -181,3 +247,7 @@ The listener responds to supported process signals and performs graceful server 
 - [Backend Request Flow](diagrams/backend-request-flow.mmd)
 - [Frontend-Backend Flow](diagrams/frontend-backend-flow.mmd)
 - [System Context](diagrams/system-context.mmd)
+- [Frontend Routing Flow](../frontend/diagrams/frontend-routing-flow.mmd)
+- [Frontend State Flow](../frontend/diagrams/frontend-state-flow.mmd)
+- [Frontend API Flow](../frontend/diagrams/frontend-api-flow.mmd)
+- [Page Builder Flow](../frontend/diagrams/page-builder-flow.mmd)

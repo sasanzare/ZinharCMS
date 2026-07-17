@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - ".gitignore"
@@ -30,6 +30,11 @@ related_documents:
   - "backend/README.md"
   - "backend/module-catalog.md"
   - "backend/dependency-map.md"
+  - "frontend/README.md"
+  - "frontend/application-catalog.md"
+  - "frontend/feature-catalog.md"
+  - "frontend/feature-boundaries.md"
+  - "frontend/testing-map.md"
 uncertainty_markers:
   - "UNKNOWN U-01"
   - "UNKNOWN U-04"
@@ -44,6 +49,9 @@ uncertainty_markers:
   - "NEEDS_OWNER_CONFIRMATION NOC-17"
   - "DOCUMENTATION_CODE_CONFLICT DCC-09"
   - "INFERRED_FROM_STRUCTURE"
+  - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+  - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+  - "API_CONTRACT_UNCLEAR ACU-01"
 ---
 
 # Repository Map
@@ -155,6 +163,10 @@ Start with the Phase 3 [Backend Documentation](../backend/README.md). Use the [M
 | Assets | ../../frontend/public | Static browser assets, currently including the Vazirmatn font |
 | Tests | ../../frontend/src/pages/DashboardPage.test.tsx; ../../frontend/src/pages/PagesPage.test.tsx; ../../frontend/src/pages/MarketplacePage.test.tsx; ../../frontend/src/test/setup.ts | Vitest/Testing Library in jsdom |
 | Build configuration | ../../frontend/package.json; ../../frontend/vite.config.ts; ../../frontend/tsconfig.json; ../../frontend/tsconfig.app.json; ../../frontend/tsconfig.node.json; ../../frontend/eslint.config.js; ../../frontend/vitest.config.ts; ../../frontend/Dockerfile; ../../frontend/Dockerfile.prod; ../../frontend/nginx.conf | CI uses Node 22; Dockerfiles use Node 24 |
+| Frontend OKF entry | ../frontend/README.md | Phase 4 current-state frontend architecture and reading order |
+| Frontend application map | ../frontend/application-catalog.md; ../frontend/diagrams/frontend-application-map.mmd | One verified management SPA; source directories are not separate applications |
+| Frontend feature ownership | ../frontend/feature-catalog.md; ../frontend/feature-boundaries.md; ../frontend/features | Thirteen significant features with route, source, state, API, access, and test ownership |
+| Frontend risks and tests | ../frontend/frontend-risks.md; ../frontend/testing-map.md | Evidence-based risk register and observed three-file test surface |
 
 ## 5. Database Navigation
 
@@ -236,7 +248,7 @@ Start with backend/src/routes/mod.rs, then the nearest domain route module, AppE
 
 ### I need to add a frontend page.
 
-Inspect frontend/src/router.tsx, frontend/src/components/AppShell.tsx, the nearest page under frontend/src/pages, frontend/src/services/api.ts, frontend/src/types/api.ts, frontend/src/stores/useAppStore.ts, frontend/src/i18n/messages.ts, frontend/src/styles/index.css, existing page tests, and frontend build/test configuration.
+Start with [Frontend Routing](../frontend/routing.md), [Pages and Layouts](../frontend/pages-and-layouts.md), and the owning [Feature Catalog](../frontend/feature-catalog.md) entry. Then inspect frontend/src/router.tsx, frontend/src/components/AppShell.tsx, the nearest page under frontend/src/pages, frontend/src/services/api.ts, frontend/src/types/api.ts, frontend/src/stores/useAppStore.ts, frontend/src/i18n/messages.ts, frontend/src/styles/index.css, existing page tests, and frontend build/test configuration.
 
 ### I need to modify a database entity.
 
@@ -244,7 +256,7 @@ Inspect the complete backend/migrations sequence affecting the entity, SQL queri
 
 ### I need to understand a module.
 
-Use [Navigation Guide](navigation-guide.md), identify the capability in [Project Overview](overview.md#4-major-capabilities), follow route registration to the relevant handler/service/migration/frontend page, then read tests and current documentation. The formal backend module catalog is planned for Phase 3.
+Use [Navigation Guide](navigation-guide.md), identify the capability in [Project Overview](overview.md#4-major-capabilities), then select the owning [Backend Module Catalog](../backend/module-catalog.md) or [Frontend Feature Catalog](../frontend/feature-catalog.md) entry. Follow route registration to the relevant handler/service/migration/frontend page, then read tests and current documentation.
 
 ### I need to debug a failing test.
 
@@ -277,3 +289,7 @@ The following paths should not normally be used as project-knowledge sources:
 - [OKF Entry Point](../README.md)
 - [Machine-Readable Index](../index.yaml)
 - [Source Register](../references/source-register.md)
+- [Frontend Architecture](../frontend/README.md)
+- [Frontend Application Catalog](../frontend/application-catalog.md)
+- [Frontend Feature Catalog](../frontend/feature-catalog.md)
+- [Frontend Testing Map](../frontend/testing-map.md)

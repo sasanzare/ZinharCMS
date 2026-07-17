@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/lib.rs"
@@ -22,6 +22,9 @@ primary_sources:
   - "frontend/src/router.tsx"
   - "frontend/src/services/api.ts"
   - "frontend/src/types/api.ts"
+  - "frontend/src/stores/useAppStore.ts"
+  - "frontend/src/components/AppShell.tsx"
+  - "frontend/src/pages"
 related_documents:
   - "architecture/README.md"
   - "architecture/overview.md"
@@ -32,10 +35,16 @@ related_documents:
   - "backend/dependency-map.md"
   - "backend/module-boundaries.md"
   - "backend/shared-infrastructure.md"
+  - "frontend/feature-boundaries.md"
+  - "frontend/state-management.md"
+  - "frontend/api-client.md"
+  - "frontend/frontend-risks.md"
 related_diagrams:
   - "architecture/diagrams/dependency-direction.mmd"
   - "architecture/diagrams/container-view.mmd"
   - "backend/diagrams/backend-dependency-flow.mmd"
+  - "frontend/diagrams/frontend-state-flow.mmd"
+  - "frontend/diagrams/frontend-api-flow.mmd"
 uncertainty_markers:
   - "INFERRED_FROM_STRUCTURE"
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
@@ -45,6 +54,10 @@ uncertainty_markers:
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-05"
+  - "STATE_OWNERSHIP_UNCLEAR SOU-01"
+  - "STATE_OWNERSHIP_UNCLEAR SOU-02"
+  - "API_CONTRACT_UNCLEAR ACU-01"
+  - "DUPLICATED_CONTRACT DC-01"
 ---
 
 # Dependency Model
@@ -118,11 +131,29 @@ The dominant frontend direction is:
 1. `main.tsx` initializes i18n and the router;
 2. the router depends on guards, layout, and pages;
 3. pages depend on shared components, state, i18n, API methods, and API types;
-4. the Zustand store depends on API types and exposes setters used by the API module;
+4. the Zustand store depends on API types and imports API token/organization setters to synchronize transport state;
 5. the API module depends on types, browser storage, and `fetch`;
 6. the API module calls the backend over HTTP or WebSocket URLs.
 
-All observed `fetch` calls are centralized in the API module. However, shared token and organization state crosses module boundaries through both the store and `localStorage`, so ownership of session persistence is distributed.
+All observed `fetch` calls are centralized in the API module. The store is the reactive session/organization owner, while API module variables drive headers and `localStorage` survives reloads. Correct synchronization depends on callers using store actions and API setters, so ownership remains `STATE_OWNERSHIP_UNCLEAR SOU-01`.
+
+Route pages directly import shared components, i18n, the store, API methods, and manual API types. They also own most server responses and mutation state locally. There is no feature package or query-cache layer enforcing inward dependencies, tenant-keyed cache ownership, invalidation, cancellation, or request deduplication (`STATE_OWNERSHIP_UNCLEAR SOU-02`).
+
+The application shell integrates the store, health hook, i18n, API logout, routing, and shared presentation. `PagesPage` depends on page, component, Marketplace adapter, Marketplace installation, store, dnd-kit, and clipboard boundaries. `MarketplacePage` depends on one broad client group and global/member role state. These are verified dependency concentration points, not independently versioned components.
+
+### Frontend Dependency Register
+
+| Consumer | Direct dependencies | Direction status |
+|---|---|---|
+| Root | React DOM, i18n provider, router, global CSS | Expected inward composition |
+| Router | Guard, shell through guard, all route pages | Central and eager; no lazy boundary |
+| AppShell | Router, Zustand, health hook, i18n, API logout, shared status | Cross-cutting responsibility overlap |
+| Route pages | Components, i18n, store when needed, API, API types, global CSS classes | Observed but not feature-enforced |
+| Zustand store | API types, API state setters, browser storage | Mixed state/transport ownership under SOU-01 |
+| API client | API types, browser storage, `fetch`, build-time base URL | Central transport boundary |
+| Browser types | Handwritten TypeScript declarations | Duplicated backend contract under ACU-01/DC-01/DDU-03 |
+| Page Builder | dnd-kit, store, pages/components/Marketplace APIs, page JSON types | Overlapping Pages/Marketplace/workflow boundary |
+| Localization | React context, message dictionaries, browser storage, document root | Explicit internal module boundary |
 
 ## Runtime Dependency Semantics
 
@@ -148,8 +179,14 @@ These rules describe review constraints derived from current evidence and risks;
 - Treat `Claims` and `TenantContext` as cross-cutting contracts whose ownership needs an explicit decision.
 - Verify Rust route types and TypeScript client types together before duplicating or changing a contract.
 - Route new frontend HTTP calls through the central API client unless an explicit, documented boundary requires otherwise.
+- Keep token and active-organization changes on the synchronized store/API setter path until ownership is deliberately changed.
+- Key any future shared server-state cache by organization and define invalidation, cancellation, logout clearing, and tenant-switch behavior.
+- Do not infer backend compatibility from TypeScript compilation; verify or generate both sides of the contract.
+- Treat global CSS classes and page-local helper components as real dependencies even though imports do not expose every style edge.
 - Review every new direct SQL path for organization ownership, transaction scope, and RLS behavior.
 - Treat spawned external side effects as non-durable unless a durable mechanism is explicitly implemented.
 - Update architecture documents, diagrams, risks, decisions, and `okf/index.yaml` when adding a major dependency or changing direction.
 
 For the backend-only dependency inventory, including module-to-module, shared-state, persistence, and external edges, use the [Backend Dependency Map](../backend/dependency-map.md) and [Backend Dependency Flow Diagram](../backend/diagrams/backend-dependency-flow.mmd).
+
+For the frontend-only dependency inventory, use [Frontend Feature Boundaries](../frontend/feature-boundaries.md), [State Management](../frontend/state-management.md), [API Client](../frontend/api-client.md), [Frontend State Flow](../frontend/diagrams/frontend-state-flow.mmd), and [Frontend API Flow](../frontend/diagrams/frontend-api-flow.mmd).

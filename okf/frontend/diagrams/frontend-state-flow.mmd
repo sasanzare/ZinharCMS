@@ -1,0 +1,34 @@
+flowchart LR
+    User["User interaction"]
+    Storage["localStorage<br/>tokens, user, organizations, active organization, locale"]
+    Store["Zustand useAppStore<br/>session, organization, sidebar"]
+    ApiState["API module variables<br/>access token and organization"]
+    I18n["I18n React context<br/>locale and direction"]
+    Shell["AppShell and RequireAuth"]
+    Page["Route page local state<br/>server data, forms, loading, errors"]
+    Builder["Page Builder local draft<br/>dirty and autosave state"]
+    API["Central API request"]
+    Backend["Backend state"]
+
+    Storage --> Store
+    Storage --> ApiState
+    Storage --> I18n
+    User --> Store
+    User --> I18n
+    User --> Page
+    User --> Builder
+    Store --> Storage
+    Store --> ApiState
+    Store --> Shell
+    I18n --> Shell
+    I18n --> Page
+    Store --> Page
+    Page --> API
+    Builder --> API
+    ApiState --> API
+    API --> Backend
+    Backend --> API
+    API --> Page
+    API --> Builder
+    Builder -.->|delayed save for existing pages| Backend
+    Store -.->|active organization key remounts route page| Page

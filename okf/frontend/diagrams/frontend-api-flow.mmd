@@ -1,0 +1,28 @@
+sequenceDiagram
+    actor User
+    participant Page as Route Page
+    participant Store as Zustand Store
+    participant Client as Central API Client
+    participant Storage as Browser Storage
+    participant Backend as Rust API
+
+    User->>Page: Trigger load or mutation
+    Page->>Client: Call typed client method
+    Client->>Storage: Use synchronized token and organization context
+    alt Authenticated client method
+        Client->>Backend: HTTP request with bearer and organization headers when available
+    else Public client method
+        Client->>Backend: HTTP request without bearer requirement
+    end
+    alt Successful JSON response
+        Backend-->>Client: JSON response
+        Client-->>Page: Generic result cast to manual TypeScript type
+        Page-->>User: Render data or success status
+    else Non-success response
+        Backend-->>Client: Error status and response body
+        Client-->>Page: Throw ApiError with status and message
+        Page-->>User: Render page-local error status
+    end
+
+    Note over Page,Client: No automatic refresh retry, shared server-state cache, or runtime response validation was found
+    Note over Store,Storage: Store actions synchronize reactive state, API module state, and localStorage

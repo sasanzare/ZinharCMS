@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "observed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/main.rs"
@@ -21,6 +21,10 @@ primary_sources:
   - "frontend/src/router.tsx"
   - "frontend/src/services/api.ts"
   - "frontend/src/stores/useAppStore.ts"
+  - "frontend/src/components"
+  - "frontend/src/pages"
+  - "frontend/src/i18n"
+  - "frontend/src/styles/index.css"
 related_documents:
   - "architecture/README.md"
   - "architecture/overview.md"
@@ -33,17 +37,24 @@ related_documents:
   - "backend/README.md"
   - "backend/module-catalog.md"
   - "backend/shared-infrastructure.md"
+  - "frontend/README.md"
+  - "frontend/application-catalog.md"
+  - "frontend/feature-catalog.md"
+  - "frontend/component-architecture.md"
 related_diagrams:
   - "architecture/diagrams/container-view.mmd"
   - "architecture/diagrams/backend-request-flow.mmd"
   - "architecture/diagrams/frontend-backend-flow.mmd"
   - "backend/diagrams/backend-module-map.mmd"
   - "backend/diagrams/application-state-composition.mmd"
+  - "frontend/diagrams/frontend-application-map.mmd"
 uncertainty_markers:
   - "INFERRED_FROM_CODE"
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-02"
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-03"
+  - "FEATURE_BOUNDARY_UNCLEAR FBU-01"
+  - "COMPONENT_OWNERSHIP_UNCLEAR COU-01"
 ---
 
 # Components and Responsibilities
@@ -63,7 +74,7 @@ uncertainty_markers:
 
 | Component | Type; runtime status; confidence | Source and entry point | Responsibility and exposed interfaces | Data, configuration, and main dependencies | Related tests and diagram | Future OKF phase |
 |---|---|---|---|---|---|---|
-| React administration SPA | UI application; implemented; `VERIFIED` | `frontend/src`; entry `frontend/src/main.tsx` | Browser routes, pages, state, presentation; exposes browser UI and backend requests | User/session/org browser state; Vite environment; depends on React, router, Zustand, i18n, central API client | Page tests and `frontend/src/test/setup.ts`; [Frontend-Backend Flow](diagrams/frontend-backend-flow.mmd) | Phase 4 frontend architecture |
+| React administration SPA | UI application; implemented; `VERIFIED` | `frontend/src`; entry `frontend/src/main.tsx` | Browser routes, pages, state, presentation; exposes browser UI and backend requests | User/session/org browser state; Vite environment; depends on React, router, Zustand, i18n, central API client | Page tests and `frontend/src/test/setup.ts`; [Frontend-Backend Flow](diagrams/frontend-backend-flow.mmd) | [Phase 4 Frontend Architecture](../frontend/README.md) |
 | Rust/Axum backend | Application; implemented; `VERIFIED` | `backend/src`; entry `backend/src/main.rs` | HTTP/WebSocket routing, identity, tenant enforcement, orchestration, persistence, integrations; exposes public/auth/tenant routes | All application data through PostgreSQL plus Redis/files/memory; environment config; depends on Axum, Tokio, SQLx, Redis and HTTP clients | Colocated `backend/src` tests; [Container View](diagrams/container-view.mmd), [Backend Request Flow](diagrams/backend-request-flow.mmd) | Phase 3 backend modules and Phase 6 API |
 | Authentication and tenant pipeline | Module/middleware; implemented; `HIGH` | `backend/src/middleware/auth.rs`; `backend/src/middleware/tenant.rs`; router attachment in `routes/mod.rs` | Verify bearer claims, organization membership, rate and quota context; exposes `Claims` and `TenantContext` to handlers | Users, organizations, memberships, rate and quota state; JWT/config; depends on PostgreSQL, Redis and services | Colocated middleware/service tests where present; [Backend Request Flow](diagrams/backend-request-flow.mmd) | Phase 7 security and Phase 8 tenancy |
 | PostgreSQL persistence | Infrastructure service; configured and required; `VERIFIED` | `backend/migrations`; initialized in `backend/src/main.rs` | Durable records, transactions, constraints, and RLS; exposes SQL through SQLx pool/connections | Application relational data; `DATABASE_URL`; depends on PostgreSQL runtime and migrations | Migration execution plus colocated query tests; [Container View](diagrams/container-view.mmd) | Phase 5 database |
@@ -136,7 +147,7 @@ The Marketplace runtime and adapters are separate service modules that validate 
 |---|---|
 | `frontend/src/main.tsx` | React root, providers, global styles, and router startup |
 | `frontend/src/router.tsx` | Route tree for public, authenticated, and organization-scoped pages |
-| `frontend/src/components` | Shared layout, authentication guards, workspace redirection, and reusable UI |
+| `frontend/src/components` | Shared shell, authentication guard, generated form, and status presentation |
 | `frontend/src/pages` | Feature-oriented screens for CMS, SaaS, and Marketplace capabilities |
 | `frontend/src/stores/useAppStore.ts` | Shared user, token, organization, and application state |
 | `frontend/src/services/api.ts` | Central HTTP request construction, authorization and organization headers, response parsing, and endpoint methods |
@@ -144,6 +155,21 @@ The Marketplace runtime and adapters are separate service modules that validate 
 | `frontend/src/i18n` | Locale messages, direction, and localization context |
 
 Feature pages depend on shared UI, the store, types, i18n, and the central API client. No separate frontend domain package or generated API SDK is present.
+
+## Phase 4 Frontend Component Detail
+
+| Component boundary | Primary paths | Verified responsibility | Status and deeper map |
+|---|---|---|---|
+| Management SPA | `frontend/`; `main.tsx` | One browser application, provider startup, bundle and static-host boundary | `EXPLICIT`; [Application Catalog](../frontend/application-catalog.md) |
+| Routing and protected layout | `router.tsx`; `RequireAuth.tsx`; `AppShell.tsx` | Public login, token-presence admission, protected navigation/layout, eager page composition | `EXPLICIT` route tree; [Routing](../frontend/routing.md) |
+| Route pages | `frontend/src/pages` | Dominant feature UI, API orchestration, server data, drafts, loading, and errors | `OBSERVED` to `OVERLAPPING`; [Feature Catalog](../frontend/feature-catalog.md) |
+| Shared components and hook | `frontend/src/components`; `hooks/useHealth.ts` | Shell, guard, DynamicForm, StatusBadge, and health polling | `OBSERVED`; [Component Architecture](../frontend/component-architecture.md) |
+| State and persistence | `useAppStore.ts`; `I18nProvider.tsx`; API setters | Session/organization/shell, locale/direction, and transport context | Mixed ownership; [State Management](../frontend/state-management.md) |
+| Backend integration and contracts | `services/api.ts`; `types/api.ts` | Central fetch/multipart/error behavior and manual browser types | `OBSERVED`; contract authority unclear under ACU-01/DC-01 |
+| Page Builder | `PagesPage.tsx`; dnd-kit | Palette, sortable canvas, property editor, local preview, save/versions/workflow/template/preview handoff | `OVERLAPPING`; [Page Builder](../frontend/page-builder.md) |
+| Styling and localization | `styles/index.css`; `i18n`; font asset | Global semantic classes, responsive/RTL rules, locale selection and messages | Informal style system; [Styling](../frontend/styling-and-design-system.md) |
+
+Phase 4 found no separate public frontend application, design-system package, frontend feature packages, generated client, route-level lazy modules, Storybook, or Error Boundary. Absence from current source is not a statement about unobserved external systems or future intent.
 
 ## Missing Runtime Components
 

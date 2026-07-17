@@ -1,0 +1,58 @@
+flowchart TB
+    Browser["User browser"]
+
+    subgraph SPA["FE-APP-001: ZinharCMS Management SPA"]
+        Root["main.tsx<br/>React root and providers"]
+        Router["router.tsx<br/>Browser route composition"]
+        Guard["RequireAuth<br/>Token-presence admission"]
+        Shell["AppShell<br/>Navigation, organization, locale, health"]
+
+        subgraph Shared["Shared frontend platform"]
+            Components["Shared components<br/>Shell, guard, DynamicForm, StatusBadge"]
+            Store["Zustand store<br/>Session, organization, sidebar"]
+            I18n["i18n module<br/>Locale, messages, direction"]
+            Api["Central API client<br/>fetch, headers, errors"]
+            Types["Manual API types"]
+            Styles["Global CSS and Tailwind tooling"]
+        end
+
+        subgraph Features["Significant frontend features"]
+            Auth["Authentication and Session"]
+            Dashboard["Dashboard and Shell"]
+            Organizations["Organizations and Workspaces"]
+            Content["Content Modeling and Entries"]
+            Media["Media Library"]
+            Pages["Pages and Page Builder"]
+            Workflow["Editorial Workflow"]
+            Billing["Billing and Usage"]
+            Beta["Beta Operations"]
+            Marketplace["Marketplace"]
+            Settings["Settings and Webhooks"]
+            Localization["Localization and Direction"]
+        end
+    end
+
+    Backend["ZinharCMS Rust API"]
+    Provider["Provider URLs returned by backend"]
+    Preview["External WebSocket preview client"]
+
+    Browser --> Root
+    Root --> I18n
+    Root --> Router
+    Router --> Auth
+    Router --> Guard
+    Guard --> Shell
+    Shell --> Features
+    Features --> Components
+    Features --> Store
+    Features --> Api
+    Features --> Types
+    Features --> Styles
+    Localization --> I18n
+    Pages <--> Marketplace
+    Content <--> Workflow
+    Organizations --> Store
+    Api --> Backend
+    Billing --> Provider
+    Pages -.->|copies preview URL| Preview
+    Preview --> Backend
