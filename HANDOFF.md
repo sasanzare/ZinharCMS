@@ -5,19 +5,25 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-12 16:27 +01:00 (Europe/London)
+- **Last updated:** 2026-07-17 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
-- **Current branch:** `main`
+- **Current branch:** `docs/okf-phase-zero`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `87bc6d0e feat(marketplace): add v3 phase 14 beta readiness`
-- **Working tree at session start:** Clean Phase 14 commit `87bc6d0e`; Phase 15 launch readiness and GA operations docs, static backend contract tests, GA check script, Mermaid diagram, and traceability updates are now present in the uncommitted working tree.
+- **Latest relevant commit:** `61ed3b38 feat(marketplace): add v3 phase 15 launch readiness`
+- **Working tree at session start:** Clean branch `docs/okf-phase-zero` at `61ed3b38`; no staged or unstaged changes were present.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** V3 Marketplace Phase 15 - Launch Readiness and General Availability
-- **Current subphase:** 15.1 Launch Readiness and 15.2 General Availability implemented as an operational launch/GA readiness layer over existing Marketplace APIs
-- **Overall status:** Phase 15 is complete in local validation. The working tree contains unstaged/uncommitted Phase 15 backend static contract tests, GA check script, operations/release docs, diagram, traceability/index updates, and this handoff update. No stage or commit has been performed.
+- **Current phase:** OKF Phase Zero - complete
+- **Current subphase:** Reports authored and locally validated; awaiting authorization for Phase One
+- **Overall status:** All fourteen required English reports exist under `okf-bootstrap/`. Product code, APIs, database schema, runtime behavior, existing project documentation other than this mandatory handoff, Mermaid sources, and the final `okf/` directory remain unchanged.
 
 ## 2. Project Overview
+
+> **OKF Phase Zero override (2026-07-17 13:03 +01:00):** The repository-wide
+> knowledge inventory and implementation plan are complete in fourteen English
+> reports under `okf-bootstrap/`. This is the active source-of-truth checkpoint;
+> older V3 phase actions below are retained as history. No final `okf/` directory
+> or product implementation change was created.
 
 > **Phase 9 override (2026-07-10 21:20):** Phase 8 is committed at `b52f81c`.
 > The active objective is Phase 9 monetization. Migration `0022`, free/paid
@@ -117,6 +123,12 @@ External execution, runtime error telemetry, automated payout transfer
 execution, and arbitrary package execution remain deferred.
 
 ## 6. Current Objective
+
+> **OKF Phase Zero override (2026-07-17):** The user explicitly requested a
+> repository-wide, evidence-based OKF bootstrap analysis. Create only the
+> required English analytical reports under `okf-bootstrap/`, do not create the
+> final `okf/` directory, and do not change product behavior. The current Git
+> state at `61ed3b38` supersedes the older uncommitted Phase 15 wording below.
 
 > **Phase 15 override (2026-07-12 16:27):** Phase 14 is committed at `87bc6d0e`.
 > The active objective is V3 Marketplace Phase 15: 15.1 Launch Readiness
@@ -989,13 +1001,13 @@ active.
 
 ## 16. Exact Next Action
 
-Review the uncommitted Phase 15 diff and, only after explicit user
-authorization, stage and commit the Phase 15 implementation. Do not rerun
-completed validation unless review changes code, script, docs, or diagrams.
-Do not reset the database, invent a parallel Marketplace launch/GA API, or
-execute uploaded package code. Optional live GA smoke should use
-`scripts/marketplace-phase15-ga-check.ps1` only against a safe authenticated
-target environment.
+Wait for explicit owner authorization before starting OKF Phase One. Once
+authorized, create `okf/README.md` and `okf/index.yaml`, then create
+`okf/project/overview.md`, `repository-map.md`, `glossary.md`, and
+`documentation-map.md` plus the initial reference registers. Import every
+Phase Zero UNKNOWN, NEEDS_OWNER_CONFIRMATION, and DOCUMENTATION_CODE_CONFLICT
+marker without guessing an answer. Do not modify product code, APIs,
+migrations, or existing Mermaid files as part of that start.
 
 The older Phase 7 instruction below is historical and superseded by the Phase 8
 action above.
@@ -1011,6 +1023,22 @@ paid products, or create a commit. Record the actual migration `0020` and API
 results in this file before planning Phase 8 adapters.
 
 ## 17. Acceptance Criteria for the Current Phase
+
+### OKF Phase Zero acceptance override
+
+- [x] The repository, technology, architecture, module, documentation,
+  Mermaid, database, API, and convention inventories are complete.
+- [x] Knowledge gaps, owner questions, proposed OKF structure, and the
+  twelve-phase implementation plan are recorded.
+- [x] All fourteen required English files exist under `okf-bootstrap/`.
+- [x] UNKNOWN, NEEDS_OWNER_CONFIRMATION, and DOCUMENTATION_CODE_CONFLICT
+  registers are explicit and reproduced in the summary.
+- [x] The generated reports contain no Persian/Arabic script and no trailing
+  whitespace; the required file set and twelve summary sections were checked.
+- [x] Source counts were revalidated against Git, migrations, and route source.
+- [x] No final `okf/` directory, product code, API, migration, or Mermaid source
+  was created or changed.
+- [x] Git diff validation passed; no files were staged or committed.
 
 ### Phase 15 acceptance override
 
@@ -1429,3 +1457,32 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - **Exact Next Action:** review the uncommitted Phase 15 diff and only after
   explicit user authorization stage/commit it. Do not repeat completed Phase 15
   validation unless code, script, docs, or diagrams change.
+
+### 2026-07-17 13:03 +01:00 - OKF Phase Zero completed
+
+- Reconciled the stale handoff with Git source of truth on branch
+  `docs/okf-phase-zero` at `61ed3b38`; the session started from a clean working
+  tree.
+- Completed all fourteen required English analytical reports under
+  `okf-bootstrap/`, covering repository, technology, architecture, 22 modules,
+  66 Markdown documents, 43 Mermaid sources, 51 database tables, 140 route
+  declarations, conventions, knowledge gaps, the proposed OKF structure,
+  twelve implementation phases, owner questions, and the final summary.
+- Recorded 15 UNKNOWN items, 18 NEEDS_OWNER_CONFIRMATION decisions, and 10
+  DOCUMENTATION_CODE_CONFLICT items. None blocks repository-derived Phase One
+  work, but affected policy and production claims must remain draft.
+- Validation confirmed the exact 14-file set, non-empty English headings, no
+  Persian/Arabic script, no trailing whitespace, twelve numbered summary
+  sections, source counts, absence of the final `okf/` directory, and a clean
+  `git diff --check` result apart from a line-ending notice.
+- Parser-level and rendered validity of the 43 Mermaid sources remains UNKNOWN
+  because no Mermaid parser/renderer is installed; static declaration,
+  delimiter, and traceability checks passed.
+- Product tests were not rerun because Phase Zero changed only analytical
+  Markdown and this mandatory handoff. No staging, commit, reset, database
+  mutation, dependency installation, or internet access was used.
+- **Modified/untracked files:** `HANDOFF.md` and the fourteen files under
+  `okf-bootstrap/`.
+- **Exact Next Action:** wait for explicit owner authorization, then start OKF
+  Phase One with the root OKF index and project overview files listed in section
+  16. Do not start later phases automatically.
