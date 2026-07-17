@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "README.md"
@@ -30,6 +30,10 @@ related_documents:
   - "architecture/integration-points.md"
   - "architecture/architecture-risks.md"
   - "architecture/decisions/decision-register.md"
+  - "backend/README.md"
+  - "backend/overview.md"
+  - "backend/module-catalog.md"
+  - "backend/backend-risks.md"
 uncertainty_markers:
   - "UNKNOWN"
   - "NEEDS_OWNER_CONFIRMATION"
@@ -140,9 +144,17 @@ Recommended architecture reading order: [Overview](architecture/overview.md), [B
 
 Architecture diagram navigation: [System Context](architecture/diagrams/system-context.mmd), [Container View](architecture/diagrams/container-view.mmd), [Backend Request Flow](architecture/diagrams/backend-request-flow.mmd), [Frontend-Backend Flow](architecture/diagrams/frontend-backend-flow.mmd), and [Dependency Direction](architecture/diagrams/dependency-direction.mmd).
 
+## Phase 3 Backend Documents
+
+The [Backend Documentation](backend/README.md) entry point records the verified source-level backend structure, 18 significant modules, boundaries, dependencies, request handling, services and domain logic, persistence, application state, shared infrastructure, errors, tests, risks, and four backend-specific diagrams.
+
+Recommended backend reading order: [Backend Overview](backend/overview.md), [Module Catalog](backend/module-catalog.md), [Module Boundaries](backend/module-boundaries.md), [Dependency Map](backend/dependency-map.md), [Request Handling](backend/request-handling.md), [Services and Domain](backend/services-and-domain.md), [Persistence Access](backend/persistence-access.md), [Configuration and State](backend/configuration-and-state.md), [Shared Infrastructure](backend/shared-infrastructure.md), [Error Handling](backend/error-handling.md), [Testing Map](backend/testing-map.md), and [Backend Risks](backend/backend-risks.md).
+
+For a feature change, select the owning document from the [Module Catalog](backend/module-catalog.md) or browse [individual module documents](backend/modules/). The module map, request lifecycle, dependency flow, and state composition diagrams are indexed from the backend entry point.
+
 ## Using the Index
 
-Start with [index.yaml](index.yaml). Its documents list records every current Phase 1 and Phase 2 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
+Start with [index.yaml](index.yaml). Its documents list records every current Phase 1, Phase 2, and Phase 3 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
 
 Paths in index.yaml are relative to the okf directory unless a field explicitly identifies a repository-relative evidence path.
 
@@ -151,10 +163,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 1. Read the [Project Overview](project/overview.md).
 2. Use the [Repository Map](project/repository-map.md) to locate implementation and tests.
 3. Read the [Architecture Overview](architecture/overview.md) before changing a cross-cutting runtime or dependency boundary.
-4. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
-5. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
-6. Verify behavior against current code, migrations, configuration, and tests.
-7. Record conflicts instead of silently treating a historical document as current.
+4. Read the [Backend Overview](backend/overview.md) and owning [module document](backend/module-catalog.md) before changing backend behavior.
+5. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
+6. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
+7. Verify behavior against current code, migrations, configuration, and tests.
+8. Record conflicts instead of silently treating a historical document as current.
 
 ## For AI Coding Agents
 
@@ -162,10 +175,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 2. Read okf/project/overview.md.
 3. Use okf/project/repository-map.md to locate code.
 4. Read okf/architecture/overview.md and the relevant boundary, component, dependency, flow, integration, risk, or decision document.
-5. Read relevant specialized OKF documents before modifying a subsystem.
-6. Verify critical claims against source code.
-7. Update related OKF documents when implementation changes invalidate them.
-8. Never invent undocumented business rules.
+5. For backend work, read okf/backend/README.md, the catalog entry, and the owning module document.
+6. Read relevant specialized OKF documents before modifying a subsystem.
+7. Verify critical claims against source code.
+8. Update related OKF documents when implementation changes invalidate them.
+9. Never invent undocumented business rules.
 
 If a specialized OKF document is still planned, use [Navigation Guide - Missing Documentation](project/navigation-guide.md#when-documentation-is-missing), then consult current source, tests, existing documentation, and Phase Zero evidence.
 
@@ -173,7 +187,6 @@ If a specialized OKF document is still planned, use [Navigation Guide - Missing 
 
 | Target phase | Planned area |
 | ---: | --- |
-| 3 | Backend capability modules and dependency map |
 | 4 | Frontend routing, state, API client, builder, localization, and accessibility |
 | 5 | Database schema, relationships, RLS, constraints, migrations, and retention |
 | 6 | API route and contract inventory, errors, realtime/provider contracts, and OpenAPI coverage |
@@ -201,4 +214,4 @@ During a review:
 
 ## Phase Status
 
-Phase 1 established the OKF entry point, project overview, repository map, glossary, navigation guide, source register, and machine-readable index. Phase 2 establishes the verified system architecture, boundaries, components, dependency direction, runtime flows, integration points, risks, decisions, and five focused Mermaid diagrams. Detailed module, frontend, API, database, security, business, extension, and operations documentation remains planned for Phases 3 through 12.
+Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 is complete: it adds the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Frontend, database, API, security, business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 4 through 12.

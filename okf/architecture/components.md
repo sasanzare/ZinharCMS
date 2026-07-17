@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "observed"
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/main.rs"
@@ -30,10 +30,15 @@ related_documents:
   - "architecture/integration-points.md"
   - "architecture/architecture-risks.md"
   - "project/repository-map.md"
+  - "backend/README.md"
+  - "backend/module-catalog.md"
+  - "backend/shared-infrastructure.md"
 related_diagrams:
   - "architecture/diagrams/container-view.mmd"
   - "architecture/diagrams/backend-request-flow.mmd"
   - "architecture/diagrams/frontend-backend-flow.mmd"
+  - "backend/diagrams/backend-module-map.mmd"
+  - "backend/diagrams/application-state-composition.mmd"
 uncertainty_markers:
   - "INFERRED_FROM_CODE"
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
@@ -117,7 +122,7 @@ Global layers apply around the assembled router. Exact call-order claims should 
 
 The service directory holds reusable operations such as JWT and password support, RBAC, RLS, quota and rate limiting, health checks, caching, email, Stripe access, media processing, Marketplace policy/runtime/adapters, and related domain helpers. Services are reusable source modules inside the same backend process; they are not network services.
 
-Service boundaries are uneven. Some services are infrastructure adapters, some express domain policy, and some depend on route- or middleware-owned types. Phase 3 should inventory each module without assuming a clean application/domain/infrastructure layering model.
+Service boundaries are uneven. Some services are infrastructure adapters, some express domain policy, and some depend on route- or middleware-owned types. Phase 3 verifies these responsibilities in the [Backend Module Catalog](../backend/module-catalog.md), [Services and Domain Logic](../backend/services-and-domain.md), and [Shared Infrastructure](../backend/shared-infrastructure.md) without asserting a clean application/domain/infrastructure layering model.
 
 ## Plugin Components
 
@@ -143,3 +148,5 @@ Feature pages depend on shared UI, the store, types, i18n, and the central API c
 ## Missing Runtime Components
 
 The following are not verified as current components: durable worker, queue or broker, search cluster, object store, CDN adapter, external identity provider, API gateway, metrics exporter, APM collector, deployment controller, or data warehouse. Their absence from the repository must not be turned into a statement about unobserved production infrastructure.
+
+For the deeper backend-only component view, see the [Backend Overview](../backend/overview.md), [18-module catalog](../backend/module-catalog.md), [Backend Module Map](../backend/diagrams/backend-module-map.mmd), and [Application State Composition](../backend/diagrams/application-state-composition.mmd).

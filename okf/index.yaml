@@ -4,9 +4,9 @@ project:
   repository: "https://github.com/sasanzare/ZinharCMS"
   repository_name: "ZinharCMS"
   knowledge_status: "in_progress"
-  current_phase: 2
+  current_phase: 3
   current_phase_status: "complete"
-  last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+  last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
   last_verified_date: "2026-07-17"
 
 authority:
@@ -35,6 +35,10 @@ entry_points:
       purpose: "Phase 2 architecture entry point and reading order"
     - path: "architecture/overview.md"
       purpose: "Verified system classification and runtime shape"
+    - path: "backend/README.md"
+      purpose: "Phase 3 backend documentation entry point and reading order"
+    - path: "backend/module-catalog.md"
+      purpose: "Catalog of significant backend modules and owning documents"
     - path: "project/navigation-guide.md"
       purpose: "Short task-oriented navigation guide"
   ai:
@@ -48,6 +52,12 @@ entry_points:
       purpose: "Verified architecture classification and runtime context"
     - path: "architecture/dependency-model.md"
       purpose: "Source and runtime dependency direction"
+    - path: "backend/overview.md"
+      purpose: "Verified backend identity, structure, and module navigation"
+    - path: "backend/module-catalog.md"
+      purpose: "Significant module selection, ownership, and source paths"
+    - path: "backend/dependency-map.md"
+      purpose: "Backend module, infrastructure, persistence, and provider dependencies"
     - path: "project/navigation-guide.md"
       purpose: "Task-to-source navigation and AI agent rules"
 
@@ -60,7 +70,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "README.md"
@@ -83,6 +93,10 @@ documents:
       - "architecture/integration-points.md"
       - "architecture/architecture-risks.md"
       - "architecture/decisions/decision-register.md"
+      - "backend/README.md"
+      - "backend/overview.md"
+      - "backend/module-catalog.md"
+      - "backend/backend-risks.md"
     known_uncertainty_markers:
       - "UNKNOWN"
       - "NEEDS_OWNER_CONFIRMATION"
@@ -104,7 +118,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "okf-bootstrap/09-knowledge-gaps.md"
@@ -115,6 +129,8 @@ documents:
       - "references/source-register.md"
       - "architecture/README.md"
       - "architecture/overview.md"
+      - "backend/README.md"
+      - "backend/module-catalog.md"
     known_uncertainty_markers:
       - "UNKNOWN"
       - "NEEDS_OWNER_CONFIRMATION"
@@ -193,7 +209,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "49b2c1886168497e99f7086e4941b21616985656"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - ".gitignore"
@@ -213,6 +229,9 @@ documents:
       - "project/navigation-guide.md"
       - "project/glossary.md"
       - "references/source-register.md"
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/dependency-map.md"
     known_uncertainty_markers:
       - "UNKNOWN U-01"
       - "UNKNOWN U-04"
@@ -274,7 +293,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "README.md"
@@ -300,6 +319,10 @@ documents:
       - "architecture/integration-points.md"
       - "architecture/architecture-risks.md"
       - "architecture/decisions/decision-register.md"
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
     known_uncertainty_markers:
       - "UNKNOWN U-06"
       - "UNKNOWN U-07"
@@ -326,7 +349,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "README.md"
@@ -358,6 +381,9 @@ documents:
       - "architecture/architecture-risks.md"
       - "architecture/decisions/README.md"
       - "architecture/decisions/decision-register.md"
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/testing-map.md"
     known_uncertainty_markers:
       - "UNKNOWN U-01"
       - "UNKNOWN U-02"
@@ -516,7 +542,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/routes/mod.rs"
@@ -537,10 +563,14 @@ documents:
       - "architecture/integration-points.md"
       - "architecture/architecture-risks.md"
       - "architecture/decisions/decision-register.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/backend-risks.md"
     related_diagrams:
       - "architecture/diagrams/system-context.mmd"
       - "architecture/diagrams/container-view.mmd"
       - "architecture/diagrams/backend-request-flow.mmd"
+      - "backend/diagrams/backend-module-map.mmd"
     known_uncertainty_markers:
       - "UNKNOWN U-01"
       - "UNKNOWN U-08"
@@ -560,7 +590,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "observed"
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/main.rs"
@@ -582,10 +612,15 @@ documents:
       - "architecture/integration-points.md"
       - "architecture/architecture-risks.md"
       - "project/repository-map.md"
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/shared-infrastructure.md"
     related_diagrams:
       - "architecture/diagrams/container-view.mmd"
       - "architecture/diagrams/backend-request-flow.mmd"
       - "architecture/diagrams/frontend-backend-flow.mmd"
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/application-state-composition.mmd"
     known_uncertainty_markers:
       - "INFERRED_FROM_CODE"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
@@ -601,7 +636,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/lib.rs"
@@ -622,9 +657,13 @@ documents:
       - "architecture/components.md"
       - "architecture/architecture-risks.md"
       - "architecture/decisions/decision-register.md"
+      - "backend/dependency-map.md"
+      - "backend/module-boundaries.md"
+      - "backend/shared-infrastructure.md"
     related_diagrams:
       - "architecture/diagrams/dependency-direction.mmd"
       - "architecture/diagrams/container-view.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
     known_uncertainty_markers:
       - "INFERRED_FROM_STRUCTURE"
       - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
@@ -632,6 +671,8 @@ documents:
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-01"
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-02"
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-05"
 
   - id: "architecture-runtime-flows"
     path: "architecture/runtime-flows.md"
@@ -1003,6 +1044,1308 @@ documents:
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-02"
       - "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
 
+  - id: "backend-risks"
+    path: "backend/backend-risks.md"
+    title: "Backend Risk Register"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src"
+      - "backend/Cargo.toml"
+      - ".github/workflows/backend-ci.yml"
+      - "okf/backend/module-boundaries.md"
+      - "okf/backend/dependency-map.md"
+      - "okf/backend/testing-map.md"
+    related_documents:
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/persistence-access.md"
+      - "backend/error-handling.md"
+      - "backend/testing-map.md"
+      - "architecture/architecture-risks.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "ARCHITECTURAL_BOUNDARY_UNCLEAR"
+      - "TEST_COVERAGE_GAP TCG-01"
+      - "ERROR_DISCLOSURE_RISK EDR-01"
+      - "NEEDS_OWNER_CONFIRMATION"
+
+  - id: "backend-configuration-and-state"
+    path: "backend/configuration-and-state.md"
+    title: "Backend Configuration and Application State"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/config.rs"
+      - "backend/src/state.rs"
+      - "backend/src/main.rs"
+      - ".env.example"
+      - "docker-compose.yml"
+    related_documents:
+      - "backend/overview.md"
+      - "backend/request-handling.md"
+      - "backend/persistence-access.md"
+      - "backend/shared-infrastructure.md"
+      - "architecture/components.md"
+    related_diagrams:
+      - "backend/diagrams/application-state-composition.mmd"
+    known_uncertainty_markers:
+      - "INFERRED_FROM_CONFIGURATION"
+      - "IMPLEMENTATION_STATUS_UNCLEAR"
+      - "UNKNOWN"
+
+  - id: "backend-dependency-map"
+    path: "backend/dependency-map.md"
+    title: "Backend Dependency Map"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/Cargo.toml"
+      - "backend/src/lib.rs"
+      - "backend/src/routes/mod.rs"
+      - "backend/src/services/mod.rs"
+      - "backend/src/state.rs"
+    related_documents:
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/request-handling.md"
+      - "backend/shared-infrastructure.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
+      - "MODULE_BOUNDARY_UNCLEAR MBU-01"
+      - "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-01"
+
+  - id: "backend-error-handling"
+    path: "backend/error-handling.md"
+    title: "Backend Error Handling"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/error.rs"
+      - "backend/src/main.rs"
+      - "backend/src/routes"
+      - "backend/src/services"
+    related_documents:
+      - "backend/request-handling.md"
+      - "backend/services-and-domain.md"
+      - "backend/persistence-access.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+    related_diagrams:
+      - "backend/diagrams/backend-request-lifecycle.mmd"
+    known_uncertainty_markers:
+      - "ERROR_DISCLOSURE_RISK EDR-01"
+      - "ERROR_MODEL_INCONSISTENT EMI-01"
+      - "UNKNOWN"
+
+  - id: "backend-module-boundaries"
+    path: "backend/module-boundaries.md"
+    title: "Backend Module Boundaries"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/mod.rs"
+      - "backend/src/services/mod.rs"
+      - "backend/src/middleware/mod.rs"
+      - "backend/src/models/mod.rs"
+      - "backend/src/state.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/dependency-map.md"
+      - "backend/services-and-domain.md"
+      - "architecture/boundaries.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "ARCHITECTURAL_BOUNDARY_UNCLEAR"
+      - "MODULE_BOUNDARY_UNCLEAR MBU-01"
+      - "MODULE_OWNERSHIP_UNCLEAR MOU-01"
+      - "RESPONSIBILITY_OVERLAP RO-01"
+      - "PROPOSED_NOT_IMPLEMENTED"
+
+  - id: "backend-module-catalog"
+    path: "backend/module-catalog.md"
+    title: "Backend Module Catalog"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes"
+      - "backend/src/services"
+      - "backend/src/middleware"
+      - "backend/src/models"
+      - "backend/src/plugins"
+      - "backend/src/main.rs"
+      - "backend/src/state.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "architecture/components.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "MODULE_BOUNDARY_UNCLEAR"
+      - "MODULE_OWNERSHIP_UNCLEAR"
+      - "RESPONSIBILITY_OVERLAP"
+      - "PUBLIC_INTERFACE_UNCLEAR"
+
+  - id: "backend-module-authentication"
+    path: "backend/modules/authentication.md"
+    title: "Authentication"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-002"
+    module_name: "Authentication"
+    module_paths:
+      - "backend/src/routes/auth.rs"
+      - "backend/src/middleware/auth.rs"
+      - "backend/src/services/jwt.rs"
+      - "backend/src/services/password.rs"
+      - "backend/src/services/security.rs"
+      - "backend/src/models/user.rs"
+    module_type: "Domain and HTTP module"
+    boundary_status: "OBSERVED"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/auth.rs"
+      - "backend/src/middleware/auth.rs"
+      - "backend/src/services/jwt.rs"
+      - "backend/src/services/password.rs"
+      - "backend/src/services/security.rs"
+      - "backend/src/models/user.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "MODULE_OWNERSHIP_UNCLEAR MOU-01"
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-01"
+
+  - id: "backend-module-beta-release-operations"
+    path: "backend/modules/beta-release-operations.md"
+    title: "Beta and Release Operations"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-013"
+    module_name: "Beta and Release Operations"
+    module_paths:
+      - "backend/src/routes/beta.rs"
+      - "backend/src/services/ga_readiness.rs"
+      - "backend/src/services/marketplace_phase_fourteen.rs"
+      - "backend/src/services/marketplace_phase_fifteen.rs"
+    module_type: "Application and HTTP module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/beta.rs"
+      - "backend/src/services/ga_readiness.rs"
+      - "backend/src/services/marketplace_phase_fourteen.rs"
+      - "backend/src/services/marketplace_phase_fifteen.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "IMPLEMENTATION_STATUS_UNCLEAR ISU-03"
+      - "NEEDS_OWNER_CONFIRMATION NOC-06"
+      - "RESPONSIBILITY_OVERLAP RO-06"
+
+  - id: "backend-module-billing-quotas"
+    path: "backend/modules/billing-quotas.md"
+    title: "Billing and Quotas"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-005"
+    module_name: "Billing and Quotas"
+    module_paths:
+      - "backend/src/routes/billing.rs"
+      - "backend/src/services/quota.rs"
+      - "backend/src/services/stripe_billing.rs"
+    module_type: "Domain and integration module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/billing.rs"
+      - "backend/src/services/quota.rs"
+      - "backend/src/services/stripe_billing.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "RESPONSIBILITY_OVERLAP RO-03"
+      - "BUSINESS_RULE_UNVERIFIED BRU-02"
+      - "PLANNED_NOT_IMPLEMENTED PNI-03"
+
+  - id: "backend-module-bootstrap-runtime"
+    path: "backend/modules/bootstrap-runtime.md"
+    title: "Bootstrap and Runtime"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-001"
+    module_name: "Bootstrap and Runtime"
+    module_paths:
+      - "backend/src/main.rs"
+      - "backend/src/lib.rs"
+      - "backend/src/routes/mod.rs"
+      - "backend/src/config.rs"
+      - "backend/src/state.rs"
+      - "backend/src/db/mod.rs"
+    module_type: "Application module"
+    boundary_status: "OBSERVED"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/main.rs"
+      - "backend/src/lib.rs"
+      - "backend/src/routes/mod.rs"
+      - "backend/src/config.rs"
+      - "backend/src/state.rs"
+      - "backend/src/db/mod.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "NEEDS_OWNER_CONFIRMATION"
+      - "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-01"
+
+  - id: "backend-module-built-in-plugins"
+    path: "backend/modules/built-in-plugins.md"
+    title: "Built-In Plugins"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-012"
+    module_name: "Built-In Plugins"
+    module_paths:
+      - "backend/src/plugins/mod.rs"
+      - "backend/src/plugins/seo.rs"
+      - "backend/src/routes/plugins.rs"
+    module_type: "Plugin module"
+    boundary_status: "EXPLICIT"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/plugins/mod.rs"
+      - "backend/src/plugins/seo.rs"
+      - "backend/src/routes/plugins.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "VERIFIED"
+      - "NEEDS_OWNER_CONFIRMATION"
+
+  - id: "backend-module-cms-webhooks"
+    path: "backend/modules/cms-webhooks.md"
+    title: "CMS Webhooks"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-011"
+    module_name: "CMS Webhooks"
+    module_paths:
+      - "backend/src/routes/webhooks.rs"
+      - "backend/src/services/webhooks.rs"
+    module_type: "Integration and HTTP module"
+    boundary_status: "OBSERVED"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/webhooks.rs"
+      - "backend/src/services/webhooks.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "MODULE_BOUNDARY_UNCLEAR MBU-05"
+      - "NEEDS_OWNER_CONFIRMATION NOC-09"
+      - "PLANNED_NOT_IMPLEMENTED PNI-04"
+
+  - id: "backend-module-comments"
+    path: "backend/modules/comments.md"
+    title: "Editorial Comments"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-007"
+    module_name: "Editorial Comments"
+    module_paths:
+      - "backend/src/routes/comments.rs"
+    module_type: "Domain and HTTP module"
+    boundary_status: "OBSERVED"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/comments.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "MODULE_OWNERSHIP_UNCLEAR MOU-03"
+      - "PUBLIC_INTERFACE_UNCLEAR PIU-01"
+
+  - id: "backend-module-content-workflow"
+    path: "backend/modules/content-workflow.md"
+    title: "Content Types, Entries, and Workflow"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-006"
+    module_name: "Content Types, Entries, and Workflow"
+    module_paths:
+      - "backend/src/routes/content.rs"
+      - "backend/src/models/content.rs"
+      - "backend/src/services/entry_validation.rs"
+      - "backend/src/services/workflow.rs"
+    module_type: "Domain and HTTP module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/content.rs"
+      - "backend/src/models/content.rs"
+      - "backend/src/services/entry_validation.rs"
+      - "backend/src/services/workflow.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "RESPONSIBILITY_OVERLAP RO-04"
+      - "BUSINESS_RULE_UNVERIFIED BRU-03"
+      - "MODULE_BOUNDARY_UNCLEAR MBU-02"
+
+  - id: "backend-module-marketplace-catalog-installation"
+    path: "backend/modules/marketplace-catalog-installation.md"
+    title: "Marketplace Catalog and Installation"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-015"
+    module_name: "Marketplace Catalog and Installation"
+    module_paths:
+      - "backend/src/routes/marketplace.rs"
+      - "backend/src/services/marketplace_catalog.rs"
+      - "backend/src/services/marketplace_performance.rs"
+      - "backend/src/services/marketplace_installation.rs"
+    module_type: "Domain and HTTP module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/marketplace.rs"
+      - "backend/src/services/marketplace_catalog.rs"
+      - "backend/src/services/marketplace_performance.rs"
+      - "backend/src/services/marketplace_installation.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "DOCUMENTATION_CODE_CONFLICT DCC-06"
+      - "RESPONSIBILITY_OVERLAP RO-08"
+      - "MODULE_OWNERSHIP_UNCLEAR MOU-05"
+
+  - id: "backend-module-marketplace-creator-review"
+    path: "backend/modules/marketplace-creator-review.md"
+    title: "Marketplace Creator, Submission, Validation, and Review"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-014"
+    module_name: "Marketplace Creator, Submission, Validation, and Review"
+    module_paths:
+      - "backend/src/routes/marketplace.rs"
+      - "backend/src/services/marketplace_domain.rs"
+      - "backend/src/services/marketplace_manifest.rs"
+      - "backend/src/services/marketplace_package.rs"
+      - "backend/src/services/marketplace_submission.rs"
+      - "backend/src/services/marketplace_validation.rs"
+      - "backend/src/services/marketplace_review.rs"
+    module_type: "Domain and HTTP module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/marketplace.rs"
+      - "backend/src/services/marketplace_domain.rs"
+      - "backend/src/services/marketplace_manifest.rs"
+      - "backend/src/services/marketplace_package.rs"
+      - "backend/src/services/marketplace_submission.rs"
+      - "backend/src/services/marketplace_validation.rs"
+      - "backend/src/services/marketplace_review.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "MODULE_BOUNDARY_UNCLEAR MBU-06"
+      - "RESPONSIBILITY_OVERLAP RO-07"
+      - "BUSINESS_RULE_UNVERIFIED BRU-04"
+
+  - id: "backend-module-marketplace-feedback-analytics-readiness"
+    path: "backend/modules/marketplace-feedback-analytics-readiness.md"
+    title: "Marketplace Feedback, Analytics, and Readiness"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-018"
+    module_name: "Marketplace Feedback, Analytics, and Readiness"
+    module_paths:
+      - "backend/src/routes/marketplace.rs"
+      - "backend/src/routes/marketplace_analytics.rs"
+      - "backend/src/services/marketplace_feedback.rs"
+      - "backend/src/services/marketplace_analytics.rs"
+      - "backend/src/services/marketplace_readiness.rs"
+      - "backend/src/services/marketplace_phase_thirteen.rs"
+      - "backend/src/services/marketplace_phase_fourteen.rs"
+      - "backend/src/services/marketplace_phase_fifteen.rs"
+    module_type: "Domain and application module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/marketplace.rs"
+      - "backend/src/routes/marketplace_analytics.rs"
+      - "backend/src/services/marketplace_feedback.rs"
+      - "backend/src/services/marketplace_analytics.rs"
+      - "backend/src/services/marketplace_readiness.rs"
+      - "backend/src/services/marketplace_phase_thirteen.rs"
+      - "backend/src/services/marketplace_phase_fourteen.rs"
+      - "backend/src/services/marketplace_phase_fifteen.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "RESPONSIBILITY_OVERLAP RO-10"
+      - "IMPLEMENTATION_STATUS_UNCLEAR ISU-03"
+      - "PLANNED_NOT_IMPLEMENTED PNI-04"
+      - "PLANNED_NOT_IMPLEMENTED PNI-05"
+
+  - id: "backend-module-marketplace-finance"
+    path: "backend/modules/marketplace-finance.md"
+    title: "Marketplace Finance"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-017"
+    module_name: "Marketplace Finance"
+    module_paths:
+      - "backend/src/routes/marketplace_finance.rs"
+      - "backend/src/services/marketplace_finance.rs"
+      - "backend/src/services/stripe_billing.rs"
+    module_type: "Domain and integration module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/marketplace_finance.rs"
+      - "backend/src/services/marketplace_finance.rs"
+      - "backend/src/services/stripe_billing.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "RESPONSIBILITY_OVERLAP RO-03"
+      - "PLANNED_NOT_IMPLEMENTED PNI-02"
+      - "PLANNED_NOT_IMPLEMENTED PNI-03"
+      - "NEEDS_OWNER_CONFIRMATION"
+
+  - id: "backend-module-marketplace-runtime-adapters"
+    path: "backend/modules/marketplace-runtime-adapters.md"
+    title: "Marketplace Runtime Security and Host Adapters"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-016"
+    module_name: "Marketplace Runtime Security and Host Adapters"
+    module_paths:
+      - "backend/src/routes/marketplace_runtime.rs"
+      - "backend/src/routes/marketplace_adapters.rs"
+      - "backend/src/services/marketplace_runtime.rs"
+      - "backend/src/services/marketplace_adapters.rs"
+      - "backend/src/services/marketplace_policy.rs"
+    module_type: "Domain policy and adapter module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/marketplace_runtime.rs"
+      - "backend/src/routes/marketplace_adapters.rs"
+      - "backend/src/services/marketplace_runtime.rs"
+      - "backend/src/services/marketplace_adapters.rs"
+      - "backend/src/services/marketplace_policy.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
+      - "RESPONSIBILITY_OVERLAP RO-09"
+      - "PLANNED_NOT_IMPLEMENTED PNI-01"
+
+  - id: "backend-module-media"
+    path: "backend/modules/media.md"
+    title: "Media"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-008"
+    module_name: "Media"
+    module_paths:
+      - "backend/src/routes/media.rs"
+      - "backend/src/models/media.rs"
+      - "backend/src/services/media_processing.rs"
+    module_type: "Domain, HTTP, and storage module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/media.rs"
+      - "backend/src/models/media.rs"
+      - "backend/src/services/media_processing.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "MODULE_BOUNDARY_UNCLEAR MBU-03"
+      - "MODULE_OWNERSHIP_UNCLEAR MOU-04"
+      - "NEEDS_OWNER_CONFIRMATION NOC-02"
+
+  - id: "backend-module-organizations"
+    path: "backend/modules/organizations.md"
+    title: "Organizations and SaaS Operations"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-004"
+    module_name: "Organizations and SaaS Operations"
+    module_paths:
+      - "backend/src/routes/organizations.rs"
+      - "backend/src/models/organization.rs"
+      - "backend/src/services/audit.rs"
+      - "backend/src/services/email.rs"
+    module_type: "Domain and HTTP module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/organizations.rs"
+      - "backend/src/models/organization.rs"
+      - "backend/src/services/audit.rs"
+      - "backend/src/services/email.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "RESPONSIBILITY_OVERLAP RO-02"
+      - "IMPLEMENTATION_STATUS_UNCLEAR ISU-01"
+      - "NEEDS_OWNER_CONFIRMATION"
+
+  - id: "backend-module-pages-builder-preview"
+    path: "backend/modules/pages-builder-preview.md"
+    title: "Pages, Builder, and Preview"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-009"
+    module_name: "Pages, Builder, and Preview"
+    module_paths:
+      - "backend/src/routes/pages.rs"
+      - "backend/src/models/page.rs"
+      - "backend/src/state.rs"
+    module_type: "Domain and HTTP module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/pages.rs"
+      - "backend/src/models/page.rs"
+      - "backend/src/state.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "RESPONSIBILITY_OVERLAP RO-05"
+      - "MODULE_BOUNDARY_UNCLEAR MBU-04"
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
+
+  - id: "backend-module-public-delivery-cache"
+    path: "backend/modules/public-delivery-cache.md"
+    title: "Public Delivery and Cache"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-010"
+    module_name: "Public Delivery and Cache"
+    module_paths:
+      - "backend/src/routes/delivery.rs"
+      - "backend/src/services/cache.rs"
+    module_type: "HTTP and infrastructure module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/delivery.rs"
+      - "backend/src/services/cache.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "NEEDS_OWNER_CONFIRMATION NOC-01"
+      - "IMPLEMENTATION_STATUS_UNCLEAR ISU-01"
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-05"
+
+  - id: "backend-module-tenant-authorization"
+    path: "backend/modules/tenant-authorization.md"
+    title: "Tenant Authorization and RLS"
+    category: "backend-module"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    module_id: "BE-MOD-003"
+    module_name: "Tenant Authorization and RLS"
+    module_paths:
+      - "backend/src/middleware/tenant.rs"
+      - "backend/src/services/rbac.rs"
+      - "backend/src/services/rls.rs"
+      - "backend/src/services/rate_limit.rs"
+      - "backend/src/services/quota.rs"
+      - "backend/migrations/0008_v2_phase_one_organizations.sql"
+      - "backend/migrations/0009_v2_phase_three_rls.sql"
+    module_type: "Shared domain and persistence module"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/middleware/tenant.rs"
+      - "backend/src/services/rbac.rs"
+      - "backend/src/services/rls.rs"
+      - "backend/src/services/rate_limit.rs"
+      - "backend/src/services/quota.rs"
+      - "backend/migrations/0008_v2_phase_one_organizations.sql"
+      - "backend/migrations/0009_v2_phase_three_rls.sql"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "MODULE_BOUNDARY_UNCLEAR MBU-01"
+      - "MODULE_OWNERSHIP_UNCLEAR MOU-02"
+      - "RESPONSIBILITY_OVERLAP RO-01"
+      - "BUSINESS_RULE_UNVERIFIED BRU-01"
+
+  - id: "backend-overview"
+    path: "backend/overview.md"
+    title: "Backend Overview"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/Cargo.toml"
+      - "backend/src/main.rs"
+      - "backend/src/lib.rs"
+      - "backend/src/routes/mod.rs"
+      - "backend/src/state.rs"
+      - "backend/src/config.rs"
+      - "backend/src/error.rs"
+    related_documents:
+      - "backend/README.md"
+      - "backend/module-catalog.md"
+      - "backend/request-handling.md"
+      - "backend/configuration-and-state.md"
+      - "backend/shared-infrastructure.md"
+      - "backend/backend-risks.md"
+      - "architecture/overview.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-request-lifecycle.mmd"
+      - "backend/diagrams/application-state-composition.mmd"
+    known_uncertainty_markers:
+      - "UNKNOWN"
+      - "NEEDS_OWNER_CONFIRMATION"
+      - "INFERRED_FROM_CODE"
+      - "IMPLEMENTATION_STATUS_UNCLEAR"
+
+  - id: "backend-persistence-access"
+    path: "backend/persistence-access.md"
+    title: "Backend Persistence Access"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/db/mod.rs"
+      - "backend/src/state.rs"
+      - "backend/src/routes"
+      - "backend/src/services"
+      - "backend/src/models"
+      - "backend/migrations"
+    related_documents:
+      - "backend/request-handling.md"
+      - "backend/services-and-domain.md"
+      - "backend/configuration-and-state.md"
+      - "backend/backend-risks.md"
+      - "architecture/components.md"
+    related_diagrams:
+      - "backend/diagrams/backend-dependency-flow.mmd"
+      - "backend/diagrams/application-state-composition.mmd"
+    known_uncertainty_markers:
+      - "PERSISTENCE_BOUNDARY_UNCLEAR PBU-01"
+      - "BUSINESS_RULE_LOCATION_UNCLEAR BRU-02"
+      - "UNKNOWN"
+
+  - id: "backend-readme"
+    path: "backend/README.md"
+    title: "Backend Documentation"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/Cargo.toml"
+      - "backend/src"
+      - "backend/migrations"
+    related_documents:
+      - "README.md"
+      - "backend/overview.md"
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/request-handling.md"
+      - "backend/services-and-domain.md"
+      - "backend/persistence-access.md"
+      - "backend/configuration-and-state.md"
+      - "backend/shared-infrastructure.md"
+      - "backend/error-handling.md"
+      - "backend/testing-map.md"
+      - "backend/backend-risks.md"
+      - "architecture/overview.md"
+      - "architecture/components.md"
+      - "architecture/boundaries.md"
+      - "architecture/dependency-model.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+      - "backend/diagrams/backend-request-lifecycle.mmd"
+      - "backend/diagrams/backend-dependency-flow.mmd"
+      - "backend/diagrams/application-state-composition.mmd"
+    known_uncertainty_markers:
+      - "MODULE_BOUNDARY_UNCLEAR"
+      - "MODULE_OWNERSHIP_UNCLEAR"
+      - "DEPENDENCY_DIRECTION_UNCLEAR"
+      - "RESPONSIBILITY_OVERLAP"
+      - "BUSINESS_RULE_UNVERIFIED"
+
+  - id: "backend-request-handling"
+    path: "backend/request-handling.md"
+    title: "Backend Request Handling"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/main.rs"
+      - "backend/src/lib.rs"
+      - "backend/src/routes/mod.rs"
+      - "backend/src/middleware/auth.rs"
+      - "backend/src/middleware/tenant.rs"
+      - "backend/src/error.rs"
+    related_documents:
+      - "backend/overview.md"
+      - "backend/module-boundaries.md"
+      - "backend/services-and-domain.md"
+      - "backend/error-handling.md"
+      - "architecture/runtime-flows.md"
+    related_diagrams:
+      - "backend/diagrams/backend-request-lifecycle.mmd"
+      - "architecture/diagrams/backend-request-flow.mmd"
+    known_uncertainty_markers:
+      - "INFERRED_FROM_CODE"
+      - "MIDDLEWARE_ORDER_DETAIL_UNCONFIRMED MDO-01"
+      - "MODULE_BOUNDARY_UNCLEAR MBU-01"
+
+  - id: "backend-services-and-domain"
+    path: "backend/services-and-domain.md"
+    title: "Backend Services and Domain Logic"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes"
+      - "backend/src/services"
+      - "backend/src/plugins"
+      - "backend/src/models"
+    related_documents:
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/dependency-map.md"
+      - "backend/request-handling.md"
+      - "backend/persistence-access.md"
+    related_diagrams:
+      - "backend/diagrams/backend-dependency-flow.mmd"
+    known_uncertainty_markers:
+      - "BUSINESS_RULE_LOCATION_UNCLEAR BRU-01"
+      - "BUSINESS_RULE_LOCATION_UNCLEAR BRU-02"
+      - "BUSINESS_RULE_LOCATION_UNCLEAR BRU-03"
+      - "ARCHITECTURAL_BOUNDARY_UNCLEAR"
+
+  - id: "backend-shared-infrastructure"
+    path: "backend/shared-infrastructure.md"
+    title: "Backend Shared Infrastructure"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/Cargo.toml"
+      - "backend/src/main.rs"
+      - "backend/src/error.rs"
+      - "backend/src/middleware"
+      - "backend/src/services"
+    related_documents:
+      - "backend/module-catalog.md"
+      - "backend/dependency-map.md"
+      - "backend/configuration-and-state.md"
+      - "backend/error-handling.md"
+      - "backend/testing-map.md"
+    related_diagrams:
+      - "backend/diagrams/backend-dependency-flow.mmd"
+      - "backend/diagrams/application-state-composition.mmd"
+    known_uncertainty_markers:
+      - "ARCHITECTURAL_BOUNDARY_UNCLEAR"
+      - "MODULE_BOUNDARY_UNCLEAR MBU-01"
+      - "IMPLEMENTATION_STATUS_UNCLEAR"
+
+  - id: "backend-testing-map"
+    path: "backend/testing-map.md"
+    title: "Backend Testing Map"
+    category: "backend"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/Cargo.toml"
+      - "backend/src"
+      - ".github/workflows/backend-ci.yml"
+    related_documents:
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/error-handling.md"
+      - "backend/backend-risks.md"
+    related_diagrams:
+      - "backend/diagrams/backend-module-map.mmd"
+    known_uncertainty_markers:
+      - "TEST_COVERAGE_GAP TCG-01"
+      - "TEST_ISOLATION_UNCLEAR TIU-01"
+      - "UNKNOWN"
+
+  - id: "backend-diagram-module-map"
+    path: "backend/diagrams/backend-module-map.mmd"
+    title: "ZinharCMS Backend Module Map"
+    category: "backend-diagram"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/routes/mod.rs"
+      - "backend/src/services/mod.rs"
+      - "backend/src/middleware/mod.rs"
+      - "backend/src/state.rs"
+    related_documents:
+      - "backend/module-catalog.md"
+      - "backend/module-boundaries.md"
+      - "backend/shared-infrastructure.md"
+    known_uncertainty_markers:
+      - "ARCHITECTURAL_BOUNDARY_UNCLEAR"
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
+
+  - id: "backend-diagram-request-lifecycle"
+    path: "backend/diagrams/backend-request-lifecycle.mmd"
+    title: "ZinharCMS Backend Request Lifecycle"
+    category: "backend-diagram"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/main.rs"
+      - "backend/src/routes/mod.rs"
+      - "backend/src/middleware/auth.rs"
+      - "backend/src/middleware/tenant.rs"
+      - "backend/src/error.rs"
+    related_documents:
+      - "backend/request-handling.md"
+      - "backend/error-handling.md"
+      - "backend/persistence-access.md"
+    known_uncertainty_markers:
+      - "MIDDLEWARE_ORDER_DETAIL_UNCONFIRMED MDO-01"
+
+  - id: "backend-diagram-dependency-flow"
+    path: "backend/diagrams/backend-dependency-flow.mmd"
+    title: "ZinharCMS Backend Dependency Flow"
+    category: "backend-diagram"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/lib.rs"
+      - "backend/src/main.rs"
+      - "backend/src/routes"
+      - "backend/src/middleware"
+      - "backend/src/services"
+      - "backend/src/models"
+      - "backend/src/db/mod.rs"
+    related_documents:
+      - "backend/dependency-map.md"
+      - "backend/module-boundaries.md"
+      - "backend/services-and-domain.md"
+    known_uncertainty_markers:
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
+      - "DEPENDENCY_DIRECTION_UNCLEAR DDU-05"
+      - "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-01"
+
+  - id: "backend-diagram-state-composition"
+    path: "backend/diagrams/application-state-composition.mmd"
+    title: "ZinharCMS Application State Composition"
+    category: "backend-diagram"
+    status: "current"
+    phase: 3
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_date: "2026-07-17"
+    primary_evidence_paths:
+      - "backend/src/config.rs"
+      - "backend/src/db/mod.rs"
+      - "backend/src/state.rs"
+      - "backend/src/main.rs"
+      - "backend/src/routes/mod.rs"
+    related_documents:
+      - "backend/configuration-and-state.md"
+      - "backend/overview.md"
+      - "backend/request-handling.md"
+
+
 uncertainty_register:
   unknown:
     - id: "UNKNOWN U-01"
@@ -1113,6 +2456,96 @@ uncertainty_register:
       summary: "The health service imports a route-owned response type"
     - id: "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
       summary: "Frontend and backend contracts are manually duplicated without a generated or shared schema authority"
+    - id: "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
+      summary: "Pages and Marketplace adapters have verified cross-domain and reverse-layer source dependencies"
+    - id: "DEPENDENCY_DIRECTION_UNCLEAR DDU-05"
+      summary: "Content and Pages invoke invalidation behavior owned by the Delivery route area"
+
+  module_boundary_unclear:
+    - id: "MODULE_BOUNDARY_UNCLEAR MBU-01"
+      summary: "Tenant authorization is cross-cutting and resource-specific enforcement remains distributed"
+    - id: "MODULE_BOUNDARY_UNCLEAR MBU-02"
+      summary: "Content ownership spans routes, validation, workflow, delivery invalidation, and persistence"
+    - id: "MODULE_BOUNDARY_UNCLEAR MBU-03"
+      summary: "Media ownership spans database metadata, filesystem content, processing, and public serving"
+    - id: "MODULE_BOUNDARY_UNCLEAR MBU-04"
+      summary: "Pages, builder, preview, plugins, delivery, and Marketplace adapters cross feature boundaries"
+    - id: "MODULE_BOUNDARY_UNCLEAR MBU-05"
+      summary: "CMS webhook event ownership crosses domain producers and delivery infrastructure"
+    - id: "MODULE_BOUNDARY_UNCLEAR MBU-06"
+      summary: "Marketplace behavior spans a dense set of route, service, persistence, file, and provider areas"
+
+  module_ownership_unclear:
+    - id: "MODULE_OWNERSHIP_UNCLEAR MOU-01"
+      summary: "Authentication middleware owns Claims while protected domain modules consume the contract"
+    - id: "MODULE_OWNERSHIP_UNCLEAR MOU-02"
+      summary: "Tenant middleware owns TenantContext while tenant domain modules consume and extend enforcement"
+    - id: "MODULE_OWNERSHIP_UNCLEAR MOU-03"
+      summary: "Editorial comment authorization depends on polymorphic resource ownership"
+    - id: "MODULE_OWNERSHIP_UNCLEAR MOU-04"
+      summary: "Media lifecycle ownership is split between metadata, files, processing, and serving"
+    - id: "MODULE_OWNERSHIP_UNCLEAR MOU-05"
+      summary: "Marketplace catalog, installation, entitlement, finance, and runtime ownership overlap"
+
+  responsibility_overlap:
+    - id: "RESPONSIBILITY_OVERLAP RO-01"
+      summary: "Tenant authorization responsibilities overlap middleware, services, handlers, and database policy"
+    - id: "RESPONSIBILITY_OVERLAP RO-02"
+      summary: "Authentication bootstrap and organization membership lifecycle overlap"
+    - id: "RESPONSIBILITY_OVERLAP RO-03"
+      summary: "CMS Billing and Marketplace Finance separately own Stripe-facing behavior"
+    - id: "RESPONSIBILITY_OVERLAP RO-04"
+      summary: "Content and workflow responsibilities span routes, services, and persistence constraints"
+    - id: "RESPONSIBILITY_OVERLAP RO-05"
+      summary: "Pages overlap builder, preview, delivery, plugins, and host adapter behavior"
+    - id: "RESPONSIBILITY_OVERLAP RO-06"
+      summary: "Beta operations and release-readiness services have adjacent operational responsibilities"
+    - id: "RESPONSIBILITY_OVERLAP RO-07"
+      summary: "Marketplace creator submission and administrative review share lifecycle ownership"
+    - id: "RESPONSIBILITY_OVERLAP RO-08"
+      summary: "Marketplace catalog, installation, entitlement, and finance lifecycles overlap"
+    - id: "RESPONSIBILITY_OVERLAP RO-09"
+      summary: "Marketplace runtime policy and host adapters overlap Pages integration"
+    - id: "RESPONSIBILITY_OVERLAP RO-10"
+      summary: "Marketplace feedback, analytics, performance, and readiness consume shared lifecycle data"
+
+  business_rule_location_unclear:
+    - id: "BUSINESS_RULE_LOCATION_UNCLEAR BRU-01"
+      summary: "Business rules, SQL, orchestration, and HTTP concerns coexist in route handlers"
+    - id: "BUSINESS_RULE_LOCATION_UNCLEAR BRU-02"
+      summary: "Shared models are partial and many domain or persistence shapes remain route- or service-local"
+    - id: "BUSINESS_RULE_LOCATION_UNCLEAR BRU-03"
+      summary: "Delivery cache invalidation is cross-cutting but source ownership is route-oriented"
+    - id: "BUSINESS_RULE_LOCATION_UNCLEAR BRU-04"
+      summary: "Plugin behavior crosses domain hooks and shared infrastructure"
+
+  business_rule_unverified:
+    - id: "BUSINESS_RULE_UNVERIFIED"
+      summary: "Code can establish current thresholds or transitions without establishing their product rationale"
+
+  persistence_boundary_unclear:
+    - id: "PERSISTENCE_BOUNDARY_UNCLEAR PBU-01"
+      summary: "Routes and services access SQLx directly without one mandatory repository boundary"
+
+  error_handling_unclear:
+    - id: "ERROR_DISCLOSURE_RISK EDR-01"
+      summary: "Shared error conversion can expose stored database, provider, or internal technical text"
+    - id: "ERROR_MODEL_INCONSISTENT EMI-01"
+      summary: "Module, framework, timeout, and WebSocket errors do not share one conversion contract"
+
+  testing_unclear:
+    - id: "TEST_COVERAGE_GAP TCG-01"
+      summary: "Several core CMS route modules have no colocated test module and no valid coverage report exists"
+    - id: "TEST_ISOLATION_UNCLEAR TIU-01"
+      summary: "No dedicated backend database fixture/reset harness or separate integration suite was found"
+
+  request_lifecycle_unclear:
+    - id: "MIDDLEWARE_ORDER_DETAIL_UNCONFIRMED MDO-01"
+      summary: "Exact inbound Tower layer execution order is not restated without dedicated verification"
+
+  code_usage_unclear:
+    - id: "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-01"
+      summary: "The registered health service has no verified production caller, but dead-code status is unconfirmed"
 
 current_sections:
   - id: "project-overview"
@@ -1123,12 +2556,12 @@ current_sections:
     title: "System Architecture"
     status: "current"
     completed_phase: 2
-
-planned_sections:
   - id: "backend-modules"
     title: "Backend Modules"
-    status: "planned"
-    target_phase: 3
+    status: "current"
+    completed_phase: 3
+
+planned_sections:
   - id: "frontend"
     title: "Frontend Architecture"
     status: "planned"

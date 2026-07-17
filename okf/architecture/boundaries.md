@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/routes/mod.rs"
@@ -29,10 +29,14 @@ related_documents:
   - "architecture/integration-points.md"
   - "architecture/architecture-risks.md"
   - "architecture/decisions/decision-register.md"
+  - "backend/module-catalog.md"
+  - "backend/module-boundaries.md"
+  - "backend/backend-risks.md"
 related_diagrams:
   - "architecture/diagrams/system-context.mmd"
   - "architecture/diagrams/container-view.mmd"
   - "architecture/diagrams/backend-request-flow.mmd"
+  - "backend/diagrams/backend-module-map.mmd"
 uncertainty_markers:
   - "UNKNOWN U-01"
   - "UNKNOWN U-08"
@@ -181,6 +185,9 @@ The public delivery handler currently resolves the active organization with the 
 | No frontend feature bypass of central `fetch` client was found | Verified `fetch` search under `frontend/src` | Current control; recheck when adding integration code |
 | Infrastructure concerns leak into feature orchestration | File, cache, SQL, email, Stripe, and webhook calls in handlers | ABU-01; AR-001/AR-006 |
 | Preview and webhooks depend on process lifetime | `AppState` broadcast map and spawned tasks | ABU-03; AR-004/AR-005 |
+| Pages and Marketplace adapters import across apparent domain/layer ownership | `backend/src/routes/pages.rs`; `backend/src/services/marketplace_adapters.rs` | DDU-04; BE-RISK-001/003 |
+| Content and Pages invoke invalidation behavior owned by Delivery routes | affected route imports and calls | DDU-05; BE-RISK-001/007 |
+| CMS Billing and Marketplace Finance separately own Stripe-facing business behavior | billing and Marketplace finance route/service sources | RO-03; BE-RISK-012 |
 
 ## Related Architecture Views
 
@@ -190,3 +197,7 @@ The public delivery handler currently resolves the active organization with the 
 - [Integration Points](integration-points.md)
 - [Backend Request Flow Diagram](diagrams/backend-request-flow.mmd)
 - [System Context Diagram](diagrams/system-context.mmd)
+- [Backend Module Catalog](../backend/module-catalog.md)
+- [Backend Module Boundaries](../backend/module-boundaries.md)
+- [Backend Module Map](../backend/diagrams/backend-module-map.mmd)
+- [Backend Risk Register](../backend/backend-risks.md)

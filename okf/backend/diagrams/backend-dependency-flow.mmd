@@ -1,0 +1,78 @@
+%% Title: ZinharCMS Backend Dependency Flow
+%% Source evidence: backend/src/lib.rs; backend/src/main.rs; backend/src/routes; backend/src/middleware; backend/src/services; backend/src/models; backend/src/db/mod.rs
+%% Related documentation: ../dependency-map.md; ../module-boundaries.md; ../services-and-domain.md
+flowchart TB
+    BOOT["Bootstrap<br/>main.rs and lib.rs"]
+
+    subgraph HTTP["HTTP and Request Context"]
+        COMPOSE["Router Composition<br/>routes/mod.rs"]
+        ROUTES["Other Domain Route Modules"]
+        CONTENTPAGES["Content and Pages Routes"]
+        DELIVERY["Delivery Route and Cache"]
+        MIDDLEWARE["Auth, Tenant, and Security Middleware"]
+    end
+
+    subgraph Logic["Application and Domain Logic"]
+        CORE["Core CMS and SaaS Services"]
+        MARKET["Marketplace Service Family"]
+        PLUGINS["Built-In Plugins"]
+        MODELS["Shared and Partial Models"]
+    end
+
+    subgraph Shared["Cross-Cutting Contracts"]
+        STATE["AppState"]
+        ERR["AppError"]
+        CONTEXT["Claims and TenantContext"]
+    end
+
+    subgraph Infrastructure["Infrastructure Access"]
+        DBHELP["Database Pool and Migration Helpers"]
+        PG[("PostgreSQL")]
+        REDIS[("Redis")]
+        FILES[("Upload Filesystem")]
+        EXTERNAL["Stripe, Email, and Webhook Targets"]
+        LOCAL["Preview Broadcast Channels"]
+    end
+
+    BOOT --> COMPOSE
+    BOOT --> STATE
+    BOOT --> DBHELP
+    COMPOSE --> ROUTES
+    COMPOSE --> CONTENTPAGES
+    COMPOSE --> DELIVERY
+    COMPOSE --> MIDDLEWARE
+    MIDDLEWARE --> CONTEXT
+    ROUTES --> CONTEXT
+    CONTENTPAGES --> CONTEXT
+    ROUTES --> STATE
+    CONTENTPAGES --> STATE
+    DELIVERY --> STATE
+    ROUTES --> ERR
+    ROUTES --> CORE
+    CONTENTPAGES --> CORE
+    ROUTES --> MARKET
+    ROUTES --> PLUGINS
+    ROUTES --> MODELS
+    CORE --> ERR
+    MARKET --> ERR
+    CORE --> MODELS
+    MARKET --> MODELS
+    STATE --> PG
+    STATE --> REDIS
+    STATE --> LOCAL
+    DBHELP --> PG
+    ROUTES --> PG
+    CONTENTPAGES --> PG
+    DELIVERY --> PG
+    CORE --> PG
+    MARKET --> PG
+    ROUTES --> REDIS
+    DELIVERY --> REDIS
+    CORE --> REDIS
+    ROUTES --> FILES
+    CORE --> EXTERNAL
+    MARKET --> EXTERNAL
+
+    CORE -.->|route-owned DependencyCheck| COMPOSE
+    MARKET -.->|route-owned page types| CONTENTPAGES
+    CONTENTPAGES -.->|delivery-owned invalidation| DELIVERY

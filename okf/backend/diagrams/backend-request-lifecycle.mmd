@@ -1,0 +1,56 @@
+%% Title: ZinharCMS Backend Request Lifecycle
+%% Source evidence: backend/src/main.rs; backend/src/routes/mod.rs; backend/src/middleware/auth.rs; backend/src/middleware/tenant.rs; backend/src/error.rs
+%% Related documentation: ../request-handling.md; ../error-handling.md; ../persistence-access.md
+sequenceDiagram
+    autonumber
+    participant Client
+    participant Global as Global Tower Layers
+    participant Router as Axum Router Group
+    participant Auth as Auth or Tenant Middleware
+    participant Handler as Route Handler
+    participant Service as Service or Plugin Logic
+    participant PostgreSQL
+    participant SideEffects as Redis, Files, Providers, or Preview
+    participant ErrorMap as AppError Response Mapping
+
+    Client->>Global: HTTP request
+    Global->>Router: Apply transport policy and route matching
+    alt Public route
+        Router->>Handler: Extract public request context
+    else Authenticated route
+        Router->>Auth: Run authentication middleware
+        Auth->>Handler: Attach verified Claims
+    else Tenant-protected route
+        Router->>Auth: Run tenant middleware and cross-cutting checks
+        Auth->>Handler: Attach Claims and TenantContext
+    end
+
+    Handler->>Handler: Validate module-specific input and policy
+    opt Reusable logic is required
+        Handler->>Service: Invoke service or built-in plugin
+        opt Service-owned persistence is required
+            Service->>PostgreSQL: Execute service-owned SQL
+            PostgreSQL-->>Service: Rows or persistence error
+        end
+        opt Service-owned integration is required
+            Service->>SideEffects: Provider, cache, file, webhook, audit, or preview action
+            SideEffects-->>Service: Result or infrastructure error
+        end
+        Service-->>Handler: Service result
+    end
+    opt Handler-owned persistence is required
+        Handler->>PostgreSQL: Execute SQL directly or begin transaction
+        PostgreSQL-->>Handler: Rows or persistence error
+    end
+    opt Handler-owned cross-system side effect is required
+        Handler->>SideEffects: Cache, file, provider, webhook, audit, or preview action
+        SideEffects-->>Handler: Result or infrastructure error
+    end
+
+    alt Successful operation
+        Handler-->>Global: Typed Axum response
+    else Application failure
+        Handler->>ErrorMap: Return AppError
+        ErrorMap-->>Global: Status and JSON ErrorBody
+    end
+    Global-->>Client: Response with request tracing context

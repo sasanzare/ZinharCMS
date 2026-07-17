@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "README.md"
@@ -39,6 +39,9 @@ related_documents:
   - "architecture/architecture-risks.md"
   - "architecture/decisions/README.md"
   - "architecture/decisions/decision-register.md"
+  - "backend/README.md"
+  - "backend/module-catalog.md"
+  - "backend/testing-map.md"
 uncertainty_markers:
   - "UNKNOWN U-01"
   - "UNKNOWN U-02"
@@ -134,7 +137,7 @@ The Phase 1 baseline entries were checked against commit `49b2c1886168497e99f708
 | `backend/src/main.rs` | Backend executable entry | Configuration loading, database setup, shared state, router startup | PRIMARY | `49b2c188` | Start here for runtime composition. |
 | `backend/src/lib.rs` | Backend library root | Exported module boundaries | PRIMARY | `49b2c188` | Confirms available application modules. |
 | `backend/src/config.rs` | Configuration module | Required environment variables and runtime defaults | PRIMARY | `49b2c188` | Use with `.env.example` and `env.example`. |
-| `backend/src/state.rs` | Shared application state | Database, Redis, configuration, rate/quota and other shared dependencies | PRIMARY | `49b2c188` | Confirms in-process dependency composition. |
+| `backend/src/state.rs` | Shared application state | Configuration, PostgreSQL pool, Redis client, and process-local page preview channels | PRIMARY | `debde202` | Confirms the exact four-field `AppState` composition. |
 | `backend/src/error.rs` | Error model | Application error categories and HTTP response mapping | PRIMARY | `49b2c188` | More reliable than narrative API error examples; DCC-09 applies. |
 | `backend/src/db/mod.rs` | Database integration | Connection, migrations, tenant transaction context | PRIMARY | `49b2c188` | Important for RLS behavior. |
 | `backend/src/routes/mod.rs` | Router composition | Route module registration, middleware layering, `/api` and `/api/v1` boundaries | PRIMARY | `49b2c188` | Canonical route-family entry point. |
@@ -309,6 +312,24 @@ The following sources were inspected at commit `17e69e266c558c8568ec65524560d52d
 | `frontend/src/pages/WorkspaceRedirectPage.tsx` | Client navigation page | Organization-slug resolution and workspace redirect behavior | PRIMARY | `17e69e26` | Client navigation is not a backend authorization control. |
 | `docs/diagrams/09-request-middleware-pipeline.mmd` | Historical diagram | Prior request and middleware flow representation | SUPPORTING | `17e69e26` | Phase 2 rebuilt the verified request flow from current source. |
 
+## Phase 3 Backend-Specific Verification
+
+The following sources were inspected at commit `debde2021c029d1827abaa38bcc32c682f53f55a` for the Phase 3 module catalog, boundaries, dependency flow, request handling, state, errors, tests, and risks. They supplement the earlier register without replacing source-code authority.
+
+| Path | Backend information derived | Reliability | Verified commit | Notes |
+|---|---|---|---|---|
+| `backend/Cargo.toml` | One-package boundary, framework/runtime/persistence dependencies, and test dependency | PRIMARY | `debde202` | Supports the modular-monolith and test-framework classification. |
+| `backend/src/routes` | Handler ownership, router entry points, DTOs, direct SQL, orchestration, errors, and colocated route tests | PRIMARY | `debde202` | The module catalog consolidates files by significant responsibility rather than treating each file as an independent service. |
+| `backend/src/services` | Reusable policy, validation, integrations, Marketplace domain behavior, persistence calls, and service tests | PRIMARY | `debde202` | Service boundaries are heterogeneous; `services/health.rs` active use remains unconfirmed. |
+| `backend/src/models` | Partial shared record/model coverage | PRIMARY | `debde202` | Many DTOs and mappings remain route- or service-local. |
+| `backend/src/middleware` | Authentication, tenant context, and security cross-cutting contracts | PRIMARY | `debde202` | Claims and tenant context have broad consumers. |
+| `backend/src/plugins` | Built-in plugin contract, registry, SEO implementation, and tests | PRIMARY | `debde202` | Separate from Marketplace package runtime policy. |
+| `backend/src/error.rs` | Complete shared `AppError` status/category mapping and SQLx conversion | PRIMARY | `debde202` | Some stored technical messages are user-visible; do not assume sanitization. |
+| `backend/src/config.rs` | Exact environment contract, defaults, validation, and configuration tests | PRIMARY | `debde202` | Secret names may be documented; secret values must not be copied. |
+| `backend/src/state.rs` | Exact application-state composition and preview-channel lifecycle | PRIMARY | `debde202` | Preview channels are process-local and not stored in Redis. |
+| `.github/workflows/backend-ci.yml` | Explicit format, lint, and test commands plus CI PostgreSQL/Redis services | PRIMARY | `debde202` | No coverage report or separate end-to-end suite is defined here. |
+| `backend/migrations` | Supporting persistence, enum, constraint, and RLS evidence | PRIMARY | `debde202` | Detailed schema documentation is deferred to Phase 4. |
+
 ## Conflict Handling
 
 The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero documentation audit. When a registered narrative or diagram conflicts with implementation evidence:
@@ -337,3 +358,6 @@ The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero
 - [Architecture Risks](../architecture/architecture-risks.md)
 - [Architecture Decisions](../architecture/decisions/README.md)
 - [Architecture Decision Register](../architecture/decisions/decision-register.md)
+- [Backend Documentation](../backend/README.md)
+- [Backend Module Catalog](../backend/module-catalog.md)
+- [Backend Testing Map](../backend/testing-map.md)

@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "49b2c1886168497e99f7086e4941b21616985656"
+last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
 last_verified_date: "2026-07-17"
 primary_sources:
   - ".gitignore"
@@ -27,6 +27,9 @@ related_documents:
   - "project/navigation-guide.md"
   - "project/glossary.md"
   - "references/source-register.md"
+  - "backend/README.md"
+  - "backend/module-catalog.md"
+  - "backend/dependency-map.md"
 uncertainty_markers:
   - "UNKNOWN U-01"
   - "UNKNOWN U-04"
@@ -103,7 +106,7 @@ Generated, dependency, cache, runtime-data, and local-secret paths are intention
 | scripts/ | Developer and operational tooling | PowerShell and Node.js; tooling | Marketplace validate/pack/submit CLI; V2 GA, Phase 8 load, and V3 Phase 13-15 checks | Invoked from package.json or their documented phase/runbook sources | Phases 9 and 10 |
 | .github/workflows/ | CI definitions | GitHub Actions; tooling | Backend format/Clippy/tests and frontend install/lint/typecheck/tests/build | backend-ci.yml and frontend-ci.yml | Phase 10 |
 | okf-bootstrap/ | Phase Zero evidence and plan | Markdown; non-runtime supporting evidence | Repository, architecture, module, documentation, database, API, gap, and phase inventories | Committed at the Phase Zero checkpoint; source/config/code outrank it | Reference input for all phases |
-| okf/ | Organized knowledge/navigation layer | Markdown and YAML; non-runtime | README.md and index.yaml are entry points; current Phase 1 project/reference files only | Every Markdown file has front matter; index.yaml registers current/planned knowledge | Current and future OKF phases |
+| okf/ | Organized knowledge/navigation layer | Markdown, YAML, and Mermaid; non-runtime | README.md and index.yaml are entry points; project, architecture, and backend knowledge are current | Every Markdown file has front matter; index.yaml registers current/planned knowledge | Phases 1 through 3 current; later phases planned |
 | docker-compose.yml | Local infrastructure definition | Docker Compose; runtime/development | PostgreSQL 16, Redis 7, pgAdmin | Uses named volumes and development credentials | Phase 2 and 10 |
 | docker-compose.prod.yml | Production-like reference definition | Docker Compose; deployment reference | PostgreSQL, Redis, backend, frontend, and upload volume | Requires environment values and builds production Dockerfiles; actual production use is UNKNOWN U-01 | Phase 2 and 10 |
 | package.json | Root command aliases | npm; tooling | Starts Compose infrastructure, backend, frontend, tests, frontend build, and Marketplace CLI | Does not make the repository an npm workspace | Phase 10 |
@@ -113,8 +116,13 @@ Generated, dependency, cache, runtime-data, and local-secret paths are intention
 
 ## 3. Backend Navigation
 
+Start with the Phase 3 [Backend Documentation](../backend/README.md). Use the [Module Catalog](../backend/module-catalog.md) to select one of the 18 significant module documents, then use the structural guides below to reach source evidence. The catalog is not duplicated here.
+
 | Need | Inspect first | Notes |
 | --- | --- | --- |
+| Backend structure and module ownership | ../backend/overview.md; ../backend/module-catalog.md; ../backend/module-boundaries.md | One crate and process with documented source-level responsibility boundaries |
+| Dependency and shared infrastructure | ../backend/dependency-map.md; ../backend/shared-infrastructure.md | Includes reverse-layer imports and high-coupling shared contracts |
+| Request, error, and test behavior | ../backend/request-handling.md; ../backend/error-handling.md; ../backend/testing-map.md | Phase 3 maps patterns and gaps without becoming an endpoint reference |
 | Application entry point | ../../backend/src/main.rs; ../../backend/src/lib.rs | Loads configuration, prepares dependencies, runs migrations, builds layers/router, binds listener, and handles shutdown |
 | Route registration | ../../backend/src/routes/mod.rs | Composes public, authentication-only, and tenant-protected route stacks and generated OpenAPI registration |
 | Request handlers and DTOs | ../../backend/src/routes/*.rs | Most request/response types and many SQL queries are colocated with handlers |

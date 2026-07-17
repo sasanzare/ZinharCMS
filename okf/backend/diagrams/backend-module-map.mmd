@@ -1,0 +1,85 @@
+%% Title: ZinharCMS Backend Module Map
+%% Source evidence: backend/src/routes/mod.rs; backend/src/services/mod.rs; backend/src/middleware/mod.rs; backend/src/state.rs
+%% Related documentation: ../module-catalog.md; ../module-boundaries.md; ../shared-infrastructure.md
+flowchart LR
+    subgraph Runtime["Runtime and Request Context"]
+        M001["BE-MOD-001<br/>Bootstrap and Runtime"]
+        M002["BE-MOD-002<br/>Authentication"]
+        M003["BE-MOD-003<br/>Tenant Authorization and RLS"]
+    end
+
+    subgraph SaaS["SaaS Operations"]
+        M004["BE-MOD-004<br/>Organizations and SaaS Operations"]
+        M005["BE-MOD-005<br/>Billing and Quotas"]
+        M013["BE-MOD-013<br/>Beta and Release Operations"]
+    end
+
+    subgraph CMS["CMS Domains"]
+        M006["BE-MOD-006<br/>Content Types, Entries, and Workflow"]
+        M007["BE-MOD-007<br/>Editorial Comments"]
+        M008["BE-MOD-008<br/>Media"]
+        M009["BE-MOD-009<br/>Pages, Builder, and Preview"]
+        M010["BE-MOD-010<br/>Public Delivery and Cache"]
+        M011["BE-MOD-011<br/>CMS Webhooks"]
+        M012["BE-MOD-012<br/>Built-In Plugins"]
+    end
+
+    subgraph Marketplace["Marketplace Domains"]
+        M014["BE-MOD-014<br/>Creator, Submission, Validation, and Review"]
+        M015["BE-MOD-015<br/>Catalog and Installation"]
+        M016["BE-MOD-016<br/>Runtime Security and Host Adapters"]
+        M017["BE-MOD-017<br/>Finance"]
+        M018["BE-MOD-018<br/>Feedback, Analytics, and Readiness"]
+    end
+
+    subgraph Shared["Shared Infrastructure"]
+        STATE["AppState"]
+        ERROR["AppError"]
+        SIDE["Audit, Email, Webhook, and Provider Helpers"]
+    end
+
+    subgraph Data["Persistence and Runtime State"]
+        PG[("PostgreSQL")]
+        REDIS[("Redis")]
+        FILES[("Upload Filesystem")]
+        PREVIEW[("Process-Local Preview Channels")]
+    end
+
+    M001 --> STATE
+    M001 --> M002
+    M002 --> M003
+    M003 --> M004
+    M003 --> M005
+    M003 --> M006
+    M003 --> M009
+    M003 --> M014
+    M004 --> M005
+    M004 --> M013
+    M006 --> M007
+    M006 --> M010
+    M006 --> M011
+    M009 --> M010
+    M009 --> M012
+    M009 -.->|cross-domain host adapter| M016
+    M014 --> M015
+    M015 --> M016
+    M015 --> M017
+    M018 --> M015
+    M013 -.->|release-readiness overlap| M018
+
+    STATE --> PG
+    STATE --> REDIS
+    STATE --> PREVIEW
+    M008 --> FILES
+    M010 --> REDIS
+    M009 --> PREVIEW
+    M005 --> SIDE
+    M011 --> SIDE
+    M017 --> SIDE
+    M002 --> ERROR
+    M006 --> ERROR
+    M014 --> ERROR
+    M004 --> PG
+    M006 --> PG
+    M009 --> PG
+    M015 --> PG

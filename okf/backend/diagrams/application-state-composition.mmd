@@ -1,0 +1,36 @@
+%% Title: ZinharCMS Application State Composition
+%% Source evidence: backend/src/config.rs; backend/src/db/mod.rs; backend/src/state.rs; backend/src/main.rs; backend/src/routes/mod.rs
+%% Related documentation: ../configuration-and-state.md; ../overview.md; ../request-handling.md
+flowchart LR
+    ENV["Process Environment and Optional .env"] --> LOAD["Config::from_env"]
+    LOAD --> CONFIG["Config"]
+    CONFIG --> ARC["Arc&lt;Config&gt;"]
+
+    CONFIG -->|"DATABASE_URL"| DBHELP["db::connect_lazy"]
+    DBHELP --> POOL["PgPool<br/>maximum 10 connections"]
+    POOL --> MIGRATE["Embedded SQLx Migrations"]
+    MIGRATE --> SEED["Conditional Default Admin and Organization Bootstrap"]
+
+    CONFIG -->|"REDIS_URL"| REDISNEW["redis::Client::open"]
+    REDISNEW --> REDIS["Redis Client"]
+
+    EMPTY["Empty HashMap at Process Start"] --> LOCK["Arc&lt;RwLock&lt;...&gt;&gt;"]
+    LOCK --> CHANNELS["PagePreviewChannels"]
+
+    ARC --> STATE["AppState::new"]
+    POOL --> STATE
+    REDIS --> STATE
+    CHANNELS --> STATE
+
+    STATE --> ROUTER["Router::with_state"]
+    ROUTER --> MIDDLEWARE["State-Aware Middleware"]
+    ROUTER --> HANDLERS["Axum Handlers"]
+
+    SERVICES["Service Module Functions<br/>not stored in AppState"]
+    HANDLERS --> SERVICES
+    SERVICES -.->|"selected config, pool, client, or context arguments"| STATE
+
+    STATE --> CONFIGVIEW["Immutable Startup Configuration"]
+    STATE --> DBVIEW["Shared PostgreSQL Pool"]
+    STATE --> REDISVIEW["Shared Redis Client"]
+    STATE --> PREVIEWVIEW["Process-Local Preview State"]

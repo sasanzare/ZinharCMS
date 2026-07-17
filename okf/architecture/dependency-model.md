@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/lib.rs"
@@ -29,9 +29,13 @@ related_documents:
   - "architecture/components.md"
   - "architecture/architecture-risks.md"
   - "architecture/decisions/decision-register.md"
+  - "backend/dependency-map.md"
+  - "backend/module-boundaries.md"
+  - "backend/shared-infrastructure.md"
 related_diagrams:
   - "architecture/diagrams/dependency-direction.mmd"
   - "architecture/diagrams/container-view.mmd"
+  - "backend/diagrams/backend-dependency-flow.mmd"
 uncertainty_markers:
   - "INFERRED_FROM_STRUCTURE"
   - "ARCHITECTURAL_BOUNDARY_UNCLEAR ABU-01"
@@ -39,6 +43,8 @@ uncertainty_markers:
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-01"
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-02"
   - "DEPENDENCY_DIRECTION_UNCLEAR DDU-03"
+  - "DEPENDENCY_DIRECTION_UNCLEAR DDU-04"
+  - "DEPENDENCY_DIRECTION_UNCLEAR DDU-05"
 ---
 
 # Dependency Model
@@ -89,6 +95,14 @@ This is verified bidirectional source coupling through types and functions. It i
 
 The Rust backend owns runtime request and response behavior, while `frontend/src/types/api.ts` manually describes the client view of many contracts. No generated client, shared schema package, or automated equivalence boundary was found. The dependency is behavioral rather than a compile-time source dependency, so contract drift can compile independently.
 
+### DDU-04: Pages and Marketplace Adapter Coupling
+
+Pages imports Marketplace host-adapter behavior, while `backend/src/services/marketplace_adapters.rs` imports page-owned types. This creates bidirectional source pressure across apparent domain and route/service boundaries. The deeper evidence is registered in [Backend Module Boundaries](../backend/module-boundaries.md) and the [Backend Dependency Map](../backend/dependency-map.md).
+
+### DDU-05: Domain Routes to Delivery-Owned Invalidation
+
+Content and Pages invoke cache invalidation behavior owned by the Delivery route area. The operation is cross-cutting infrastructure, but its current source ownership creates a route-to-route dependency and ambiguous maintenance boundary.
+
 ## Persistence Direction
 
 There is no repository or data-access package that all domains must use. Route handlers and services call SQLx directly; some use tenant-aware RLS helpers and some carry out explicit ownership checks. Migrations define schema and policies but are not imported as typed domain contracts. This structure keeps query behavior near features but blurs persistence ownership and makes cross-cutting isolation review more expensive.
@@ -137,3 +151,5 @@ These rules describe review constraints derived from current evidence and risks;
 - Review every new direct SQL path for organization ownership, transaction scope, and RLS behavior.
 - Treat spawned external side effects as non-durable unless a durable mechanism is explicitly implemented.
 - Update architecture documents, diagrams, risks, decisions, and `okf/index.yaml` when adding a major dependency or changing direction.
+
+For the backend-only dependency inventory, including module-to-module, shared-state, persistence, and external edges, use the [Backend Dependency Map](../backend/dependency-map.md) and [Backend Dependency Flow Diagram](../backend/diagrams/backend-dependency-flow.mmd).

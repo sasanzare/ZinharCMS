@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "README.md"
@@ -33,6 +33,10 @@ related_documents:
   - "architecture/integration-points.md"
   - "architecture/architecture-risks.md"
   - "architecture/decisions/decision-register.md"
+  - "backend/README.md"
+  - "backend/module-catalog.md"
+  - "backend/testing-map.md"
+  - "backend/backend-risks.md"
 uncertainty_markers:
   - "UNKNOWN U-06"
   - "UNKNOWN U-07"
@@ -64,9 +68,10 @@ Use this guide to choose the shortest evidence path for a common repository task
 4. Check the [Project Glossary](glossary.md) before introducing or interpreting domain terminology.
 5. Read the [Architecture Overview](../architecture/overview.md) for system classification, runtime shape, and deployment-evidence limits.
 6. Use the [System Architecture](../architecture/README.md) reading order for boundaries, components, dependencies, flows, integrations, risks, decisions, and diagrams.
-7. Consult the [Source Register](../references/source-register.md) to distinguish primary evidence from supporting or conflicting documentation.
-8. Review the [Machine-Readable Index](../index.yaml) for document status, relationships, and uncertainty markers.
-9. When a claim remains unresolved, follow its marker into [Phase Zero Knowledge Gaps](../../okf-bootstrap/09-knowledge-gaps.md) or [Owner Questions](../../okf-bootstrap/12-owner-questions.md).
+7. Use [Backend Documentation](../backend/README.md) and the [Module Catalog](../backend/module-catalog.md) for backend-specific work.
+8. Consult the [Source Register](../references/source-register.md) to distinguish primary evidence from supporting or conflicting documentation.
+9. Review the [Machine-Readable Index](../index.yaml) for document status, relationships, and uncertainty markers.
+10. When a claim remains unresolved, follow its marker into [Phase Zero Knowledge Gaps](../../okf-bootstrap/09-knowledge-gaps.md) or [Owner Questions](../../okf-bootstrap/12-owner-questions.md).
 
 ## Navigate by Task
 
@@ -74,6 +79,14 @@ Use this guide to choose the shortest evidence path for a common repository task
 |---|---|---|---|
 | Understand the product and implemented scope | `README.md` | `okf/project/overview.md`; `docs/V3_MARKETPLACE_SCOPE.md` | Treat product claims as supporting evidence until confirmed in code, configuration, or migrations. |
 | Understand the current architecture | `okf/architecture/overview.md` | `okf/architecture/diagrams/system-context.mmd`; `okf/architecture/diagrams/container-view.mmd` | The backend is one modular-monolith process, not a microservice set. |
+| Understand a backend module | `okf/backend/module-catalog.md` | Owning document under `okf/backend/modules`; `okf/backend/module-boundaries.md` | Module boundaries are source-level responsibilities inside one crate. |
+| Change a backend handler | Owning `okf/backend/modules` document | `okf/backend/request-handling.md`; matching `backend/src/routes` file; related service, migration, and tests | Handlers often contain policy, SQL, and side effects; do not treat them as uniformly thin controllers. |
+| Change service or domain logic | `okf/backend/services-and-domain.md` | Owning module document; matching `backend/src/services` and route consumers | Rules are distributed; search handlers, middleware, migrations, and tests as well as services. |
+| Change application state or configuration | `okf/backend/configuration-and-state.md` | `backend/src/state.rs`; `backend/src/config.rs`; `backend/src/main.rs`; state-composition diagram | `AppState` has four verified fields and preview channels are process-local. |
+| Find backend persistence code | `okf/backend/persistence-access.md` | Owning route/service files; `backend/src/db/mod.rs`; related migrations | No mandatory repository layer exists; detailed schema work is deferred to Phase 4. |
+| Find backend tests | `okf/backend/testing-map.md` | Owning module document; colocated `#[cfg(test)]` blocks; `.github/workflows/backend-ci.yml` | No separate `backend/tests` directory was found and no coverage percentage is claimed. |
+| Investigate backend errors | `okf/backend/error-handling.md` | `backend/src/error.rs`; failing route/service; `okf/backend/backend-risks.md` | Framework, timeout, WebSocket, and some provider paths can differ from `ErrorBody`. |
+| Add a significant backend module | `okf/backend/module-catalog.md#selection-rule` | `okf/backend/module-boundaries.md`; `dependency-map.md`; `testing-map.md`; diagrams; `okf/index.yaml` | Add a module document only when it meets the catalog criteria; keep small helpers in shared infrastructure. |
 | Identify a system or trust boundary | `okf/architecture/boundaries.md` | `okf/architecture/components.md`; `backend/src/routes/mod.rs` | Tenant enforcement is distributed across middleware, handlers, services, and RLS-aware paths. |
 | Modify backend request flow | `okf/architecture/runtime-flows.md`; `okf/architecture/diagrams/backend-request-flow.mmd` | `backend/src/main.rs`; `backend/src/routes/mod.rs`; relevant middleware, handler, and service | Select public, authenticated, or tenant-protected flow before changing composition. |
 | Modify frontend-backend communication | `okf/architecture/diagrams/frontend-backend-flow.mmd`; `frontend/src/services/api.ts` | `frontend/src/types/api.ts`; matching backend route and response types | Validate both manually maintained contract representations. |
@@ -93,7 +106,6 @@ Use this guide to choose the shortest evidence path for a common repository task
 | Understand Marketplace behavior | `backend/src/routes/marketplace.rs` | `backend/src/routes`; `backend/src/services/marketplace_runtime.rs`; migrations `0015` through `0026` | Uploaded Marketplace code is not an official arbitrary server-side execution mechanism. |
 | Understand frontend routes and state | `frontend/src/router.tsx` | `frontend/src/components/AppShell.tsx`; `frontend/src/stores/useAppStore.ts`; `frontend/src/pages` | The single current Zustand store contains shared application state. |
 | Understand localization and RTL | `frontend/src/i18n` | `frontend/src/styles/index.css`; localized page usage | Existing narrative i18n documentation conflicts with current source details under DCC-02. |
-| Find backend tests | Search `#[cfg(test)]` and `#[test]` under `backend/src` | Module-local test sections; `.github/workflows/backend-ci.yml` | Backend tests are colocated with source; there is no current `backend/tests` directory. |
 | Find frontend tests | `frontend/src/pages/DashboardPage.test.tsx` | `frontend/src/pages/MarketplacePage.test.tsx`; `frontend/src/pages/PagesPage.test.tsx`; `frontend/src/test/setup.ts` | Vitest and Testing Library configuration is in the frontend package and Vite setup. |
 | Inspect CI gates | `.github/workflows/backend-ci.yml` | `.github/workflows/frontend-ci.yml` | CI covers checks and builds; no production deployment workflow was found. |
 | Inspect deployment-related configuration | `docker-compose.prod.yml` | `backend/Dockerfile`; `frontend/Dockerfile`; `frontend/nginx.conf` | These files are production-like configuration, not proof of an actual deployment, beta, or GA state. |
@@ -141,3 +153,7 @@ Use this guide to choose the shortest evidence path for a common repository task
 - [Integration Points](../architecture/integration-points.md)
 - [Architecture Risks](../architecture/architecture-risks.md)
 - [Architecture Decision Register](../architecture/decisions/decision-register.md)
+- [Backend Documentation](../backend/README.md)
+- [Backend Module Catalog](../backend/module-catalog.md)
+- [Backend Testing Map](../backend/testing-map.md)
+- [Backend Risk Register](../backend/backend-risks.md)
