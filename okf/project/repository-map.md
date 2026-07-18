@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - ".gitignore"
   - "package.json"
@@ -172,6 +172,12 @@ Start with the Phase 3 [Backend Documentation](../backend/README.md). Use the [M
 
 | Need | Path | Status |
 | --- | --- | --- |
+| Database documentation entry | ../database/README.md | Phase 5 reading order and change-safety rules |
+| Complete schema inventory | ../database/schema-catalog.md | 51 application tables and other migration-defined objects |
+| Domain entity selection | ../database/entity-catalog.md; ../database/entities | 18 significant entity groups |
+| Relationships and ownership | ../database/relationships.md; ../database/module-data-ownership.md | 108 intended active FKs consolidated into 55 relationship groups |
+| Tenant isolation | ../database/multi-tenancy.md | 32 forced-RLS tables and context/bypass behavior |
+| Migration and constraint safety | ../database/migrations.md; ../database/constraints-and-indexes.md | 26 forward migrations and 109 explicit index names |
 | Migration history/schema | ../../backend/migrations | Primary intended schema evidence; 26 forward migrations |
 | Migration runner/pool | ../../backend/src/db/mod.rs | SQLx pool configuration and embedded migration runner |
 | Selected models/entities | ../../backend/src/models | Partial model layer; many rows/DTOs live in route/service files |
@@ -179,10 +185,9 @@ Start with the Phase 3 [Backend Documentation](../backend/README.md). Use the [M
 | Baseline seed data | ../../backend/migrations/0002_seed_foundation_data.sql | Database seed migration |
 | Startup admin seed | ../../backend/src/main.rs | Seeds a default admin only when no users exist; verify environment implications before use |
 | Database configuration | ../../backend/src/config.rs; ../../.env.example; Compose files | DATABASE_URL and service configuration |
-| Development fixture | ../../docs/sample-data.sql | Default-organization sample content |
 | Tenant/RLS fixture | ../../docs/V2_PHASE_EIGHT_FIXTURE.sql | V2 hardening fixture |
 
-The complete database design belongs to Phase 5 and is intentionally not reproduced here.
+Use the Phase 5 catalog first, then verify every change against current migrations and query code. Runtime migration state remains unknown.
 
 ## 6. API Navigation
 
@@ -293,3 +298,6 @@ The following paths should not normally be used as project-knowledge sources:
 - [Frontend Application Catalog](../frontend/application-catalog.md)
 - [Frontend Feature Catalog](../frontend/feature-catalog.md)
 - [Frontend Testing Map](../frontend/testing-map.md)
+- [Database Architecture](../database/README.md)
+- [Database Schema Catalog](../database/schema-catalog.md)
+- [Database Entity Catalog](../database/entity-catalog.md)

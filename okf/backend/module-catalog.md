@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/routes"
   - "backend/src/services"
@@ -353,6 +353,15 @@ Phase 3 identifies 18 significant documentation modules. It consolidates smaller
 - Boundary status: `OVERLAPPING`
 - Confidence: High
 
+
+## Phase 5 Persistence Cross-Reference
+
+| Backend module family | Primary database entity documents |
+| --- | --- |
+| Authentication and organizations | [Identity and Global RBAC](../database/entities/identity-and-global-rbac.md); [Organizations and Membership](../database/entities/organizations-and-membership.md) |
+| Content, workflow, pages, plugins, media, delivery | [Content Types and Entries](../database/entities/content-types-and-entries.md); [Pages and Versions](../database/entities/pages-and-versions.md); [Component and Plugin Registry](../database/entities/component-and-plugin-registry.md); [Media and Variants](../database/entities/media-and-variants.md); [Editorial Comments](../database/entities/editorial-comments.md); [Public Settings and Navigation](../database/entities/public-settings-and-navigation.md); [CMS Webhooks and Deliveries](../database/entities/cms-webhooks-and-deliveries.md) |
+| Billing, SaaS, and beta | [Plans, Subscriptions, and Usage](../database/entities/plans-subscriptions-and-usage.md); [SaaS Operations and Audit](../database/entities/saas-operations-and-audit.md); [Beta Release Records](../database/entities/beta-release-records.md) |
+| Marketplace | [Marketplace entity catalog](../database/entity-catalog.md#catalog) covering creator, catalog/review, runtime, commerce, ledger/payout, and trust aggregates |
 
 ## Catalog Maintenance
 

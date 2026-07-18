@@ -1,0 +1,171 @@
+%% Title: ZinharCMS Entity Relationship Overview
+%% Sources: backend/migrations/0001_initial_schema.sql through backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql
+%% Related documentation: ../relationships.md; ../schema-catalog.md; ../entity-catalog.md
+erDiagram
+    USERS {
+        uuid id PK
+        citext email UK
+    }
+    ROLES {
+        uuid id PK
+        text name UK
+    }
+    USER_ROLES {
+        uuid user_id PK,FK
+        uuid role_id PK,FK
+    }
+    ORGANIZATIONS {
+        uuid id PK
+        text slug UK
+    }
+    ORGANIZATION_MEMBERS {
+        uuid organization_id PK,FK
+        uuid user_id PK,FK
+    }
+    CONTENT_TYPES {
+        uuid id PK
+        uuid organization_id FK
+        text slug UK
+    }
+    CONTENT_ENTRIES {
+        uuid id PK
+        uuid organization_id FK
+        uuid type_id FK
+        content_status status
+    }
+    PAGES {
+        uuid id PK
+        uuid organization_id FK
+        text slug UK
+        page_status status
+    }
+    PAGE_VERSIONS {
+        uuid id PK
+        uuid organization_id FK
+        uuid page_id FK
+    }
+    MEDIA {
+        uuid id PK
+        uuid organization_id FK
+    }
+    MEDIA_VARIANTS {
+        uuid id PK
+        uuid organization_id FK
+        uuid media_id FK
+    }
+    COMMENTS {
+        uuid id PK
+        uuid organization_id FK
+        uuid author_id FK
+        text entity_type
+        uuid entity_id
+    }
+    WEBHOOKS {
+        uuid id PK
+        uuid organization_id FK
+    }
+    WEBHOOK_DELIVERIES {
+        uuid id PK
+        uuid organization_id FK
+        uuid webhook_id FK
+    }
+    PLANS {
+        uuid id PK
+        text key UK
+    }
+    ORGANIZATION_SUBSCRIPTIONS {
+        uuid organization_id PK,FK
+        uuid plan_id FK
+    }
+    MARKETPLACE_CREATORS {
+        uuid id PK
+        uuid user_id FK
+    }
+    MARKETPLACE_LISTINGS {
+        uuid id PK
+        uuid creator_id FK
+    }
+    MARKETPLACE_VERSIONS {
+        uuid id PK
+        uuid listing_id FK
+    }
+    MARKETPLACE_SUBMISSIONS {
+        uuid id PK
+        uuid version_id FK
+    }
+    MARKETPLACE_REVIEW_EVENTS {
+        uuid id PK
+        uuid submission_id FK
+    }
+    MARKETPLACE_INSTALLATIONS {
+        uuid id PK
+        uuid organization_id FK
+        uuid listing_id FK
+        uuid version_id FK
+    }
+    MARKETPLACE_PURCHASES {
+        uuid id PK
+        uuid organization_id FK
+        uuid listing_id FK
+        uuid version_id FK
+    }
+    MARKETPLACE_ENTITLEMENTS {
+        uuid id PK
+        uuid organization_id FK
+        uuid listing_id FK
+        uuid purchase_id FK
+    }
+    MARKETPLACE_REVENUE_LEDGER {
+        uuid id PK
+        uuid organization_id FK
+        uuid purchase_id FK
+        uuid creator_id FK
+    }
+    MARKETPLACE_PRODUCT_REVIEWS {
+        uuid id PK
+        uuid organization_id FK
+        uuid listing_id FK
+        uuid user_id FK
+    }
+    MARKETPLACE_ABUSE_REPORTS {
+        uuid id PK
+        uuid organization_id FK
+        uuid listing_id FK
+    }
+
+    USERS ||--o{ USER_ROLES : receives
+    ROLES ||--o{ USER_ROLES : grants
+    USERS ||--o{ ORGANIZATION_MEMBERS : joins
+    ORGANIZATIONS ||--o{ ORGANIZATION_MEMBERS : has
+    ORGANIZATIONS ||--o{ CONTENT_TYPES : owns
+    ORGANIZATIONS ||--o{ CONTENT_ENTRIES : owns
+    CONTENT_TYPES ||--o{ CONTENT_ENTRIES : defines
+    ORGANIZATIONS ||--o{ PAGES : owns
+    PAGES ||--o{ PAGE_VERSIONS : snapshots
+    ORGANIZATIONS ||--o{ PAGE_VERSIONS : scopes
+    ORGANIZATIONS ||--o{ MEDIA : owns
+    MEDIA ||--o{ MEDIA_VARIANTS : derives
+    ORGANIZATIONS ||--o{ COMMENTS : scopes
+    USERS ||--o{ COMMENTS : authors
+    ORGANIZATIONS ||--o{ WEBHOOKS : owns
+    WEBHOOKS ||--o{ WEBHOOK_DELIVERIES : records
+    ORGANIZATIONS ||--|| ORGANIZATION_SUBSCRIPTIONS : subscribes
+    PLANS ||--o{ ORGANIZATION_SUBSCRIPTIONS : selected_by
+    USERS ||--o| MARKETPLACE_CREATORS : creator_profile
+    MARKETPLACE_CREATORS ||--o{ MARKETPLACE_LISTINGS : owns
+    MARKETPLACE_LISTINGS ||--o{ MARKETPLACE_VERSIONS : versions
+    MARKETPLACE_VERSIONS ||--o{ MARKETPLACE_SUBMISSIONS : submitted_as
+    MARKETPLACE_SUBMISSIONS ||--o{ MARKETPLACE_REVIEW_EVENTS : reviewed_by
+    ORGANIZATIONS ||--o{ MARKETPLACE_INSTALLATIONS : installs
+    MARKETPLACE_LISTINGS ||--o{ MARKETPLACE_INSTALLATIONS : installed_as
+    MARKETPLACE_VERSIONS ||--o{ MARKETPLACE_INSTALLATIONS : selected_version
+    ORGANIZATIONS ||--o{ MARKETPLACE_PURCHASES : buys
+    MARKETPLACE_LISTINGS ||--o{ MARKETPLACE_PURCHASES : purchased
+    MARKETPLACE_PURCHASES ||--o{ MARKETPLACE_ENTITLEMENTS : grants
+    ORGANIZATIONS ||--o{ MARKETPLACE_ENTITLEMENTS : owns
+    MARKETPLACE_PURCHASES ||--o{ MARKETPLACE_REVENUE_LEDGER : posts
+    MARKETPLACE_CREATORS ||--o{ MARKETPLACE_REVENUE_LEDGER : earns
+    ORGANIZATIONS ||--o{ MARKETPLACE_PRODUCT_REVIEWS : writes
+    MARKETPLACE_LISTINGS ||--o{ MARKETPLACE_PRODUCT_REVIEWS : receives
+    ORGANIZATIONS ||--o{ MARKETPLACE_ABUSE_REPORTS : reports
+    MARKETPLACE_LISTINGS ||--o{ MARKETPLACE_ABUSE_REPORTS : concerns

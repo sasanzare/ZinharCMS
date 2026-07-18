@@ -4,10 +4,10 @@ project:
   repository: "https://github.com/sasanzare/ZinharCMS"
   repository_name: "ZinharCMS"
   knowledge_status: "in_progress"
-  current_phase: 4
+  current_phase: 5
   current_phase_status: "complete"
-  last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-  last_verified_date: "2026-07-17"
+  last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+  last_verified_date: "2026-07-18"
 
 authority:
   source_of_truth: "Current implementation and repository configuration"
@@ -43,6 +43,10 @@ entry_points:
       purpose: "Phase 4 frontend architecture entry point and reading order"
     - path: "frontend/feature-catalog.md"
       purpose: "Catalog of significant frontend features and owning documents"
+    - path: "database/README.md"
+      purpose: "Phase 5 database architecture entry point and reading order"
+    - path: "database/entity-catalog.md"
+      purpose: "Catalog of significant database entity groups and owning documents"
     - path: "project/navigation-guide.md"
       purpose: "Short task-oriented navigation guide"
   ai:
@@ -70,6 +74,12 @@ entry_points:
       purpose: "Frontend route, page, component, state, API, test, permission, and asset ownership"
     - path: "frontend/state-management.md"
       purpose: "Reactive, persistent, route-local, and transport state ownership"
+    - path: "database/schema-catalog.md"
+      purpose: "Migration-defined schema object inventory and runtime-status caveat"
+    - path: "database/relationships.md"
+      purpose: "Foreign-key, logical relationship, and tenant-coherence map"
+    - path: "database/multi-tenancy.md"
+      purpose: "Tenant context, RLS, bypass, and isolation evidence"
     - path: "project/navigation-guide.md"
       purpose: "Task-to-source navigation and AI agent rules"
 
@@ -82,8 +92,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "README.md"
       - "okf-bootstrap/phase-zero-summary.md"
@@ -234,8 +244,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - ".gitignore"
       - "package.json"
@@ -286,8 +296,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "README.md"
       - "backend/migrations"
@@ -331,8 +341,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "README.md"
       - "package.json"
@@ -397,8 +407,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "README.md"
       - "package.json"
@@ -604,8 +614,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/routes/mod.rs"
       - "backend/src/middleware/auth.rs"
@@ -664,8 +674,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/main.rs"
       - "backend/src/state.rs"
@@ -721,8 +731,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/lib.rs"
       - "backend/src/routes/mod.rs"
@@ -781,8 +791,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/main.rs"
       - "backend/src/config.rs"
@@ -1289,8 +1299,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "mixed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/routes/mod.rs"
       - "backend/src/services/mod.rs"
@@ -1322,8 +1332,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/routes"
       - "backend/src/services"
@@ -2172,8 +2182,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/db/mod.rs"
       - "backend/src/state.rs"
@@ -2342,8 +2352,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/Cargo.toml"
       - "backend/src"
@@ -3082,6 +3092,717 @@ documents:
     known_uncertainty_markers: ["RESPONSIBILITY_OVERLAP FRO-01", "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01", "UI_BEHAVIOR_UNVERIFIED UBU-01"]
 
 
+  - id: "database-readme"
+    path: "database/README.md"
+    title: "Database Architecture"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/db/mod.rs", "backend/src/routes", "backend/src/services"]
+    related_documents: ["database/overview.md", "database/schema-catalog.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["SCHEMA_RUNTIME_STATUS_UNKNOWN SRU-01", "UNKNOWN U-02"]
+
+  - id: "database-overview"
+    path: "database/overview.md"
+    title: "Database Overview"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/db/mod.rs", "backend/src/main.rs"]
+    related_documents: ["database/schema-catalog.md", "database/database-risks.md"]
+    known_uncertainty_markers: ["SCHEMA_RUNTIME_STATUS_UNKNOWN SRU-01", "PERSISTENCE_BOUNDARY_UNCLEAR PBU-01"]
+
+  - id: "database-technology-configuration"
+    path: "database/technology-and-configuration.md"
+    title: "Database Technology and Configuration"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/Cargo.toml", "backend/src/db/mod.rs", "backend/src/main.rs", "docker-compose.yml", ".github/workflows"]
+    related_documents: ["database/overview.md", "database/migrations.md"]
+    known_uncertainty_markers: ["UNKNOWN U-02", "UNKNOWN U-04"]
+
+  - id: "database-schema-catalog"
+    path: "database/schema-catalog.md"
+    title: "Database Schema Catalog"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services"]
+    related_documents: ["database/entity-catalog.md", "database/relationships.md", "database/constraints-and-indexes.md"]
+    known_uncertainty_markers: ["SCHEMA_RUNTIME_STATUS_UNKNOWN SRU-01", "MIGRATION_MODEL_CONFLICT MMC-01", "MIGRATION_MODEL_CONFLICT MMC-02"]
+
+  - id: "database-entity-catalog"
+    path: "database/entity-catalog.md"
+    title: "Database Entity Catalog"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services"]
+    related_documents: ["database/schema-catalog.md", "database/relationships.md", "database/module-data-ownership.md"]
+    known_uncertainty_markers: ["ENTITY_OWNERSHIP_UNCLEAR EOU-01", "SOFT_DELETE_BEHAVIOR_UNCLEAR SDBU-01"]
+
+  - id: "database-relationships"
+    path: "database/relationships.md"
+    title: "Database Relationships"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/routes", "backend/src/services"]
+    related_documents: ["database/schema-catalog.md", "database/entity-catalog.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["RELATIONSHIP_UNCLEAR RLU-01", "RELATIONSHIP_UNCLEAR RLU-02", "CONSTRAINT_COVERAGE_UNCLEAR CCU-01"]
+
+  - id: "database-module-data-ownership"
+    path: "database/module-data-ownership.md"
+    title: "Module Data Ownership"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/src/middleware", "backend/migrations"]
+    related_documents: ["database/persistence-mapping.md", "backend/module-catalog.md", "backend/module-boundaries.md"]
+    known_uncertainty_markers: ["ENTITY_OWNERSHIP_UNCLEAR EOU-01", "PERSISTENCE_BOUNDARY_UNCLEAR PBU-01"]
+
+  - id: "database-migrations"
+    path: "database/migrations.md"
+    title: "Database Migrations"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/db/mod.rs", "backend/src/main.rs"]
+    related_documents: ["database/schema-catalog.md", "database/database-risks.md"]
+    known_uncertainty_markers: ["UNKNOWN U-02", "NEEDS_OWNER_CONFIRMATION NOC-14"]
+
+  - id: "database-constraints-indexes"
+    path: "database/constraints-and-indexes.md"
+    title: "Database Constraints and Indexes"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations"]
+    related_documents: ["database/schema-catalog.md", "database/relationships.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["CONSTRAINT_COVERAGE_UNCLEAR CCU-01", "CONSTRAINT_COVERAGE_UNCLEAR CCU-02", "INDEX_PURPOSE_UNCLEAR IPU-01"]
+
+  - id: "database-transactions-consistency"
+    path: "database/transactions-and-consistency.md"
+    title: "Database Transactions and Consistency"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/src/middleware/tenant.rs"]
+    related_documents: ["database/multi-tenancy.md", "database/lifecycle-and-auditing.md", "database/database-risks.md"]
+    known_uncertainty_markers: ["TRANSACTION_BOUNDARY_UNCLEAR TBU-01", "TRANSACTION_BOUNDARY_UNCLEAR TBU-02", "TRANSACTION_BOUNDARY_UNCLEAR TBU-03", "TRANSACTION_BOUNDARY_UNCLEAR TBU-04"]
+
+  - id: "database-multi-tenancy"
+    path: "database/multi-tenancy.md"
+    title: "Database Multi-Tenancy"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations/0008_v2_phase_one_organizations.sql", "backend/migrations/0009_v2_phase_three_rls.sql", "backend/migrations", "backend/src/middleware/tenant.rs", "backend/src/services/rls.rs"]
+    related_documents: ["database/relationships.md", "database/constraints-and-indexes.md", "architecture/boundaries.md"]
+    known_uncertainty_markers: ["TENANT_ISOLATION_UNVERIFIED TIV-01", "DOCUMENTATION_CODE_CONFLICT DCC-12", "UNKNOWN U-08"]
+
+  - id: "database-lifecycle-auditing"
+    path: "database/lifecycle-and-auditing.md"
+    title: "Database Lifecycle and Auditing"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/routes", "backend/src/services"]
+    related_documents: ["database/entity-catalog.md", "database/transactions-and-consistency.md", "database/database-risks.md"]
+    known_uncertainty_markers: ["SOFT_DELETE_BEHAVIOR_UNCLEAR SDBU-01", "DATA_LIFECYCLE_UNCLEAR DLU-01", "DATA_LIFECYCLE_UNCLEAR DLU-02"]
+
+  - id: "database-persistence-mapping"
+    path: "database/persistence-mapping.md"
+    title: "Database Persistence Mapping"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/models", "backend/src/routes", "backend/src/services", "backend/src/db/mod.rs"]
+    related_documents: ["database/schema-catalog.md", "database/module-data-ownership.md", "backend/persistence-access.md"]
+    known_uncertainty_markers: ["PERSISTENCE_BOUNDARY_UNCLEAR PBU-01", "MIGRATION_MODEL_CONFLICT MMC-01", "MIGRATION_MODEL_CONFLICT MMC-02"]
+
+  - id: "database-seeds-fixtures"
+    path: "database/seeds-and-fixtures.md"
+    title: "Database Seeds and Fixtures"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/db", "docs/V2_PHASE_EIGHT_FIXTURE.sql"]
+    related_documents: ["database/migrations.md", "database/database-testing.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["TEST_ISOLATION_UNCLEAR TIU-01", "NEEDS_OWNER_CONFIRMATION NOC-14"]
+
+  - id: "database-testing"
+    path: "database/database-testing.md"
+    title: "Database Testing"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src", "backend/migrations", ".github/workflows", "docs/V2_PHASE_EIGHT_FIXTURE.sql"]
+    related_documents: ["database/seeds-and-fixtures.md", "database/multi-tenancy.md", "backend/testing-map.md"]
+    known_uncertainty_markers: ["TEST_ISOLATION_UNCLEAR TIU-01", "TEST_COVERAGE_GAP TCG-01", "DOCUMENTATION_CODE_CONFLICT DCC-12"]
+
+  - id: "database-risks"
+    path: "database/database-risks.md"
+    title: "Database Risk Register"
+    category: "database"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services", "backend/src/services/hardening.rs"]
+    related_documents: ["database/migrations.md", "database/multi-tenancy.md", "database/transactions-and-consistency.md", "database/database-testing.md"]
+    known_uncertainty_markers: ["UNKNOWN U-02", "TENANT_ISOLATION_UNVERIFIED TIV-01", "TRANSACTION_BOUNDARY_UNCLEAR TBU-01"]
+
+  - id: "database-entity-identity-global-rbac"
+    path: "database/entities/identity-and-global-rbac.md"
+    title: "Identity and Global RBAC"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-001"
+    entity_name: "Identity and Global RBAC"
+    entity_domain: "Identity and Access"
+    schema_objects: ["users", "roles", "user_roles", "refresh_tokens", "login_attempts"]
+    owning_module: "Auth"
+    tenant_scope: "global"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["DATA_LIFECYCLE_UNCLEAR DLU-01"]
+
+  - id: "database-entity-organizations-membership"
+    path: "database/entities/organizations-and-membership.md"
+    title: "Organizations and Membership"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-002"
+    entity_name: "Organizations and Membership"
+    entity_domain: "Tenancy"
+    schema_objects: ["organizations", "organization_members", "organization_invitations"]
+    owning_module: "Organizations"
+    tenant_scope: "mixed"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["TRANSACTION_BOUNDARY_UNCLEAR TBU-02", "UNKNOWN U-08"]
+
+  - id: "database-entity-content-types-entries"
+    path: "database/entities/content-types-and-entries.md"
+    title: "Content Types and Entries"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-003"
+    entity_name: "Content Types and Entries"
+    entity_domain: "CMS Content"
+    schema_objects: ["content_types", "content_entries"]
+    owning_module: "Content"
+    tenant_scope: "tenant"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["MIGRATION_MODEL_CONFLICT MMC-02", "CONSTRAINT_COVERAGE_UNCLEAR CCU-01"]
+
+  - id: "database-entity-pages-versions"
+    path: "database/entities/pages-and-versions.md"
+    title: "Pages and Versions"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-004"
+    entity_name: "Pages and Versions"
+    entity_domain: "CMS Pages"
+    schema_objects: ["pages", "page_versions"]
+    owning_module: "Pages and Builder"
+    tenant_scope: "tenant"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/transactions-and-consistency.md"]
+    known_uncertainty_markers: ["MIGRATION_MODEL_CONFLICT MMC-01", "MIGRATION_MODEL_CONFLICT MMC-02", "CONSTRAINT_COVERAGE_UNCLEAR CCU-01"]
+
+  - id: "database-entity-component-plugin-registry"
+    path: "database/entities/component-and-plugin-registry.md"
+    title: "Component and Plugin Registry"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-005"
+    entity_name: "Component and Plugin Registry"
+    entity_domain: "CMS Extensibility"
+    schema_objects: ["component_registry", "cms_plugins"]
+    owning_module: "Pages and Plugins"
+    tenant_scope: "mixed"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["MIGRATION_MODEL_CONFLICT MMC-02", "MODULE_OWNERSHIP_UNCLEAR MOU-05"]
+
+  - id: "database-entity-media-variants"
+    path: "database/entities/media-and-variants.md"
+    title: "Media and Variants"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-006"
+    entity_name: "Media and Variants"
+    entity_domain: "Media"
+    schema_objects: ["media", "media_variants"]
+    owning_module: "Media"
+    tenant_scope: "tenant"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/transactions-and-consistency.md"]
+    known_uncertainty_markers: ["TRANSACTION_BOUNDARY_UNCLEAR TBU-01", "MIGRATION_MODEL_CONFLICT MMC-02"]
+
+  - id: "database-entity-editorial-comments"
+    path: "database/entities/editorial-comments.md"
+    title: "Editorial Comments"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-007"
+    entity_name: "Editorial Comments"
+    entity_domain: "Editorial Collaboration"
+    schema_objects: ["comments"]
+    owning_module: "Comments and Workflow"
+    tenant_scope: "tenant"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/relationships.md"]
+    known_uncertainty_markers: ["RELATIONSHIP_UNCLEAR RLU-01", "MODULE_OWNERSHIP_UNCLEAR MOU-03"]
+
+  - id: "database-entity-public-settings-navigation"
+    path: "database/entities/public-settings-and-navigation.md"
+    title: "Public Settings and Navigation"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-008"
+    entity_name: "Public Settings and Navigation"
+    entity_domain: "Public Delivery Configuration"
+    schema_objects: ["public_settings", "navigation_items"]
+    owning_module: "Delivery and Settings"
+    tenant_scope: "tenant"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["UNKNOWN U-08", "DATA_LIFECYCLE_UNCLEAR DLU-02"]
+
+  - id: "database-entity-cms-webhooks-deliveries"
+    path: "database/entities/cms-webhooks-and-deliveries.md"
+    title: "CMS Webhooks and Deliveries"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-009"
+    entity_name: "CMS Webhooks and Deliveries"
+    entity_domain: "Outbound Delivery"
+    schema_objects: ["webhooks", "webhook_deliveries"]
+    owning_module: "Delivery and Webhooks"
+    tenant_scope: "tenant"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/transactions-and-consistency.md"]
+    known_uncertainty_markers: ["TRANSACTION_BOUNDARY_UNCLEAR TBU-04", "DATA_LIFECYCLE_UNCLEAR DLU-01"]
+
+  - id: "database-entity-plans-subscriptions-usage"
+    path: "database/entities/plans-subscriptions-and-usage.md"
+    title: "Plans, Subscriptions, and Usage"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-010"
+    entity_name: "Plans, Subscriptions, and Usage"
+    entity_domain: "SaaS Billing"
+    schema_objects: ["plans", "organization_subscriptions", "usage_counters", "billing_events"]
+    owning_module: "Billing"
+    tenant_scope: "mixed"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/transactions-and-consistency.md"]
+    known_uncertainty_markers: ["TRANSACTION_BOUNDARY_UNCLEAR TBU-03", "CONSTRAINT_COVERAGE_UNCLEAR CCU-02"]
+
+  - id: "database-entity-saas-operations-audit"
+    path: "database/entities/saas-operations-and-audit.md"
+    title: "SaaS Operations and Audit"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-011"
+    entity_name: "SaaS Operations and Audit"
+    entity_domain: "SaaS Operations"
+    schema_objects: ["organization_domains", "organization_rate_limits", "audit_logs", "email_deliveries", "saas_alert_rules"]
+    owning_module: "Organizations and SaaS Operations"
+    tenant_scope: "tenant"
+    implementation_status: "PARTIALLY_IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/lifecycle-and-auditing.md"]
+    known_uncertainty_markers: ["IMPLEMENTATION_STATUS_UNCLEAR ISU-01", "IMPLEMENTATION_STATUS_UNCLEAR ISU-02", "RELATIONSHIP_UNCLEAR RLU-02"]
+
+  - id: "database-entity-beta-release-records"
+    path: "database/entities/beta-release-records.md"
+    title: "Beta Release Records"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-012"
+    entity_name: "Beta Release Records"
+    entity_domain: "Release Readiness"
+    schema_objects: ["beta_participants", "beta_feedback", "beta_ga_blockers"]
+    owning_module: "Beta and Release Readiness"
+    tenant_scope: "tenant"
+    implementation_status: "IMPLEMENTED_WITH_RUNTIME_STATUS_UNCLEAR"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/lifecycle-and-auditing.md"]
+    known_uncertainty_markers: ["IMPLEMENTATION_STATUS_UNCLEAR ISU-03", "DATA_LIFECYCLE_UNCLEAR DLU-01"]
+
+  - id: "database-entity-marketplace-creators"
+    path: "database/entities/marketplace-creators.md"
+    title: "Marketplace Creators"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-013"
+    entity_name: "Marketplace Creators"
+    entity_domain: "Marketplace Creator"
+    schema_objects: ["marketplace_creators"]
+    owning_module: "Marketplace Creator"
+    tenant_scope: "global"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/module-data-ownership.md"]
+    known_uncertainty_markers: ["MODULE_OWNERSHIP_UNCLEAR MOU-05", "DATA_LIFECYCLE_UNCLEAR DLU-01"]
+
+  - id: "database-entity-marketplace-catalog-review"
+    path: "database/entities/marketplace-catalog-and-review-pipeline.md"
+    title: "Marketplace Catalog and Review Pipeline"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-014"
+    entity_name: "Marketplace Catalog and Review Pipeline"
+    entity_domain: "Marketplace Catalog"
+    schema_objects: ["marketplace_listings", "marketplace_versions", "marketplace_submissions", "marketplace_review_events"]
+    owning_module: "Marketplace Catalog and Review"
+    tenant_scope: "global"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/lifecycle-and-auditing.md"]
+    known_uncertainty_markers: ["CONSTRAINT_COVERAGE_UNCLEAR CCU-02", "DATA_LIFECYCLE_UNCLEAR DLU-01"]
+
+  - id: "database-entity-marketplace-installations-runtime"
+    path: "database/entities/marketplace-installations-and-runtime-adapters.md"
+    title: "Marketplace Installations and Runtime Adapters"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-015"
+    entity_name: "Marketplace Installations and Runtime Adapters"
+    entity_domain: "Marketplace Runtime"
+    schema_objects: ["marketplace_installations", "marketplace_permission_catalog", "marketplace_kill_switches", "marketplace_template_imports", "marketplace_plugin_hooks"]
+    owning_module: "Marketplace Installation and Runtime"
+    tenant_scope: "mixed"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["DOCUMENTATION_CODE_CONFLICT DCC-12", "SOFT_DELETE_BEHAVIOR_UNCLEAR SDBU-01"]
+
+  - id: "database-entity-marketplace-purchases-entitlements"
+    path: "database/entities/marketplace-purchases-and-entitlements.md"
+    title: "Marketplace Purchases and Entitlements"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-016"
+    entity_name: "Marketplace Purchases and Entitlements"
+    entity_domain: "Marketplace Commerce"
+    schema_objects: ["marketplace_purchases", "marketplace_entitlements"]
+    owning_module: "Marketplace Finance"
+    tenant_scope: "tenant"
+    implementation_status: "IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/transactions-and-consistency.md"]
+    known_uncertainty_markers: ["TRANSACTION_BOUNDARY_UNCLEAR TBU-03", "CONSTRAINT_COVERAGE_UNCLEAR CCU-01"]
+
+  - id: "database-entity-marketplace-ledger-payouts"
+    path: "database/entities/marketplace-ledger-and-payouts.md"
+    title: "Marketplace Ledger and Payouts"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-017"
+    entity_name: "Marketplace Ledger and Payouts"
+    entity_domain: "Marketplace Finance"
+    schema_objects: ["marketplace_revenue_ledger", "marketplace_payout_accounts", "marketplace_payouts"]
+    owning_module: "Marketplace Finance"
+    tenant_scope: "mixed"
+    implementation_status: "PARTIALLY_IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/lifecycle-and-auditing.md"]
+    known_uncertainty_markers: ["PLANNED_NOT_IMPLEMENTED PNI-02", "DATA_LIFECYCLE_UNCLEAR DLU-01"]
+
+  - id: "database-entity-marketplace-reviews-abuse"
+    path: "database/entities/marketplace-reviews-and-abuse.md"
+    title: "Marketplace Reviews and Abuse"
+    category: "database-entity"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    entity_id: "DB-ENT-018"
+    entity_name: "Marketplace Reviews and Abuse"
+    entity_domain: "Marketplace Trust and Feedback"
+    schema_objects: ["marketplace_product_reviews", "marketplace_abuse_reports", "marketplace_internal_notifications"]
+    owning_module: "Marketplace Feedback and Trust"
+    tenant_scope: "mixed"
+    implementation_status: "PARTIALLY_IMPLEMENTED"
+    confidence: "high"
+    related_documents: ["database/entity-catalog.md", "database/lifecycle-and-auditing.md"]
+    known_uncertainty_markers: ["PLANNED_NOT_IMPLEMENTED PNI-04", "DATA_LIFECYCLE_UNCLEAR DLU-01"]
+
+  - id: "database-diagram-domain-map"
+    path: "database/diagrams/database-domain-map.mmd"
+    title: "ZinharCMS Database Domain Map"
+    category: "database-diagram"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations", "backend/src/routes", "backend/src/services"]
+    related_documents: ["database/overview.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["SCHEMA_RUNTIME_STATUS_UNKNOWN SRU-01"]
+
+  - id: "database-diagram-er-overview"
+    path: "database/diagrams/entity-relationship-overview.mmd"
+    title: "ZinharCMS Entity Relationship Overview"
+    category: "database-diagram"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/migrations"]
+    related_documents: ["database/relationships.md", "database/schema-catalog.md"]
+    known_uncertainty_markers: ["RELATIONSHIP_UNCLEAR RLU-01", "CONSTRAINT_COVERAGE_UNCLEAR CCU-01"]
+
+  - id: "database-diagram-module-ownership"
+    path: "database/diagrams/module-data-ownership.mmd"
+    title: "ZinharCMS Module Data Ownership"
+    category: "database-diagram"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "mixed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/src/middleware", "backend/migrations"]
+    related_documents: ["database/module-data-ownership.md", "database/persistence-mapping.md"]
+    known_uncertainty_markers: ["ENTITY_OWNERSHIP_UNCLEAR EOU-01", "PERSISTENCE_BOUNDARY_UNCLEAR PBU-01"]
+
+  - id: "database-diagram-tenant-isolation"
+    path: "database/diagrams/tenant-isolation.mmd"
+    title: "ZinharCMS Tenant Isolation Flow"
+    category: "database-diagram"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/middleware/tenant.rs", "backend/src/services/rls.rs", "backend/migrations"]
+    related_documents: ["database/multi-tenancy.md", "database/database-testing.md"]
+    known_uncertainty_markers: ["TENANT_ISOLATION_UNVERIFIED TIV-01", "DOCUMENTATION_CODE_CONFLICT DCC-12"]
+
+  - id: "database-diagram-migration-lifecycle"
+    path: "database/diagrams/migration-lifecycle.mmd"
+    title: "ZinharCMS Migration Lifecycle"
+    category: "database-diagram"
+    status: "current"
+    phase: 5
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/db/mod.rs", "backend/src/main.rs", "backend/migrations"]
+    related_documents: ["database/migrations.md", "database/technology-and-configuration.md"]
+    known_uncertainty_markers: ["UNKNOWN U-02", "NEEDS_OWNER_CONFIRMATION NOC-14"]
+
 uncertainty_register:
   unknown:
     - id: "UNKNOWN U-01"
@@ -3147,6 +3868,7 @@ uncertainty_register:
     - "DOCUMENTATION_CODE_CONFLICT DCC-09"
     - "DOCUMENTATION_CODE_CONFLICT DCC-10"
     - "DOCUMENTATION_CODE_CONFLICT DCC-11"
+    - "DOCUMENTATION_CODE_CONFLICT DCC-12"
 
   planned_not_implemented:
     - id: "PLANNED_NOT_IMPLEMENTED PNI-01"
@@ -3328,6 +4050,60 @@ uncertainty_register:
     - id: "DEAD_OR_UNUSED_CODE_UNCONFIRMED DU-02"
       summary: "React Hook Form, Hook Form resolvers, and Zod are declared dependencies without verified imports under frontend/src"
 
+  schema_runtime_status_unknown:
+    - id: "SCHEMA_RUNTIME_STATUS_UNKNOWN SRU-01"
+      summary: "Migration-defined objects were inventoried, but applied state and deployed catalog equivalence were not inspected"
+
+  migration_model_conflict:
+    - id: "MIGRATION_MODEL_CONFLICT MMC-01"
+      summary: "The shared PageStatus model omits pending_review, which migration 0006 adds to page_status"
+    - id: "MIGRATION_MODEL_CONFLICT MMC-02"
+      summary: "Several shared CMS models omit migration-defined organization_id columns and act as partial projections"
+
+  entity_ownership_unclear:
+    - id: "ENTITY_OWNERSHIP_UNCLEAR EOU-01"
+      summary: "Shared audit and operational persistence has writers and readers across multiple backend modules"
+
+  relationship_unclear:
+    - id: "RELATIONSHIP_UNCLEAR RLU-01"
+      summary: "Comment targets are polymorphic through entity_type and entity_id without a conventional target foreign key"
+    - id: "RELATIONSHIP_UNCLEAR RLU-02"
+      summary: "Audit subjects are polymorphic through entity_type and entity_id without a conventional target foreign key"
+
+  tenant_isolation_unverified:
+    - id: "TENANT_ISOLATION_UNVERIFIED TIV-01"
+      summary: "Separate tenant and parent foreign keys do not universally prove same-organization parent-child coherence"
+
+  constraint_coverage_unclear:
+    - id: "CONSTRAINT_COVERAGE_UNCLEAR CCU-01"
+      summary: "Composite same-tenant constraints are not present for every child that stores both organization and parent IDs"
+    - id: "CONSTRAINT_COVERAGE_UNCLEAR CCU-02"
+      summary: "Checked text statuses and application mappings may drift without one shared status contract"
+
+  index_purpose_unclear:
+    - id: "INDEX_PURPOSE_UNCLEAR IPU-01"
+      summary: "Several indexes look redundant with uniqueness structures, but no workload or plan evidence supports removal"
+
+  transaction_boundary_unclear:
+    - id: "TRANSACTION_BOUNDARY_UNCLEAR TBU-01"
+      summary: "Media filesystem and database changes do not share one atomic resource transaction"
+    - id: "TRANSACTION_BOUNDARY_UNCLEAR TBU-02"
+      summary: "Organization creation commits domain state before a separate audit transaction"
+    - id: "TRANSACTION_BOUNDARY_UNCLEAR TBU-03"
+      summary: "Paid Marketplace checkout spans committed database state and an external payment-provider call"
+    - id: "TRANSACTION_BOUNDARY_UNCLEAR TBU-04"
+      summary: "CMS webhook dispatch is spawned in-process without a durable queue or outbox guarantee"
+
+  soft_delete_behavior_unclear:
+    - id: "SOFT_DELETE_BEHAVIOR_UNCLEAR SDBU-01"
+      summary: "The schema uses mixed hard deletion, archival, and installation-uninstall lifecycle patterns"
+
+  data_lifecycle_unclear:
+    - id: "DATA_LIFECYCLE_UNCLEAR DLU-01"
+      summary: "No repository-wide retention, anonymization, archival, legal-hold, or purge policy was found"
+    - id: "DATA_LIFECYCLE_UNCLEAR DLU-02"
+      summary: "Entity-specific hard delete, archive, replacement, and uninstall behavior is not governed by one lifecycle policy"
+
 current_sections:
   - id: "project-overview"
     title: "Project Overview and Repository Map"
@@ -3345,12 +4121,12 @@ current_sections:
     title: "Frontend Architecture"
     status: "current"
     completed_phase: 4
+  - id: "database"
+    title: "Database Architecture"
+    status: "current"
+    completed_phase: 5
 
 planned_sections:
-  - id: "database"
-    title: "Database"
-    status: "planned"
-    target_phase: 5
   - id: "api"
     title: "API"
     status: "planned"

@@ -1,0 +1,35 @@
+%% Title: ZinharCMS Module Data Ownership
+%% Sources: backend/src/routes; backend/src/services; backend/src/middleware; backend/migrations
+%% Related documentation: ../module-data-ownership.md; ../persistence-mapping.md; ../../backend/module-boundaries.md
+flowchart TB
+    AUTH["Auth"] --> ID[("Identity and RBAC")]
+    ORGS["Organizations"] --> TENANT[("Organizations, Membership,<br/>Domains")]
+    CONTENT["Content and Workflow"] --> CONTENTDB[("Content Types, Entries,<br/>Comments")]
+    PAGES["Pages and Builder"] --> PAGESDB[("Pages, Versions,<br/>Component Registry")]
+    MEDIA["Media"] --> MEDIADB[("Media and Variants")]
+    DELIVERY["Delivery and Settings"] --> DELIVERYDB[("Webhooks, Deliveries,<br/>Settings, Navigation")]
+    BILLING["Billing and SaaS"] --> SAASDB[("Plans, Subscriptions, Usage,<br/>Billing and Operations")]
+    BETA["Beta and Release"] --> BETADB[("Beta Records")]
+    MARKET["Marketplace Services"] --> MARKETDB[("Creator, Catalog, Runtime,<br/>Finance, Trust")]
+
+    MIDDLEWARE["Auth and Tenant Middleware"] -. reads .-> ID
+    MIDDLEWARE -. reads .-> TENANT
+    MIDDLEWARE -. supplies RLS context .-> CONTENTDB
+    MIDDLEWARE -. supplies RLS context .-> PAGESDB
+    MIDDLEWARE -. supplies RLS context .-> MARKETDB
+
+    CONTENT -. invalidates .-> DELIVERYDB
+    PAGES -. invalidates .-> DELIVERYDB
+    MARKET -. adapts .-> PAGESDB
+    MARKET -. reads identity .-> ID
+    BILLING -. scopes .-> TENANT
+
+    AUDIT["Shared Audit Service"] --> AUDITDB[("audit_logs")]
+    ORGS -. writes .-> AUDITDB
+    CONTENT -. writes .-> AUDITDB
+    PAGES -. writes .-> AUDITDB
+    MARKET -. writes .-> AUDITDB
+
+    NOTE["Direct SQLx in routes and services<br/>PERSISTENCE_BOUNDARY_UNCLEAR PBU-01"] -. applies to .-> AUTH
+    NOTE -. applies to .-> ORGS
+    NOTE -. applies to .-> MARKET

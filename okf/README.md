@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "README.md"
   - "okf-bootstrap/phase-zero-summary.md"
@@ -23,6 +23,7 @@ related_documents:
   - "references/source-register.md"
   - "architecture/README.md"
   - "architecture/overview.md"
+  - "database/README.md"
   - "architecture/boundaries.md"
   - "architecture/components.md"
   - "architecture/dependency-model.md"
@@ -183,9 +184,17 @@ Recommended frontend reading order: [Frontend Overview](frontend/overview.md), [
 
 For a feature change, select the owning document from the [Frontend Feature Catalog](frontend/feature-catalog.md) or browse [individual feature documents](frontend/features/). Use the [Application Map](frontend/diagrams/frontend-application-map.mmd), [Routing Flow](frontend/diagrams/frontend-routing-flow.mmd), [State Flow](frontend/diagrams/frontend-state-flow.mmd), [API Flow](frontend/diagrams/frontend-api-flow.mmd), and [Page Builder Flow](frontend/diagrams/page-builder-flow.mmd) for visual navigation.
 
+## Phase 5 Database Documents
+
+The [Database Architecture](database/README.md) entry point documents PostgreSQL and SQLx configuration, all 26 forward migrations, 51 application tables grouped into 18 significant entities, 108 intended active foreign keys consolidated into 55 significant relationship groups, 109 explicit index names, 118 intended effective RLS policies, transaction and lifecycle behavior, persistence mapping, fixtures, tests, risks, and five database diagrams. Runtime migration state remains unknown and the OKF documents are not an executable schema.
+
+Recommended reading order: [Database Overview](database/overview.md), [Schema Catalog](database/schema-catalog.md), [Entity Catalog](database/entity-catalog.md), [Relationships](database/relationships.md), [Module Data Ownership](database/module-data-ownership.md), [Migrations](database/migrations.md), [Constraints and Indexes](database/constraints-and-indexes.md), [Transactions and Consistency](database/transactions-and-consistency.md), [Multi-Tenancy](database/multi-tenancy.md), [Lifecycle and Auditing](database/lifecycle-and-auditing.md), [Persistence Mapping](database/persistence-mapping.md), [Seeds and Fixtures](database/seeds-and-fixtures.md), [Database Testing](database/database-testing.md), and [Database Risks](database/database-risks.md).
+
+Select one of the 18 entity groups from the [Entity Catalog](database/entity-catalog.md) and use the [Database Domain Map](database/diagrams/database-domain-map.mmd), [Entity Relationship Overview](database/diagrams/entity-relationship-overview.mmd), [Module Data Ownership Diagram](database/diagrams/module-data-ownership.mmd), [Tenant Isolation Flow](database/diagrams/tenant-isolation.mmd), or [Migration Lifecycle](database/diagrams/migration-lifecycle.mmd) for visual navigation.
+
 ## Using the Index
 
-Start with [index.yaml](index.yaml). Its documents list records every current Phase 1 through Phase 4 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
+Start with [index.yaml](index.yaml). Its documents list records every current Phase 1 through Phase 5 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
 
 Paths in index.yaml are relative to the okf directory unless a field explicitly identifies a repository-relative evidence path.
 
@@ -196,10 +205,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 3. Read the [Architecture Overview](architecture/overview.md) before changing a cross-cutting runtime or dependency boundary.
 4. Read the [Backend Overview](backend/overview.md) and owning [module document](backend/module-catalog.md) before changing backend behavior.
 5. Read the [Frontend Overview](frontend/overview.md) and owning [feature document](frontend/feature-catalog.md) before changing frontend behavior.
-6. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
-7. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
-8. Verify behavior against current code, migrations, configuration, and tests.
-9. Record conflicts instead of silently treating a historical document as current.
+6. Read the [Database Overview](database/overview.md), schema catalog, and owning entity document before changing persistence.
+7. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
+8. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
+9. Verify behavior against current code, migrations, configuration, and tests.
+10. Record conflicts instead of silently treating a historical document as current.
 
 ## For AI Coding Agents
 
@@ -209,10 +219,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 4. Read okf/architecture/overview.md and the relevant boundary, component, dependency, flow, integration, risk, or decision document.
 5. For backend work, read okf/backend/README.md, the catalog entry, and the owning module document.
 6. For frontend work, read okf/frontend/README.md, the feature catalog entry, and the owning feature document.
-7. Read relevant specialized OKF documents before modifying a subsystem.
-8. Verify critical claims against source code.
-9. Update related OKF documents when implementation changes invalidate them.
-10. Never invent undocumented business rules.
+7. For database work, read okf/database/README.md, schema-catalog.md, relationships.md, and the owning entity document.
+8. Read relevant specialized OKF documents before modifying a subsystem.
+9. Verify critical claims against source code and migrations.
+10. Update related OKF documents when implementation changes invalidate them.
+11. Never invent undocumented business rules.
 
 If a specialized OKF document is still planned, use [Navigation Guide - Missing Documentation](project/navigation-guide.md#when-documentation-is-missing), then consult current source, tests, existing documentation, and Phase Zero evidence.
 
@@ -220,7 +231,6 @@ If a specialized OKF document is still planned, use [Navigation Guide - Missing 
 
 | Target phase | Planned area |
 | ---: | --- |
-| 5 | Database schema, relationships, RLS, constraints, migrations, and retention |
 | 6 | API route and contract inventory, errors, realtime/provider contracts, and OpenAPI coverage |
 | 7 | Authentication, authorization, tenant isolation, upload security, and threat model |
 | 8 | Business rules, workflows, billing, delivery, and multi-tenancy |
@@ -246,4 +256,4 @@ During a review:
 
 ## Phase Status
 
-Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 is complete: it adds the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Database, API, security, business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 5 through 12.
+Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 established the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Phase 5 is complete: it adds 16 database guides, 18 entity documents, and five database diagrams based on all 26 migrations and current persistence code. API, security, business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 6 through 12.

@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/main.rs"
   - "backend/src/state.rs"
@@ -170,6 +170,12 @@ Feature pages depend on shared UI, the store, types, i18n, and the central API c
 | Styling and localization | `styles/index.css`; `i18n`; font asset | Global semantic classes, responsive/RTL rules, locale selection and messages | Informal style system; [Styling](../frontend/styling-and-design-system.md) |
 
 Phase 4 found no separate public frontend application, design-system package, frontend feature packages, generated client, route-level lazy modules, Storybook, or Error Boundary. Absence from current source is not a statement about unobserved external systems or future intent.
+
+## Phase 5 Database Component Detail
+
+PostgreSQL is one shared-database, shared-namespace persistence component. SQLx supplies a lazy pool capped at 10 connections, direct query mapping, explicit transactions, and an embedded startup migrator. The intended migration-defined schema has 51 application tables grouped into 18 domain entities. Tenant enforcement combines request membership, explicit predicates, PostgreSQL context, and forced RLS on 32 tables. See the [Database Overview](../database/overview.md), [Schema Catalog](../database/schema-catalog.md), and [Database Domain Map](../database/diagrams/database-domain-map.mmd).
+
+Persistence ownership is not a separate application component: routes and services access SQLx directly (`PBU-01`). Filesystem media, provider calls, Redis invalidation, process-local preview, and spawned webhook work cross PostgreSQL transaction boundaries.
 
 ## Missing Runtime Components
 

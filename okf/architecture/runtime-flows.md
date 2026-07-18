@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/main.rs"
   - "backend/src/config.rs"
@@ -242,6 +242,12 @@ Channels are neither persisted nor shared through Redis. A connection to a diffe
 
 The listener responds to supported process signals and performs graceful server shutdown. Repository evidence does not establish coordinated draining of spawned webhook tasks, preview channels, or a multi-instance deployment.
 
+## Phase 5 Database Runtime Flows
+
+Startup parses `DATABASE_URL`, creates a lazy SQLx pool, applies embedded migrations, and runs the conditional administrator bootstrap before serving. A migration or bootstrap failure stops startup. No database retry loop or separate migration job was found.
+
+Tenant transactions set organization/user/bypass context locally before queries; forced RLS evaluates that context. Privileged catalog/provider/admin operations use bypass transactions. Page writes persist page/version state before post-commit broadcast and invalidation. Paid checkout, media storage, organization audit, and webhook dispatch cross database boundaries as documented in [Transactions and Consistency](../database/transactions-and-consistency.md).
+
 ## Related Flow Diagrams
 
 - [Backend Request Flow](diagrams/backend-request-flow.mmd)
@@ -251,3 +257,5 @@ The listener responds to supported process signals and performs graceful server 
 - [Frontend State Flow](../frontend/diagrams/frontend-state-flow.mmd)
 - [Frontend API Flow](../frontend/diagrams/frontend-api-flow.mmd)
 - [Page Builder Flow](../frontend/diagrams/page-builder-flow.mmd)
+- [Tenant Isolation Flow](../database/diagrams/tenant-isolation.mmd)
+- [Migration Lifecycle](../database/diagrams/migration-lifecycle.mmd)

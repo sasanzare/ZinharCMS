@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/db/mod.rs"
   - "backend/src/state.rs"
@@ -72,7 +72,7 @@ Tenant middleware resolves an organization context, and `services/rls.rs` provid
 | CMS webhooks | Webhook registrations and delivery-related records | Outbound target state |
 | Marketplace | Creator artifacts, catalog/installations, runtime/adapter records, finance, feedback, analytics/readiness | Package/file/provider state depending on feature |
 
-This is intentionally not a table or schema reference; detailed storage contracts are deferred to Phase 4.
+This is intentionally not a table or schema reference. The Phase 5 [Schema Catalog](../database/schema-catalog.md), [Entity Catalog](../database/entity-catalog.md), and [Persistence Mapping](../database/persistence-mapping.md) provide the verified storage detail.
 
 ## Error Mapping
 
@@ -80,7 +80,7 @@ This is intentionally not a table or schema reference; detailed storage contract
 
 ## Tests and Verification
 
-The backend CI config starts PostgreSQL and Redis services, runs migrations through application/test workflows, and runs Rust checks/tests. Many unit tests exercise pure/service behavior without a database; no dedicated `backend/tests` integration suite was found. Phase 3 did not execute destructive persistence tests or inspect deployed data.
+The backend CI config starts PostgreSQL and Redis services and runs Rust checks/tests, but service provisioning does not prove database assertions. Many unit tests exercise pure/service behavior without a database; no dedicated `backend/tests` integration suite or reusable database reset harness was found. Phase 5 did not execute migrations, destructive persistence tests, or inspect deployed data. See [Database Testing](../database/database-testing.md).
 
 ## Risks and Unknowns
 
@@ -89,9 +89,9 @@ The backend CI config starts PostgreSQL and Redis services, runs migrations thro
 - Redis and preview state have different durability and replication semantics from PostgreSQL.
 - Connection-pool sizing is fixed in source and not environment-configurable.
 - Production backup, restore, retention, replication, and migration rollback practices are `UNKNOWN`.
-- Exact RLS coverage, constraints, indexes, triggers, and query performance are Phase 4 topics.
+- Migration intent has 32 forced-RLS tables, 108 active FKs, 109 explicit index names, and 7 active triggers; runtime state and query performance remain unverified.
+- Shared `PageStatus` omits `pending_review` (`MMC-01`), and several shared models omit tenant columns (`MMC-02`).
 
 ## Related Documentation
 
-See [Configuration and State](configuration-and-state.md), [Tenant Authorization and RLS](modules/tenant-authorization.md), the [module catalog](module-catalog.md), and [Backend Risks](backend-risks.md).
-
+See [Configuration and State](configuration-and-state.md), [Tenant Authorization and RLS](modules/tenant-authorization.md), the [module catalog](module-catalog.md), [Database Architecture](../database/README.md), and [Backend Risks](backend-risks.md).

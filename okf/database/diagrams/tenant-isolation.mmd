@@ -1,0 +1,35 @@
+%% Title: ZinharCMS Tenant Isolation Flow
+%% Sources: backend/src/middleware/tenant.rs; backend/src/services/rls.rs; backend/migrations/0008_v2_phase_one_organizations.sql; backend/migrations/0009_v2_phase_three_rls.sql; backend/migrations/0012_v2_phase_seven_saas_ops.sql; backend/migrations/0014_v2_phase_nine_beta_release.sql; backend/migrations/0019_v3_phase_six_installation_lifecycle.sql through backend/migrations/0024_v3_phase_ten_ratings_abuse.sql
+%% Related documentation: ../multi-tenancy.md; ../relationships.md; ../database-testing.md
+sequenceDiagram
+    actor User
+    participant Auth as Auth Middleware
+    participant Tenant as Tenant Middleware
+    participant Handler as Route or Service
+    participant SQLx as SQLx Connection or Transaction
+    participant PostgreSQL
+
+    User->>Auth: Authenticated request
+    Auth->>Tenant: User claims
+    Tenant->>PostgreSQL: Verify active organization and membership
+    PostgreSQL-->>Tenant: Tenant context or rejection
+    Tenant->>Handler: organization_id and user_id
+
+    alt Tenant transaction
+        Handler->>SQLx: Begin transaction
+        SQLx->>PostgreSQL: SET LOCAL zinhar.organization_id
+        SQLx->>PostgreSQL: SET LOCAL zinhar.user_id
+        SQLx->>PostgreSQL: SET LOCAL zinhar.rls_bypass = false
+        Handler->>PostgreSQL: Query with explicit tenant predicates
+        PostgreSQL->>PostgreSQL: Apply forced RLS policy
+        PostgreSQL-->>Handler: Tenant-filtered result
+        Handler->>SQLx: Commit or rollback
+    else Privileged bypass transaction
+        Handler->>SQLx: Begin narrowly authorized bypass
+        SQLx->>PostgreSQL: SET LOCAL zinhar.rls_bypass = true
+        PostgreSQL-->>Handler: Global or administrative result
+        Handler->>SQLx: Commit or rollback
+    end
+
+    Note over SQLx,PostgreSQL: Session-level tenant connections use close_on_drop to avoid pooled context reuse
+    Note over Handler,PostgreSQL: Same-tenant parent-child coherence requires dedicated tests (TIV-01 and CCU-01)

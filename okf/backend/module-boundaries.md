@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "mixed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/routes/mod.rs"
   - "backend/src/services/mod.rs"
@@ -146,6 +146,12 @@ Direct cross-module access is most visible through middleware-owned `Claims`/`Te
 - `Claims` is defined by authentication middleware but used broadly as authorization context (`MOU-01`); `TenantContext` is defined by tenant middleware and consumed by most domain routes (`MOU-02`).
 - CMS Billing and Marketplace Finance are distinct business domains but both own Stripe-facing behavior (`RO-03`).
 
+## Phase 5 Data-Ownership Boundaries
+
+The database groups 51 tables into 18 significant entity aggregates, but SQL write ownership remains distributed. Auth owns global identity; Organizations owns the tenant root; Content, Pages, Media, Delivery, Billing, Beta, and Marketplace families own their primary lifecycles; shared audit, entitlement, subscription, and catalog records have cross-module readers/writers. Use the [Database Ownership Map](../database/module-data-ownership.md) rather than assuming directory ownership is exclusive.
+
+Direct SQL, RLS context, provider/filesystem work, and post-commit side effects reinforce `PBU-01` and `EOU-01`. A schema change must review every consuming module and the owning entity document.
+
 ## Inferred Future Boundary Rules
 
 The following are recommendations only and are `PROPOSED_NOT_IMPLEMENTED`:
@@ -160,4 +166,4 @@ These rules must not be treated as implemented architecture until verified in co
 
 ## Related Documentation
 
-Use the [module catalog](module-catalog.md) for module identity, the [dependency map](dependency-map.md) for concrete edges, [services and domain](services-and-domain.md) for responsibility placement, and [Phase 2 boundaries](../architecture/boundaries.md) for system-level boundaries.
+Use the [module catalog](module-catalog.md) for module identity, the [dependency map](dependency-map.md) for concrete edges, [services and domain](services-and-domain.md) for responsibility placement, [Database Module Data Ownership](../database/module-data-ownership.md) for table ownership, and [Phase 2 boundaries](../architecture/boundaries.md) for system-level boundaries.

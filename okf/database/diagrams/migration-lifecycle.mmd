@@ -1,0 +1,20 @@
+%% Title: ZinharCMS Migration Lifecycle
+%% Sources: backend/src/db/mod.rs; backend/src/main.rs; backend/migrations; backend/Cargo.toml
+%% Related documentation: ../migrations.md; ../technology-and-configuration.md; ../database-testing.md
+flowchart LR
+    CHANGE["Authorized schema change"] --> NEW["Create a new ordered<br/>forward SQL migration"]
+    NEW --> REVIEW["Review full migration history,<br/>models, queries, RLS, and locks"]
+    REVIEW --> TEST["Test clean install and supported upgrade<br/>on isolated PostgreSQL 16"]
+    TEST --> BUILD["sqlx::migrate! embeds<br/>backend/migrations"]
+    BUILD --> START["Backend startup parses DATABASE_URL<br/>and creates lazy PgPool"]
+    START --> APPLY{"Pending migration?"}
+    APPLY -- Yes --> RUN["SQLx applies migration and<br/>records framework metadata"]
+    RUN --> SEED["Run conditional bootstrap seed"]
+    APPLY -- No --> SEED
+    SEED --> SERVE["Start HTTP service"]
+    RUN -. failure .-> STOP["Startup stops"]
+    SEED -. failure .-> STOP
+
+    DEPLOYED["Applied state per environment"] -. unknown .-> APPLY
+    ROLLBACK["No down-migration set or verified<br/>production rollback runbook"] -. risk .-> REVIEW
+    RULE["Never edit applied history without<br/>explicit project authorization"] -. governs .-> NEW

@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "README.md"
   - "backend/migrations"
@@ -103,6 +103,16 @@ For the broader context, see [Project Identity](overview.md#1-project-identity),
 | Local Preview | The Page Builder's in-page React rendering of the current page JSON. | It is distinct from the copied backend WebSocket preview URL and does not prove public-renderer parity. | `frontend/src/pages/PagesPage.tsx`; `okf/frontend/page-builder.md` | Page, Component Registry | VERIFIED |
 | Page Builder | The frontend feature that composes page JSON from registered component definitions through a palette, sortable canvas, property editor, preview, and persistence workflow. | It is implemented inside `PagesPage`, not as a separate frontend application or package. | `frontend/src/pages/PagesPage.tsx`; `frontend/src/pages/PagesPage.test.tsx`; `okf/frontend/page-builder.md` | Page, Component Registry, Local Preview | VERIFIED |
 
+## Phase 5 Database Terms
+
+| Term | Definition | Clarification | Evidence | Related terms | Status |
+| --- | --- | --- | --- | --- | --- |
+| Tenant Transaction | A SQLx transaction with transaction-local Zinhar organization, user, and bypass settings used by PostgreSQL RLS. | It is distinct from a pooled connection with session-level context. | `backend/src/services/rls.rs`; `okf/database/multi-tenancy.md` | Organization, RLS, Bypass Transaction | VERIFIED |
+| Bypass Transaction | A privileged SQLx transaction that sets `zinhar.rls_bypass` for narrowly scoped global, admin, catalog, or provider work. | It is a security-sensitive exception, not a default persistence path. | `backend/src/services/rls.rs`; Marketplace and billing services | Tenant Transaction, RLS | VERIFIED |
+| Migration-Defined Schema | The intended PostgreSQL object state produced by applying all tracked migrations in order. | It does not prove the state of a deployed database. | `backend/migrations`; `okf/database/migrations.md` | Runtime Schema, SQLx | VERIFIED |
+| Runtime Schema | The objects and definitions actually present in a specific database environment. | Its current state is `SCHEMA_RUNTIME_STATUS_UNKNOWN SRU-01` until catalog and migration metadata are inspected. | `okf/database/schema-catalog.md`; `UNKNOWN U-02` | Migration-Defined Schema | UNKNOWN |
+| Entity Group | A Phase 5 documentation aggregate that can map to one table or several tightly related persistence tables. | It is a navigation construct, not a generated ORM entity. | `okf/database/entity-catalog.md` | Schema Object, Backend Module | VERIFIED |
+
 ## Usage Rules
 
 - Prefer `Organization` for the persisted business boundary and `Tenant` when discussing isolation or request context.
@@ -121,3 +131,5 @@ For the broader context, see [Project Identity](overview.md#1-project-identity),
 - [Frontend Architecture](../frontend/README.md)
 - [Frontend Application Catalog](../frontend/application-catalog.md)
 - [Frontend Feature Catalog](../frontend/feature-catalog.md)
+- [Database Architecture](../database/README.md)
+- [Database Entity Catalog](../database/entity-catalog.md)

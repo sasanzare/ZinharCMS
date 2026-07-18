@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/lib.rs"
   - "backend/src/routes/mod.rs"
@@ -168,6 +168,12 @@ The application shell integrates the store, health hook, i18n, API logout, routi
 | Backend to email webhook | Mode-dependent | Strict mode can fail the originating operation |
 | Backend to CMS webhook receiver | Spawned best-effort task | Delivery result is recorded, but no durable retry worker is present |
 
+## Phase 5 Database Dependency Detail
+
+Routes and services depend directly on SQLx and migration-defined objects; the source snapshot contains 290 direct SQLx query-call occurrences. Shared Rust models are partial projections, and Marketplace persistence types are predominantly route/service-local. A database change therefore depends on the chronological migration chain, final constraints/triggers/RLS, every SQL writer/reader, model or local row mappings, tests, and external side effects. See [Persistence Mapping](../database/persistence-mapping.md) and [Module Data Ownership](../database/module-data-ownership.md).
+
+Tenant-scoped access also depends on middleware membership checks, `zinhar.*` PostgreSQL settings, explicit query predicates, and RLS policies. None of these layers should be removed based solely on another layer's presence.
+
 ## Dependency Rules for AI Agents
 
 These rules describe review constraints derived from current evidence and risks; they are not claims that the repository already enforces every rule:
@@ -190,3 +196,5 @@ These rules describe review constraints derived from current evidence and risks;
 For the backend-only dependency inventory, including module-to-module, shared-state, persistence, and external edges, use the [Backend Dependency Map](../backend/dependency-map.md) and [Backend Dependency Flow Diagram](../backend/diagrams/backend-dependency-flow.mmd).
 
 For the frontend-only dependency inventory, use [Frontend Feature Boundaries](../frontend/feature-boundaries.md), [State Management](../frontend/state-management.md), [API Client](../frontend/api-client.md), [Frontend State Flow](../frontend/diagrams/frontend-state-flow.mmd), and [Frontend API Flow](../frontend/diagrams/frontend-api-flow.mmd).
+
+For schema and persistence dependencies, use the [Database Schema Catalog](../database/schema-catalog.md), [Relationships](../database/relationships.md), and [Database Ownership Diagram](../database/diagrams/module-data-ownership.mmd).

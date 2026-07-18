@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "README.md"
   - "package.json"
@@ -80,9 +80,10 @@ Use this guide to choose the shortest evidence path for a common repository task
 6. Use the [System Architecture](../architecture/README.md) reading order for boundaries, components, dependencies, flows, integrations, risks, decisions, and diagrams.
 7. Use [Backend Documentation](../backend/README.md) and the [Module Catalog](../backend/module-catalog.md) for backend-specific work.
 8. Use [Frontend Architecture](../frontend/README.md) and the [Feature Catalog](../frontend/feature-catalog.md) for frontend-specific work.
-9. Consult the [Source Register](../references/source-register.md) to distinguish primary evidence from supporting or conflicting documentation.
-10. Review the [Machine-Readable Index](../index.yaml) for document status, relationships, and uncertainty markers.
-11. When a claim remains unresolved, follow its marker into [Phase Zero Knowledge Gaps](../../okf-bootstrap/09-knowledge-gaps.md) or [Owner Questions](../../okf-bootstrap/12-owner-questions.md).
+9. Use [Database Architecture](../database/README.md), the [Schema Catalog](../database/schema-catalog.md), and the [Entity Catalog](../database/entity-catalog.md) for persistence work.
+10. Consult the [Source Register](../references/source-register.md) to distinguish primary evidence from supporting or conflicting documentation.
+11. Review the [Machine-Readable Index](../index.yaml) for document status, relationships, and uncertainty markers.
+12. When a claim remains unresolved, follow its marker into [Phase Zero Knowledge Gaps](../../okf-bootstrap/09-knowledge-gaps.md) or [Owner Questions](../../okf-bootstrap/12-owner-questions.md).
 
 ## Navigate by Task
 
@@ -94,7 +95,7 @@ Use this guide to choose the shortest evidence path for a common repository task
 | Change a backend handler | Owning `okf/backend/modules` document | `okf/backend/request-handling.md`; matching `backend/src/routes` file; related service, migration, and tests | Handlers often contain policy, SQL, and side effects; do not treat them as uniformly thin controllers. |
 | Change service or domain logic | `okf/backend/services-and-domain.md` | Owning module document; matching `backend/src/services` and route consumers | Rules are distributed; search handlers, middleware, migrations, and tests as well as services. |
 | Change application state or configuration | `okf/backend/configuration-and-state.md` | `backend/src/state.rs`; `backend/src/config.rs`; `backend/src/main.rs`; state-composition diagram | `AppState` has four verified fields and preview channels are process-local. |
-| Find backend persistence code | `okf/backend/persistence-access.md` | Owning route/service files; `backend/src/db/mod.rs`; related migrations | No mandatory repository layer exists; detailed schema work is deferred to Phase 5. |
+| Find backend persistence code | `okf/database/persistence-mapping.md` | `okf/backend/persistence-access.md`; owning entity and route/service files | No mandatory repository layer exists; use migrations before partial models. |
 | Find backend tests | `okf/backend/testing-map.md` | Owning module document; colocated `#[cfg(test)]` blocks; `.github/workflows/backend-ci.yml` | No separate `backend/tests` directory was found and no coverage percentage is claimed. |
 | Investigate backend errors | `okf/backend/error-handling.md` | `backend/src/error.rs`; failing route/service; `okf/backend/backend-risks.md` | Framework, timeout, WebSocket, and some provider paths can differ from `ErrorBody`. |
 | Add a significant backend module | `okf/backend/module-catalog.md#selection-rule` | `okf/backend/module-boundaries.md`; `dependency-map.md`; `testing-map.md`; diagrams; `okf/index.yaml` | Add a module document only when it meets the catalog criteria; keep small helpers in shared infrastructure. |
@@ -120,7 +121,15 @@ Use this guide to choose the shortest evidence path for a common repository task
 | Trace authentication | `backend/src/middleware/auth.rs` | `backend/src/routes/auth.rs`; `backend/src/services/jwt.rs`; `backend/src/services/password.rs`; `frontend/src/components/RequireAuth.tsx` | Authentication and organization selection are separate stages. |
 | Trace tenant resolution | `backend/src/middleware/tenant.rs` | `backend/src/services/rls.rs`; `backend/src/db/mod.rs`; `backend/migrations/0009_v2_phase_three_rls.sql` | Verify both request-level ownership checks and database RLS behavior. |
 | Trace authorization | `backend/src/services/rbac.rs` | Relevant route handler; role and membership migrations | Distinguish global roles, organization roles, and Marketplace permissions. |
-| Understand the database | `backend/migrations` | `backend/src/db/mod.rs`; route query code | The migrations are the schema authority; narrative schema diagrams may be simplified or stale. |
+| Understand the database | `okf/database/README.md` | `okf/database/schema-catalog.md`; owning entity document; current migrations and query code | OKF is navigation, not an executable schema; deployed migration state is unknown. |
+| Find a database entity | `okf/database/entity-catalog.md` | Matching document under `okf/database/entities`; `schema-catalog.md` | Entity groups are documentation aggregates and can map to several tables. |
+| Change a database entity or relationship | `okf/database/entity-catalog.md` | Owning entity document; `relationships.md`; `constraints-and-indexes.md`; chronological migrations | Create a forward migration in an authorized implementation phase; never silently edit applied history. |
+| Create a database migration | `okf/database/migrations.md` | `backend/migrations`; `migration-lifecycle.mmd`; model/query/test consumers | Phase 5 is documentation-only; use a new ordered file only in an authorized implementation phase. |
+| Find a constraint or index | `okf/database/constraints-and-indexes.md` | Final chronological migration definition; relevant entity document | Later migrations can replace earlier definitions; do not optimize from name similarity alone. |
+| Understand database ownership | `okf/database/module-data-ownership.md` | `okf/backend/module-catalog.md`; route/service SQL callers | Lifecycle owner does not imply exclusive read/write access. |
+| Find transaction logic | `okf/database/transactions-and-consistency.md` | Owning route/service; RLS transaction helper; external side effects | Database, filesystem, provider, cache, and webhook boundaries differ. |
+| Change tenant-scoped persistence | `okf/database/multi-tenancy.md` | `tenant-isolation.mmd`; RLS migrations; middleware/service/query writers | Verify membership, explicit filters, RLS context, bypass paths, and parent-child tenant coherence. |
+| Debug database tests | `okf/database/database-testing.md` | `okf/backend/testing-map.md`; CI services; fixtures and owning entity | PostgreSQL provisioning is not proof that a test executes real database assertions. |
 | Understand core CMS behavior | `backend/src/routes/content.rs`; `backend/src/routes/pages.rs` | `frontend/src/pages/ContentTypesPage.tsx`; `frontend/src/pages/EntriesPage.tsx`; `frontend/src/pages/PagesPage.tsx` | Follow resource ownership and state transitions before relying on phase labels. |
 | Understand Marketplace behavior | `backend/src/routes/marketplace.rs` | `backend/src/routes`; `backend/src/services/marketplace_runtime.rs`; migrations `0015` through `0026` | Uploaded Marketplace code is not an official arbitrary server-side execution mechanism. |
 | Understand frontend routes and state | `frontend/src/router.tsx` | `frontend/src/components/AppShell.tsx`; `frontend/src/stores/useAppStore.ts`; `frontend/src/pages` | The single current Zustand store contains shared application state. |
@@ -180,3 +189,7 @@ Use this guide to choose the shortest evidence path for a common repository task
 - [Frontend Feature Catalog](../frontend/feature-catalog.md)
 - [Frontend Testing Map](../frontend/testing-map.md)
 - [Frontend Risk Register](../frontend/frontend-risks.md)
+- [Database Architecture](../database/README.md)
+- [Database Schema Catalog](../database/schema-catalog.md)
+- [Database Entity Catalog](../database/entity-catalog.md)
+- [Database Risk Register](../database/database-risks.md)

@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "README.md"
   - "package.json"
@@ -350,7 +350,7 @@ The following sources were inspected at commit `debde2021c029d1827abaa38bcc32c68
 | `backend/src/config.rs` | Exact environment contract, defaults, validation, and configuration tests | PRIMARY | `debde202` | Secret names may be documented; secret values must not be copied. |
 | `backend/src/state.rs` | Exact application-state composition and preview-channel lifecycle | PRIMARY | `debde202` | Preview channels are process-local and not stored in Redis. |
 | `.github/workflows/backend-ci.yml` | Explicit format, lint, and test commands plus CI PostgreSQL/Redis services | PRIMARY | `debde202` | No coverage report or separate end-to-end suite is defined here. |
-| `backend/migrations` | Supporting persistence, enum, constraint, and RLS evidence | PRIMARY | `debde202` | Detailed schema documentation is deferred to Phase 5. |
+| `backend/migrations` | Primary persistence, enum, constraint, index, trigger, seed, and RLS evidence | PRIMARY | `70b97242` | Detailed schema navigation is current under `okf/database`. |
 
 ## Phase 4 Frontend-Specific Verification
 
@@ -367,9 +367,25 @@ The following evidence was inspected at commit `7d25e4cbc53284a78033478e2681d8e9
 | Dockerfiles, Nginx, frontend CI | Build/package capability, SPA fallback, and validation gates | PRIMARY | Actual deployment state remains ISU-03. |
 | `docs/I18N.md` and Phase Zero frontend inventories | Earlier intended/current narratives | SUPPORTING_OR_CONFLICTING | DCC-02 and DCC-11 record narrowed conflicts. |
 
+## Phase 5 Database-Specific Verification
+
+Phase 5 inspected all 26 SQL files under `backend/migrations`, database initialization and startup, SQLx queries and transactions in routes/services, shared and local persistence mappings, Compose/CI PostgreSQL configuration, migration seeds, the startup bootstrap, the tenant fixture, and database-related tests at commit `70b972428799304c7defd7e67f95459cd4a3644e`.
+
+| Source | Phase 5 evidence | Reliability | Important limit |
+| --- | --- | --- | --- |
+| `backend/migrations/0001` through `0026` | 51 tables, 7 enums, extensions, functions, triggers, constraints, indexes, RLS, seeds | Primary | Intended history does not prove deployed state |
+| `backend/src/db/mod.rs`; `backend/src/main.rs` | Pool creation, embedded migration runner, startup seed | Primary | Deployment-only URL/pool behavior is unknown |
+| `backend/src/routes`; `backend/src/services` | 290 direct SQLx call occurrences, transactions, side effects, tenant/bypass usage | Primary | Source counts are not runtime volume |
+| `backend/src/models` | Partial shared row and enum mapping | Primary | Conflicts `MMC-01` and `MMC-02` are retained |
+| Compose and CI | PostgreSQL 16 repository environment | Primary configuration | Does not establish production version |
+| `docs/V2_PHASE_EIGHT_FIXTURE.sql` | Manual local/staging tenant-isolation fixture | Supporting executable fixture | Not an automated reset harness |
+| `okf/database` | Phase 5 navigation and synthesis | Secondary | Not executable schema authority |
+
+`DCC-12` records that the current hardening service enumerates 24 RLS tables while migration history intends 32. Runtime schema remains `SCHEMA_RUNTIME_STATUS_UNKNOWN SRU-01`.
+
 ## Conflict Handling
 
-The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero documentation audit and add `DCC-11` for the unsupported React Hook Form/Zod source-usage claim. When a registered narrative or diagram conflicts with implementation evidence:
+The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero documentation audit, add `DCC-11` for the unsupported React Hook Form/Zod source-usage claim, and add `DCC-12` for database RLS-verification drift. When a registered narrative or diagram conflicts with implementation evidence:
 
 1. Prefer current executable code, migrations, manifests, configuration, workflows, and Git state.
 2. Keep the conflicting source registered for historical context.
@@ -403,3 +419,6 @@ The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero
 - [Frontend Feature Catalog](../frontend/feature-catalog.md)
 - [Frontend Testing Map](../frontend/testing-map.md)
 - [Frontend Risks](../frontend/frontend-risks.md)
+- [Database Architecture](../database/README.md)
+- [Database Schema Catalog](../database/schema-catalog.md)
+- [Database Risk Register](../database/database-risks.md)

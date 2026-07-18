@@ -1,0 +1,46 @@
+%% Title: ZinharCMS Database Domain Map
+%% Sources: backend/migrations/0001_initial_schema.sql through backend/migrations/0026_v3_phase_thirteen_marketplace_qa_performance.sql; backend/src/routes; backend/src/services
+%% Related documentation: ../overview.md; ../schema-catalog.md; ../entity-catalog.md
+flowchart LR
+    PG[("PostgreSQL<br/>Shared database and namespace")]
+
+    subgraph Control["Global Control Plane"]
+        ID["Identity and Global RBAC<br/>5 tables"]
+        ORG["Organizations and Membership<br/>3 tables"]
+        PLAN["Plans<br/>Global catalog"]
+        MCAT["Marketplace Creator and Catalog<br/>5 core tables"]
+        MPAY["Creator Payout Control<br/>2 tables"]
+    end
+
+    subgraph Tenant["Tenant Data Plane"]
+        CMS["CMS Content, Pages, Components,<br/>Media, Comments, and Plugins<br/>9 tables"]
+        DELIVERY["Settings, Navigation, and Webhooks<br/>4 tables"]
+        SAAS["Subscriptions, Usage, Billing,<br/>Operations, Audit, and Beta<br/>11 tables"]
+        MRUN["Marketplace Installation and Runtime<br/>4 tenant tables plus permission catalog"]
+        MCOM["Marketplace Commerce and Trust<br/>5 tenant tables plus notifications"]
+    end
+
+    PG --> ID
+    PG --> ORG
+    PG --> PLAN
+    PG --> MCAT
+    PG --> MPAY
+    PG --> CMS
+    PG --> DELIVERY
+    PG --> SAAS
+    PG --> MRUN
+    PG --> MCOM
+
+    ID --> ORG
+    ORG --> CMS
+    ORG --> DELIVERY
+    ORG --> SAAS
+    PLAN --> SAAS
+    MCAT --> MRUN
+    MCAT --> MCOM
+    MRUN --> CMS
+    MCOM --> MPAY
+
+    RLS["Forced RLS<br/>32 tables"] -. protects .-> Tenant
+    CTX["zinhar.organization_id<br/>zinhar.user_id<br/>zinhar.rls_bypass"] -. supplies policy context .-> RLS
+    NOTE["Runtime migration state unknown<br/>SCHEMA_RUNTIME_STATUS_UNKNOWN SRU-01"] -. caveat .-> PG

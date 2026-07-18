@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/Cargo.toml"
   - "backend/src"
@@ -87,6 +87,10 @@ Tests that would materially protect the documented architecture but were not fou
 - process restart/multi-replica page preview behavior;
 - provider outage and retry/fallback behavior.
 
+## Phase 5 Database Test Findings
+
+No separate `backend/tests` database integration suite, reusable PostgreSQL fixture/reset harness, or broad runtime migration/RLS assertion layer was found. CI provisions PostgreSQL, but most identified colocated tests are pure/static; Marketplace Tokio tests found during Phase 5 focus on filesystem artifacts. The tracked tenant fixture is manual/local-staging evidence. The hardening checker covers 24 of the 32 forced-RLS tables intended by current migrations (`DCC-12`). See [Database Testing](../database/database-testing.md) for the required isolation, migration, constraint, transaction, idempotency, and trigger scenarios.
+
 ## Coverage Gaps and Confidence
 
 `TEST_COVERAGE_GAP TCG-01`: core Authentication, Organizations, Content, Comments, Media, and Pages route files have no colocated `#[cfg(test)]` module at the verification commit. This does not prove that behavior is entirely untested; frontend tests, manual tests, or unlocated external suites may exist. Phase 3 found no valid coverage report and therefore reports no percentage.
@@ -94,4 +98,3 @@ Tests that would materially protect the documented architecture but were not fou
 ## Maintenance Guidance
 
 When adding a test, update the owning module document and this map. Prefer tests that cross a documented boundary when a change involves middleware, transactions, cache invalidation, files, provider side effects, or more than one module.
-

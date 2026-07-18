@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/routes/mod.rs"
   - "backend/src/middleware/auth.rs"
@@ -214,6 +214,16 @@ Frontend source sharing is not package-enforced. Route pages can import the cent
 | Pages and Marketplace adapters import across apparent domain/layer ownership | `backend/src/routes/pages.rs`; `backend/src/services/marketplace_adapters.rs` | DDU-04; BE-RISK-001/003 |
 | Content and Pages invoke invalidation behavior owned by Delivery routes | affected route imports and calls | DDU-05; BE-RISK-001/007 |
 | CMS Billing and Marketplace Finance separately own Stripe-facing business behavior | billing and Marketplace finance route/service sources | RO-03; BE-RISK-012 |
+
+## Phase 5 Persistence Boundary Findings
+
+- The database boundary is shared across modules; no mandatory repository/DAO layer owns SQL access (`PBU-01`).
+- Thirty-two tables have forced RLS in migration intent, but the hardening verifier lists only 24 (`DCC-12`).
+- Global and tenant tables coexist; privileged bypass transactions are a security-sensitive boundary.
+- Parent and organization FKs do not universally prove same-tenant coherence (`TIV-01`, `CCU-01`).
+- Media files, Stripe operations, post-commit audit, and spawned webhooks cross database atomicity (`TBU-01` through `TBU-04`).
+
+Use [Database Module Data Ownership](../database/module-data-ownership.md), [Multi-Tenancy](../database/multi-tenancy.md), and [Transactions and Consistency](../database/transactions-and-consistency.md) before changing these boundaries.
 
 ## Related Architecture Views
 
