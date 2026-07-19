@@ -1,0 +1,23 @@
+%% Evidence: docker-compose.yml; docker-compose.prod.yml; backend/src/main.rs; frontend/Dockerfile.prod
+flowchart LR
+    Browser["Browser"]
+    Frontend["React static bundle\nVite local or Nginx production-like"]
+    Backend["Rust/Axum backend\nHTTP :8080"]
+    PostgreSQL[("PostgreSQL 16\nsystem of record")]
+    Redis[("Redis 7\ncache and rate state")]
+    Files[("Upload/artifact filesystem")]
+    Stripe["Stripe HTTPS\noptional"]
+    Email["Email webhook provider\noptional"]
+    Webhooks["Tenant CMS webhook targets"]
+    Edge["Ingress, TLS, DNS, replicas, regions\nPRODUCTION_TOPOLOGY_UNKNOWN"]
+
+    Browser --> Frontend --> Backend
+    Backend --> PostgreSQL
+    Backend --> Redis
+    Backend --> Files
+    Backend --> Stripe
+    Backend --> Email
+    Backend --> Webhooks
+    Edge -.-> Frontend
+    Edge -.-> Backend
+

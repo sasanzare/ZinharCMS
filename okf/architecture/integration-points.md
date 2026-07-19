@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/config.rs"
@@ -154,3 +154,7 @@ No external identity provider, MFA provider, secret manager, security-event expo
 ## Marketplace Integration Classification
 
 Marketplace package upload, Stripe-facing commerce, filesystem artifacts, host adapters, and tenant component synchronization are verified integration points. No dynamic plugin loader or uploaded-code execution path was found. See [Marketplace Architecture](../extensibility/marketplace-architecture.md) and [Isolation and Trust](../extensibility/isolation-and-trust.md).
+
+## Operational Integration Status
+
+PostgreSQL, Redis, local files, Stripe, optional email webhook delivery, tenant CMS webhooks, Nginx, and build-time package registries are the verified operational dependencies. No object-storage provider, queue, search service, identity provider, container registry, metrics backend, alert manager, backup service, or deployment provider is verified. See [External Dependencies](../operations/external-dependencies.md), [Logging and Tracing](../operations/logging-and-tracing.md), and [Metrics and Monitoring](../operations/metrics-and-monitoring.md).

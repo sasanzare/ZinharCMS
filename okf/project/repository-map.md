@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - ".gitignore"
@@ -324,3 +324,23 @@ The Phase 8 entry point is [Business Rules and Domain Workflows](../domain/READM
 ## Phase 9 Repository Map
 
 The Phase 9 entry point is [Plugins, Marketplace, and Extensibility](../extensibility/README.md). The extensibility/plugins directory contains only verified concrete plugins, extensibility/extension-points contains significant verified contracts, extensibility/marketplace covers implemented Marketplace areas, and extensibility/diagrams contains seven source-aligned Mermaid views.
+
+## Development, Delivery, Operations, and Maintenance Paths
+
+| Path | Verified role |
+| --- | --- |
+| `package.json` | Root orchestration for infrastructure, component dev/test/build, and Marketplace CLI |
+| `backend/Cargo.toml`, `backend/Cargo.lock` | Backend package, dependencies, and lock |
+| `frontend/package.json`, `frontend/package-lock.json` | Frontend scripts, dependencies, and lock |
+| `.github/workflows/` | Two path-filtered CI workflows; no release or deployment workflow |
+| `backend/Dockerfile*`, `frontend/Dockerfile*` | Development and production-like image builds |
+| `docker-compose.yml` | Local PostgreSQL, Redis, and pgAdmin |
+| `docker-compose.prod.yml` | Production-like PostgreSQL, Redis, backend, frontend, and volume assembly; not deployed-state evidence |
+| `frontend/nginx.conf` | Static SPA fallback; no API proxy/TLS configuration |
+| `.env.example`, `env.example`, `backend/src/config.rs` | Environment variable names, defaults, and validation |
+| `backend/src/main.rs`, `backend/src/db/mod.rs` | Startup, migrations, seed, middleware, bind, graceful shutdown |
+| `scripts/` | Marketplace CLI, load smoke, beta/readiness, and GA checks; no deploy/backup/restore script |
+| `docs/V2_OPERATIONS_RUNBOOK.md`, `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md` | Operational intent with recovery/deployment assumptions that require verification |
+| `okf/development/`, `okf/delivery/`, `okf/operations/`, `okf/maintenance/` | Phase 10 knowledge, diagrams, validation, conflicts, and maintenance policy |
+
+See [Development](../development/README.md), [Delivery](../delivery/README.md), [Operations](../operations/README.md), and [Maintenance](../maintenance/README.md).

@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "mixed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-18"
 primary_sources: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services", "backend/src/services/hardening.rs"]
 related_documents: ["database/migrations.md", "database/multi-tenancy.md", "database/transactions-and-consistency.md", "database/database-testing.md"]
@@ -59,3 +59,7 @@ Security risks `SEC-06`, `SEC-07`, `SEC-08`, and `SEC-09` cover authorization-ag
 ## Extensibility Persistence Risks
 
 Stale built-in registry rows, Marketplace-derived component cleanup, artifact retention, cross-tenant tests, and absent generic plugin data ownership remain open. These are tracked in [Extensibility Risks](../extensibility/extensibility-risks.md).
+
+## Operational Database Risks
+
+Startup migration coupling, absent downgrade/expand-contract policy, unknown deployed schema/grants, no pool metrics, no maintenance automation, and missing backup/restore/DR evidence are high-priority operational risks. See [Database Deployment](../delivery/database-deployment.md), [Database Operations](../operations/database-operations.md), [Backup and Restore](../operations/backup-and-restore.md), and [Operational Risks](../operations/operational-risks.md).

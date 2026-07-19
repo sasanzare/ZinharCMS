@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/main.rs"
@@ -127,3 +127,7 @@ Security-specific consequences of shared-process boundaries, distributed authori
 ## Extensibility Risks
 
 The prioritized extension risks are trusted in-process callback authority, absent executable-package isolation, stale registry reconciliation, derived component cleanup, compatibility policy, and missing database-backed end-to-end tests. See [Extensibility Risks](../extensibility/extensibility-risks.md).
+
+## Delivery and Operational Risks
+
+Production topology, deployment target, rollout, secret injection, artifact retention, metrics/alerts, backup/restore, disaster recovery, and operational ownership are not established. Startup migrations and in-process background work create additional rollout/recovery ambiguity. See [Delivery Risks](../delivery/delivery-risks.md), [Operational Risks](../operations/operational-risks.md), and [Cross-Phase Conflicts](../maintenance/cross-phase-conflicts.md).

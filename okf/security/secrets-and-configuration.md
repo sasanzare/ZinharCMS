@@ -8,7 +8,7 @@ status: "current"
 source_of_truth: false
 implementation_view: "observed"
 security_status: "mixed"
-last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/config.rs"
@@ -58,3 +58,7 @@ The backend rejects a missing/short JWT secret and invalid typed values. Several
 ## Exposure Finding
 
 `POTENTIAL_SECRET_EXPOSURE PSE-01` covers deterministic development bootstrap credentials in source and UI defaults. It does not assert that a production secret is committed; tracked environment templates were reviewed by key name without reproducing values.
+
+## Operational Secret Injection
+
+Production-like Compose requires selected variables and passes other names/defaults, but no secret manager, encrypted configuration store, CI secret reference, access policy, rotation, revocation, backup, or recovery process is tracked. `VITE_API_URL` is a public build input and must never contain secrets. See [Environment Configuration](../operations/environment-configuration.md), [Environment Promotion](../delivery/environment-promotion.md), and [Operational Risks](../operations/operational-risks.md).

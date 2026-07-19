@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "observed"
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/main.rs"
@@ -273,3 +273,7 @@ Phase 7 adds the verified [Authentication Flow](../security/diagrams/authenticat
 ## Phase 8 Domain Runtime Flows
 
 [Cross-Module Workflows](../domain/cross-module-workflows.md) connects request, transaction, filesystem, cache, broadcast, email, provider, webhook, and Marketplace effects. The [Cross-Module Orchestration](../domain/diagrams/cross-module-orchestration.mmd) diagram distinguishes committed database changes from best-effort or spawned side effects. Detailed sequences are maintained in `domain/workflows/`; they do not imply a durable workflow engine, queue, or outbox.
+
+## Startup, Readiness, and Shutdown Flow
+
+The backend loads configuration, creates a lazy PostgreSQL pool, applies embedded migrations, seeds bootstrap identity data when the users table is empty, constructs Redis and in-memory preview state, registers middleware/routes, binds, and serves. `/health` is liveness only; `/ready` checks PostgreSQL and Redis. Ctrl+C and Unix terminate trigger Axum graceful shutdown, but no durable spawned-task drain or restart policy is defined. See [Service Lifecycle](../operations/service-lifecycle.md) and [Health Flow](../operations/diagrams/health-check-flow.mmd).

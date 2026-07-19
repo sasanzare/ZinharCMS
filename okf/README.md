@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "README.md"
@@ -332,3 +332,36 @@ Start with [Domain Overview](domain/overview.md), [Domain Catalog](domain/domain
 ## Phase 9: Plugins, Marketplace, and Extensibility
 
 Start with [Plugins, Marketplace, and Extensibility](extensibility/README.md), then use the [Extensibility Catalog](extensibility/extensibility-catalog.md) and [Marketplace Architecture](extensibility/marketplace-architecture.md). Phase 9 verifies one statically compiled built-in plugin, declarative component/template/hook adapters, and a substantial Marketplace lifecycle. It does not identify dynamic package loading or uploaded-code execution.
+
+## Phase 10: Development, Delivery, Operations, and Maintenance
+
+- [Development](development/README.md) covers prerequisites, local startup, commands, quality, tests, database work, debugging, contribution, and risks.
+- [Delivery](delivery/README.md) covers the two GitHub Actions workflows, artifacts, containers, release/deployment uncertainty, migrations, rollback, and risks.
+- [Operations](operations/README.md) covers runtime lifecycle, configuration, dependencies, health/readiness, logging, monitoring gaps, database operations, recovery, troubleshooting, runbooks, and risks.
+- [Maintenance](maintenance/README.md) defines synchronization, ownership classes, impact review, staleness detection, validation, conflicts, owner questions, and the final report.
+
+## Complete Reading Order
+
+1. [Project](project/overview.md)
+2. [Architecture](architecture/README.md)
+3. [Backend](backend/README.md)
+4. [Frontend](frontend/README.md)
+5. [Database](database/README.md)
+6. [API](api/README.md)
+7. [Security](security/README.md)
+8. [Domain](domain/README.md)
+9. [Extensibility](extensibility/README.md)
+10. [Development](development/README.md), [Delivery](delivery/README.md), and [Operations](operations/README.md)
+11. [Maintenance](maintenance/README.md) and [References](references/source-register.md)
+
+## Human Navigation
+
+Use the [Navigation Guide](project/navigation-guide.md) for task-oriented entry points and the [Final Completion Report](maintenance/final-completion-report.md) for coverage, risks, unknowns, and status.
+
+## AI-Agent Navigation
+
+Start with `index.yaml`, then read the affected subsystem README, evidence paths, risks, cross-phase conflicts, and owner questions. Follow the [Review Checklist](maintenance/review-checklist.md), preserve uncertainty markers, and update related documents and index entries with implementation changes.
+
+## Maintenance and Final Status
+
+The [OKF Update Policy](maintenance/okf-update-policy.md) requires same-change documentation review. Final validation details are in the [Validation Report](maintenance/validation-report.md); unresolved decisions are consolidated in [Owner Questions](maintenance/unresolved-owner-questions.md), and source conflicts are in [Cross-Phase Conflicts](maintenance/cross-phase-conflicts.md). The final implementation and validation status is recorded only in the [Final Completion Report](maintenance/final-completion-report.md).

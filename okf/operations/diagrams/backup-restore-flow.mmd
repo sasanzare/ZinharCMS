@@ -1,0 +1,19 @@
+%% Evidence: docker-compose.prod.yml; docs/V2_OPERATIONS_RUNBOOK.md; docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md; no backup or restore command found
+flowchart LR
+    Database[("PostgreSQL named volume")]
+    Redis[("Redis AOF named volume")]
+    Uploads[("Uploads and Marketplace artifacts volume")]
+    Backup["Backup process\nBACKUP_STATUS_UNCLEAR"]
+    Destination["Off-host encrypted destination\nUNKNOWN"]
+    Restore["Restore procedure\nRESTORE_STATUS_UNCLEAR"]
+    Validate["Restore drill and integrity validation\nNOT FOUND"]
+    Runtime["Recovered runtime"]
+
+    Database -.-> Backup
+    Redis -.-> Backup
+    Uploads -.-> Backup
+    Backup -.-> Destination
+    Destination -.-> Restore
+    Restore -.-> Validate
+    Validate -.-> Runtime
+

@@ -7,7 +7,7 @@ phase: 8
 status: "current"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/services/webhooks.rs"
@@ -57,3 +57,7 @@ The web process owns all observed async work. Process restarts, request cancella
 ## Extensibility Background Work
 
 No independent plugin worker, package executor, scheduled plugin runtime, or durable hook queue was found. CMS callbacks are synchronous and Marketplace adapter operations are request-driven host actions. See [Plugin Architecture](../extensibility/plugin-architecture.md).
+
+## Operational Lifecycle
+
+Spawned CMS webhooks and in-memory page-preview broadcasts remain inside the web process. Graceful server shutdown is configured, but no drain, replay, durable outbox, retry supervisor, or independent health/metrics surface exists for this work. Process restart can lose in-flight effects. See [Service Lifecycle](../operations/service-lifecycle.md), [Alerts and Incident Signals](../operations/alerts-and-incident-signals.md), and [Operational Risks](../operations/operational-risks.md).

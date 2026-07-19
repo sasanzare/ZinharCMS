@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "README.md"
@@ -181,3 +181,19 @@ See [Domain Overview](../domain/overview.md), [Domain Invariants](../domain/inva
 - **Component registry:** Page Builder metadata/schema records; registration does not prove executable frontend code.
 
 See [Extensibility Terminology](../extensibility/terminology.md).
+
+## Development and Operations Terms
+
+- **CI:** The two GitHub Actions quality workflows. It does not mean release or deployment.
+- **Production-like Compose:** The tracked multi-container reference in `docker-compose.prod.yml`; it is not proof of a live production topology.
+- **Liveness:** `/health` confirms the backend route is serving without checking dependencies.
+- **Readiness:** `/ready` checks PostgreSQL and Redis at request time.
+- **Startup migration:** Embedded SQLx migrations run inside backend startup before the server binds.
+- **Artifact:** A build output such as the backend binary, frontend bundle, container image, or Marketplace ZIP; publication/retention varies and is often undefined.
+- **Rollback:** A return to a prior application/configuration/data state. Platform-wide rollback is only partially documented and not automated.
+- **Backup:** A recoverable copy separate from active storage. Docker named volumes are persistence, not verified backups.
+- **Restore:** Recovery from a verified backup. No repository restore procedure or drill exists.
+- **Observability:** Logs, traces, metrics, and monitoring. Current repository evidence covers tracing/stdout and probes, not metrics/alerts/retention.
+- **Runbook:** A scenario-oriented operational procedure; current runbooks include unsupported backup/deployment assumptions and must be read with status markers.
+
+See [Development](../development/README.md), [Delivery](../delivery/README.md), and [Operations](../operations/README.md).

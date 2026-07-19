@@ -1,0 +1,22 @@
+%% Evidence: backend/src/routes/mod.rs; docker-compose.yml; docker-compose.prod.yml
+flowchart TD
+    Probe["Caller or manual readiness script"]
+    Health{"GET /health"}
+    Alive["200: process route alive\nno dependency checks"]
+    Ready{"GET /ready"}
+    Db["PostgreSQL SELECT 1"]
+    Cache["Redis PING"]
+    ReadyOk["200: ready"]
+    Degraded["503: service unavailable\ndependency detail"]
+    Container["Backend/frontend container health checks\nNOT DEFINED"]
+
+    Probe --> Health --> Alive
+    Probe --> Ready
+    Ready --> Db
+    Ready --> Cache
+    Db -->|reachable| ReadyOk
+    Cache -->|reachable| ReadyOk
+    Db -->|failure| Degraded
+    Cache -->|failure| Degraded
+    Ready -.-> Container
+

@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "frontend/package.json"
@@ -131,3 +131,7 @@ Frontend tests demonstrate visible actions, validation messages, and client-call
 ## Extensibility Test Boundary
 
 MarketplacePage and PagesPage tests verify selected host UI and API-client wiring. They do not demonstrate third-party JavaScript execution, registry cleanup, adapter/database transactions, or cross-tenant isolation. See [Extensibility Testing](../extensibility/extensibility-testing.md).
+
+## CI and Coverage Boundary
+
+Frontend CI runs lint, typecheck, Vitest, and production build after `npm install`. Three tracked test files cover Dashboard, Marketplace, and Pages; no browser E2E, accessibility, visual regression, coverage threshold, telemetry, or deployment smoke job exists. See [Testing Workflow](../development/testing-workflow.md), [CI Job Catalog](../delivery/ci-job-catalog.md), and [Development Risks](../development/development-risks.md).

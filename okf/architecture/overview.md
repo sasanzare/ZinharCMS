@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/Cargo.toml"
@@ -180,3 +180,7 @@ Classification, process boundaries, runtime dependencies, and repository-defined
 - [System Context Diagram](diagrams/system-context.mmd)
 - [Container View Diagram](diagrams/container-view.mmd)
 - [Dependency Direction Diagram](diagrams/dependency-direction.mmd)
+
+## Operational Architecture Status
+
+The verified deployment reference is a modular-monolith backend, static React/Nginx frontend, PostgreSQL, Redis, and local upload storage assembled by production-like Compose. Backend startup owns migrations, bootstrap seed, request tracing, and graceful shutdown. No production provider, ingress/TLS, replica model, durable worker, metrics/alerts, backup automation, or disaster-recovery topology is established. See [Runtime Topology](../operations/runtime-topology.md), [Deployment Workflow](../delivery/deployment-workflow.md), and [Operational Risks](../operations/operational-risks.md).

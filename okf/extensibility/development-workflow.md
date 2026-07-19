@@ -8,7 +8,7 @@ status: "current"
 source_of_truth: false
 implementation_view: "observed"
 extensibility_status: "mixed"
-last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/plugins"
@@ -84,3 +84,7 @@ Using SEO Auto as a pattern for a second built-in is INFERRED_FROM_CODE; no gene
 ## Planned or Unsupported Workflow
 
 Backend-extension and integration-plugin manifest types exist, but executable installation/runtime is PLANNED_NOT_IMPLEMENTED. Do not add undocumented commands or bypass review, compatibility, permission, tenant, or artifact gates.
+
+## Repository Development Integration
+
+Use the [Development Prerequisites](../development/prerequisites.md), [Command Catalog](../development/commands.md), [Testing Workflow](../development/testing-workflow.md), and [Contribution Workflow](../development/contribution-workflow.md). Marketplace CLI validate/pack are local tooling; submit is an authenticated mutation and requires explicit authorization. No package release/signing/sandbox deployment workflow exists.

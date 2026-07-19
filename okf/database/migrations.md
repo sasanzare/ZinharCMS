@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-18"
 primary_sources: ["backend/migrations", "backend/src/db/mod.rs", "backend/src/main.rs"]
 related_documents: ["database/schema-catalog.md", "database/database-risks.md", "database/technology-and-configuration.md"]
@@ -72,3 +72,7 @@ Repository evidence does not define maintenance windows, lock budgeting, preflig
 ## Extensibility Migration Boundary
 
 Application migrations create and evolve plugin, component, and Marketplace tables. No package-supplied SQL or plugin migration callback is executed. Marketplace uninstall preserves organization data, while artifact and derived-registry retention need explicit operational policy. See [Plugin Data and Migrations](../extensibility/plugin-data-and-migrations.md).
+
+## Deployment Execution
+
+Migrations are embedded by SQLx and run during every backend startup before seed and bind. There is no separate CI/CD migration job, down migration, verified expand/contract policy, multi-replica coordination contract, or automated backup prerequisite. See [Database Development](../development/database-development.md), [Database Deployment](../delivery/database-deployment.md), and [Backup and Restore](../operations/backup-and-restore.md).

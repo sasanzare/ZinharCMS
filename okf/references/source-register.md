@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "README.md"
@@ -469,3 +469,18 @@ The [Domain Catalog](../domain/domain-catalog.md) and [Business Rule Catalog](..
 ## Phase 9 Evidence Set
 
 Phase 9 prioritizes backend/src/plugins, plugin and Marketplace route modules, Marketplace service modules, migrations 0006 and 0015 through 0026, MarketplacePage and PagesPage, their tests, marketplace-cli, and current V3 manifest/package/creator documentation. The [Extensibility Catalog](../extensibility/extensibility-catalog.md) maps each verified mechanism to direct evidence.
+
+## Phase 10 Evidence Set
+
+| Source | Authority for Phase 10 | Limitation |
+| --- | --- | --- |
+| Root/backend/frontend manifests and locks | Commands, versions, dependencies, build/test surfaces | No owner-approved support matrix |
+| `.github/workflows/backend-ci.yml`, `frontend-ci.yml` | Exact CI triggers, jobs, services, actions, and commands | External branch protection and GitHub defaults unknown |
+| Dockerfiles, Compose files, Nginx config | Build/runtime reference topology | Not proof of production deployment |
+| Environment templates and `backend/src/config.rs` | Variable names/defaults/validation | Production values and secret manager intentionally not inspected |
+| `backend/src/main.rs`, `db/mod.rs`, routes/state | Lifecycle, migrations, health, readiness, tracing, shutdown | Live target behavior remains environment-specific |
+| Operational services and scripts | Cache/provider/webhook failure behavior and manual checks | No deploy/backup/restore automation |
+| V2/V3 runbooks and release notes | Intended manual release/incident process | Supporting/conflicting where executable evidence is absent |
+| `okf-bootstrap/` and Phases 1–9 | Existing unknowns, conflicts, ownership questions, and subsystem maps | Current source outranks prior interpretation |
+
+The [Validation Report](../maintenance/validation-report.md) records final structural results; [Cross-Phase Conflicts](../maintenance/cross-phase-conflicts.md) consolidates discrepancies.

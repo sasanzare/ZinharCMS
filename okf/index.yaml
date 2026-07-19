@@ -3,10 +3,10 @@ project:
   name: "ZinharCMS"
   repository: "https://github.com/sasanzare/ZinharCMS"
   repository_name: "ZinharCMS"
-  knowledge_status: "in_progress"
-  current_phase: 9
+  knowledge_status: "complete_with_open_questions"
+  current_phase: 10
   current_phase_status: "complete"
-  last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+  last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
   last_verified_date: "2026-07-19"
 
 authority:
@@ -75,6 +75,16 @@ entry_points:
       purpose: "Marketplace subsystem, host-adapter, and execution-boundary overview"
     - path: "extensibility/extensibility-risks.md"
       purpose: "Prioritized extensibility risks and uncertainty markers"
+    - path: "development/README.md"
+      purpose: "Phase 10 local development, commands, quality, testing, and contribution entry point"
+    - path: "delivery/README.md"
+      purpose: "Phase 10 CI, artifacts, containers, release, deployment, and rollback entry point"
+    - path: "operations/README.md"
+      purpose: "Phase 10 runtime, observability, recovery, troubleshooting, and runbook entry point"
+    - path: "maintenance/README.md"
+      purpose: "Ongoing OKF policy, validation, conflicts, questions, and completion entry point"
+    - path: "maintenance/final-completion-report.md"
+      purpose: "Final OKF coverage, risk, validation, remaining-work, and status summary"
     - path: "project/navigation-guide.md"
       purpose: "Short task-oriented navigation guide"
   ai:
@@ -156,6 +166,24 @@ entry_points:
       purpose: "Observed coverage and prioritized integration gaps"
     - path: "extensibility/extensibility-risks.md"
       purpose: "Prioritized plugin and Marketplace uncertainty register"
+    - path: "development/commands.md"
+      purpose: "Verified command, working-directory, side-effect, and environment catalog"
+    - path: "delivery/ci-job-catalog.md"
+      purpose: "Exact GitHub Actions workflow and job inventory"
+    - path: "operations/environment-configuration.md"
+      purpose: "Environment variable names, defaults, sensitivity, validation, and failure behavior"
+    - path: "operations/operational-risks.md"
+      purpose: "Prioritized runtime, observability, recovery, and ownership risks"
+    - path: "maintenance/change-impact-matrix.md"
+      purpose: "Implementation-to-OKF review mapping for future changes"
+    - path: "maintenance/validation-report.md"
+      purpose: "Full OKF structural, metadata, link, evidence, status, secret, diagram, and Git validation"
+    - path: "maintenance/cross-phase-conflicts.md"
+      purpose: "Consolidated conflict register and current best-supported interpretations"
+    - path: "maintenance/unresolved-owner-questions.md"
+      purpose: "Consolidated owner decisions with priorities and affected documents"
+    - path: "maintenance/final-completion-report.md"
+      purpose: "Final machine-navigable inventory, coverage, risk, validation, and status"
     - path: "project/navigation-guide.md"
       purpose: "Task-to-source navigation and AI agent rules"
 
@@ -168,7 +196,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "README.md"
@@ -224,7 +252,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "okf-bootstrap/09-knowledge-gaps.md"
@@ -320,7 +348,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - ".gitignore"
@@ -372,7 +400,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "README.md"
@@ -417,7 +445,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "README.md"
@@ -483,7 +511,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "README.md"
@@ -647,7 +675,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/Cargo.toml"
@@ -867,7 +895,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "observed"
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/src/main.rs"
@@ -929,7 +957,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/config.rs"
@@ -980,7 +1008,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/src/main.rs"
@@ -1286,7 +1314,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/config.rs"
@@ -2428,7 +2456,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/Cargo.toml"
@@ -2793,7 +2821,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-17"
     primary_evidence_paths: ["frontend/package.json", "frontend/vite.config.ts", "frontend/tsconfig.app.json", "frontend/Dockerfile.prod", ".github/workflows/frontend-ci.yml"]
     related_documents: ["frontend/application-catalog.md", "frontend/testing-map.md", "frontend/api-client.md"]
@@ -2809,7 +2837,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["frontend/vitest.config.ts", "frontend/src/test/setup.ts", "frontend/src/pages/DashboardPage.test.tsx", "frontend/src/pages/PagesPage.test.tsx", "frontend/src/pages/MarketplacePage.test.tsx"]
     related_documents: ["frontend/feature-catalog.md", "frontend/page-builder.md", "frontend/frontend-risks.md"]
@@ -3282,7 +3310,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-18"
     primary_evidence_paths: ["backend/migrations", "backend/src/db/mod.rs", "backend/src/main.rs"]
     related_documents: ["database/schema-catalog.md", "database/database-risks.md"]
@@ -3387,7 +3415,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-18"
     primary_evidence_paths: ["backend/src", "backend/migrations", ".github/workflows", "docs/V2_PHASE_EIGHT_FIXTURE.sql"]
     related_documents: ["database/seeds-and-fixtures.md", "database/multi-tenancy.md", "backend/testing-map.md"]
@@ -3402,7 +3430,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "mixed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-18"
     primary_evidence_paths: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services", "backend/src/services/hardening.rs"]
     related_documents: ["database/migrations.md", "database/multi-tenancy.md", "database/transactions-and-consistency.md", "database/database-testing.md"]
@@ -3904,7 +3932,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
     related_documents: ["api/README.md", "api/endpoint-catalog.md"]
@@ -5075,7 +5103,7 @@ documents:
     source_of_truth: false
     implementation_view: "observed"
     security_status: "mixed"
-    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/config.rs", ".gitignore", ".env.example", "env.example", "docker-compose.yml", "docker-compose.prod.yml"]
     related_documents: ["security/password-and-credential-handling.md", "security/browser-and-http-security.md", "backend/configuration-and-state.md"]
@@ -5092,7 +5120,7 @@ documents:
     source_of_truth: false
     implementation_view: "observed"
     security_status: "partially_verified"
-    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/main.rs", "backend/src/middleware/security.rs", "backend/src/routes/auth.rs", "backend/src/routes/mod.rs", "frontend/src/services/api.ts"]
     related_documents: ["security/trust-boundaries.md", "security/frontend-security-boundaries.md", "security/secrets-and-configuration.md"]
@@ -5160,7 +5188,7 @@ documents:
     source_of_truth: false
     implementation_view: "observed"
     security_status: "mixed"
-    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/main.rs", "backend/src/routes/auth.rs", "backend/src/services/rbac.rs", "backend/src/services/rls.rs", "frontend/src/stores/useAppStore.ts", "backend/migrations"]
     related_documents: ["security/threat-register.md", "security/security-testing.md", "architecture/architecture-risks.md", "api/api-risks.md"]
@@ -5633,7 +5661,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/services/webhooks.rs", "backend/src/services/media_processing.rs", "backend/src/routes/pages.rs", "backend/src/services/email.rs"]
     related_documents: ["domain/domain-events.md", "domain/cross-module-workflows.md", "domain/domain-risks.md"]
@@ -6497,7 +6525,7 @@ documents:
     source_of_truth: false
     implementation_view: "observed"
     extensibility_status: "mixed"
-    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/plugins","scripts/marketplace-cli.mjs","docs/MARKETPLACE_CREATOR_GUIDE.md","docs/V3_MARKETPLACE_MANIFEST_SCHEMA.md","docs/V3_PACKAGE_STORAGE.md"]
     related_documents: ["extensibility/plugin-manifest.md","extensibility/compatibility-and-versioning.md","extensibility/extensibility-testing.md"]
@@ -6545,7 +6573,7 @@ documents:
     source_of_truth: false
     implementation_view: "observed"
     extensibility_status: "partially_verified"
-    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/plugins/seo.rs","backend/src/services/marketplace_manifest.rs","backend/src/services/marketplace_installation.rs","backend/src/services/marketplace_runtime.rs","backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace.rs","backend/src/routes/marketplace_runtime.rs","backend/src/routes/marketplace_adapters.rs","frontend/src/pages/MarketplacePage.test.tsx","frontend/src/pages/PagesPage.test.tsx",".github/workflows/backend-ci.yml",".github/workflows/frontend-ci.yml"]
     related_documents: ["backend/testing-map.md","frontend/testing-map.md","api/api-testing.md","extensibility/plugins/seo-auto.md","extensibility/extension-points/cms-entry-before-save.md","extensibility/extension-points/marketplace-runtime-authorization.md"]
@@ -7206,7 +7234,813 @@ documents:
     primary_evidence_paths: ["backend/src/routes/marketplace.rs","backend/src/services/marketplace_installation.rs"]
     related_documents: ["extensibility/marketplace-workflows.md","extensibility/marketplace/installation-update-rollback.md"]
 
+  - id: "delivery-artifact-production"
+    path: "delivery/artifact-production.md"
+    title: "Artifact Production"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/Dockerfile.prod", "frontend/Dockerfile.prod", "frontend/package.json", "scripts/marketplace-cli.mjs", ".github/workflows"]
+    related_documents: ["delivery/container-builds.md", "delivery/release-process.md", "development/build-and-quality.md", "database/migrations.md", "operations/runtime-topology.md"]
+    related_diagrams: ["delivery/diagrams/release-flow.mmd"]
+
+  - id: "delivery-ci-architecture"
+    path: "delivery/ci-architecture.md"
+    title: "CI Architecture"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: [".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml"]
+    related_documents: ["delivery/ci-job-catalog.md", "development/build-and-quality.md", "database/database-testing.md", "security/security-testing.md", "operations/health-and-readiness.md"]
+    related_diagrams: ["delivery/diagrams/ci-pipeline.mmd"]
+
+  - id: "delivery-ci-job-catalog"
+    path: "delivery/ci-job-catalog.md"
+    title: "CI Job Catalog"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: [".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml"]
+    related_documents: ["delivery/ci-architecture.md", "development/testing-workflow.md", "backend/testing-map.md", "frontend/testing-map.md", "operations/external-dependencies.md"]
+    related_diagrams: ["delivery/diagrams/ci-pipeline.mmd"]
+
+  - id: "delivery-container-builds"
+    path: "delivery/container-builds.md"
+    title: "Container Builds"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/Dockerfile", "backend/Dockerfile.prod", "frontend/Dockerfile", "frontend/Dockerfile.prod", "frontend/nginx.conf", "docker-compose.yml", "docker-compose.prod.yml"]
+    related_documents: ["delivery/artifact-production.md", "delivery/deployment-workflow.md", "development/prerequisites.md", "security/secrets-and-configuration.md", "operations/runtime-topology.md"]
+    related_diagrams: ["delivery/diagrams/deployment-flow.mmd"]
+
+  - id: "delivery-database-deployment"
+    path: "delivery/database-deployment.md"
+    title: "Database Deployment"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/migrations", "backend/src/db/mod.rs", "backend/src/main.rs", "backend/Dockerfile.prod", "docs/V2_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["delivery/deployment-workflow.md", "delivery/rollback-and-recovery.md", "development/database-development.md", "database/migrations.md", "database/database-risks.md", "operations/backup-and-restore.md"]
+    related_diagrams: ["delivery/diagrams/deployment-flow.mmd"]
+
+  - id: "delivery-risks"
+    path: "delivery/delivery-risks.md"
+    title: "Delivery Risks"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: [".github/workflows", "docker-compose.prod.yml", "backend/src/main.rs", "docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["delivery/ci-architecture.md", "delivery/release-process.md", "delivery/deployment-workflow.md", "delivery/rollback-and-recovery.md", "security/security-risks.md", "operations/operational-risks.md"]
+    related_diagrams: ["delivery/diagrams/ci-pipeline.mmd", "delivery/diagrams/deployment-flow.mmd"]
+
+  - id: "delivery-deployment-workflow"
+    path: "delivery/deployment-workflow.md"
+    title: "Deployment Workflow"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docker-compose.prod.yml", "backend/Dockerfile.prod", "frontend/Dockerfile.prod", "backend/src/main.rs", "docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["delivery/environment-promotion.md", "delivery/database-deployment.md", "delivery/rollback-and-recovery.md", "development/build-and-quality.md", "security/secrets-and-configuration.md", "operations/service-lifecycle.md"]
+    related_diagrams: ["delivery/diagrams/deployment-flow.mmd"]
+
+  - id: "delivery-diagram-ci-pipeline"
+    path: "delivery/diagrams/ci-pipeline.mmd"
+    title: "Ci Pipeline"
+    category: "delivery-diagram"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: [".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml"]
+    related_documents: ["delivery/ci-architecture.md", "delivery/ci-job-catalog.md", "delivery/delivery-risks.md", "delivery/README.md"]
+
+  - id: "delivery-diagram-deployment-flow"
+    path: "delivery/diagrams/deployment-flow.mmd"
+    title: "Deployment Flow"
+    category: "delivery-diagram"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docker-compose.prod.yml", "backend/Dockerfile.prod", "frontend/Dockerfile.prod", "backend/src/main.rs"]
+    related_documents: ["delivery/container-builds.md", "delivery/database-deployment.md", "delivery/delivery-risks.md", "delivery/deployment-workflow.md", "delivery/environment-promotion.md", "delivery/README.md"]
+
+  - id: "delivery-diagram-release-flow"
+    path: "delivery/diagrams/release-flow.mmd"
+    title: "Release Flow"
+    category: "delivery-diagram"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docs/V2_RELEASE_NOTES.md", "docs/V3_MARKETPLACE_RELEASE_NOTES.md", "scripts/v2-ga-check.ps1", "scripts/marketplace-phase15-ga-check.ps1"]
+    related_documents: ["delivery/artifact-production.md", "delivery/README.md", "delivery/release-process.md", "delivery/rollback-and-recovery.md"]
+
+  - id: "delivery-environment-promotion"
+    path: "delivery/environment-promotion.md"
+    title: "Environment Promotion"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docker-compose.yml", "docker-compose.prod.yml", ".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml", ".env.example"]
+    related_documents: ["delivery/deployment-workflow.md", "delivery/release-process.md", "development/local-environment.md", "database/migrations.md", "security/secrets-and-configuration.md", "operations/runtime-topology.md"]
+    related_diagrams: ["delivery/diagrams/deployment-flow.mmd"]
+
+  - id: "delivery-readme"
+    path: "delivery/README.md"
+    title: "Delivery"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: [".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml", "docker-compose.prod.yml", "backend/Dockerfile.prod", "frontend/Dockerfile.prod"]
+    related_documents: ["development/README.md", "database/README.md", "security/README.md", "operations/README.md", "maintenance/README.md"]
+    related_diagrams: ["delivery/diagrams/ci-pipeline.mmd", "delivery/diagrams/release-flow.mmd", "delivery/diagrams/deployment-flow.mmd"]
+
+  - id: "delivery-release-process"
+    path: "delivery/release-process.md"
+    title: "Release Process"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["package.json", "backend/Cargo.toml", "frontend/package.json", "docs/V2_RELEASE_NOTES.md", "docs/V3_MARKETPLACE_RELEASE_NOTES.md", "scripts/v2-ga-check.ps1", "scripts/marketplace-phase15-ga-check.ps1"]
+    related_documents: ["delivery/artifact-production.md", "delivery/deployment-workflow.md", "delivery/rollback-and-recovery.md", "development/build-and-quality.md", "operations/runbook-catalog.md"]
+    related_diagrams: ["delivery/diagrams/release-flow.mmd"]
+
+  - id: "delivery-rollback-recovery"
+    path: "delivery/rollback-and-recovery.md"
+    title: "Rollback and Recovery"
+    category: "delivery"
+    status: "current"
+    phase: 10
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md", "docker-compose.prod.yml", "backend/migrations"]
+    related_documents: ["delivery/release-process.md", "delivery/deployment-workflow.md", "delivery/database-deployment.md", "database/migrations.md", "security/trust-boundaries.md", "operations/backup-and-restore.md"]
+    related_diagrams: ["delivery/diagrams/release-flow.mmd"]
+
+  - id: "development-build-quality"
+    path: "development/build-and-quality.md"
+    title: "Build and Quality"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: [".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml", "backend/Dockerfile.prod", "frontend/Dockerfile.prod", "frontend/eslint.config.js", "frontend/tsconfig.json"]
+    related_documents: ["development/commands.md", "development/testing-workflow.md", "backend/testing-map.md", "frontend/configuration-and-build.md", "delivery/ci-architecture.md"]
+
+  - id: "development-commands"
+    path: "development/commands.md"
+    title: "Command Catalog"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["package.json", "frontend/package.json", ".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml", "scripts", "backend/src/main.rs"]
+    related_documents: ["development/local-environment.md", "development/build-and-quality.md", "development/testing-workflow.md", "development/database-development.md", "delivery/ci-job-catalog.md"]
+
+  - id: "development-contribution-workflow"
+    path: "development/contribution-workflow.md"
+    title: "Contribution Workflow"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["AGENTS.md", ".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml", ".gitignore", "backend/migrations"]
+    related_documents: ["development/development-workflow.md", "development/build-and-quality.md", "maintenance/review-checklist.md", "maintenance/documentation-ownership.md", "security/security-risks.md"]
+
+  - id: "development-database"
+    path: "development/database-development.md"
+    title: "Database Development"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/migrations", "backend/src/db/mod.rs", "backend/src/main.rs", "docker-compose.yml"]
+    related_documents: ["development/local-environment.md", "development/commands.md", "database/README.md", "database/migrations.md", "database/database-testing.md", "delivery/database-deployment.md"]
+
+  - id: "development-debugging"
+    path: "development/debugging.md"
+    title: "Debugging"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/error.rs", "backend/src/routes/mod.rs", "frontend/vite.config.ts", "docker-compose.yml"]
+    related_documents: ["development/local-environment.md", "development/testing-workflow.md", "operations/logging-and-tracing.md", "operations/health-and-readiness.md", "operations/troubleshooting.md"]
+
+  - id: "development-risks"
+    path: "development/development-risks.md"
+    title: "Development Risks"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["package.json", "README.md", ".github/workflows", "backend/src/main.rs", "frontend/package.json"]
+    related_documents: ["development/prerequisites.md", "development/commands.md", "development/testing-workflow.md", "development/contribution-workflow.md", "maintenance/staleness-detection.md"]
+
+  - id: "development-workflow"
+    path: "development/development-workflow.md"
+    title: "Development Workflow"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: [".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml", "package.json", "backend/migrations"]
+    related_documents: ["development/commands.md", "development/build-and-quality.md", "development/testing-workflow.md", "development/contribution-workflow.md", "maintenance/okf-update-policy.md"]
+
+  - id: "development-local-environment"
+    path: "development/local-environment.md"
+    title: "Local Environment"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["README.md", "package.json", "docker-compose.yml", ".env.example", "backend/src/main.rs", "frontend/vite.config.ts"]
+    related_documents: ["development/prerequisites.md", "development/commands.md", "development/database-development.md", "operations/health-and-readiness.md", "security/secrets-and-configuration.md"]
+
+  - id: "development-prerequisites"
+    path: "development/prerequisites.md"
+    title: "Development Prerequisites"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/Cargo.toml", "frontend/package.json", "frontend/package-lock.json", ".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml", "backend/Dockerfile", "frontend/Dockerfile", ".env.example"]
+    related_documents: ["development/README.md", "development/local-environment.md", "development/commands.md", "backend/overview.md", "frontend/configuration-and-build.md"]
+
+  - id: "development-readme"
+    path: "development/README.md"
+    title: "Development"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["package.json", "backend/Cargo.toml", "frontend/package.json", "README.md"]
+    related_documents: ["backend/README.md", "frontend/README.md", "database/README.md", "api/README.md", "maintenance/README.md"]
+
+  - id: "development-testing-workflow"
+    path: "development/testing-workflow.md"
+    title: "Testing Workflow"
+    category: "development"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src", "frontend/src", "frontend/vitest.config.ts", ".github/workflows/backend-ci.yml", ".github/workflows/frontend-ci.yml", "scripts"]
+    related_documents: ["development/build-and-quality.md", "backend/testing-map.md", "frontend/testing-map.md", "database/database-testing.md", "api/api-testing.md", "security/security-testing.md", "extensibility/extensibility-testing.md", "domain/business-rule-testing.md"]
+
+  - id: "maintenance-change-impact"
+    path: "maintenance/change-impact-matrix.md"
+    title: "Change Impact Matrix"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "prescriptive"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["okf/index.yaml", "okf/project/repository-map.md", "okf/references/source-register.md"]
+    related_documents: ["maintenance/README.md", "maintenance/okf-update-policy.md", "maintenance/review-checklist.md", "maintenance/staleness-detection.md"]
+
+  - id: "maintenance-cross-phase-conflicts"
+    path: "maintenance/cross-phase-conflicts.md"
+    title: "Cross-Phase Conflicts"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["okf-bootstrap/09-knowledge-gaps.md", "okf/project/overview.md", "okf/references/source-register.md", "docs/diagrams", "docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["maintenance/README.md", "maintenance/validation-report.md", "maintenance/unresolved-owner-questions.md", "maintenance/final-completion-report.md", "architecture/architecture-risks.md", "delivery/deployment-workflow.md", "operations/backup-and-restore.md"]
+
+  - id: "maintenance-documentation-ownership"
+    path: "maintenance/documentation-ownership.md"
+    title: "Documentation Ownership"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "prescriptive"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["AGENTS.md", "okf/index.yaml", ".github/workflows"]
+    related_documents: ["maintenance/README.md", "maintenance/okf-update-policy.md", "maintenance/unresolved-owner-questions.md", "maintenance/review-checklist.md"]
+
+  - id: "maintenance-final-completion"
+    path: "maintenance/final-completion-report.md"
+    title: "Final OKF Completion Report"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["okf/index.yaml", "okf/maintenance/validation-report.md", "okf/maintenance/cross-phase-conflicts.md", "okf/maintenance/unresolved-owner-questions.md"]
+    related_documents: ["maintenance/README.md", "maintenance/validation-report.md", "maintenance/cross-phase-conflicts.md", "maintenance/unresolved-owner-questions.md", "README.md"]
+
+  - id: "maintenance-update-policy"
+    path: "maintenance/okf-update-policy.md"
+    title: "OKF Update Policy"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "prescriptive"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["AGENTS.md", "okf/index.yaml", "okf/README.md"]
+    related_documents: ["maintenance/README.md", "maintenance/change-impact-matrix.md", "maintenance/review-checklist.md", "maintenance/staleness-detection.md", "maintenance/validation-report.md"]
+
+  - id: "maintenance-readme"
+    path: "maintenance/README.md"
+    title: "OKF Maintenance"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "prescriptive"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["AGENTS.md", "okf/index.yaml", "okf/README.md", "okf-bootstrap/phase-zero-summary.md"]
+    related_documents: ["maintenance/okf-update-policy.md", "maintenance/documentation-ownership.md", "maintenance/change-impact-matrix.md", "maintenance/review-checklist.md", "maintenance/staleness-detection.md", "maintenance/validation-report.md", "maintenance/cross-phase-conflicts.md", "maintenance/unresolved-owner-questions.md", "maintenance/final-completion-report.md"]
+
+  - id: "maintenance-review-checklist"
+    path: "maintenance/review-checklist.md"
+    title: "OKF Review Checklist"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "prescriptive"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["okf/index.yaml", "okf/README.md", "AGENTS.md"]
+    related_documents: ["maintenance/README.md", "maintenance/okf-update-policy.md", "maintenance/change-impact-matrix.md", "maintenance/staleness-detection.md", "maintenance/validation-report.md"]
+
+  - id: "maintenance-staleness-detection"
+    path: "maintenance/staleness-detection.md"
+    title: "Staleness Detection"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "prescriptive"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["okf/index.yaml", "okf/references/source-register.md", "okf/project/repository-map.md", ".github/workflows"]
+    related_documents: ["maintenance/README.md", "maintenance/okf-update-policy.md", "maintenance/review-checklist.md", "maintenance/validation-report.md", "maintenance/cross-phase-conflicts.md"]
+
+  - id: "maintenance-owner-questions"
+    path: "maintenance/unresolved-owner-questions.md"
+    title: "Unresolved Owner Questions"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["okf-bootstrap/12-owner-questions.md", "okf/index.yaml", "okf/project/overview.md", "okf/maintenance/cross-phase-conflicts.md"]
+    related_documents: ["maintenance/README.md", "maintenance/cross-phase-conflicts.md", "maintenance/validation-report.md", "maintenance/final-completion-report.md", "maintenance/documentation-ownership.md"]
+
+  - id: "maintenance-validation-report"
+    path: "maintenance/validation-report.md"
+    title: "OKF Validation Report"
+    category: "maintenance"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["okf", "okf-bootstrap", "okf/index.yaml", ".gitignore"]
+    related_documents: ["maintenance/README.md", "maintenance/review-checklist.md", "maintenance/staleness-detection.md", "maintenance/cross-phase-conflicts.md", "maintenance/unresolved-owner-questions.md", "maintenance/final-completion-report.md"]
+
+  - id: "operations-alerts-incident-signals"
+    path: "operations/alerts-and-incident-signals.md"
+    title: "Alerts and Incident Signals"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/mod.rs", "backend/src/services/webhooks.rs", "backend/src/services/email.rs", "backend/src/services/marketplace_feedback.rs", "docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["operations/health-and-readiness.md", "operations/logging-and-tracing.md", "operations/metrics-and-monitoring.md", "operations/runbook-catalog.md", "security/audit-and-security-events.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/observability-flow.mmd"]
+
+  - id: "operations-backup-restore"
+    path: "operations/backup-and-restore.md"
+    title: "Backup and Restore"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docker-compose.prod.yml", "docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md", "backend/src/config.rs"]
+    related_documents: ["operations/database-operations.md", "operations/disaster-recovery.md", "delivery/rollback-and-recovery.md", "database/database-risks.md", "security/secrets-and-configuration.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/backup-restore-flow.mmd"]
+
+  - id: "operations-database-operations"
+    path: "operations/database-operations.md"
+    title: "Database Operations"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/db/mod.rs", "backend/src/main.rs", "backend/migrations", "docker-compose.yml", "docker-compose.prod.yml"]
+    related_documents: ["database/README.md", "database/migrations.md", "delivery/database-deployment.md", "security/tenant-access-control.md", "operations/backup-and-restore.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/backup-restore-flow.mmd"]
+
+  - id: "operations-diagram-backup-restore-flow"
+    path: "operations/diagrams/backup-restore-flow.mmd"
+    title: "Backup Restore Flow"
+    category: "operations-diagram"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docker-compose.prod.yml", "docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["operations/backup-and-restore.md", "operations/database-operations.md", "operations/disaster-recovery.md", "operations/operational-risks.md", "operations/README.md"]
+
+  - id: "operations-diagram-health-check-flow"
+    path: "operations/diagrams/health-check-flow.mmd"
+    title: "Health Check Flow"
+    category: "operations-diagram"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/mod.rs", "docker-compose.yml", "docker-compose.prod.yml"]
+    related_documents: ["operations/health-and-readiness.md", "operations/README.md", "operations/service-lifecycle.md", "operations/troubleshooting.md"]
+
+  - id: "operations-diagram-observability-flow"
+    path: "operations/diagrams/observability-flow.mmd"
+    title: "Observability Flow"
+    category: "operations-diagram"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/routes/mod.rs", "backend/src/services/marketplace_analytics.rs"]
+    related_documents: ["operations/alerts-and-incident-signals.md", "operations/logging-and-tracing.md", "operations/metrics-and-monitoring.md", "operations/operational-risks.md", "operations/README.md"]
+
+  - id: "operations-diagram-runtime-topology"
+    path: "operations/diagrams/runtime-topology.mmd"
+    title: "Runtime Topology"
+    category: "operations-diagram"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docker-compose.yml", "docker-compose.prod.yml", "backend/src/main.rs", "frontend/Dockerfile.prod"]
+    related_documents: ["operations/external-dependencies.md", "operations/README.md", "operations/runtime-topology.md"]
+
+  - id: "operations-disaster-recovery"
+    path: "operations/disaster-recovery.md"
+    title: "Disaster Recovery"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docker-compose.prod.yml", "docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["operations/backup-and-restore.md", "operations/runbook-catalog.md", "operations/operational-risks.md", "delivery/rollback-and-recovery.md", "security/trust-boundaries.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/backup-restore-flow.mmd"]
+
+  - id: "operations-environment-configuration"
+    path: "operations/environment-configuration.md"
+    title: "Environment Configuration"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/config.rs", ".env.example", "env.example", "docker-compose.prod.yml", "frontend/vite.config.ts"]
+    related_documents: ["backend/configuration-and-state.md", "frontend/configuration-and-build.md", "security/secrets-and-configuration.md", "delivery/environment-promotion.md", "operations/external-dependencies.md", "operations/troubleshooting.md"]
+
+  - id: "operations-external-dependencies"
+    path: "operations/external-dependencies.md"
+    title: "External Dependencies"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/config.rs", "backend/src/main.rs", "backend/src/services/cache.rs", "backend/src/services/email.rs", "backend/src/services/webhooks.rs", "docker-compose.yml"]
+    related_documents: ["operations/runtime-topology.md", "operations/environment-configuration.md", "operations/health-and-readiness.md", "delivery/container-builds.md", "security/trust-boundaries.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/runtime-topology.mmd"]
+
+  - id: "operations-health-readiness"
+    path: "operations/health-and-readiness.md"
+    title: "Health and Readiness"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/mod.rs", "backend/src/main.rs", "docker-compose.yml", "docker-compose.prod.yml", "scripts/v2-ga-check.ps1", "scripts/marketplace-phase15-ga-check.ps1"]
+    related_documents: ["operations/runtime-topology.md", "operations/service-lifecycle.md", "api/endpoints/system-health-openapi-and-static.md", "delivery/deployment-workflow.md", "security/browser-and-http-security.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/health-check-flow.mmd"]
+
+  - id: "operations-logging-tracing"
+    path: "operations/logging-and-tracing.md"
+    title: "Logging and Tracing"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/services/webhooks.rs", "backend/src/error.rs", "docker-compose.prod.yml", "frontend/src"]
+    related_documents: ["architecture/integration-points.md", "delivery/deployment-workflow.md", "database/database-risks.md", "security/security-risks.md", "operations/metrics-and-monitoring.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/observability-flow.mmd"]
+
+  - id: "operations-metrics-monitoring"
+    path: "operations/metrics-and-monitoring.md"
+    title: "Metrics and Monitoring"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src", "frontend/src", "scripts/marketplace-phase13-load-smoke.ps1", "backend/src/services/marketplace_analytics.rs", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["operations/logging-and-tracing.md", "operations/alerts-and-incident-signals.md", "delivery/deployment-workflow.md", "database/database-risks.md", "security/security-risks.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/observability-flow.mmd"]
+
+  - id: "operations-risks"
+    path: "operations/operational-risks.md"
+    title: "Operational Risks"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/error.rs", "docker-compose.prod.yml", "docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md"]
+    related_documents: ["operations/runtime-topology.md", "operations/logging-and-tracing.md", "operations/metrics-and-monitoring.md", "operations/backup-and-restore.md", "operations/disaster-recovery.md", "delivery/delivery-risks.md", "security/security-risks.md"]
+    related_diagrams: ["operations/diagrams/observability-flow.mmd", "operations/diagrams/backup-restore-flow.mmd"]
+
+  - id: "operations-readme"
+    path: "operations/README.md"
+    title: "Operations"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/config.rs", "backend/src/routes/mod.rs", "docker-compose.yml", "docker-compose.prod.yml"]
+    related_documents: ["architecture/overview.md", "delivery/README.md", "database/README.md", "security/README.md", "maintenance/README.md"]
+    related_diagrams: ["operations/diagrams/runtime-topology.mmd", "operations/diagrams/observability-flow.mmd", "operations/diagrams/health-check-flow.mmd", "operations/diagrams/backup-restore-flow.mmd"]
+
+  - id: "operations-runbook-catalog"
+    path: "operations/runbook-catalog.md"
+    title: "Runbook Catalog"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docs/V2_OPERATIONS_RUNBOOK.md", "docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md", "scripts/v2-ga-check.ps1", "scripts/marketplace-phase15-ga-check.ps1", "okf/operations/troubleshooting.md"]
+    related_documents: ["operations/troubleshooting.md", "operations/alerts-and-incident-signals.md", "operations/backup-and-restore.md", "delivery/rollback-and-recovery.md", "security/security-risks.md", "architecture/architecture-risks.md"]
+
+  - id: "operations-runtime-topology"
+    path: "operations/runtime-topology.md"
+    title: "Runtime Topology"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["docker-compose.yml", "docker-compose.prod.yml", "backend/src/main.rs", "backend/src/state.rs", "frontend/Dockerfile.prod", "frontend/nginx.conf"]
+    related_documents: ["architecture/overview.md", "delivery/deployment-workflow.md", "database/technology-and-configuration.md", "security/trust-boundaries.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/runtime-topology.mmd"]
+
+  - id: "operations-service-lifecycle"
+    path: "operations/service-lifecycle.md"
+    title: "Service Lifecycle"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/db/mod.rs", "backend/src/routes/mod.rs", "frontend/Dockerfile.prod", "frontend/nginx.conf", "docker-compose.prod.yml"]
+    related_documents: ["operations/runtime-topology.md", "operations/health-and-readiness.md", "delivery/database-deployment.md", "architecture/runtime-flows.md", "security/secrets-and-configuration.md", "operations/troubleshooting.md"]
+    related_diagrams: ["operations/diagrams/health-check-flow.mmd"]
+
+  - id: "operations-troubleshooting"
+    path: "operations/troubleshooting.md"
+    title: "Troubleshooting"
+    category: "operations"
+    status: "current"
+    phase: 10
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/config.rs", "backend/src/routes/mod.rs", "package.json", "docker-compose.yml", "frontend/package.json"]
+    related_documents: ["architecture/overview.md", "delivery/deployment-workflow.md", "database/README.md", "security/README.md", "operations/runbook-catalog.md", "operations/operational-risks.md"]
+    related_diagrams: ["operations/diagrams/health-check-flow.mmd"]
+
 uncertainty_register:
+  phase_ten:
+    - id: "DEPLOYMENT_TARGET_UNCLEAR P10-01"
+      summary: "No tracked release, deployment, environment-promotion, or production-target workflow exists"
+    - id: "PRODUCTION_TOPOLOGY_UNKNOWN P10-02"
+      summary: "Production-like Compose does not prove live hosting, ingress, TLS, traffic, replica, or region topology"
+    - id: "RELEASE_PROCESS_UNCLEAR P10-03"
+      summary: "Release notes and readiness scripts exist without tags, publication, signing, approval, or release automation"
+    - id: "ROLLBACK_BEHAVIOR_UNCLEAR P10-04"
+      summary: "Previous application artifacts, configuration versions, database downgrade, and restore inputs are not established"
+    - id: "OBSERVABILITY_STATUS_UNCLEAR P10-05"
+      summary: "Tracing and probes exist, while metrics, collectors, dashboards, alerts, SLOs, and retention are unverified or absent"
+    - id: "BACKUP_STATUS_UNCLEAR P10-06"
+      summary: "Named volumes exist but no backup command, schedule, destination, retention, encryption, or test was found"
+    - id: "RESTORE_STATUS_UNCLEAR P10-07"
+      summary: "Runbooks mention restore without a repository procedure, verified backup, or restore drill"
+    - id: "DISASTER_RECOVERY_UNDEFINED P10-08"
+      summary: "No RTO, RPO, recovery site, traffic recovery, ownership, communication, or DR exercise exists"
+    - id: "OPERATIONAL_OWNERSHIP_UNCLEAR P10-09"
+      summary: "No CODEOWNERS, on-call roster, escalation contacts, or production operations ownership map is tracked"
+    - id: "OKF_CROSS_PHASE_CONFLICT P10-10"
+      summary: "Sixteen historical and operational documentation/configuration conflicts are consolidated in maintenance/cross-phase-conflicts.md"
+    - id: "POTENTIAL_SECRET_EXPOSURE PSE-01"
+      summary: "Deterministic development bootstrap credential material remains in source; no value is reproduced in OKF"
+    - id: "OKF_MERMAID_PARSER_UNAVAILABLE P10-11"
+      summary: "Static Mermaid validation passed, but no approved parser or renderer is installed"
+
   extensibility_phase_nine:
     - id: "PLUGIN_LIFECYCLE_UNCLEAR EXU-01"
       summary: "Compiled-plugin removal does not reconcile stale cms_plugins rows"
@@ -7680,17 +8514,21 @@ current_sections:
     title: "Plugins, Marketplace, and Extensibility"
     status: "current"
     completed_phase: 9
+  - id: "development"
+    title: "Development"
+    status: "current"
+    completed_phase: 10
+  - id: "delivery"
+    title: "Delivery"
+    status: "current"
+    completed_phase: 10
+  - id: "operations"
+    title: "Operations"
+    status: "current"
+    completed_phase: 10
+  - id: "maintenance"
+    title: "OKF Maintenance and Final Validation"
+    status: "current"
+    completed_phase: 10
 
-planned_sections:
-  - id: "development-operations-testing"
-    title: "Development, Deployment, Operations, and Testing"
-    status: "planned"
-    target_phase: 10
-  - id: "diagrams"
-    title: "Mermaid Diagrams"
-    status: "planned"
-    target_phase: 11
-  - id: "validation-and-synchronization"
-    title: "Validation and Synchronization"
-    status: "planned"
-    target_phase: 12
+planned_sections: []

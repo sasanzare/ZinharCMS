@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "frontend/package.json"
@@ -101,3 +101,6 @@ Production-like images, Nginx behavior, and Compose configuration establish an a
 - [Frontend Risks](frontend-risks.md)
 - [Repository Map](../project/repository-map.md)
 
+## Development, CI, and Container Build
+
+Vite development binds `0.0.0.0:5173`. `npm run build` runs `tsc -b` then Vite. Frontend CI uses Node 22 and `npm install`, while development/production container builders use Node 24; no supported-version policy reconciles them. The production image serves `dist` through Nginx 1.27 with SPA fallback and build-time `VITE_API_URL`; it has no application health check, API proxy, TLS, registry, or deployment target. See [Prerequisites](../development/prerequisites.md), [Build and Quality](../development/build-and-quality.md), and [Container Builds](../delivery/container-builds.md).

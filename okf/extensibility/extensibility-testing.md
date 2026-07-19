@@ -8,7 +8,7 @@ status: "current"
 source_of_truth: false
 implementation_view: "observed"
 extensibility_status: "partially_verified"
-last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/plugins/seo.rs"
@@ -86,3 +86,7 @@ Verification on 2026-07-19 used repository HEAD 56d733985fdd7aa3f25ee6981b88cf29
 - PagesPage.test.tsx passed its single test during the initial combined frontend run.
 - The initial combined frontend run had one five-second timeout in the first Marketplace test; that test passed in isolation and the complete Marketplace file then passed.
 - Phase 9 metadata, YAML, evidence paths, local relations, Markdown links, required files, index registration, diagram references, language, and repository scope checks passed for 39 Markdown files, 7 Mermaid files, and 46 Phase 9 index entries.
+
+## Phase 10 Integration
+
+The general backend CI includes plugin/Marketplace tests through `cargo test --all-features`; targeted filters remain useful locally. CI does not run Marketplace readiness/load scripts, real package upload/installation/adapters, browser E2E, database/RLS isolation, or external-provider smoke. See [Testing Workflow](../development/testing-workflow.md), [CI Job Catalog](../delivery/ci-job-catalog.md), and [Operational Risks](../operations/operational-risks.md).

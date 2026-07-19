@@ -1,0 +1,23 @@
+%% Evidence: docker-compose.prod.yml; backend/Dockerfile.prod; frontend/Dockerfile.prod; backend/src/main.rs
+flowchart TD
+    Env["Caller-provided environment\nsecret source unclear"]
+    Compose["Production-like Docker Compose"]
+    Postgres["PostgreSQL 16\nnamed volume + health check"]
+    Redis["Redis 7\nnamed volume + health check"]
+    Backend["Backend image\nnon-root cms user"]
+    Migrate["Automatic SQLx migrations"]
+    API["HTTP :8080\n/health and /ready"]
+    Uploads["Uploads named volume"]
+    Frontend["Nginx frontend image\nhost :5173 to container :80"]
+    Edge["Ingress, TLS, DNS, traffic switch\nPRODUCTION_TOPOLOGY_UNKNOWN"]
+
+    Env --> Compose
+    Compose --> Postgres
+    Compose --> Redis
+    Postgres --> Backend
+    Redis --> Backend
+    Backend --> Migrate --> API
+    Backend --> Uploads
+    API --> Frontend
+    Frontend -.-> Edge
+

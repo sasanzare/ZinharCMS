@@ -1,0 +1,25 @@
+%% Evidence: .github/workflows/backend-ci.yml; .github/workflows/frontend-ci.yml
+flowchart LR
+    Change["Push or pull request"]
+    BackendPath{"backend/** or backend workflow changed?"}
+    FrontendPath{"frontend/** or frontend workflow changed?"}
+    BackendJob["Backend CI / test\nUbuntu latest"]
+    Services["PostgreSQL 16 + Redis 7"]
+    BackendGates["cargo fmt --check\ncargo clippy ... -D warnings\ncargo test --all-features"]
+    FrontendJob["Frontend CI / test\nUbuntu latest + Node 22"]
+    FrontendGates["npm install\nlint\ntypecheck\ntest\nbuild"]
+    NoArtifacts["No uploaded CI artifacts"]
+    Uncovered["Root, docs, Compose, and scripts may be uncovered"]
+
+    Change --> BackendPath
+    Change --> FrontendPath
+    BackendPath -->|Yes| BackendJob
+    Services --> BackendJob
+    BackendJob --> BackendGates
+    FrontendPath -->|Yes| FrontendJob
+    FrontendJob --> FrontendGates
+    BackendGates --> NoArtifacts
+    FrontendGates --> NoArtifacts
+    BackendPath -.->|No| Uncovered
+    FrontendPath -.->|No| Uncovered
+

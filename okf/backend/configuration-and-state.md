@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/config.rs"
@@ -110,3 +110,7 @@ See the [state composition diagram](diagrams/application-state-composition.mmd),
 ## Plugin and Marketplace State
 
 Global plugin settings are persisted JSON but are not passed into the current callback contract. Marketplace configuration is split across manifest declarations, installation snapshots, runtime state, hook config, component props schema, and template import input. See [Plugin Configuration](../extensibility/plugin-configuration.md).
+
+## Operational Configuration and Lifecycle
+
+The complete runtime variable catalog, explicit defaults, validation, sensitivity, and failure behavior is maintained in [Environment Configuration](../operations/environment-configuration.md). Backend startup runs migrations and conditional bootstrap seed before binding, constructs a Redis client without proving reachability, and stores preview channels in process memory. Production secret storage and recovery remain unknown.

@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "README.md"
@@ -226,3 +226,17 @@ Use this guide to choose the shortest evidence path for a common repository task
 - For all verified mechanisms, use the [Extensibility Catalog](../extensibility/extensibility-catalog.md).
 - For Marketplace flows and limitations, use [Marketplace Architecture](../extensibility/marketplace-architecture.md) and [Marketplace Workflows](../extensibility/marketplace-workflows.md).
 - Treat runtime authorization as a policy result, not package execution; consult [Isolation and Trust](../extensibility/isolation-and-trust.md).
+
+## Phase 10 Task Navigation
+
+- Run locally: [Local Environment](../development/local-environment.md).
+- Find verified commands: [Command Catalog](../development/commands.md).
+- Run tests: [Testing Workflow](../development/testing-workflow.md), [Backend Testing](../backend/testing-map.md), and [Frontend Testing](../frontend/testing-map.md).
+- Review CI: [CI Architecture](../delivery/ci-architecture.md) and [CI Job Catalog](../delivery/ci-job-catalog.md).
+- Understand build, release, and deployment: [Build and Quality](../development/build-and-quality.md), [Release Process](../delivery/release-process.md), and [Deployment Workflow](../delivery/deployment-workflow.md).
+- Find health checks: [Health and Readiness](../operations/health-and-readiness.md).
+- Investigate logs: [Logging and Tracing](../operations/logging-and-tracing.md) and [Debugging](../development/debugging.md).
+- Review backups and recovery: [Backup and Restore](../operations/backup-and-restore.md) and [Disaster Recovery](../operations/disaster-recovery.md).
+- Troubleshoot: [Troubleshooting](../operations/troubleshooting.md) and [Runbook Catalog](../operations/runbook-catalog.md).
+- Update OKF: [OKF Update Policy](../maintenance/okf-update-policy.md) and [Change Impact Matrix](../maintenance/change-impact-matrix.md).
+- Validate OKF: [Review Checklist](../maintenance/review-checklist.md), [Staleness Detection](../maintenance/staleness-detection.md), and [Validation Report](../maintenance/validation-report.md).

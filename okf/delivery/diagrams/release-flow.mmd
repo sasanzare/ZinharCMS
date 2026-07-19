@@ -1,0 +1,20 @@
+%% Evidence: docs/V2_RELEASE_NOTES.md; docs/V3_MARKETPLACE_RELEASE_NOTES.md; scripts/v2-ga-check.ps1; scripts/marketplace-phase15-ga-check.ps1; no release workflow found
+flowchart TD
+    Source["Reviewed source commit"]
+    Checks["CI-equivalent checks"]
+    Readiness["Manual readiness script"]
+    Notes["Milestone release notes"]
+    Approval["Owner approval\nNEEDS_OWNER_CONFIRMATION"]
+    Build["Cargo, Vite, or Docker build"]
+    Publish["Artifact publication\nRELEASE_PROCESS_UNCLEAR"]
+    Deploy["Deployment target\nDEPLOYMENT_TARGET_UNCLEAR"]
+    Rollback["Previous artifact and database recovery\nROLLBACK_BEHAVIOR_UNCLEAR"]
+
+    Source --> Checks --> Readiness
+    Notes --> Readiness
+    Readiness -.-> Approval
+    Approval -.-> Build
+    Build -.-> Publish
+    Publish -.-> Deploy
+    Deploy -.-> Rollback
+

@@ -8,7 +8,7 @@ status: "current"
 source_of_truth: false
 implementation_view: "observed"
 security_status: "partially_verified"
-last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/main.rs"
@@ -59,3 +59,7 @@ Preview WebSocket compatibility allows access-token and organization values in t
 - `SECURITY_HEADER_STATUS_UNCLEAR SHSU-01`: direct middleware behavior is tested, but deployed proxy overrides, error/static responses, TLS, and HSTS are unverified.
 - `COOKIE_SECURITY_UNVERIFIED CSU-01`: production Secure/TLS behavior is configuration-dependent.
 - `RATE_LIMITING_STATUS_UNCLEAR RLSU-01`: proxy trust for client IP and live Redis behavior are unverified.
+
+## Deployment Boundary
+
+The frontend Nginx image serves static SPA files and immutable asset cache headers; it does not terminate configured TLS or proxy API traffic. Production ingress, TLS/HSTS enforcement, trusted proxy behavior, public origins, traffic switching, and application health probes are not present in tracked deployment configuration. See [Container Builds](../delivery/container-builds.md), [Deployment Workflow](../delivery/deployment-workflow.md), and [Health and Readiness](../operations/health-and-readiness.md).

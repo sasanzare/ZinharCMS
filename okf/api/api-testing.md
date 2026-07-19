@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes"
@@ -68,3 +68,7 @@ For every workflow in [Cross-Module Workflows](../domain/cross-module-workflows.
 ## Extensibility API Test Priorities
 
 Add real-router and database-backed tests for plugin registry synchronization/enablement, Marketplace install/update/rollback/uninstall, permission reapproval, kill-switch races, component/template adapters, and cross-tenant denial. See [Extensibility Testing](../extensibility/extensibility-testing.md).
+
+## Operational API Validation
+
+Manual readiness scripts call `/health`, `/ready`, and selected authenticated operational surfaces, but CI does not start the application or execute HTTP smoke. There is no deployment health gate, provider sandbox suite, generated-client test, or full runtime OpenAPI/security parity gate. See [Health and Readiness](../operations/health-and-readiness.md), [Testing Workflow](../development/testing-workflow.md), and [CI Architecture](../delivery/ci-architecture.md).

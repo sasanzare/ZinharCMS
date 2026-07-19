@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/Cargo.toml"
@@ -116,3 +116,7 @@ When adding a test, update the owning module document and this map. Prefer tests
 ## Phase 9 Extensibility Testing
 
 [Extensibility Testing](../extensibility/extensibility-testing.md) maps SEO, manifest/package, installation, runtime-policy, host-adapter, Marketplace frontend, and Page Builder evidence. Highest-priority gaps are real database/RLS flows, registry cleanup and collisions, built-in route integration, lifecycle concurrency, and creator-to-install-to-adapter end-to-end coverage.
+
+## Development and CI Test Execution
+
+Backend CI runs `cargo fmt --check`, strict all-target/all-feature Clippy, and `cargo test --all-features` with PostgreSQL and Redis services. It has no separate migration-deployment, browser, load, documentation, or artifact job. See [Testing Workflow](../development/testing-workflow.md), [CI Job Catalog](../delivery/ci-job-catalog.md), and [Validation Report](../maintenance/validation-report.md).

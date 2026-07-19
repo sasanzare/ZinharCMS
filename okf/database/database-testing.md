@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-18"
 primary_sources: ["backend/src", "backend/migrations", ".github/workflows", "docs/V2_PHASE_EIGHT_FIXTURE.sql"]
 related_documents: ["database/seeds-and-fixtures.md", "database/multi-tenancy.md", "backend/testing-map.md"]
@@ -60,3 +60,7 @@ Phase 5 performed static documentation validation only. It did not run migration
 Read the backend [Testing Map](../backend/testing-map.md), [Organizations and Membership](entities/organizations-and-membership.md), [Pages and Versions](entities/pages-and-versions.md), [Marketplace Purchases and Entitlements](entities/marketplace-purchases-and-entitlements.md), and [Marketplace Installations and Runtime Adapters](entities/marketplace-installations-and-runtime-adapters.md) before designing database coverage.
 
 Phase 7 [Security Testing](../security/security-testing.md) confirms that current RLS assurance includes static migration contracts but no live exhaustive cross-tenant CRUD matrix. Test pooled-connection context reset, bypass preconditions, same-tenant parent coherence, global/system rows, and every major tenant entity before claiming runtime isolation.
+
+## Development and Deployment Test Gap
+
+Backend CI supplies PostgreSQL, but no dedicated disposable database lifecycle, migration replay/downgrade, schema-drift, restore, backup, concurrency, or production-like deployment test job exists. Startup migration behavior and selected static contracts are not substitutes for these tests. See [Testing Workflow](../development/testing-workflow.md), [Database Deployment](../delivery/database-deployment.md), and [Database Operations](../operations/database-operations.md).

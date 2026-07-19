@@ -8,7 +8,7 @@ status: "current"
 source_of_truth: false
 implementation_view: "observed"
 security_status: "mixed"
-last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+last_verified_commit: "131c4f30583affc7a07dbcabaaa45b42c490dc27"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/main.rs"
@@ -78,3 +78,7 @@ These are documentation findings, not implemented fixes. Owners, acceptance, dea
 ## Extensibility Security Risks
 
 Built-ins remain fully trusted in-process code. Marketplace runtime policy validates requests but is not an execution sandbox, and future package execution requires an explicit trust, signing, isolation, resource, and incident model. See [Isolation and Trust](../extensibility/isolation-and-trust.md).
+
+## Delivery and Operational Security Risks
+
+Unknown production topology/TLS, mutable action/image references, absent artifact signing/scanning, unknown secret injection/rotation, unverified log redaction/retention, deterministic development bootstrap credentials, missing metrics/alerts, and absent backup/DR increase operational security uncertainty. See [Delivery Risks](../delivery/delivery-risks.md), [Operational Risks](../operations/operational-risks.md), and [Owner Questions](../maintenance/unresolved-owner-questions.md).
