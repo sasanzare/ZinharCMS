@@ -53,3 +53,7 @@ This register identifies current contract and verification risk without changing
 ## Marker Discipline
 
 Use a named uncertainty or conflict marker only when the relevant evidence is incomplete or contradictory. Do not convert a risk into a defect claim without a reproducer or code-level proof.
+
+## Phase 7 Security Follow-Up
+
+The recommended security review is complete and documented in [Security Risks](../security/security-risks.md) and [Threat Register](../security/threat-register.md). Highest-priority API-adjacent findings include bootstrap privilege, script-readable access tokens, stale JWT roles, refresh lifecycle, RLS bypass, tenant-isolation assurance, preview query credentials, cookie/deployment posture, and incomplete security regression coverage.

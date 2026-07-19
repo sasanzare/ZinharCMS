@@ -265,3 +265,7 @@ Tenant transactions set organization/user/bypass context locally before queries;
 - [Page Builder Flow](../frontend/diagrams/page-builder-flow.mmd)
 - [Tenant Isolation Flow](../database/diagrams/tenant-isolation.mmd)
 - [Migration Lifecycle](../database/diagrams/migration-lifecycle.mmd)
+
+## Security Runtime Flows
+
+Phase 7 adds the verified [Authentication Flow](../security/diagrams/authentication-flow.mmd), [Session and Token Lifecycle](../security/diagrams/session-token-lifecycle.mmd), [Authorization Decision Flow](../security/diagrams/authorization-decision-flow.mmd), and [Tenant Access Control](../security/diagrams/tenant-access-control.mmd). These diagrams separate global claims, organization membership, resource checks, and RLS rather than collapsing them into one permission decision.

@@ -237,3 +237,7 @@ Use [Database Module Data Ownership](../database/module-data-ownership.md), [Mul
 - [Backend Module Boundaries](../backend/module-boundaries.md)
 - [Backend Module Map](../backend/diagrams/backend-module-map.mmd)
 - [Backend Risk Register](../backend/backend-risks.md)
+
+## Phase 7 Security Boundary Refinement
+
+The browser/API, public router, bearer middleware, tenant membership, handler RBAC/ownership, tenant SQL/RLS, filesystem, Redis, and external-provider boundaries are mapped in [Security Trust Boundaries](../security/trust-boundaries.md). A global role is not a tenant membership, and explicit RLS bypass is a backend transaction mode rather than an automatic administrator privilege.

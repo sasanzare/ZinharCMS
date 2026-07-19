@@ -108,3 +108,7 @@ Tests cover selected error branches in configuration, billing/Stripe, webhooks, 
 ## Related Documentation
 
 See [Request Handling](request-handling.md), [Persistence Access](persistence-access.md), [Shared Infrastructure](shared-infrastructure.md), and risks `BE-RISK-008` and `BE-RISK-010` in [Backend Risks](backend-risks.md).
+
+## Security Consequences
+
+Authentication deliberately uses a common invalid-credential response, while middleware can return bare status codes. Generic internal error conversion may expose technical database/provider text and should be reviewed with [Browser and HTTP Security](../security/browser-and-http-security.md), [Audit and Security Events](../security/audit-and-security-events.md), and [Security Risks](../security/security-risks.md).

@@ -84,3 +84,7 @@ Triggers derive `organization_id` for content entries, page versions, media vari
 5. Prove parent-child tenant coherence.
 6. Test cross-tenant reads, inserts, updates, deletes, and pooled-connection reuse.
 7. Confirm public tenant selection separately (`UNKNOWN U-08`).
+
+## Phase 7 Access-Control Interpretation
+
+[Tenant Access Control](../security/tenant-access-control.md) confirms that normal tenant requests require an active organization and active membership before role checks and tenant SQL context. Global `super_admin` does not bypass this middleware. Explicit `zinhar.rls_bypass` transactions are a separate privileged backend path. Live cross-tenant verification remains `TENANT_ACCESS_UNVERIFIED TAV-01`.

@@ -1,0 +1,27 @@
+sequenceDiagram
+  %% Evidence: middleware/tenant.rs, services/rate_limit.rs, services/quota.rs, services/rls.rs, migration 0009
+  actor Client
+  participant TenantMW as Tenant middleware
+  participant DB as PostgreSQL
+  participant Limits as Redis / quota services
+  participant Handler
+  participant RLS as Tenant SQL context + forced RLS
+
+  Client->>TenantMW: Bearer token + X-Organization-Id
+  TenantMW->>TenantMW: Verify token and parse organization UUID
+  TenantMW->>DB: Load active organization + active membership for claims.sub
+  alt Membership valid
+    DB-->>TenantMW: TenantContext with database role
+    TenantMW->>Limits: Organization/user rate limit and API quota
+    Limits-->>TenantMW: Allow
+    TenantMW->>Handler: Claims + TenantContext
+    Handler->>Handler: Organization RBAC / ownership / lifecycle
+    Handler->>RLS: Set organization and user context
+    RLS->>DB: Query under forced RLS policy
+    DB-->>Handler: Tenant-matching rows
+    Handler-->>Client: Response
+  else Missing, inactive, or mismatched membership
+    DB-->>TenantMW: No row
+    TenantMW-->>Client: 403 Forbidden
+  end
+  Note over Handler,RLS: Explicit platform bypass is separate and does not follow automatically from super_admin or owner

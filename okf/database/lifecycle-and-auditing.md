@@ -66,3 +66,7 @@ Hard-delete endpoints and FK cascades/restrictions exist in several domains. Con
 `created_at`, `updated_at`, status-specific timestamps, expiry times, publication times, resolution times, and provider processing times are common but not universal. No repository-wide retention, anonymization, legal-hold, archival, or purge schedule was found. This is `DATA_LIFECYCLE_UNCLEAR DLU-01`, `UNKNOWN U-07`, and `NEEDS_OWNER_CONFIRMATION NOC-05`.
 
 Backup/restore and historical recovery expectations are also unknown (`UNKNOWN U-04`, `NOC-03`). Do not add deletion jobs, retention windows, or PII examples based on this document.
+
+## Security Event Coverage
+
+[Audit and Security Events](../security/audit-and-security-events.md) maps organization audit logs and separate login-attempt records. Authentication lifecycle, generic authorization denials, role assignment, and every RLS bypass are not uniformly represented. Retention and tamper-evidence remain `AUDIT_COVERAGE_UNCLEAR ACU-01`.

@@ -212,3 +212,7 @@ This register contains architecture risks supported by repository evidence. It d
 ## Review Guidance
 
 Reassess this register after Phase 4 maps endpoint and data contracts, after deployment evidence becomes available, and whenever an affected source boundary changes. A risk is not resolved merely because documentation exists; close it only when implementation evidence or an explicit accepted-risk decision supports closure.
+
+## Phase 7 Security Correlation
+
+Backend risks involving bootstrap credentials, embedded global roles, token rotation, distributed RBAC, RLS bypass, error disclosure, upload serving, proxy trust, and audit coverage are expanded in [Security Risks](../security/security-risks.md). Phase 7 records `POTENTIAL_SECRET_EXPOSURE PSE-01` for deterministic development credentials without reproducing them.

@@ -1,0 +1,30 @@
+sequenceDiagram
+  %% Evidence: backend/src/routes/auth.rs, services/password.rs, services/jwt.rs, services/security.rs
+  actor User
+  participant Browser
+  participant Auth as Auth routes
+  participant Security as Password / login limiter
+  participant DB as PostgreSQL
+  participant JWT as JWT service
+
+  alt Register
+    User->>Browser: Submit email, password, name
+    Browser->>Auth: POST /api/auth/register
+    Auth->>Security: Validate and Argon2 hash
+    Auth->>DB: Insert user, global role, default membership
+  else Login
+    User->>Browser: Submit email and password
+    Browser->>Auth: POST /api/auth/login
+    Auth->>DB: Count recent failed attempts and load active user
+    Auth->>Security: Verify Argon2 password
+    Auth->>DB: Record login result
+  else Refresh
+    Browser->>Auth: POST /api/auth/refresh with cookie or JSON token
+    Auth->>DB: Require valid hash, active user, unexpired/unrevoked row
+    Auth->>DB: Revoke presented refresh row
+  end
+
+  Auth->>JWT: Sign access token and generate refresh token
+  Auth->>DB: Store refresh-token hash and expiry
+  Auth-->>Browser: Access token, account/memberships, HttpOnly refresh cookie
+  Note over Browser,Auth: Recovery, MFA, email verification, and atomic refresh rotation are not verified

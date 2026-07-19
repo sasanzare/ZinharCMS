@@ -1,0 +1,20 @@
+flowchart TB
+  %% Evidence: backend/src/services/rbac.rs, migrations/0001, 0003, and 0008, routes/auth.rs
+  user["User"] --> userRoles["user_roles"]
+  userRoles --> globalRoles["Global roles\nsuper_admin, admin, editor, author, viewer"]
+  globalRoles --> claims["One priority-selected role in access-token Claims"]
+  claims --> globalHelpers["Global RBAC helpers"]
+  superOverride["super_admin override"] --> globalHelpers
+
+  user --> membership["organization_members"]
+  organization["Selected active organization"] --> membership
+  membership --> orgRoles["Organization roles\nowner, admin, editor, author, viewer, billing_manager"]
+  orgRoles --> tenantContext["TenantContext role loaded from database"]
+  tenantContext --> orgHelpers["Organization RBAC helpers"]
+  ownerOverride["owner override"] --> orgHelpers
+
+  stored["roles.permissions arrays\nLegacy colon-delimited strings"] -.->|Not read by inspected runtime RBAC / RMU-01| globalHelpers
+  marketplace["Marketplace dot-delimited permissions\nApproved per installation"] -.->|Separate resolver / PSU-01| runtime["Marketplace runtime authorization"]
+
+  classDef unclear stroke-dasharray: 5 5,fill:#fff8e1,stroke:#a66a00;
+  class stored,marketplace unclear;

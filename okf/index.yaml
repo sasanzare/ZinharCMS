@@ -4,10 +4,10 @@ project:
   repository: "https://github.com/sasanzare/ZinharCMS"
   repository_name: "ZinharCMS"
   knowledge_status: "in_progress"
-  current_phase: 6
+  current_phase: 7
   current_phase_status: "complete"
-  last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-  last_verified_date: "2026-07-18"
+  last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+  last_verified_date: "2026-07-19"
 
 authority:
   source_of_truth: "Current implementation and repository configuration"
@@ -51,6 +51,12 @@ entry_points:
       purpose: "Phase 6 API architecture and contracts entry point"
     - path: "api/endpoint-catalog.md"
       purpose: "Exhaustive registered endpoint inventory and family navigation"
+    - path: "security/README.md"
+      purpose: "Phase 7 authentication, authorization, and security architecture entry point"
+    - path: "security/roles-and-permissions-catalog.md"
+      purpose: "Global and organization role plus permission-group navigation"
+    - path: "security/security-risks.md"
+      purpose: "Prioritized security findings and uncertainty markers"
     - path: "project/navigation-guide.md"
       purpose: "Short task-oriented navigation guide"
   ai:
@@ -90,6 +96,18 @@ entry_points:
       purpose: "All registered methods, paths, handlers, inputs, outputs, clients, and family links"
     - path: "api/openapi-consistency.md"
       purpose: "Runtime registration versus generated OpenAPI consistency findings"
+    - path: "security/overview.md"
+      purpose: "Verified security model, controls, findings, and assurance limits"
+    - path: "security/authentication-architecture.md"
+      purpose: "Identity, password, access-token, refresh-token, and router authentication model"
+    - path: "security/authorization-architecture.md"
+      purpose: "Global, organization, ownership, lifecycle, and RLS decision layers"
+    - path: "security/roles-and-permissions-catalog.md"
+      purpose: "Complete Phase 7 role and permission-group catalog"
+    - path: "security/tenant-access-control.md"
+      purpose: "Tenant selection, active membership, RBAC, rate/quota, and RLS boundary"
+    - path: "security/threat-register.md"
+      purpose: "Threats, existing controls, and residual status"
     - path: "project/navigation-guide.md"
       purpose: "Task-to-source navigation and AI agent rules"
 
@@ -4744,7 +4762,859 @@ documents:
     related_documents: ["api/README.md", "api/endpoint-catalog.md"]
     known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
 
+  - id: "security-readme"
+    path: "security/README.md"
+    title: "Authentication, Authorization, and Security Architecture"
+    category: "security"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/middleware", "backend/src/services/rbac.rs", "backend/src/services/rls.rs", "backend/migrations", "frontend/src"]
+    related_documents: ["security/overview.md", "security/roles-and-permissions-catalog.md", "security/security-risks.md", "api/README.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd", "security/diagrams/authentication-flow.mmd", "security/diagrams/session-token-lifecycle.mmd", "security/diagrams/authorization-decision-flow.mmd", "security/diagrams/rbac-model.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["AUTHENTICATION_FLOW_UNCLEAR AFU-01", "AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01", "SECURITY_TEST_COVERAGE_UNCLEAR STCU-01"]
+
+  - id: "security-overview"
+    path: "security/overview.md"
+    title: "Security Overview"
+    category: "security"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/routes", "backend/src/middleware", "backend/src/services", "backend/migrations", "frontend/src"]
+    related_documents: ["security/README.md", "security/trust-boundaries.md", "security/security-risks.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd"]
+    known_uncertainty_markers: ["RBAC_MAPPING_UNCLEAR RMU-01", "PERMISSION_SEMANTICS_UNCLEAR PSU-01", "POTENTIAL_SECRET_EXPOSURE PSE-01"]
+
+  - id: "security-trust-boundaries"
+    path: "security/trust-boundaries.md"
+    title: "Security Trust Boundaries"
+    category: "security"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/routes/mod.rs", "backend/src/middleware", "backend/src/services/rls.rs", "frontend/src/services/api.ts"]
+    related_documents: ["security/overview.md", "security/browser-and-http-security.md", "security/tenant-access-control.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd"]
+    known_uncertainty_markers: ["ADMINISTRATIVE_BYPASS_UNCLEAR ABY-01", "SECURITY_HEADER_STATUS_UNCLEAR SHSU-01", "SECRET_HANDLING_UNVERIFIED SHU-01"]
+
+  - id: "security-authentication-architecture"
+    path: "security/authentication-architecture.md"
+    title: "Authentication Architecture"
+    category: "security"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/middleware/auth.rs", "backend/src/services/jwt.rs", "backend/src/services/password.rs", "backend/migrations/0001_initial_schema.sql"]
+    related_documents: ["security/authentication-flows.md", "security/session-and-token-lifecycle.md", "api/authentication.md"]
+    related_diagrams: ["security/diagrams/authentication-flow.mmd"]
+    known_uncertainty_markers: ["AUTHENTICATION_FLOW_UNCLEAR AFU-01", "TOKEN_LIFECYCLE_UNCLEAR TLU-01"]
+
+  - id: "security-authentication-flows"
+    path: "security/authentication-flows.md"
+    title: "Authentication Flows"
+    category: "security"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/services/security.rs", "frontend/src/pages/AuthPage.tsx", "frontend/src/services/api.ts"]
+    related_documents: ["security/authentication-architecture.md", "security/session-and-token-lifecycle.md", "security/audit-and-security-events.md"]
+    related_diagrams: ["security/diagrams/authentication-flow.mmd"]
+    known_uncertainty_markers: ["AUTHENTICATION_FLOW_UNCLEAR AFU-01", "RATE_LIMITING_STATUS_UNCLEAR RLSU-01", "TOKEN_LIFECYCLE_UNCLEAR TLU-01"]
+
+  - id: "security-session-token-lifecycle"
+    path: "security/session-and-token-lifecycle.md"
+    title: "Session and Token Lifecycle"
+    category: "security"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/services/jwt.rs", "backend/src/config.rs", "frontend/src/stores/useAppStore.ts", "frontend/src/services/api.ts"]
+    related_documents: ["security/authentication-architecture.md", "security/authentication-flows.md", "security/frontend-security-boundaries.md"]
+    related_diagrams: ["security/diagrams/session-token-lifecycle.mmd"]
+    known_uncertainty_markers: ["SESSION_LIFECYCLE_UNCLEAR SLU-01", "TOKEN_LIFECYCLE_UNCLEAR TLU-01", "COOKIE_SECURITY_UNVERIFIED CSU-01"]
+
+  - id: "security-password-credential-handling"
+    path: "security/password-and-credential-handling.md"
+    title: "Password and Credential Handling"
+    category: "security"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/password.rs", "backend/src/routes/auth.rs", "backend/src/main.rs", "frontend/src/pages/AuthPage.tsx", "backend/migrations/0001_initial_schema.sql"]
+    related_documents: ["security/authentication-architecture.md", "security/secrets-and-configuration.md", "security/security-risks.md"]
+    related_diagrams: ["security/diagrams/authentication-flow.mmd"]
+    known_uncertainty_markers: ["INPUT_VALIDATION_UNCLEAR IVU-01", "POTENTIAL_SECRET_EXPOSURE PSE-01"]
+
+  - id: "security-authorization-architecture"
+    path: "security/authorization-architecture.md"
+    title: "Authorization Architecture"
+    category: "security"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/mod.rs", "backend/src/services/rbac.rs", "backend/src/middleware/tenant.rs", "backend/src/services/rls.rs", "backend/src/routes"]
+    related_documents: ["security/rbac-model.md", "security/tenant-access-control.md", "security/resource-ownership.md", "api/authorization.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd", "security/diagrams/rbac-model.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01", "RBAC_MAPPING_UNCLEAR RMU-01", "PERMISSION_SEMANTICS_UNCLEAR PSU-01"]
+
+  - id: "security-rbac-model"
+    path: "security/rbac-model.md"
+    title: "RBAC Model"
+    category: "security-rbac"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/migrations/0001_initial_schema.sql", "backend/migrations/0003_phase_one_core.sql", "backend/migrations/0008_v2_phase_one_organizations.sql", "backend/src/routes/auth.rs"]
+    related_documents: ["security/authorization-architecture.md", "security/roles-and-permissions-catalog.md", "security/administrative-access.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd"]
+    known_uncertainty_markers: ["RBAC_MAPPING_UNCLEAR RMU-01", "SECURITY_TEST_COVERAGE_UNCLEAR STCU-01"]
+
+  - id: "security-roles-permissions-catalog"
+    path: "security/roles-and-permissions-catalog.md"
+    title: "Roles and Permissions Catalog"
+    category: "security-rbac"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes", "backend/migrations/0001_initial_schema.sql", "backend/migrations/0008_v2_phase_one_organizations.sql", "backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql"]
+    related_documents: ["security/rbac-model.md", "security/authorization-architecture.md", "security/tenant-access-control.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd"]
+    known_uncertainty_markers: ["PERMISSION_SEMANTICS_UNCLEAR PSU-01", "RBAC_MAPPING_UNCLEAR RMU-01"]
+
+  - id: "security-tenant-access-control"
+    path: "security/tenant-access-control.md"
+    title: "Tenant Access Control"
+    category: "security-tenancy"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/middleware/tenant.rs", "backend/src/services/rls.rs", "backend/migrations/0008_v2_phase_one_organizations.sql", "backend/migrations/0009_v2_phase_three_rls.sql", "backend/src/routes/mod.rs"]
+    related_documents: ["security/authorization-architecture.md", "security/resource-ownership.md", "api/tenant-context.md", "database/multi-tenancy.md"]
+    related_diagrams: ["security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["TENANT_ACCESS_UNVERIFIED TAV-01", "TENANT_ISOLATION_UNVERIFIED TIV-01"]
+
+  - id: "security-resource-ownership"
+    path: "security/resource-ownership.md"
+    title: "Resource Ownership"
+    category: "security-authorization"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/content.rs", "backend/src/routes/pages.rs", "backend/src/routes/comments.rs", "backend/src/routes/organizations.rs", "backend/src/routes/marketplace.rs", "backend/src/routes/marketplace_finance.rs", "backend/src/routes/marketplace_analytics.rs"]
+    related_documents: ["security/authorization-architecture.md", "security/tenant-access-control.md", "security/roles-and-permissions-catalog.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd"]
+    known_uncertainty_markers: ["RESOURCE_OWNERSHIP_UNVERIFIED ROU-01"]
+
+  - id: "security-administrative-access"
+    path: "security/administrative-access.md"
+    title: "Administrative Access"
+    category: "security-authorization"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/services/rls.rs", "backend/src/routes/beta.rs", "backend/src/routes/marketplace.rs", "backend/src/routes/marketplace_runtime.rs", "backend/src/routes/organizations.rs"]
+    related_documents: ["security/rbac-model.md", "security/tenant-access-control.md", "security/roles/global-super-admin.md", "security/roles/organization-owner.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd"]
+    known_uncertainty_markers: ["ADMINISTRATIVE_BYPASS_UNCLEAR ABY-01", "AUDIT_COVERAGE_UNCLEAR ACU-01", "POTENTIAL_SECRET_EXPOSURE PSE-01"]
+
+  - id: "security-frontend-boundaries"
+    path: "security/frontend-security-boundaries.md"
+    title: "Frontend Security Boundaries"
+    category: "security-frontend"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["frontend/src/components/RequireAuth.tsx", "frontend/src/pages/AuthPage.tsx", "frontend/src/pages/MarketplacePage.tsx", "frontend/src/services/api.ts", "frontend/src/stores/useAppStore.ts"]
+    related_documents: ["security/authentication-architecture.md", "security/session-and-token-lifecycle.md", "frontend/authentication-and-access.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd"]
+    known_uncertainty_markers: ["FRONTEND_ONLY_SECURITY_CHECK FOSC-01", "SESSION_LIFECYCLE_UNCLEAR SLU-01"]
+
+  - id: "security-input-validation"
+    path: "security/input-validation.md"
+    title: "Input Validation and Sanitization"
+    category: "security-input"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/services/entry_validation.rs", "backend/src/services/security.rs", "backend/src/services/media_processing.rs", "backend/src/services/marketplace_manifest.rs", "backend/src/services/marketplace_package.rs", "backend/src/services/webhooks.rs"]
+    related_documents: ["security/browser-and-http-security.md", "security/threat-register.md", "frontend/forms-and-validation.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd"]
+    known_uncertainty_markers: ["INPUT_VALIDATION_UNCLEAR IVU-01"]
+
+  - id: "security-secrets-configuration"
+    path: "security/secrets-and-configuration.md"
+    title: "Secrets and Security Configuration"
+    category: "security-configuration"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/config.rs", ".gitignore", ".env.example", "env.example", "docker-compose.yml", "docker-compose.prod.yml"]
+    related_documents: ["security/password-and-credential-handling.md", "security/browser-and-http-security.md", "backend/configuration-and-state.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd"]
+    known_uncertainty_markers: ["SECRET_HANDLING_UNVERIFIED SHU-01", "POTENTIAL_SECRET_EXPOSURE PSE-01"]
+
+  - id: "security-browser-http"
+    path: "security/browser-and-http-security.md"
+    title: "Browser and HTTP Security"
+    category: "security-http"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/middleware/security.rs", "backend/src/routes/auth.rs", "backend/src/routes/mod.rs", "frontend/src/services/api.ts"]
+    related_documents: ["security/trust-boundaries.md", "security/frontend-security-boundaries.md", "security/secrets-and-configuration.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd"]
+    known_uncertainty_markers: ["SECURITY_HEADER_STATUS_UNCLEAR SHSU-01", "COOKIE_SECURITY_UNVERIFIED CSU-01", "RATE_LIMITING_STATUS_UNCLEAR RLSU-01"]
+
+  - id: "security-audit-events"
+    path: "security/audit-and-security-events.md"
+    title: "Audit and Security Events"
+    category: "security-audit"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/audit.rs", "backend/src/services/security.rs", "backend/src/routes", "backend/migrations/0007_phase_seven_security.sql", "backend/migrations/0012_v2_phase_seven_saas_ops.sql"]
+    related_documents: ["security/administrative-access.md", "security/threat-register.md", "database/lifecycle-and-auditing.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd"]
+    known_uncertainty_markers: ["AUDIT_COVERAGE_UNCLEAR ACU-01"]
+
+  - id: "security-testing"
+    path: "security/security-testing.md"
+    title: "Security Testing"
+    category: "security-testing"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/middleware/security.rs", "backend/src/services/rbac.rs", "backend/src/services/security.rs", "backend/src/services/hardening.rs", "backend/src/services/marketplace_runtime.rs", "backend/src/services/marketplace_phase_thirteen.rs", "frontend/src/pages/MarketplacePage.test.tsx"]
+    related_documents: ["security/threat-register.md", "security/security-risks.md", "backend/testing-map.md", "api/api-testing.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd"]
+    known_uncertainty_markers: ["SECURITY_TEST_COVERAGE_UNCLEAR STCU-01"]
+
+  - id: "security-threat-register"
+    path: "security/threat-register.md"
+    title: "Threat Register"
+    category: "security-threats"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/routes", "backend/src/middleware", "backend/src/services", "backend/migrations", "frontend/src"]
+    related_documents: ["security/trust-boundaries.md", "security/security-risks.md", "security/security-testing.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd", "security/diagrams/authorization-decision-flow.mmd"]
+    known_uncertainty_markers: ["NEEDS_OWNER_CONFIRMATION", "SECURITY_TEST_COVERAGE_UNCLEAR STCU-01"]
+
+  - id: "security-risks"
+    path: "security/security-risks.md"
+    title: "Security Risks"
+    category: "security-risks"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/routes/auth.rs", "backend/src/services/rbac.rs", "backend/src/services/rls.rs", "frontend/src/stores/useAppStore.ts", "backend/migrations"]
+    related_documents: ["security/threat-register.md", "security/security-testing.md", "architecture/architecture-risks.md", "api/api-risks.md"]
+    related_diagrams: ["security/diagrams/trust-boundaries.mmd"]
+    known_uncertainty_markers: ["AUTHENTICATION_FLOW_UNCLEAR AFU-01", "AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01", "POTENTIAL_SECRET_EXPOSURE PSE-01"]
+
+  - id: "security-role-global-super-admin"
+    path: "security/roles/global-super-admin.md"
+    title: "Global Super Admin Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "super_admin"
+    role_scope: "global"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/auth.rs", "backend/src/main.rs", "backend/migrations/0003_phase_one_core.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/administrative-access.md", "security/permissions/global-administration-and-plugins.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/authorization-decision-flow.mmd"]
+    known_uncertainty_markers: ["POTENTIAL_SECRET_EXPOSURE PSE-01", "AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01"]
+
+  - id: "security-role-global-admin"
+    path: "security/roles/global-admin.md"
+    title: "Global Admin Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "admin"
+    role_scope: "global"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/beta.rs", "backend/src/routes/marketplace.rs", "backend/src/routes/plugins.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/administrative-access.md", "security/permissions/global-administration-and-plugins.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/authorization-decision-flow.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01"]
+
+  - id: "security-role-global-editor"
+    path: "security/roles/global-editor.md"
+    title: "Global Editor Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "editor"
+    role_scope: "global"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/plugins.rs", "backend/migrations/0002_seed_foundation_data.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/permissions/content-workflow-and-comments.md", "security/permissions/pages-media-components-and-webhooks.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd"]
+    known_uncertainty_markers: ["RBAC_MAPPING_UNCLEAR RMU-01"]
+
+  - id: "security-role-global-author"
+    path: "security/roles/global-author.md"
+    title: "Global Author Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "author"
+    role_scope: "global"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/auth.rs", "backend/migrations/0003_phase_one_core.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/permissions/content-workflow-and-comments.md", "security/permissions/pages-media-components-and-webhooks.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd"]
+    known_uncertainty_markers: ["AUTHENTICATION_FLOW_UNCLEAR AFU-01", "RBAC_MAPPING_UNCLEAR RMU-01"]
+
+  - id: "security-role-global-viewer"
+    path: "security/roles/global-viewer.md"
+    title: "Global Viewer Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "viewer"
+    role_scope: "global"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/plugins.rs", "backend/migrations/0002_seed_foundation_data.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/permissions/global-administration-and-plugins.md", "security/permissions/content-workflow-and-comments.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd"]
+    known_uncertainty_markers: ["RBAC_MAPPING_UNCLEAR RMU-01"]
+
+  - id: "security-role-organization-owner"
+    path: "security/roles/organization-owner.md"
+    title: "Organization Owner Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "owner"
+    role_scope: "organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/organizations.rs", "backend/migrations/0008_v2_phase_one_organizations.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/tenant-access-control.md", "security/permissions/organization-administration.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["TENANT_ACCESS_UNVERIFIED TAV-01"]
+
+  - id: "security-role-organization-admin"
+    path: "security/roles/organization-admin.md"
+    title: "Organization Admin Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "admin"
+    role_scope: "organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/organizations.rs", "backend/migrations/0008_v2_phase_one_organizations.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/permissions/organization-administration.md", "security/permissions/marketplace-management.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01"]
+
+  - id: "security-role-organization-editor"
+    path: "security/roles/organization-editor.md"
+    title: "Organization Editor Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "editor"
+    role_scope: "organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/content.rs", "backend/src/routes/pages.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/permissions/content-workflow-and-comments.md", "security/permissions/pages-media-components-and-webhooks.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01"]
+
+  - id: "security-role-organization-author"
+    path: "security/roles/organization-author.md"
+    title: "Organization Author Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "author"
+    role_scope: "organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/auth.rs", "backend/src/routes/content.rs", "backend/src/routes/pages.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/permissions/content-workflow-and-comments.md", "security/permissions/pages-media-components-and-webhooks.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["RESOURCE_OWNERSHIP_UNVERIFIED ROU-01"]
+
+  - id: "security-role-organization-viewer"
+    path: "security/roles/organization-viewer.md"
+    title: "Organization Viewer Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "viewer"
+    role_scope: "organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/comments.rs", "backend/migrations/0008_v2_phase_one_organizations.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/permissions/content-workflow-and-comments.md", "security/tenant-access-control.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01"]
+
+  - id: "security-role-organization-billing-manager"
+    path: "security/roles/organization-billing-manager.md"
+    title: "Organization Billing Manager Role"
+    category: "security-role"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    role_id: "billing_manager"
+    role_scope: "organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/billing.rs", "backend/migrations/0008_v2_phase_one_organizations.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/permissions/billing-and-saas-operations.md", "security/tenant-access-control.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01"]
+
+  - id: "security-permission-authentication-session"
+    path: "security/permissions/authentication-and-session.md"
+    title: "Authentication and Session Permission Group"
+    category: "security-permission-group"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    permission_group_id: "authentication-session"
+    permission_scope: "public and authenticated user"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/middleware/auth.rs", "backend/src/services/jwt.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/authentication-architecture.md", "api/endpoints/authentication-and-session.md"]
+    related_diagrams: ["security/diagrams/authentication-flow.mmd", "security/diagrams/session-token-lifecycle.mmd"]
+    known_uncertainty_markers: ["AUTHENTICATION_FLOW_UNCLEAR AFU-01", "TOKEN_LIFECYCLE_UNCLEAR TLU-01"]
+
+  - id: "security-permission-global-administration-plugins"
+    path: "security/permissions/global-administration-and-plugins.md"
+    title: "Global Administration and Built-in Plugins Permission Group"
+    category: "security-permission-group"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    permission_group_id: "global-administration-plugins"
+    permission_scope: "global"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/plugins.rs", "backend/src/routes/beta.rs", "backend/src/routes/marketplace.rs", "backend/src/routes/marketplace_runtime.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/administrative-access.md", "security/roles/global-super-admin.md", "security/roles/global-admin.md"]
+    related_diagrams: ["security/diagrams/rbac-model.mmd", "security/diagrams/authorization-decision-flow.mmd"]
+    known_uncertainty_markers: ["RBAC_MAPPING_UNCLEAR RMU-01"]
+
+  - id: "security-permission-organization-administration"
+    path: "security/permissions/organization-administration.md"
+    title: "Organization Administration Permission Group"
+    category: "security-permission-group"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    permission_group_id: "organization-administration"
+    permission_scope: "organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/services/rbac.rs", "backend/src/middleware/tenant.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/tenant-access-control.md", "security/roles/organization-owner.md", "security/roles/organization-admin.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01", "TENANT_ACCESS_UNVERIFIED TAV-01"]
+
+  - id: "security-permission-content-workflow-comments"
+    path: "security/permissions/content-workflow-and-comments.md"
+    title: "Content, Workflow, and Comments Permission Group"
+    category: "security-permission-group"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    permission_group_id: "content-workflow-comments"
+    permission_scope: "organization with legacy global helpers"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/content.rs", "backend/src/routes/comments.rs", "backend/src/services/workflow.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/resource-ownership.md", "api/endpoints/content-entries-and-workflow.md", "api/endpoints/editorial-comments.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd", "security/diagrams/rbac-model.mmd"]
+    known_uncertainty_markers: ["RESOURCE_OWNERSHIP_UNVERIFIED ROU-01", "PERMISSION_SEMANTICS_UNCLEAR PSU-01"]
+
+  - id: "security-permission-pages-media-components-webhooks"
+    path: "security/permissions/pages-media-components-and-webhooks.md"
+    title: "Pages, Media, Components, and Webhooks Permission Group"
+    category: "security-permission-group"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    permission_group_id: "pages-media-components-webhooks"
+    permission_scope: "organization with legacy global helpers"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/pages.rs", "backend/src/routes/media.rs", "backend/src/routes/webhooks.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/input-validation.md", "api/endpoints/pages-workflow-versions-and-preview.md", "api/endpoints/media-library.md", "api/endpoints/cms-webhooks.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd", "security/diagrams/rbac-model.mmd"]
+    known_uncertainty_markers: ["SECURITY_TEST_COVERAGE_UNCLEAR STCU-01"]
+
+  - id: "security-permission-billing-saas"
+    path: "security/permissions/billing-and-saas-operations.md"
+    title: "Billing and SaaS Operations Permission Group"
+    category: "security-permission-group"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    permission_group_id: "billing-saas-operations"
+    permission_scope: "organization and selected global platform operations"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/src/routes/billing.rs", "backend/src/routes/beta.rs", "backend/src/services/stripe_billing.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/administrative-access.md", "security/roles/organization-billing-manager.md", "api/endpoints/billing-subscription-and-usage.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["ADMINISTRATIVE_BYPASS_UNCLEAR ABY-01"]
+
+  - id: "security-permission-marketplace-management"
+    path: "security/permissions/marketplace-management.md"
+    title: "Marketplace Management Permission Group"
+    category: "security-permission-group"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    permission_group_id: "marketplace-management"
+    permission_scope: "creator ownership, global platform, and organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs", "backend/src/routes/marketplace_finance.rs", "backend/src/routes/marketplace_analytics.rs", "backend/src/routes/marketplace_runtime.rs", "backend/src/services/rbac.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/resource-ownership.md", "security/administrative-access.md", "api/endpoints/marketplace-installation-lifecycle.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01", "RESOURCE_OWNERSHIP_UNVERIFIED ROU-01"]
+
+  - id: "security-permission-marketplace-runtime"
+    path: "security/permissions/marketplace-runtime-capabilities.md"
+    title: "Marketplace Runtime Capabilities Permission Group"
+    category: "security-permission-group"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    permission_group_id: "marketplace-runtime-capabilities"
+    permission_scope: "approved installation within an organization"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_manifest.rs", "backend/src/services/marketplace_installation.rs", "backend/src/services/marketplace_runtime.rs", "backend/src/routes/marketplace_runtime.rs", "backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql"]
+    related_documents: ["security/roles-and-permissions-catalog.md", "security/input-validation.md", "security/threat-register.md", "api/endpoints/marketplace-runtime-security.md"]
+    related_diagrams: ["security/diagrams/authorization-decision-flow.mmd", "security/diagrams/tenant-access-control.mmd"]
+    known_uncertainty_markers: ["PERMISSION_SEMANTICS_UNCLEAR PSU-01"]
+
+  - id: "security-diagram-trust-boundaries"
+    path: "security/diagrams/trust-boundaries.mmd"
+    title: "Security Trust Boundaries"
+    category: "security-diagram"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/main.rs", "backend/src/routes/mod.rs", "backend/src/middleware", "backend/src/services/rls.rs"]
+    related_documents: ["security/trust-boundaries.md", "security/README.md"]
+    known_uncertainty_markers: ["SECURITY_HEADER_STATUS_UNCLEAR SHSU-01", "COOKIE_SECURITY_UNVERIFIED CSU-01"]
+
+  - id: "security-diagram-authentication-flow"
+    path: "security/diagrams/authentication-flow.mmd"
+    title: "Security Authentication Flow"
+    category: "security-diagram"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/services/password.rs", "backend/src/services/jwt.rs", "backend/src/services/security.rs"]
+    related_documents: ["security/authentication-architecture.md", "security/authentication-flows.md"]
+    known_uncertainty_markers: ["AUTHENTICATION_FLOW_UNCLEAR AFU-01", "TOKEN_LIFECYCLE_UNCLEAR TLU-01"]
+
+  - id: "security-diagram-session-token-lifecycle"
+    path: "security/diagrams/session-token-lifecycle.mmd"
+    title: "Security Session and Token Lifecycle"
+    category: "security-diagram"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/services/jwt.rs", "frontend/src/stores/useAppStore.ts"]
+    related_documents: ["security/session-and-token-lifecycle.md", "security/README.md"]
+    known_uncertainty_markers: ["SESSION_LIFECYCLE_UNCLEAR SLU-01", "TOKEN_LIFECYCLE_UNCLEAR TLU-01"]
+
+  - id: "security-diagram-authorization-decision-flow"
+    path: "security/diagrams/authorization-decision-flow.mmd"
+    title: "Security Authorization Decision Flow"
+    category: "security-diagram"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/mod.rs", "backend/src/middleware/auth.rs", "backend/src/middleware/tenant.rs", "backend/src/services/rbac.rs", "backend/src/services/rls.rs"]
+    related_documents: ["security/authorization-architecture.md", "security/resource-ownership.md", "security/administrative-access.md"]
+    known_uncertainty_markers: ["AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01", "ADMINISTRATIVE_BYPASS_UNCLEAR ABY-01"]
+
+  - id: "security-diagram-rbac-model"
+    path: "security/diagrams/rbac-model.mmd"
+    title: "Security RBAC Model"
+    category: "security-diagram"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "mixed"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/migrations/0001_initial_schema.sql", "backend/migrations/0003_phase_one_core.sql", "backend/migrations/0008_v2_phase_one_organizations.sql", "backend/src/routes/auth.rs"]
+    related_documents: ["security/rbac-model.md", "security/roles-and-permissions-catalog.md"]
+    known_uncertainty_markers: ["RBAC_MAPPING_UNCLEAR RMU-01", "PERMISSION_SEMANTICS_UNCLEAR PSU-01"]
+
+  - id: "security-diagram-tenant-access-control"
+    path: "security/diagrams/tenant-access-control.mmd"
+    title: "Security Tenant Access Control"
+    category: "security-diagram"
+    status: "current"
+    phase: 7
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    security_status: "partially_verified"
+    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/middleware/tenant.rs", "backend/src/services/rate_limit.rs", "backend/src/services/quota.rs", "backend/src/services/rls.rs", "backend/migrations/0009_v2_phase_three_rls.sql"]
+    related_documents: ["security/tenant-access-control.md", "api/tenant-context.md", "database/multi-tenancy.md"]
+    known_uncertainty_markers: ["TENANT_ACCESS_UNVERIFIED TAV-01"]
+
 uncertainty_register:
+  security_phase_seven:
+    - id: "AUTHENTICATION_FLOW_UNCLEAR AFU-01"
+      summary: "Account verification, recovery, MFA, and production bootstrap intent are not established"
+    - id: "SESSION_LIFECYCLE_UNCLEAR SLU-01"
+      summary: "Frontend expiry, invalid-session, cross-tab logout, and server session synchronization are incomplete"
+    - id: "TOKEN_LIFECYCLE_UNCLEAR TLU-01"
+      summary: "Refresh families, reuse detection, atomic rotation, bulk revocation, cleanup, and signing-key rotation are absent or unclear"
+    - id: "COOKIE_SECURITY_UNVERIFIED CSU-01"
+      summary: "Cookie Secure behavior, HTTPS termination, and proxy handling were not verified in deployment"
+    - id: "AUTHORIZATION_ENFORCEMENT_UNCLEAR AEU-01"
+      summary: "Distributed router, RBAC, ownership, lifecycle, entitlement, and RLS checks lack an exhaustive route-action proof"
+    - id: "RBAC_MAPPING_UNCLEAR RMU-01"
+      summary: "Stored roles.permissions arrays are not read by inspected runtime authorization helpers"
+    - id: "PERMISSION_SEMANTICS_UNCLEAR PSU-01"
+      summary: "Legacy colon-delimited permissions, named RBAC capabilities, and Marketplace dot-delimited permissions are separate vocabularies"
+    - id: "TENANT_ACCESS_UNVERIFIED TAV-01"
+      summary: "Applied RLS catalog, database privileges, and live cross-tenant behavior were not executed in Phase 7"
+    - id: "RESOURCE_OWNERSHIP_UNVERIFIED ROU-01"
+      summary: "No complete resource-action-owner matrix or runtime IDOR suite was found"
+    - id: "ADMINISTRATIVE_BYPASS_UNCLEAR ABY-01"
+      summary: "RLS bypass authorization and audit preconditions are distributed among callers rather than enforced by the helper"
+    - id: "FRONTEND_ONLY_SECURITY_CHECK FOSC-01"
+      summary: "Frontend route, role, permission, and lifecycle checks are user-experience controls only"
+    - id: "SECRET_HANDLING_UNVERIFIED SHU-01"
+      summary: "Production secret storage, access, rotation, revocation, and redaction were not verified"
+    - id: "INPUT_VALIDATION_UNCLEAR IVU-01"
+      summary: "Validation and sanitization are distributed and lack a complete input-to-sink or fuzz-tested contract"
+    - id: "AUDIT_COVERAGE_UNCLEAR ACU-01"
+      summary: "Authentication, denials, role assignment, bypass, retention, export, and tamper-evidence coverage is incomplete"
+    - id: "SECURITY_HEADER_STATUS_UNCLEAR SHSU-01"
+      summary: "Application headers are verified but deployed proxy, TLS, HSTS, static, and error-response behavior is not"
+    - id: "RATE_LIMITING_STATUS_UNCLEAR RLSU-01"
+      summary: "Trusted-proxy client-IP derivation and live distributed limiter behavior are not verified"
+    - id: "SECURITY_TEST_COVERAGE_UNCLEAR STCU-01"
+      summary: "Authentication, authorization, tenant isolation, browser, replay, concurrency, and attack-path integration coverage is incomplete"
+    - id: "POTENTIAL_SECRET_EXPOSURE PSE-01"
+      summary: "Deterministic development bootstrap credentials exist in startup and login-page source"
+
   unknown:
     - id: "UNKNOWN U-01"
       summary: "Production hosting, ingress, TLS, and network topology"
@@ -5112,12 +5982,12 @@ current_sections:
     title: "API Architecture and Contracts"
     status: "current"
     completed_phase: 6
-
-planned_sections:
   - id: "security"
     title: "Authentication, Authorization, and Security"
-    status: "planned"
-    target_phase: 7
+    status: "current"
+    completed_phase: 7
+
+planned_sections:
   - id: "business-and-tenancy"
     title: "Business Rules and Multi-Tenancy"
     status: "planned"

@@ -258,4 +258,8 @@ Likelihood and impact use Low, Medium, or High. Severity is the combined documen
 - [Page Builder](page-builder.md)
 - [Testing Map](testing-map.md)
 - [Architecture Risks](../architecture/architecture-risks.md)
+- [Security Risks](../security/security-risks.md)
 
+## Phase 7 Security Correlation
+
+Script-readable access tokens, stale local roles, query-string preview credentials, frontend-only route/action checks, and missing automatic session-expiry handling are tracked in [Frontend Security Boundaries](../security/frontend-security-boundaries.md) and security risks `SEC-02`, `SEC-04`, and `SEC-11`.

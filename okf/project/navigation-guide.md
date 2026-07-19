@@ -201,3 +201,11 @@ Use this guide to choose the shortest evidence path for a common repository task
 - [Database Schema Catalog](../database/schema-catalog.md)
 - [Database Entity Catalog](../database/entity-catalog.md)
 - [Database Risk Register](../database/database-risks.md)
+
+## Security Tasks
+
+- To understand authentication or change login behavior, start with [Authentication Architecture](../security/authentication-architecture.md), [Authentication Flows](../security/authentication-flows.md), and `backend/src/routes/auth.rs`.
+- To change session, token, password, or cookie behavior, read [Session and Token Lifecycle](../security/session-and-token-lifecycle.md), [Password and Credential Handling](../security/password-and-credential-handling.md), and [Browser and HTTP Security](../security/browser-and-http-security.md).
+- To change authorization, roles, or permissions, use [Authorization Architecture](../security/authorization-architecture.md), [RBAC Model](../security/rbac-model.md), and [Roles and Permissions Catalog](../security/roles-and-permissions-catalog.md).
+- To change tenant access, ownership, or administrative behavior, read [Tenant Access Control](../security/tenant-access-control.md), [Resource Ownership](../security/resource-ownership.md), and [Administrative Access](../security/administrative-access.md).
+- Before security-sensitive work, review [Threat Register](../security/threat-register.md), [Security Risks](../security/security-risks.md), and [Security Testing](../security/security-testing.md).

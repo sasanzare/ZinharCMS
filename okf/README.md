@@ -41,6 +41,9 @@ related_documents:
   - "api/README.md"
   - "api/route-group-catalog.md"
   - "api/endpoint-catalog.md"
+  - "security/README.md"
+  - "security/roles-and-permissions-catalog.md"
+  - "security/security-risks.md"
 uncertainty_markers:
   - "UNKNOWN"
   - "NEEDS_OWNER_CONFIRMATION"
@@ -81,7 +84,7 @@ The okf directory is the organized knowledge and navigation layer for ZinharCMS.
 
 > Source code remains the primary source of truth for implemented behavior. OKF documents explain project context, structure, decisions, responsibilities, and verified relationships.
 
-Phase 6 adds the verified [API Architecture and Contracts](api/README.md): 168 registered handler-method endpoints, 17 route groups, 21 endpoint families, request/response/error contracts, authentication and tenant boundaries, OpenAPI consistency, frontend/backend mappings, tests, risks, and five diagrams.
+Phase 7 adds the verified [Authentication, Authorization, and Security Architecture](security/README.md): authentication and token flows, two-layer RBAC, 11 role documents, eight permission groups, tenant and ownership controls, browser/configuration/audit boundaries, threats, risks, tests, and six diagrams.
 
 OKF does not replace repository README files, API specifications, tests, source-code comments, database migrations, Architecture Decision Records, or existing diagrams. It connects those sources and explains how their authority differs.
 
@@ -288,4 +291,8 @@ During a review:
 
 ## Phase Status
 
-Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 established the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Phase 5 added 16 database guides, 18 entity documents, and five database diagrams based on all 26 migrations and current persistence code. Phase 6 is complete: it adds 19 primary API documents, 17 route-group documents, 21 endpoint-family documents, and five API diagrams covering all 168 registered handler-method endpoints. Security, business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 7 through 12.
+Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 established the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Phase 5 added 16 database guides, 18 entity documents, and five database diagrams based on all 26 migrations and current persistence code. Phase 6 added 19 primary API documents, 17 route-group documents, 21 endpoint-family documents, and five API diagrams covering all 168 registered handler-method endpoints. Phase 7 is complete: it adds 21 primary security documents, 11 role documents, eight permission-group documents, and six security diagrams. Business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 8 through 12.
+
+## Phase 7 Security Reading Order
+
+Start with [Security Overview](security/overview.md), [Authentication Architecture](security/authentication-architecture.md), [Authorization Architecture](security/authorization-architecture.md), and [Tenant Access Control](security/tenant-access-control.md). Use the [Roles and Permissions Catalog](security/roles-and-permissions-catalog.md) to navigate every role and permission-group document. Use [Security Testing](security/security-testing.md), [Threat Register](security/threat-register.md), and [Security Risks](security/security-risks.md) for assurance limits and follow-up work. All six diagrams are linked from the [Security README](security/README.md).

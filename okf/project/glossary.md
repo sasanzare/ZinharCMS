@@ -146,3 +146,14 @@ For the broader context, see [Project Identity](overview.md#1-project-identity),
 - [Frontend Feature Catalog](../frontend/feature-catalog.md)
 - [Database Architecture](../database/README.md)
 - [Database Entity Catalog](../database/entity-catalog.md)
+
+## Phase 7 Security Terms
+
+- **Access token:** HS256 bearer JWT containing user ID, one global role, issue time, and expiry.
+- **Refresh token:** Opaque random credential stored server-side only as a hash and normally transported in an `HttpOnly` cookie.
+- **Global role:** Platform role assigned through `user_roles` and embedded in access-token claims.
+- **Organization role:** Tenant role loaded from an active `organization_members` row for the selected organization.
+- **RLS bypass:** Explicit transaction context for narrowly scoped cross-organization backend work; it is not implied by a user role.
+- **Marketplace permission snapshot:** The complete approved dot-delimited permission list stored for a specific installation.
+
+See [Security Overview](../security/overview.md), [RBAC Model](../security/rbac-model.md), and [Tenant Access Control](../security/tenant-access-control.md).

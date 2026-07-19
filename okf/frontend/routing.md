@@ -100,3 +100,8 @@ The production-like Nginx configuration falls back to `index.html` for non-asset
 - [Authentication and Access](authentication-and-access.md)
 - [Frontend Routing Flow](diagrams/frontend-routing-flow.mmd)
 - [Architecture Runtime Flows](../architecture/runtime-flows.md)
+- [Frontend Security Boundaries](../security/frontend-security-boundaries.md)
+
+## Security Boundary
+
+All application-shell child routes share the same local token-presence guard; per-route role admission is not implemented in the router. Hidden or disabled page actions are UX controls, not authorization. See `FRONTEND_ONLY_SECURITY_CHECK FOSC-01` and the backend [Authorization Architecture](../security/authorization-architecture.md).

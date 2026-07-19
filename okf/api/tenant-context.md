@@ -57,3 +57,7 @@ Public `/api/v1/*` delivery routes do not accept tenant context from the caller.
 ## Uncertainty Rule
 
 Use `TENANT_CONTEXT_UNCLEAR TCU-01` when a route accesses organization-owned data without a demonstrable middleware, ownership, or explicit cross-tenant administration path. No registered endpoint had an unresolved router zone in this snapshot, but route-level query and RLS behavior must still be reviewed during changes.
+
+## Phase 7 Detail
+
+[Tenant Access Control](../security/tenant-access-control.md) and its [diagram](../security/diagrams/tenant-access-control.mmd) show membership loading, organization/user rate limiting, quota, role checks, tenant SQL context, forced RLS, and explicit bypass. Repository evidence is verified; live deployed isolation remains `TENANT_ACCESS_UNVERIFIED TAV-01`.

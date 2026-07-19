@@ -104,3 +104,7 @@ No separate `backend/tests` database integration suite, reusable PostgreSQL fixt
 ## Maintenance Guidance
 
 When adding a test, update the owning module document and this map. Prefer tests that cross a documented boundary when a change involves middleware, transactions, cache invalidation, files, provider side effects, or more than one module.
+
+## Phase 7 Security Test Map
+
+[Security Testing](../security/security-testing.md) separates unit, static-contract, frontend, and missing integration evidence. It confirms selected security-header, sanitizer, RBAC, RLS-migration, Marketplace runtime, and security-regression tests, but no dedicated authentication route suite or live exhaustive tenant/RBAC matrix. Use `SECURITY_TEST_COVERAGE_UNCLEAR STCU-01` for this assurance gap.

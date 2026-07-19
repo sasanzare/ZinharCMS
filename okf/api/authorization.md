@@ -70,3 +70,7 @@ RLS is defense in depth and data scoping; it is not a substitute for capability 
 ## Maintenance Rule
 
 Do not infer authorization from HTTP method, frontend visibility, DTO extractors, or OpenAPI. Review router placement, RBAC calls, ownership queries, and RLS context together. Use `AUTHORIZATION_REQUIREMENT_UNCLEAR AZU-01` if those sources do not establish a coherent decision. Detailed threat analysis and policy hardening belong in Phase 7.
+
+## Phase 7 Detail
+
+[Authorization Architecture](../security/authorization-architecture.md), [RBAC Model](../security/rbac-model.md), [Roles and Permissions Catalog](../security/roles-and-permissions-catalog.md), [Resource Ownership](../security/resource-ownership.md), and [Administrative Access](../security/administrative-access.md) now map the full decision layers. Stored `roles.permissions` arrays are not read by inspected runtime RBAC (`RBAC_MAPPING_UNCLEAR RMU-01`).

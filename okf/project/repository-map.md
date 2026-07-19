@@ -312,3 +312,7 @@ The following paths should not normally be used as project-knowledge sources:
 - [Database Architecture](../database/README.md)
 - [Database Schema Catalog](../database/schema-catalog.md)
 - [Database Entity Catalog](../database/entity-catalog.md)
+
+## Security Documentation and Evidence Map
+
+The Phase 7 entry point is [Authentication, Authorization, and Security Architecture](../security/README.md). Primary implementation evidence is under `backend/src/routes/auth.rs`, `backend/src/middleware/`, `backend/src/services/{jwt,password,security,rbac,rls,audit}.rs`, identity/organization/RLS/security migrations, and `frontend/src/{services,stores,components,pages}`. Role and permission navigation is in the [Roles and Permissions Catalog](../security/roles-and-permissions-catalog.md); threats and gaps are in [Security Risks](../security/security-risks.md).

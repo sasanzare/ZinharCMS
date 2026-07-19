@@ -438,3 +438,16 @@ The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero
 - [Database Architecture](../database/README.md)
 - [Database Schema Catalog](../database/schema-catalog.md)
 - [Database Risk Register](../database/database-risks.md)
+
+## Phase 7 Security Sources
+
+| Source area | Authority for Phase 7 |
+| --- | --- |
+| `backend/src/routes/auth.rs` | Authentication endpoint behavior, token issue/rotation/logout, cookie attributes, bootstrap role mapping |
+| `backend/src/middleware/auth.rs`, `tenant.rs`, `security.rs` | Bearer, tenant, and response-header boundaries |
+| `backend/src/services/jwt.rs`, `password.rs`, `security.rs` | Token cryptography, password hashing, login limiting, rich-text sanitization |
+| `backend/src/services/rbac.rs`, `rls.rs`, `audit.rs` | Role decisions, tenant SQL context/bypass, and audit persistence |
+| `backend/migrations/0001`, `0003`, `0007`-`0009`, `0012`, `0020` | Identity, roles, login attempts, organizations, RLS, audit, Marketplace permissions/kill switches |
+| `frontend/src/services/api.ts`, `stores/useAppStore.ts`, access/Marketplace components | Browser token storage, request construction, tenant selection, and frontend-only role cues |
+
+The [Security README](../security/README.md) organizes these sources without superseding them. Environment templates were reviewed by variable name; no secret value is reproduced.

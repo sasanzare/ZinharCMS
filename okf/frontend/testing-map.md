@@ -118,3 +118,8 @@ The repository-defined frontend commands are `npm run lint`, `npm run typecheck`
 - [Page Builder](page-builder.md)
 - [Frontend Risks](frontend-risks.md)
 - [Backend Testing Map](../backend/testing-map.md)
+- [Security Testing](../security/security-testing.md)
+
+## Security Test Interpretation
+
+Frontend authentication and Marketplace role/permission tests demonstrate rendering and client-call behavior only. They do not prove bearer verification, RBAC denial, ownership, tenant isolation, RLS, or cookie policy. Phase 7 tracks the missing cross-boundary evidence as `SECURITY_TEST_COVERAGE_UNCLEAR STCU-01`.

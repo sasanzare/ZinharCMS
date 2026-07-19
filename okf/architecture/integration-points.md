@@ -146,3 +146,7 @@ The backend emits structured tracing to its configured subscriber and the contai
 Dockerfiles and Compose files define development and production-like build/runtime shapes. GitHub Actions workflows run backend and frontend quality gates. No verified production deployment, registry publication, environment promotion, rollback, or container-orchestrator integration was found; these remain U-01, U-06, NOC-06, and ISU-03.
 
 No external authentication provider, search service, object-store API, message broker, monitoring backend, or automatic alert-delivery provider is verified by current repository evidence.
+
+## Security Integration Notes
+
+No external identity provider, MFA provider, secret manager, security-event exporter, or deployed WAF is verified. Stripe signature verification, email/webhook delivery, Redis limiting, filesystem uploads, and Marketplace host-operation authorization cross trust boundaries documented in [Security Trust Boundaries](../security/trust-boundaries.md), [Secrets and Configuration](../security/secrets-and-configuration.md), and [Threat Register](../security/threat-register.md).

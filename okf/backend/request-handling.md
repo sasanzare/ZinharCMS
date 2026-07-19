@@ -116,4 +116,6 @@ Runtime proxy behavior, deployed timeout interactions, full extractor rejection 
 
 ## Related Documentation
 
-Use the [request lifecycle diagram](diagrams/backend-request-lifecycle.mmd), [module catalog](module-catalog.md), [Persistence Access](persistence-access.md), and [Phase 2 Runtime Flows](../architecture/runtime-flows.md).
+Use the [request lifecycle diagram](diagrams/backend-request-lifecycle.mmd), [module catalog](module-catalog.md), [Persistence Access](persistence-access.md), [Phase 2 Runtime Flows](../architecture/runtime-flows.md), [Authentication Architecture](../security/authentication-architecture.md), and [Authorization Decision Flow](../security/diagrams/authorization-decision-flow.mmd).
+
+Phase 7 confirms that route placement establishes public, bearer, or tenant access; handler RBAC/ownership/lifecycle checks and RLS then complete authorization. Framework and middleware rejections do not all share the same error body.

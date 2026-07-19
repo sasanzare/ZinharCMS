@@ -1,0 +1,33 @@
+flowchart LR
+  %% Evidence: backend/src/main.rs, backend/src/routes/mod.rs, backend/src/middleware, backend/src/services/rls.rs
+  browser["Browser / API client\nUntrusted input and bearer credentials"]
+  ingress["TLS / reverse proxy\nDeployment not verified"]
+  http["Axum HTTP boundary\nCORS, timeout, request ID, security headers"]
+  public["Public routes\nAuth, delivery, Stripe, static uploads"]
+  auth["Authentication boundary\nJWT verification"]
+  tenant["Tenant boundary\nActive organization membership, limits, quota"]
+  handler["Handler / service boundary\nRBAC, ownership, lifecycle, validation"]
+  rls["PostgreSQL boundary\nTenant context and forced RLS"]
+  bypass["Explicit RLS bypass\nPrivileged caller responsibility"]
+  redis["Redis\nRate limit and cache"]
+  files["Filesystem\nUploads and packages"]
+  providers["External providers\nStripe, email, webhooks"]
+
+  browser -.->|HTTPS and proxy policy / SHSU-01 / CSU-01| ingress
+  ingress --> http
+  http --> public
+  http --> auth
+  auth --> tenant
+  auth --> handler
+  tenant --> handler
+  tenant --> redis
+  handler --> rls
+  handler --> files
+  handler --> providers
+  handler --> bypass
+  bypass --> rls
+  public --> files
+  public --> providers
+
+  classDef unverified stroke-dasharray: 5 5,fill:#fff8e1,stroke:#a66a00;
+  class ingress unverified;

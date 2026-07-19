@@ -1,0 +1,28 @@
+flowchart TD
+  %% Evidence: routes/mod.rs, middleware/auth.rs, middleware/tenant.rs, services/rbac.rs, services/rls.rs
+  request["Incoming operation"] --> zone{"Router access zone?"}
+  zone -->|Public| publicChecks["Handler-specific validation / signature / publication checks"]
+  zone -->|Bearer protected| token["Verify access token"]
+  zone -->|Tenant protected| tenantToken["Verify access token and select organization"]
+  token --> global{"Global role check required?"}
+  global -->|Yes| globalRBAC["require_any / named global helper"]
+  global -->|No| resource
+  globalRBAC --> resource{"Ownership, entitlement, or lifecycle check?"}
+  tenantToken --> membership["Load active organization and membership"]
+  membership --> orgRBAC{"Organization role check required?"}
+  orgRBAC -->|Yes| orgHelper["require_org_any / named organization helper"]
+  orgRBAC -->|No| resource
+  orgHelper --> resource
+  resource --> persistence{"Tenant persistence?"}
+  persistence -->|Yes| rls["Tenant SQL context and forced RLS"]
+  persistence -->|Explicit platform operation| bypass["Caller-authorized RLS bypass"]
+  persistence -->|No| allow["Execute operation"]
+  rls --> allow
+  bypass --> allow
+  publicChecks --> allow
+
+  globalRBAC -.->|Denied| deny["403"]
+  orgHelper -.->|Denied| deny
+  resource -.->|Denied| deny
+  rls -.->|No matching row or policy rejection| deny
+  tenantToken -.->|Invalid or missing| reject["400 / 401 / 403"]

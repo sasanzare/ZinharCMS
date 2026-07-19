@@ -102,3 +102,7 @@ Source defaults favor local development. Repository container files and CI suppl
 ## Related Documentation
 
 See the [state composition diagram](diagrams/application-state-composition.mmd), [Bootstrap and Runtime module](modules/bootstrap-runtime.md), [Persistence Access](persistence-access.md), and [Backend Risks](backend-risks.md).
+
+## Phase 7 Security Configuration
+
+[Secrets and Security Configuration](../security/secrets-and-configuration.md) inventories security-relevant variable names without exposing values. JWT secret length is validated, while token lifetimes, cookie `Secure`, CORS origin, login limits, tenant rate limits, upload limits, and provider modes are configurable. Deployment secret storage, rotation, TLS, and redaction remain `SECRET_HANDLING_UNVERIFIED SHU-01`.

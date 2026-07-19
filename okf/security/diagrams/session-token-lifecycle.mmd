@@ -1,0 +1,27 @@
+flowchart LR
+  %% Evidence: backend/src/routes/auth.rs, backend/src/services/jwt.rs, frontend/src/stores/useAppStore.ts
+  issue["Register / login / refresh\nIssue access and refresh tokens"]
+  access["Access token valid"]
+  refresh["Refresh token valid"]
+  stale["Access claims stale\nUser deactivated or role changed"]
+  accessExpired["Access token expired"]
+  rotate["Refresh request\nValidate hash and account"]
+  revoked["Presented refresh row revoked"]
+  refreshExpired["Refresh token expired"]
+  logout["Logout\nOptional refresh row revocation"]
+
+  issue --> access
+  issue --> refresh
+  access -->|exp reached| accessExpired
+  access -.->|Account or role changes are not reloaded by generic middleware| stale
+  stale -->|exp reached| accessExpired
+  refresh --> rotate
+  rotate --> revoked
+  revoked -->|New pair successfully created| issue
+  refresh -->|expires_at reached| refreshExpired
+  refresh --> logout
+  logout --> revoked
+  revoked -.->|No token family, reuse detection, or atomic rotation / TLU-01| uncertain["Unverified lifecycle behavior"]
+
+  classDef unclear stroke-dasharray: 5 5,fill:#fff8e1,stroke:#a66a00;
+  class stale,uncertain unclear;

@@ -58,3 +58,5 @@ Phase 5 performed static documentation validation only. It did not run migration
 ## Related Testing Navigation
 
 Read the backend [Testing Map](../backend/testing-map.md), [Organizations and Membership](entities/organizations-and-membership.md), [Pages and Versions](entities/pages-and-versions.md), [Marketplace Purchases and Entitlements](entities/marketplace-purchases-and-entitlements.md), and [Marketplace Installations and Runtime Adapters](entities/marketplace-installations-and-runtime-adapters.md) before designing database coverage.
+
+Phase 7 [Security Testing](../security/security-testing.md) confirms that current RLS assurance includes static migration contracts but no live exhaustive cross-tenant CRUD matrix. Test pooled-connection context reset, bypass preconditions, same-tenant parent coherence, global/system rows, and every major tenant entity before claiming runtime isolation.

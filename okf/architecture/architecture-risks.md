@@ -115,3 +115,7 @@ Repository configuration demonstrates how the system can run. It does not demons
 - [Runtime Flows](runtime-flows.md)
 - [Integration Points](integration-points.md)
 - [Architecture Decision Register](decisions/decision-register.md)
+
+## Phase 7 Security Risk Link
+
+Security-specific consequences of shared-process boundaries, distributed authorization, explicit RLS bypass, local file serving, provider integrations, and configuration-dependent deployment controls are prioritized in [Security Risks](../security/security-risks.md) and [Threat Register](../security/threat-register.md). Architecture risk is not closed merely because Phase 7 documents the boundary.

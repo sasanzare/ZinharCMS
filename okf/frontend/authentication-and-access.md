@@ -119,3 +119,10 @@ Tokens are persisted in `localStorage`. `PagesPage` can place access token and o
 - [Backend Authentication](../backend/modules/authentication.md)
 - [Backend Tenant Authorization](../backend/modules/tenant-authorization.md)
 - [System Boundaries](../architecture/boundaries.md)
+- [Security Authentication Architecture](../security/authentication-architecture.md)
+- [Security Session and Token Lifecycle](../security/session-and-token-lifecycle.md)
+- [Frontend Security Boundaries](../security/frontend-security-boundaries.md)
+
+## Phase 7 Security Interpretation
+
+The access token, user projection, memberships, and active organization use `localStorage`; the refresh credential normally remains in an `HttpOnly` cookie. `RequireAuth` checks only local token presence, and role-based UI cues are `FRONTEND_ONLY_SECURITY_CHECK FOSC-01`. Backend middleware and handler/RLS decisions remain authoritative.

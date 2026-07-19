@@ -58,3 +58,7 @@ The frontend stores the access token, refresh token, and selected organization I
 - Query-string preview tokens can appear in browser or proxy logs and should be treated as a constrained compatibility path.
 - `AUTHENTICATION_REQUIREMENT_UNCLEAR ARU-01` applies when a future handler is moved between router subtrees without matching annotations and tests. No registered endpoint had an unresolved access zone in this snapshot.
 - Generated OpenAPI does not declare a bearer scheme, so it cannot currently communicate authentication requirements accurately.
+
+## Phase 7 Detail
+
+[Authentication Architecture](../security/authentication-architecture.md), [Authentication Flows](../security/authentication-flows.md), [Session and Token Lifecycle](../security/session-and-token-lifecycle.md), and [Password and Credential Handling](../security/password-and-credential-handling.md) add cryptographic, storage, cookie, bootstrap, rate-limit, and lifecycle evidence. Key markers are `AFU-01`, `SLU-01`, `TLU-01`, `CSU-01`, and `PSE-01`.

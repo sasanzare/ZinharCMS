@@ -56,3 +56,7 @@ No `backend/tests` integration harness or comprehensive real-router HTTP contrac
 For each significant family, exercise at least: public request when protected, missing/invalid bearer token, missing/invalid tenant ID, inactive membership, insufficient role, valid request, invalid path/query/body, not found, conflict, quota/rate failure, and provider/service unavailability where relevant. Assert method/path reachability, status, headers, JSON shape, tenant isolation, persistence effect, audit effect, and webhook/cache side effects as applicable.
 
 Add a generated set comparison between Axum registration and Utoipa operations, plus representative Rust-JSON/TypeScript fixture checks. `TEST_COVERAGE_UNCLEAR TCU-API-01` means absence of a test is not evidence of incorrect behavior; it records unverified contract risk.
+
+## Phase 7 Security Matrix
+
+Add register/login/refresh/logout cookie integration tests, malformed/expired/stale token cases, complete global and organization role matrices, owner/IDOR cases, live cross-tenant RLS CRUD, bypass preconditions, CSRF/CORS/header behavior, audit effects, and Marketplace permission expansion/runtime kill-switch cases. [Security Testing](../security/security-testing.md) records current evidence and `SECURITY_TEST_COVERAGE_UNCLEAR STCU-01`.
