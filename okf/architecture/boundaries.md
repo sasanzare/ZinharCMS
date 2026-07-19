@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes/mod.rs"
   - "backend/src/middleware/auth.rs"
@@ -241,3 +241,7 @@ Use [Database Module Data Ownership](../database/module-data-ownership.md), [Mul
 ## Phase 7 Security Boundary Refinement
 
 The browser/API, public router, bearer middleware, tenant membership, handler RBAC/ownership, tenant SQL/RLS, filesystem, Redis, and external-provider boundaries are mapped in [Security Trust Boundaries](../security/trust-boundaries.md). A global role is not a tenant membership, and explicit RLS bypass is a backend transaction mode rather than an automatic administrator privilege.
+
+## Phase 8 Domain Boundary Refinement
+
+The [Domain Catalog](../domain/domain-catalog.md) identifies ten behavior boundaries without asserting separate deployable services. Cross-domain workflows commonly commit PostgreSQL state before cache invalidation, filesystem work, email, webhooks, or provider calls. Marketplace packages cross a host-adapter permission boundary; CMS built-in plugins remain compiled, process-local behavior. These distinctions are summarized in [Domain Events](../domain/domain-events.md) and [Domain Risks](../domain/domain-risks.md).

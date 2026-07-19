@@ -8,7 +8,7 @@ status: "current"
 source_of_truth: false
 implementation_view: "observed"
 security_status: "partially_verified"
-last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/services/rbac.rs"
@@ -68,3 +68,7 @@ The `roles.permissions` column contains legacy permission strings and wildcards 
 ## Test Evidence
 
 A unit matrix checks selected organization capabilities across all six organization roles. Individual service/static contract tests cover additional Marketplace and ownership checks. No complete global matrix or route-level end-to-end RBAC suite was found: `SECURITY_TEST_COVERAGE_UNCLEAR STCU-01`.
+
+## Phase 8 Workflow Authorization
+
+[Business Rule Catalog](../domain/business-rule-catalog.md) ties roles and permissions to stateful actions rather than treating RBAC as the entire decision. Editorial publication may require workflow permission or bypass capability; ownership transfer and last-owner protection add membership-state rules; Marketplace runtime requires an active, ready installation plus declared and approved permissions. Workflow and resource checks remain authoritative on the backend.

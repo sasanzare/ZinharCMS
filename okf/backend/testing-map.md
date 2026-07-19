@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/Cargo.toml"
   - "backend/src"
@@ -108,3 +108,7 @@ When adding a test, update the owning module document and this map. Prefer tests
 ## Phase 7 Security Test Map
 
 [Security Testing](../security/security-testing.md) separates unit, static-contract, frontend, and missing integration evidence. It confirms selected security-header, sanitizer, RBAC, RLS-migration, Marketplace runtime, and security-regression tests, but no dedicated authentication route suite or live exhaustive tenant/RBAC matrix. Use `SECURITY_TEST_COVERAGE_UNCLEAR STCU-01` for this assurance gap.
+
+## Phase 8 Business Rule Test Map
+
+[Business Rule Testing](../domain/business-rule-testing.md) maps current workflow, validation, quota, webhook, Stripe, Marketplace, security, and frontend evidence to the rule catalog. Highest-priority gaps are live tenant/RLS tests, concurrent last-owner changes, route-level editorial transitions, page restore/cache behavior, filesystem/database failure injection, durable webhook recovery, provider callback idempotency under concurrency, and end-to-end Marketplace purchase/entitlement flows.

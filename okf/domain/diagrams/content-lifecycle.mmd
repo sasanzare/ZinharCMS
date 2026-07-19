@@ -1,0 +1,21 @@
+%% title: ZinharCMS Content and Page Lifecycle
+%% sources: backend/src/services/workflow.rs; backend/src/routes/content.rs; backend/src/routes/pages.rs
+stateDiagram-v2
+    [*] --> draft: create
+    draft --> pending_review: submit-review
+    pending_review --> published: publish
+    pending_review --> draft: reject
+    draft --> published: publisher review bypass
+    published --> draft: unpublish
+    published --> archived: archive
+    archived --> draft: restore
+    draft --> [*]: hard delete
+    pending_review --> [*]: hard delete
+    published --> [*]: hard delete
+    archived --> [*]: hard delete
+
+    note right of published
+      Public delivery includes only published rows.
+      Content entries increment version on transition.
+    end note
+

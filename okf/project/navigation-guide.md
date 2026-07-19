@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "README.md"
   - "package.json"
@@ -209,3 +209,13 @@ Use this guide to choose the shortest evidence path for a common repository task
 - To change authorization, roles, or permissions, use [Authorization Architecture](../security/authorization-architecture.md), [RBAC Model](../security/rbac-model.md), and [Roles and Permissions Catalog](../security/roles-and-permissions-catalog.md).
 - To change tenant access, ownership, or administrative behavior, read [Tenant Access Control](../security/tenant-access-control.md), [Resource Ownership](../security/resource-ownership.md), and [Administrative Access](../security/administrative-access.md).
 - Before security-sensitive work, review [Threat Register](../security/threat-register.md), [Security Risks](../security/security-risks.md), and [Security Testing](../security/security-testing.md).
+
+## Business Rule and Workflow Tasks
+
+- To locate an owning business area, start with the [Domain Catalog](../domain/domain-catalog.md) and then open its domain document.
+- To change validation, quotas, lifecycle permissions, or side effects, find the rule in the [Business Rule Catalog](../domain/business-rule-catalog.md) and verify every listed enforcement layer.
+- To change editorial state, use [State Transitions](../domain/state-transitions.md), [Content Lifecycle](../domain/content-lifecycle.md), and the [Editorial Publication Workflow](../domain/workflows/editorial-publication.md).
+- To change organization membership or ownership, read [Multi-Tenancy Behavior](../domain/multi-tenancy-behavior.md), [Membership and Ownership](../domain/membership-and-ownership.md), and the applicable tenant workflow.
+- To change Page Builder save, validation, publication, or restore behavior, read [Page Builder Rules](../domain/page-builder-rules.md) and both Page Builder workflow documents.
+- Before changing cross-boundary side effects, read [Cross-Module Workflows](../domain/cross-module-workflows.md), [Domain Events](../domain/domain-events.md), [Background Processes](../domain/background-processes.md), and [Domain Risks](../domain/domain-risks.md).
+- Treat rules marked `UNENFORCED_DOCUMENTED_RULE`, `INVARIANT_UNVERIFIED`, or another uncertainty marker as follow-up evidence requirements, not established guarantees.

@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources: ["backend/src/routes", "backend/src/services", "backend/src/middleware/tenant.rs"]
 related_documents: ["database/multi-tenancy.md", "database/lifecycle-and-auditing.md", "database/database-risks.md"]
 related_diagrams: ["database/diagrams/tenant-isolation.mmd"]
@@ -55,3 +55,7 @@ Page snapshots preserve revision history within page-write transactions. `conten
 ## Failure Guidance
 
 Future changes must classify each side effect as database, filesystem, cache, process-local broadcast, webhook/email, or payment-provider work. Define commit order, idempotency key, retry owner, observable failure state, and compensation before altering a cross-boundary flow. Do not move side effects into a transaction without considering lock duration and external failure.
+
+## Phase 8 Workflow Transactions
+
+[Cross-Module Workflows](../domain/cross-module-workflows.md) identifies atomic database sections and post-commit effects for provisioning, membership, ownership transfer, entry/page publication, page snapshots, media processing, webhooks, billing callbacks, and Marketplace commerce. Media files and database rows are not one transaction; webhook dispatch is process-local; provider and database work relies on idempotency and ordering rather than distributed atomicity. See [Domain Risks](../domain/domain-risks.md).

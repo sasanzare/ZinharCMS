@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "frontend/src/router.tsx"
   - "frontend/src/pages"
@@ -235,3 +235,6 @@ Phase 4 selects a feature when current frontend code provides a meaningful user 
 - [Backend Module Catalog](../backend/module-catalog.md)
 - [Frontend Application Map](diagrams/frontend-application-map.mmd)
 
+## Phase 8 Domain Cross-Reference
+
+Frontend features support, but do not authoritatively enforce, the business rules in the [Domain Catalog](../domain/domain-catalog.md). Content, pages, organization members, media, billing, SaaS/beta, plugins, and Marketplace screens expose actions and repeat selected validation. Backend authorization, database constraints, provider state, and side effects remain authoritative. Use the [Business Rule Catalog](../domain/business-rule-catalog.md) to distinguish UI cues from enforced outcomes.

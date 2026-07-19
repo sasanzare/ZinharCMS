@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources: ["backend/migrations/0008_v2_phase_one_organizations.sql", "backend/migrations/0009_v2_phase_three_rls.sql", "backend/migrations", "backend/src/middleware/tenant.rs", "backend/src/services/rls.rs", "backend/src/services/hardening.rs"]
 related_documents: ["database/relationships.md", "database/constraints-and-indexes.md", "architecture/boundaries.md"]
 related_diagrams: ["database/diagrams/tenant-isolation.mmd"]
@@ -88,3 +88,7 @@ Triggers derive `organization_id` for content entries, page versions, media vari
 ## Phase 7 Access-Control Interpretation
 
 [Tenant Access Control](../security/tenant-access-control.md) confirms that normal tenant requests require an active organization and active membership before role checks and tenant SQL context. Global `super_admin` does not bypass this middleware. Explicit `zinhar.rls_bypass` transactions are a separate privileged backend path. Live cross-tenant verification remains `TENANT_ACCESS_UNVERIFIED TAV-01`.
+
+## Phase 8 Tenant Workflows
+
+[Multi-Tenancy Behavior](../domain/multi-tenancy-behavior.md) and [Membership and Ownership](../domain/membership-and-ownership.md) connect tenant middleware/RLS to provisioning, invitations, membership changes, last-owner checks, and ownership transfer. Provisioning and transfer use database transactions; last-owner checks are application-level and not verified under concurrency. Public delivery currently selects an active organization with slug `default`, so host/domain tenant routing remains `TENANT_BEHAVIOR_UNCLEAR DTBU-01`.

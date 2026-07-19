@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "mixed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services"]
 related_documents: ["database/schema-catalog.md", "database/relationships.md", "database/module-data-ownership.md"]
 related_diagrams: ["database/diagrams/database-domain-map.mmd"]
@@ -55,3 +55,7 @@ The catalog groups 51 technical tables into 18 significant domain entities. `Ten
 - Page versions, audit logs, billing events, review events, webhook deliveries, login attempts, and the Marketplace revenue ledger preserve different forms of history; they do not form one universal audit system.
 - Publication is explicit for content entries and pages. Marketplace approval/publication is a separate lifecycle.
 - Shared Rust models cover only part of the schema. Marketplace persistence shapes are primarily local to routes/services (`MMC-02`, `BRU-02`).
+
+## Phase 8 Domain Cross-Reference
+
+The 18 persistence entity groups support ten significant behavioral domains; the mapping is recorded in the [Domain Catalog](../domain/domain-catalog.md). [Domain Invariants](../domain/invariants.md) identifies 31 conditions and states which are database-enforced, application-supported, or unverified. A table or foreign key is persistence evidence, not by itself a complete business workflow.

@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "mixed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources: ["backend/migrations", "backend/src/routes", "backend/src/services"]
 related_documents: ["database/entity-catalog.md", "database/transactions-and-consistency.md", "database/database-risks.md"]
 uncertainty_markers: ["SOFT_DELETE_BEHAVIOR_UNCLEAR SDBU-01", "DATA_LIFECYCLE_UNCLEAR DLU-01", "DATA_LIFECYCLE_UNCLEAR DLU-02", "UNKNOWN U-07"]
@@ -70,3 +70,7 @@ Backup/restore and historical recovery expectations are also unknown (`UNKNOWN U
 ## Security Event Coverage
 
 [Audit and Security Events](../security/audit-and-security-events.md) maps organization audit logs and separate login-attempt records. Authentication lifecycle, generic authorization denials, role assignment, and every RLS bypass are not uniformly represented. Retention and tamper-evidence remain `AUDIT_COVERAGE_UNCLEAR ACU-01`.
+
+## Phase 8 Lifecycle Cross-Reference
+
+[Content Lifecycle](../domain/content-lifecycle.md), [Revisions and Versioning](../domain/revisions-and-versioning.md), and [Deletion and Restoration](../domain/deletion-and-restoration.md) distinguish editorial state, current-row counters, page snapshots, hard deletion, archive/uninstall states, and restore support. [Domain Events](../domain/domain-events.md) maps explicit audit, delivery, provider, cache, broadcast, and notification records. No single event store, retention policy, or universal restore contract exists.

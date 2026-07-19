@@ -1,0 +1,22 @@
+%% title: ZinharCMS Cross-Module Orchestration
+%% sources: backend/src/routes/content.rs; backend/src/routes/pages.rs; backend/src/routes/media.rs; backend/src/routes/organizations.rs; backend/src/services/stripe_billing.rs
+flowchart LR
+    Client["Frontend or external client"] --> API["Axum route handler"]
+    API --> Auth["Auth, tenant, RBAC"]
+    Auth --> Validate["Feature validation and policy services"]
+    Validate --> DB["PostgreSQL transaction or statement"]
+    DB --> RLS["Forced tenant RLS and constraints"]
+    DB --> Audit["Audit record"]
+    DB --> Cache["Redis invalidation or usage"]
+    DB --> Files["Media or Marketplace files"]
+    DB --> Preview["In-process page preview"]
+    DB --> Hooks["Compiled plugin hooks"]
+    DB --> Webhooks["Spawn outbound webhooks"]
+    DB --> Provider["Stripe or email provider"]
+    Billing["Plan and quota service"] --> Validate
+    Market["Marketplace policy, install,<br/>runtime, finance services"] --> Validate
+    Files -.->|"not one resource transaction"| Partial["Partial-failure risk"]
+    Webhooks -.->|"no durable queue/retry"| Partial
+    Provider -.->|"external transaction boundary"| Partial
+    Audit -.->|"sometimes after commit"| Partial
+

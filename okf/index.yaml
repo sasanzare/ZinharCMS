@@ -4,9 +4,9 @@ project:
   repository: "https://github.com/sasanzare/ZinharCMS"
   repository_name: "ZinharCMS"
   knowledge_status: "in_progress"
-  current_phase: 7
+  current_phase: 8
   current_phase_status: "complete"
-  last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+  last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
   last_verified_date: "2026-07-19"
 
 authority:
@@ -57,6 +57,16 @@ entry_points:
       purpose: "Global and organization role plus permission-group navigation"
     - path: "security/security-risks.md"
       purpose: "Prioritized security findings and uncertainty markers"
+    - path: "domain/README.md"
+      purpose: "Phase 8 business rules and domain workflows entry point"
+    - path: "domain/domain-catalog.md"
+      purpose: "Significant domain boundaries, ownership, and source navigation"
+    - path: "domain/business-rule-catalog.md"
+      purpose: "Observed rule conditions, outcomes, enforcement layers, and evidence"
+    - path: "domain/cross-module-workflows.md"
+      purpose: "End-to-end workflow catalog and orchestration boundaries"
+    - path: "domain/domain-risks.md"
+      purpose: "Prioritized business-rule and workflow risks"
     - path: "project/navigation-guide.md"
       purpose: "Short task-oriented navigation guide"
   ai:
@@ -108,6 +118,20 @@ entry_points:
       purpose: "Tenant selection, active membership, RBAC, rate/quota, and RLS boundary"
     - path: "security/threat-register.md"
       purpose: "Threats, existing controls, and residual status"
+    - path: "domain/overview.md"
+      purpose: "Verified business-domain model and evidence boundaries"
+    - path: "domain/domain-catalog.md"
+      purpose: "Ten significant domains and their owning documents"
+    - path: "domain/business-rule-catalog.md"
+      purpose: "Machine-navigable catalog of 50 observed business rules"
+    - path: "domain/invariants.md"
+      purpose: "Database, application, and frontend enforcement map for 31 invariants"
+    - path: "domain/state-transitions.md"
+      purpose: "Editorial transition matrix and other stateful entity catalogs"
+    - path: "domain/cross-module-workflows.md"
+      purpose: "Navigation for 14 end-to-end workflow documents"
+    - path: "domain/domain-risks.md"
+      purpose: "Unverified invariants, orchestration gaps, and test priorities"
     - path: "project/navigation-guide.md"
       purpose: "Task-to-source navigation and AI agent rules"
 
@@ -120,8 +144,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "README.md"
       - "okf-bootstrap/phase-zero-summary.md"
@@ -272,8 +296,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - ".gitignore"
       - "package.json"
@@ -324,8 +348,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "README.md"
       - "backend/migrations"
@@ -369,8 +393,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "README.md"
       - "package.json"
@@ -435,8 +459,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "README.md"
       - "package.json"
@@ -642,8 +666,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/src/routes/mod.rs"
       - "backend/src/middleware/auth.rs"
@@ -819,8 +843,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "observed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/src/main.rs"
       - "backend/src/config.rs"
@@ -932,8 +956,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/src/main.rs"
       - "backend/src/state.rs"
@@ -1327,8 +1351,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "mixed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/src/routes/mod.rs"
       - "backend/src/services/mod.rs"
@@ -1360,8 +1384,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/src/routes"
       - "backend/src/services"
@@ -2319,8 +2343,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/src/routes"
       - "backend/src/services"
@@ -2380,8 +2404,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "backend/Cargo.toml"
       - "backend/src"
@@ -2553,8 +2577,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["frontend/src/router.tsx", "frontend/src/pages", "frontend/src/components", "frontend/src/services/api.ts"]
     related_documents: ["frontend/feature-boundaries.md", "frontend/routing.md", "frontend/testing-map.md"]
     related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
@@ -2681,8 +2705,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["frontend/package.json", "frontend/src/components/DynamicForm.tsx", "frontend/src/pages"]
     related_documents: ["frontend/component-architecture.md", "frontend/loading-errors-and-notifications.md"]
     related_diagrams: ["frontend/diagrams/frontend-state-flow.mmd"]
@@ -2729,8 +2753,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["frontend/src/pages/PagesPage.tsx", "frontend/src/pages/PagesPage.test.tsx", "frontend/src/services/api.ts", "frontend/src/types/api.ts"]
     related_documents: ["frontend/features/pages-and-page-builder.md", "backend/modules/pages-builder-preview.md", "backend/modules/marketplace-runtime-adapters.md"]
     related_diagrams: ["frontend/diagrams/page-builder-flow.mmd"]
@@ -2761,8 +2785,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["frontend/vitest.config.ts", "frontend/src/test/setup.ts", "frontend/src/pages/DashboardPage.test.tsx", "frontend/src/pages/PagesPage.test.tsx", "frontend/src/pages/MarketplacePage.test.tsx"]
     related_documents: ["frontend/feature-catalog.md", "frontend/page-builder.md", "frontend/frontend-risks.md"]
     related_diagrams: ["frontend/diagrams/frontend-application-map.mmd"]
@@ -3189,8 +3213,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "mixed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services"]
     related_documents: ["database/schema-catalog.md", "database/relationships.md", "database/module-data-ownership.md"]
     known_uncertainty_markers: ["ENTITY_OWNERSHIP_UNCLEAR EOU-01", "SOFT_DELETE_BEHAVIOR_UNCLEAR SDBU-01"]
@@ -3264,8 +3288,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/src/middleware/tenant.rs"]
     related_documents: ["database/multi-tenancy.md", "database/lifecycle-and-auditing.md", "database/database-risks.md"]
     known_uncertainty_markers: ["TRANSACTION_BOUNDARY_UNCLEAR TBU-01", "TRANSACTION_BOUNDARY_UNCLEAR TBU-02", "TRANSACTION_BOUNDARY_UNCLEAR TBU-03", "TRANSACTION_BOUNDARY_UNCLEAR TBU-04"]
@@ -3279,8 +3303,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/migrations/0008_v2_phase_one_organizations.sql", "backend/migrations/0009_v2_phase_three_rls.sql", "backend/migrations", "backend/src/middleware/tenant.rs", "backend/src/services/rls.rs"]
     related_documents: ["database/relationships.md", "database/constraints-and-indexes.md", "architecture/boundaries.md"]
     known_uncertainty_markers: ["TENANT_ISOLATION_UNVERIFIED TIV-01", "DOCUMENTATION_CODE_CONFLICT DCC-12", "UNKNOWN U-08"]
@@ -3294,8 +3318,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "mixed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/migrations", "backend/src/routes", "backend/src/services"]
     related_documents: ["database/entity-catalog.md", "database/transactions-and-consistency.md", "database/database-risks.md"]
     known_uncertainty_markers: ["SOFT_DELETE_BEHAVIOR_UNCLEAR SDBU-01", "DATA_LIFECYCLE_UNCLEAR DLU-01", "DATA_LIFECYCLE_UNCLEAR DLU-02"]
@@ -3856,8 +3880,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
     related_documents: ["api/README.md", "api/endpoint-catalog.md"]
     known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
@@ -3991,8 +4015,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
     related_documents: ["api/README.md", "api/endpoint-catalog.md"]
     known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
@@ -4666,8 +4690,8 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-    last_verified_date: "2026-07-18"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
     related_documents: ["api/README.md", "api/endpoint-catalog.md"]
     known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
@@ -4908,7 +4932,7 @@ documents:
     source_of_truth: false
     implementation_view: "observed"
     security_status: "partially_verified"
-    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/services/rbac.rs", "backend/migrations/0001_initial_schema.sql", "backend/migrations/0003_phase_one_core.sql", "backend/migrations/0008_v2_phase_one_organizations.sql", "backend/src/routes/auth.rs"]
     related_documents: ["security/authorization-architecture.md", "security/roles-and-permissions-catalog.md", "security/administrative-access.md"]
@@ -4942,7 +4966,7 @@ documents:
     source_of_truth: false
     implementation_view: "observed"
     security_status: "partially_verified"
-    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/middleware/tenant.rs", "backend/src/services/rls.rs", "backend/migrations/0008_v2_phase_one_organizations.sql", "backend/migrations/0009_v2_phase_three_rls.sql", "backend/src/routes/mod.rs"]
     related_documents: ["security/authorization-architecture.md", "security/resource-ownership.md", "api/tenant-context.md", "database/multi-tenancy.md"]
@@ -4959,7 +4983,7 @@ documents:
     source_of_truth: false
     implementation_view: "observed"
     security_status: "mixed"
-    last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
     last_verified_date: "2026-07-19"
     primary_evidence_paths: ["backend/src/routes/content.rs", "backend/src/routes/pages.rs", "backend/src/routes/comments.rs", "backend/src/routes/organizations.rs", "backend/src/routes/marketplace.rs", "backend/src/routes/marketplace_finance.rs", "backend/src/routes/marketplace_analytics.rs"]
     related_documents: ["security/authorization-architecture.md", "security/tenant-access-control.md", "security/roles-and-permissions-catalog.md"]
@@ -5576,7 +5600,842 @@ documents:
     related_documents: ["security/tenant-access-control.md", "api/tenant-context.md", "database/multi-tenancy.md"]
     known_uncertainty_markers: ["TENANT_ACCESS_UNVERIFIED TAV-01"]
 
+  - id: "domain-background-processes"
+    path: "domain/background-processes.md"
+    title: "Background Processes"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/webhooks.rs", "backend/src/services/media_processing.rs", "backend/src/routes/pages.rs", "backend/src/services/email.rs"]
+    related_documents: ["domain/domain-events.md", "domain/cross-module-workflows.md", "domain/domain-risks.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-business-rule-catalog"
+    path: "domain/business-rule-catalog.md"
+    title: "Business Rule Catalog"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/migrations"]
+    related_documents: ["domain/domain-catalog.md", "domain/invariants.md", "domain/cross-module-workflows.md"]
+    related_diagrams: ["domain/diagrams/domain-map.mmd", "domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-business-rule-testing"
+    path: "domain/business-rule-testing.md"
+    title: "Business Rule Testing"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src", "frontend/src"]
+    related_documents: ["domain/business-rule-catalog.md", "domain/cross-module-workflows.md", "domain/domain-risks.md"]
+
+  - id: "domain-content-lifecycle"
+    path: "domain/content-lifecycle.md"
+    title: "Content Lifecycle"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/content.rs", "backend/src/services/workflow.rs", "backend/src/services/entry_validation.rs"]
+    related_documents: ["domain/business-rule-catalog.md", "domain/publication-workflow.md", "domain/revisions-and-versioning.md"]
+    related_diagrams: ["domain/diagrams/content-lifecycle.mmd"]
+
+  - id: "domain-cross-module-workflows"
+    path: "domain/cross-module-workflows.md"
+    title: "Cross-Module Workflows"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/pages"]
+    related_documents: ["domain/domain-catalog.md", "domain/business-rule-catalog.md", "domain/business-rule-testing.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-deletion-restoration"
+    path: "domain/deletion-and-restoration.md"
+    title: "Deletion and Restoration"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/migrations"]
+    related_documents: ["domain/content-lifecycle.md", "domain/revisions-and-versioning.md", "database/lifecycle-and-auditing.md"]
+    related_diagrams: ["domain/diagrams/content-lifecycle.mmd"]
+
+  - id: "domain-catalog"
+    path: "domain/domain-catalog.md"
+    title: "Domain Catalog"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/migrations"]
+    related_documents: ["domain/README.md", "domain/overview.md", "domain/business-rule-catalog.md"]
+    related_diagrams: ["domain/diagrams/domain-map.mmd"]
+
+  - id: "domain-events"
+    path: "domain/domain-events.md"
+    title: "Domain and Application Events"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/webhooks.rs", "backend/src/services/audit.rs", "backend/src/plugins", "backend/src/routes/pages.rs", "backend/src/services/stripe_billing.rs"]
+    related_documents: ["domain/background-processes.md", "domain/publication-workflow.md", "security/audit-and-security-events.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-risks"
+    path: "domain/domain-risks.md"
+    title: "Domain Risk Register"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/migrations", "frontend/src"]
+    related_documents: ["domain/business-rule-catalog.md", "domain/invariants.md", "domain/business-rule-testing.md", "architecture/architecture-risks.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-billing-quotas"
+    path: "domain/domains/billing-and-quotas.md"
+    title: "Billing and Quotas Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-BILLING"
+    domain_status: "IMPLEMENTED"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/billing.rs", "backend/src/services/quota.rs", "backend/src/services/stripe_billing.rs", "backend/migrations/0010_v2_phase_five_billing_quota.sql", "backend/migrations/0011_v2_phase_six_stripe_billing.sql"]
+    related_documents: ["domain/domain-catalog.md", "domain/workflows/billing-subscription.md", "database/entities/plans-subscriptions-and-usage.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-content-editorial"
+    path: "domain/domains/content-and-editorial.md"
+    title: "Content and Editorial Workflow Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-CONTENT"
+    domain_status: "IMPLEMENTED"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/content.rs", "backend/src/routes/comments.rs", "backend/src/services/entry_validation.rs", "backend/src/services/workflow.rs", "backend/migrations/0001_initial_schema.sql", "backend/migrations/0006_phase_six_workflow_collaboration.sql"]
+    related_documents: ["domain/domain-catalog.md", "domain/content-lifecycle.md", "domain/publication-workflow.md"]
+    related_diagrams: ["domain/diagrams/content-lifecycle.mmd", "domain/diagrams/publication-workflow.mmd"]
+
+  - id: "domain-delivery-settings-webhooks"
+    path: "domain/domains/delivery-settings-and-webhooks.md"
+    title: "Delivery, Settings, and Webhooks Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-DELIVERY"
+    domain_status: "PARTIALLY_IMPLEMENTED"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/delivery.rs", "backend/src/routes/webhooks.rs", "backend/src/services/cache.rs", "backend/src/services/webhooks.rs", "backend/migrations/0005_phase_five_delivery_api.sql"]
+    related_documents: ["domain/domain-catalog.md", "domain/publication-workflow.md", "domain/settings-and-configuration-rules.md"]
+    related_diagrams: ["domain/diagrams/publication-workflow.mmd"]
+
+  - id: "domain-identity-access"
+    path: "domain/domains/identity-and-access.md"
+    title: "Identity and Access Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-IDENTITY"
+    domain_status: "IMPLEMENTED"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/auth.rs", "backend/src/middleware/auth.rs", "backend/src/services/jwt.rs", "backend/src/services/password.rs", "backend/migrations/0001_initial_schema.sql"]
+    related_documents: ["domain/domain-catalog.md", "security/authentication-architecture.md", "security/rbac-model.md"]
+
+  - id: "domain-marketplace"
+    path: "domain/domains/marketplace.md"
+    title: "Marketplace Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-MARKETPLACE"
+    domain_status: "PARTIALLY_IMPLEMENTED"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs", "backend/src/routes/marketplace_runtime.rs", "backend/src/routes/marketplace_adapters.rs", "backend/src/routes/marketplace_finance.rs", "backend/src/services/marketplace_domain.rs", "backend/src/services/marketplace_installation.rs", "backend/src/services/marketplace_runtime.rs", "backend/migrations/0015_v3_phase_one_marketplace_foundation.sql"]
+    related_documents: ["domain/domain-catalog.md", "domain/workflows/marketplace-product-publication.md", "domain/workflows/marketplace-installation-lifecycle.md", "domain/workflows/marketplace-purchase-and-entitlement.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-media-library"
+    path: "domain/domains/media-library.md"
+    title: "Media Library Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-MEDIA"
+    domain_status: "IMPLEMENTED"
+    boundary_status: "OBSERVED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/media.rs", "backend/src/services/media_processing.rs", "backend/migrations/0001_initial_schema.sql", "frontend/src/pages/MediaPage.tsx"]
+    related_documents: ["domain/domain-catalog.md", "domain/workflows/media-upload-and-processing.md", "security/resource-ownership.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-organizations-membership"
+    path: "domain/domains/organizations-and-membership.md"
+    title: "Organizations and Membership Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-TENANT"
+    domain_status: "IMPLEMENTED"
+    boundary_status: "EXPLICIT"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/middleware/tenant.rs", "backend/src/services/rls.rs", "backend/src/services/rbac.rs", "backend/migrations/0008_v2_phase_one_organizations.sql"]
+    related_documents: ["domain/domain-catalog.md", "domain/multi-tenancy-behavior.md", "domain/membership-and-ownership.md"]
+    related_diagrams: ["domain/diagrams/tenant-membership-workflow.mmd"]
+
+  - id: "domain-pages-page-builder"
+    path: "domain/domains/pages-and-page-builder.md"
+    title: "Pages and Page Builder Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-PAGE"
+    domain_status: "IMPLEMENTED"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/pages.rs", "frontend/src/pages/PagesPage.tsx", "backend/migrations/0001_initial_schema.sql", "backend/migrations/0004_phase_two_page_builder.sql"]
+    related_documents: ["domain/domain-catalog.md", "domain/page-builder-rules.md", "frontend/page-builder.md"]
+    related_diagrams: ["domain/diagrams/page-builder-workflow.mmd"]
+
+  - id: "domain-plugins-components"
+    path: "domain/domains/plugins-and-components.md"
+    title: "Plugins and Components Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-PLUGIN"
+    domain_status: "PARTIALLY_IMPLEMENTED"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins", "backend/src/routes/plugins.rs", "backend/src/routes/pages.rs", "backend/src/services/marketplace_adapters.rs", "backend/migrations/0006_phase_six_workflow_collaboration.sql"]
+    related_documents: ["domain/domain-catalog.md", "domain/page-builder-rules.md", "security/permissions/marketplace-runtime-capabilities.md"]
+    related_diagrams: ["domain/diagrams/page-builder-workflow.mmd"]
+
+  - id: "domain-saas-operations-beta"
+    path: "domain/domains/saas-operations-and-beta.md"
+    title: "SaaS Operations and Beta Domain"
+    category: "domain-detail"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    domain_id: "DOM-SAAS"
+    domain_status: "PARTIALLY_IMPLEMENTED"
+    boundary_status: "OVERLAPPING"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/routes/beta.rs", "backend/src/services/audit.rs", "backend/src/services/email.rs", "backend/migrations/0012_v2_phase_seven_saas_ops.sql", "backend/migrations/0014_v2_phase_nine_beta_release.sql"]
+    related_documents: ["domain/domain-catalog.md", "domain/workflows/beta-feedback-and-readiness.md", "backend/modules/beta-release-operations.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-invariants"
+    path: "domain/invariants.md"
+    title: "Domain Invariants"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/migrations", "backend/src/routes", "backend/src/services"]
+    related_documents: ["domain/business-rule-catalog.md", "domain/state-transitions.md", "database/constraints-and-indexes.md"]
+    related_diagrams: ["domain/diagrams/domain-map.mmd"]
+
+  - id: "domain-membership-ownership"
+    path: "domain/membership-and-ownership.md"
+    title: "Membership and Ownership"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/services/rbac.rs", "backend/migrations/0008_v2_phase_one_organizations.sql"]
+    related_documents: ["domain/multi-tenancy-behavior.md", "security/resource-ownership.md", "security/roles-and-permissions-catalog.md"]
+    related_diagrams: ["domain/diagrams/tenant-membership-workflow.mmd"]
+
+  - id: "domain-multi-tenancy-behavior"
+    path: "domain/multi-tenancy-behavior.md"
+    title: "Multi-Tenancy Behavior"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/middleware/tenant.rs", "backend/src/services/rls.rs", "backend/src/services/quota.rs"]
+    related_documents: ["domain/membership-and-ownership.md", "security/tenant-access-control.md", "database/multi-tenancy.md"]
+    related_diagrams: ["domain/diagrams/tenant-membership-workflow.mmd"]
+
+  - id: "domain-overview"
+    path: "domain/overview.md"
+    title: "Domain Overview"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/migrations"]
+    related_documents: ["domain/README.md", "domain/domain-catalog.md", "domain/business-rule-catalog.md"]
+    related_diagrams: ["domain/diagrams/domain-map.mmd"]
+
+  - id: "domain-page-builder-rules"
+    path: "domain/page-builder-rules.md"
+    title: "Page Builder Rules"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/pages.rs", "frontend/src/pages/PagesPage.tsx", "frontend/src/pages/PagesPage.test.tsx"]
+    related_documents: ["frontend/page-builder.md", "domain/domains/pages-and-page-builder.md", "domain/workflows/page-builder-save-and-version.md"]
+    related_diagrams: ["domain/diagrams/page-builder-workflow.mmd"]
+
+  - id: "domain-publication-workflow"
+    path: "domain/publication-workflow.md"
+    title: "Publication Workflow"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/workflow.rs", "backend/src/routes/content.rs", "backend/src/routes/pages.rs", "backend/src/routes/delivery.rs"]
+    related_documents: ["domain/state-transitions.md", "domain/content-lifecycle.md", "domain/workflows/editorial-publication.md"]
+    related_diagrams: ["domain/diagrams/publication-workflow.mmd"]
+
+  - id: "domain-readme"
+    path: "domain/README.md"
+    title: "Business Rules and Domain Workflows"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/migrations", "frontend/src"]
+    related_documents: ["backend/services-and-domain.md", "database/entity-catalog.md", "api/endpoint-catalog.md", "security/README.md"]
+    related_diagrams: ["domain/diagrams/domain-map.mmd", "domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "domain-revisions-versioning"
+    path: "domain/revisions-and-versioning.md"
+    title: "Revisions and Versioning"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/content.rs", "backend/src/routes/pages.rs", "backend/migrations/0001_initial_schema.sql"]
+    related_documents: ["domain/content-lifecycle.md", "domain/state-transitions.md", "domain/workflows/page-version-restoration.md"]
+    related_diagrams: ["domain/diagrams/page-builder-workflow.mmd"]
+
+  - id: "domain-settings-configuration-rules"
+    path: "domain/settings-and-configuration-rules.md"
+    title: "Settings and Configuration Rules"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/routes/delivery.rs", "backend/src/routes/webhooks.rs", "backend/src/routes/plugins.rs", "frontend/src/pages/SettingsPage.tsx"]
+    related_documents: ["domain/domains/delivery-settings-and-webhooks.md", "backend/configuration-and-state.md", "frontend/features/settings-and-webhooks.md"]
+
+  - id: "domain-state-transitions"
+    path: "domain/state-transitions.md"
+    title: "State Transitions"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/workflow.rs", "backend/src/routes", "backend/migrations"]
+    related_documents: ["domain/content-lifecycle.md", "domain/publication-workflow.md", "domain/business-rule-catalog.md"]
+    related_diagrams: ["domain/diagrams/content-lifecycle.mmd", "domain/diagrams/publication-workflow.mmd", "domain/diagrams/tenant-membership-workflow.mmd"]
+
+  - id: "domain-validation-rules"
+    path: "domain/validation-rules.md"
+    title: "Validation Rules"
+    category: "domain"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/entry_validation.rs", "backend/src/routes", "backend/migrations", "frontend/src"]
+    related_documents: ["domain/business-rule-catalog.md", "domain/page-builder-rules.md", "frontend/forms-and-validation.md"]
+
+  - id: "workflow-beta-feedback-readiness"
+    path: "domain/workflows/beta-feedback-and-readiness.md"
+    title: "Beta Feedback and Readiness Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-BETA"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/beta.rs", "backend/migrations/0014_v2_phase_nine_beta_release.sql"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domains/saas-operations-and-beta.md", "api/endpoints/beta-release-operations.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "workflow-billing-subscription"
+    path: "domain/workflows/billing-subscription.md"
+    title: "Billing Subscription Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-BILLING"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/billing.rs", "backend/src/services/quota.rs", "backend/src/services/stripe_billing.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domains/billing-and-quotas.md", "api/endpoints/billing-subscription-and-usage.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "workflow-content-entry-save"
+    path: "domain/workflows/content-entry-save.md"
+    title: "Content Entry Save Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-CONTENT-SAVE"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/content.rs", "backend/src/services/entry_validation.rs", "backend/src/services/security.rs", "backend/src/plugins/mod.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/content-lifecycle.md", "domain/validation-rules.md"]
+    related_diagrams: ["domain/diagrams/content-lifecycle.mmd"]
+
+  - id: "workflow-editorial-publication"
+    path: "domain/workflows/editorial-publication.md"
+    title: "Editorial Publication Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-PUBLISH"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/workflow.rs", "backend/src/routes/content.rs", "backend/src/routes/pages.rs", "backend/src/services/webhooks.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/publication-workflow.md", "domain/state-transitions.md"]
+    related_diagrams: ["domain/diagrams/publication-workflow.mmd"]
+
+  - id: "workflow-marketplace-installation-lifecycle"
+    path: "domain/workflows/marketplace-installation-lifecycle.md"
+    title: "Marketplace Installation Lifecycle Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-MARKET-INSTALL"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs", "backend/src/routes/marketplace_runtime.rs", "backend/src/services/marketplace_installation.rs", "backend/src/services/marketplace_runtime.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domains/marketplace.md", "security/permissions/marketplace-management.md"]
+    related_diagrams: ["domain/diagrams/page-builder-workflow.mmd"]
+
+  - id: "workflow-marketplace-product-publication"
+    path: "domain/workflows/marketplace-product-publication.md"
+    title: "Marketplace Product Publication Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-MARKET-PUBLISH"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs", "backend/src/services/marketplace_submission.rs", "backend/src/services/marketplace_validation.rs", "backend/src/services/marketplace_review.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domains/marketplace.md", "backend/modules/marketplace-creator-review.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "workflow-marketplace-purchase-entitlement"
+    path: "domain/workflows/marketplace-purchase-and-entitlement.md"
+    title: "Marketplace Purchase and Entitlement Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-MARKET-PURCHASE"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace_finance.rs", "backend/src/services/marketplace_finance.rs", "backend/src/services/stripe_billing.rs", "backend/migrations/0022_v3_phase_nine_marketplace_finance.sql"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domains/marketplace.md", "domain/domains/billing-and-quotas.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "workflow-media-upload-processing"
+    path: "domain/workflows/media-upload-and-processing.md"
+    title: "Media Upload and Processing Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-MEDIA-UPLOAD"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/media.rs", "backend/src/services/media_processing.rs", "backend/src/services/quota.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domains/media-library.md", "domain/deletion-and-restoration.md"]
+    related_diagrams: ["domain/diagrams/cross-module-orchestration.mmd"]
+
+  - id: "workflow-organization-ownership-transfer"
+    path: "domain/workflows/organization-ownership-transfer.md"
+    title: "Organization Ownership Transfer Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-OWNERSHIP"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/membership-and-ownership.md", "security/resource-ownership.md"]
+    related_diagrams: ["domain/diagrams/tenant-membership-workflow.mmd"]
+
+  - id: "workflow-organization-provisioning"
+    path: "domain/workflows/organization-provisioning.md"
+    title: "Organization Provisioning Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-ORG-PROVISION"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/services/quota.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domains/organizations-and-membership.md", "domain/multi-tenancy-behavior.md"]
+    related_diagrams: ["domain/diagrams/tenant-membership-workflow.mmd"]
+
+  - id: "workflow-page-builder-save-version"
+    path: "domain/workflows/page-builder-save-and-version.md"
+    title: "Page Builder Save and Version Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-PAGE-SAVE"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/pages.rs", "frontend/src/pages/PagesPage.tsx"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/page-builder-rules.md", "frontend/page-builder.md"]
+    related_diagrams: ["domain/diagrams/page-builder-workflow.mmd"]
+
+  - id: "workflow-page-version-restoration"
+    path: "domain/workflows/page-version-restoration.md"
+    title: "Page Version Restoration Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-PAGE-RESTORE"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/pages.rs", "frontend/src/pages/PagesPage.tsx"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/revisions-and-versioning.md", "domain/page-builder-rules.md"]
+    related_diagrams: ["domain/diagrams/page-builder-workflow.mmd"]
+
+  - id: "workflow-publication-webhook-delivery"
+    path: "domain/workflows/publication-webhook-delivery.md"
+    title: "Publication Webhook Delivery Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-WEBHOOK"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/webhooks.rs", "backend/src/routes/webhooks.rs", "backend/src/routes/content.rs", "backend/src/routes/pages.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domain-events.md", "domain/background-processes.md"]
+    related_diagrams: ["domain/diagrams/publication-workflow.mmd"]
+
+  - id: "workflow-tenant-invitation-membership"
+    path: "domain/workflows/tenant-invitation-and-membership.md"
+    title: "Tenant Invitation and Membership Workflow"
+    category: "domain-workflow"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    workflow_id: "WF-MEMBERSHIP"
+    implementation_status: "IMPLEMENTED"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/services/email.rs", "backend/src/services/quota.rs"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/membership-and-ownership.md", "security/tenant-access-control.md"]
+    related_diagrams: ["domain/diagrams/tenant-membership-workflow.mmd"]
+
+  - id: "domain-diagram-domain-map"
+    path: "domain/diagrams/domain-map.mmd"
+    title: "Domain Map"
+    category: "domain-diagram"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "backend/migrations"]
+    related_documents: ["domain/README.md", "domain/domain-catalog.md"]
+
+  - id: "domain-diagram-content-lifecycle"
+    path: "domain/diagrams/content-lifecycle.mmd"
+    title: "Content and Page Lifecycle"
+    category: "domain-diagram"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/workflow.rs", "backend/src/routes/content.rs", "backend/src/routes/pages.rs"]
+    related_documents: ["domain/content-lifecycle.md", "domain/state-transitions.md"]
+
+  - id: "domain-diagram-publication-workflow"
+    path: "domain/diagrams/publication-workflow.mmd"
+    title: "Publication Workflow"
+    category: "domain-diagram"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/workflow.rs", "backend/src/routes/content.rs", "backend/src/routes/pages.rs", "backend/src/services/webhooks.rs"]
+    related_documents: ["domain/publication-workflow.md", "domain/workflows/editorial-publication.md"]
+
+  - id: "domain-diagram-tenant-membership-workflow"
+    path: "domain/diagrams/tenant-membership-workflow.mmd"
+    title: "Tenant Membership Workflow"
+    category: "domain-diagram"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/organizations.rs", "backend/src/middleware/tenant.rs", "backend/src/services/rls.rs"]
+    related_documents: ["domain/membership-and-ownership.md", "domain/workflows/tenant-invitation-and-membership.md"]
+
+  - id: "domain-diagram-page-builder-workflow"
+    path: "domain/diagrams/page-builder-workflow.mmd"
+    title: "Page Builder Workflow"
+    category: "domain-diagram"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/pages.rs", "frontend/src/pages/PagesPage.tsx", "backend/src/services/marketplace_runtime.rs"]
+    related_documents: ["domain/page-builder-rules.md", "domain/workflows/page-builder-save-and-version.md"]
+
+  - id: "domain-diagram-cross-module-orchestration"
+    path: "domain/diagrams/cross-module-orchestration.mmd"
+    title: "Cross-Module Orchestration"
+    category: "domain-diagram"
+    status: "current"
+    phase: 8
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services"]
+    related_documents: ["domain/cross-module-workflows.md", "domain/domain-events.md", "domain/background-processes.md"]
+
+
 uncertainty_register:
+  domain_phase_eight:
+    - id: "WORKFLOW_UNCLEAR DWU-01"
+      summary: "Public settings and navigation have persisted delivery reads but no complete authenticated management workflow was found"
+    - id: "STATE_TRANSITION_UNCLEAR DSTU-01"
+      summary: "Several non-editorial statuses validate destination values without one verified allowed-from/to transition graph"
+    - id: "INVARIANT_UNVERIFIED DIU-01"
+      summary: "Same-tenant parent-child coherence is not universally proven by composite database constraints"
+    - id: "INVARIANT_UNVERIFIED DIU-02"
+      summary: "Organization owner_id and active owner membership alignment is application-maintained rather than database-enforced"
+    - id: "INVARIANT_UNVERIFIED DIU-03"
+      summary: "Media database rows and filesystem objects do not share an atomic transaction"
+    - id: "OWNERSHIP_RULE_UNCLEAR DOU-01"
+      summary: "Last-owner checks and subsequent membership mutations are not verified under concurrent requests"
+    - id: "TENANT_BEHAVIOR_UNCLEAR DTBU-01"
+      summary: "Public delivery resolves the active default organization while complete custom-domain tenant routing remains unverified"
+    - id: "PUBLICATION_BEHAVIOR_UNCLEAR DPBU-01"
+      summary: "Publication commits can succeed independently of cache, plugin, broadcast, and webhook side effects"
+    - id: "REVISION_BEHAVIOR_UNCLEAR DRVU-01"
+      summary: "Content entry version is a mutation counter without retrievable immutable entry snapshots"
+    - id: "REVISION_BEHAVIOR_UNCLEAR DRVU-02"
+      summary: "Page status transitions do not create immutable snapshots and snapshot retention is unspecified"
+    - id: "DELETION_BEHAVIOR_UNCLEAR DDBU-01"
+      summary: "Hard deletion, archival, uninstall, and restore behavior varies by entity without one platform lifecycle policy"
+    - id: "VALIDATION_RULE_UNCLEAR DVU-01"
+      summary: "Frontend dynamic content controls do not reproduce every backend schema and reference rule"
+    - id: "VALIDATION_RULE_UNCLEAR DVU-02"
+      summary: "Page Builder validates document structure but does not validate property values against every component props schema"
+    - id: "CROSS_MODULE_ORCHESTRATION_UNCLEAR DCMOU-01"
+      summary: "Database, filesystem, cache, email, webhook, broadcast, and provider effects do not share uniform completion semantics"
+    - id: "BUSINESS_RULE_UNVERIFIED DBRU-01"
+      summary: "Repository code establishes current thresholds and selected status treatment but generally not their product rationale"
+    - id: "DOCUMENTATION_CODE_CONFLICT DDCC-01"
+      summary: "The shared PageStatus model omits pending_review although migrations and page handlers support it"
+    - id: "IMPLEMENTATION_STATUS_UNCLEAR DISU-01"
+      summary: "Stored domain, alert, and beta-readiness data does not by itself prove complete operational or launch workflows"
+
   security_phase_seven:
     - id: "AUTHENTICATION_FLOW_UNCLEAR AFU-01"
       summary: "Account verification, recovery, MFA, and production bootstrap intent are not established"
@@ -5986,12 +6845,12 @@ current_sections:
     title: "Authentication, Authorization, and Security"
     status: "current"
     completed_phase: 7
+  - id: "business-and-tenancy"
+    title: "Business Rules and Domain Workflows"
+    status: "current"
+    completed_phase: 8
 
 planned_sections:
-  - id: "business-and-tenancy"
-    title: "Business Rules and Multi-Tenancy"
-    status: "planned"
-    target_phase: 8
   - id: "plugins-marketplace-extensibility"
     title: "Plugins, Marketplace, and Extensibility"
     status: "planned"

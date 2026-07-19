@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
-last_verified_date: "2026-07-17"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes"
   - "backend/src/services"
@@ -104,3 +104,6 @@ Service-level unit tests are strongest in Marketplace policy/validation/readines
 
 When changing a rule, begin at the owning [module document](modules/), then search both its route and service files plus related migrations and tests. Do not assume the service module is the only rule owner. If a new shared contract would be imported by routes and services, place it outside a route module and update the boundary/dependency maps.
 
+## Phase 8 Rule Ownership Cross-Reference
+
+The [Business Rule Catalog](../domain/business-rule-catalog.md) records rule IDs, triggers, conditions, outcomes, enforcement layers, and evidence. Rules remain distributed: route handlers coordinate transactions and side effects, services own reusable policy and provider logic, migrations enforce durable constraints, and the frontend repeats selected validation and action availability. Use the owning [domain document](../domain/domain-catalog.md) and [workflow](../domain/cross-module-workflows.md) before moving a rule between layers.

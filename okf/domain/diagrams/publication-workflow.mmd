@@ -1,0 +1,20 @@
+%% title: ZinharCMS Editorial Publication Workflow
+%% sources: backend/src/services/workflow.rs; backend/src/routes/content.rs; backend/src/routes/pages.rs; backend/src/services/webhooks.rs
+flowchart TD
+    Actor["Tenant writer or publisher"] --> Auth{"Authenticated active member?"}
+    Auth -->|"No"| Denied["Reject request"]
+    Auth -->|"Yes"| Role{"Required organization role?"}
+    Role -->|"No"| Denied
+    Role -->|"Yes"| State{"Allowed current-to-next transition?"}
+    State -->|"No"| Invalid["Validation error"]
+    State -->|"Yes"| Persist["Update status and published_at<br/>increment entry version"]
+    Persist --> Cache["Best-effort Redis invalidation"]
+    Persist --> Preview["Page preview broadcast"]
+    Persist --> Plugin["Entry after-publish plugin"]
+    Persist --> Webhook["Spawn signed webhook delivery"]
+    Cache --> Public["Public delivery reads published row"]
+    Preview -.->|"page only"| Complete["Return transitioned entity"]
+    Plugin -.->|"entry publish only"| Complete
+    Webhook -.->|"delivery completes later"| DeliveryLog["Persist delivered or failed attempt"]
+    Persist --> Complete
+

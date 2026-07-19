@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "README.md"
   - "package.json"
@@ -451,3 +451,17 @@ The current OKF documents preserve `DCC-01` through `DCC-10` from the Phase Zero
 | `frontend/src/services/api.ts`, `stores/useAppStore.ts`, access/Marketplace components | Browser token storage, request construction, tenant selection, and frontend-only role cues |
 
 The [Security README](../security/README.md) organizes these sources without superseding them. Environment templates were reviewed by variable name; no secret value is reproduced.
+
+## Phase 8 Business Rule and Workflow Evidence
+
+| Source group | Business behavior established |
+| --- | --- |
+| `backend/src/services/workflow.rs`, content/page routes | Editorial transition matrix, bypass permission, version changes, publication side effects, and restore behavior |
+| `backend/src/routes/organizations.rs`, `backend/src/services/organization.rs` | Provisioning, invitations, active membership, last-owner checks, and ownership transfer |
+| `backend/src/routes/media.rs`, media services | Upload validation, quota checks, file/database ordering, image variants, and deletion behavior |
+| `backend/src/routes/webhooks.rs`, `backend/src/services/webhook.rs` | Event selection, URL/secret validation, HMAC delivery, timeout, and delivery records |
+| billing, Stripe, quota, SaaS, and beta routes/services | Subscription state, provider idempotency, quota accounting, operational settings, and beta evidence |
+| plugin and Marketplace routes/services plus migrations `0020`-`0025` | Built-in plugin behavior, artifact immutability, review gates, installation permissions, purchase entitlements, and finance limits |
+| `backend/migrations`, frontend pages/components/services/types | Persistence invariants, UI-supported actions, validation duplication, and test evidence |
+
+The [Domain Catalog](../domain/domain-catalog.md) and [Business Rule Catalog](../domain/business-rule-catalog.md) organize these sources. They do not supersede code, migrations, or tests.

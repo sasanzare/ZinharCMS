@@ -1,0 +1,33 @@
+%% title: ZinharCMS Verified Domain Map
+%% sources: backend/src/routes; backend/src/services; backend/migrations; frontend/src/pages
+flowchart LR
+    Identity["DOM-IDENTITY<br/>Users, tokens, global roles"]
+    Tenant["DOM-TENANT<br/>Organizations, members, invitations"]
+    Content["DOM-CONTENT<br/>Content types, entries, comments"]
+    Page["DOM-PAGE<br/>Pages, versions, Page Builder"]
+    Media["DOM-MEDIA<br/>Media and variants"]
+    Delivery["DOM-DELIVERY<br/>Public delivery, settings, webhooks"]
+    Billing["DOM-BILLING<br/>Plans, subscriptions, usage"]
+    SaaS["DOM-SAAS<br/>Operations and beta"]
+    Plugin["DOM-PLUGIN<br/>CMS plugins and components"]
+    Market["DOM-MARKETPLACE<br/>Catalog, install, runtime, finance"]
+
+    Identity -->|"authenticates"| Tenant
+    Tenant -->|"scopes"| Content
+    Tenant -->|"scopes"| Page
+    Tenant -->|"scopes"| Media
+    Tenant -->|"scopes"| Delivery
+    Tenant -->|"owns subscription"| Billing
+    Tenant -->|"scopes operations"| SaaS
+    Tenant -->|"scopes installations"| Market
+    Content -->|"publishes to"| Delivery
+    Page -->|"publishes to"| Delivery
+    Plugin -->|"before-save hook"| Content
+    Plugin -->|"component vocabulary"| Page
+    Billing -->|"enforces quotas"| Content
+    Billing -->|"enforces quotas"| Page
+    Billing -->|"enforces quotas"| Media
+    Billing -->|"processes purchases"| Market
+    Market -->|"host adapters"| Page
+    Delivery -->|"failure signals"| SaaS
+

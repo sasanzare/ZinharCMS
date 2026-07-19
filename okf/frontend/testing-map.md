@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "frontend/package.json"
   - "frontend/vitest.config.ts"
@@ -123,3 +123,7 @@ The repository-defined frontend commands are `npm run lint`, `npm run typecheck`
 ## Security Test Interpretation
 
 Frontend authentication and Marketplace role/permission tests demonstrate rendering and client-call behavior only. They do not prove bearer verification, RBAC denial, ownership, tenant isolation, RLS, or cookie policy. Phase 7 tracks the missing cross-boundary evidence as `SECURITY_TEST_COVERAGE_UNCLEAR STCU-01`.
+
+## Phase 8 Workflow Test Interpretation
+
+Frontend tests demonstrate visible actions, validation messages, and client-call wiring for selected Page Builder, Marketplace, billing, and operational paths. They do not prove persisted invariants, transactional rollback, cache invalidation, file cleanup, webhook delivery, provider ordering, or cross-tenant denial. [Business Rule Testing](../domain/business-rule-testing.md) lists the required backend and end-to-end complements.

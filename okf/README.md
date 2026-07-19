@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "README.md"
   - "okf-bootstrap/phase-zero-summary.md"
@@ -44,6 +44,10 @@ related_documents:
   - "security/README.md"
   - "security/roles-and-permissions-catalog.md"
   - "security/security-risks.md"
+  - "domain/README.md"
+  - "domain/domain-catalog.md"
+  - "domain/business-rule-catalog.md"
+  - "domain/domain-risks.md"
 uncertainty_markers:
   - "UNKNOWN"
   - "NEEDS_OWNER_CONFIRMATION"
@@ -65,6 +69,17 @@ uncertainty_markers:
   - "DUPLICATED_CONTRACT"
   - "DEAD_OR_UNUSED_CODE_UNCONFIRMED"
   - "UI_BEHAVIOR_UNVERIFIED"
+  - "BUSINESS_RULE_UNVERIFIED"
+  - "INVARIANT_UNVERIFIED"
+  - "STATE_TRANSITION_UNCLEAR"
+  - "WORKFLOW_UNCLEAR"
+  - "TENANT_BEHAVIOR_UNCLEAR"
+  - "OWNERSHIP_RULE_UNCLEAR"
+  - "PUBLICATION_BEHAVIOR_UNCLEAR"
+  - "REVISION_BEHAVIOR_UNCLEAR"
+  - "DELETION_BEHAVIOR_UNCLEAR"
+  - "VALIDATION_RULE_UNCLEAR"
+  - "CROSS_MODULE_ORCHESTRATION_UNCLEAR"
   - "OPENAPI_IMPLEMENTATION_CONFLICT"
   - "REQUEST_CONTRACT_UNCLEAR"
   - "RESPONSE_CONTRACT_UNCLEAR"
@@ -85,6 +100,8 @@ The okf directory is the organized knowledge and navigation layer for ZinharCMS.
 > Source code remains the primary source of truth for implemented behavior. OKF documents explain project context, structure, decisions, responsibilities, and verified relationships.
 
 Phase 7 adds the verified [Authentication, Authorization, and Security Architecture](security/README.md): authentication and token flows, two-layer RBAC, 11 role documents, eight permission groups, tenant and ownership controls, browser/configuration/audit boundaries, threats, risks, tests, and six diagrams.
+
+Phase 8 adds the verified [Business Rules and Domain Workflows](domain/README.md): ten domain boundaries, 50 observed business rules, 31 invariants, 14 workflow documents, state-transition analysis, cross-module orchestration, risks, testing guidance, and six diagrams.
 
 OKF does not replace repository README files, API specifications, tests, source-code comments, database migrations, Architecture Decision Records, or existing diagrams. It connects those sources and explains how their authority differs.
 
@@ -162,6 +179,17 @@ The cumulative ../HANDOFF.md file is operational recovery history, not canonical
 | DUPLICATED_CONTRACT | The same contract is maintained independently in more than one source area |
 | DEAD_OR_UNUSED_CODE_UNCONFIRMED | Usage was not found, but removal safety or dead-code status is not proven |
 | UI_BEHAVIOR_UNVERIFIED | Browser, responsive, accessibility, direction, or visual behavior was not executed |
+| BUSINESS_RULE_UNVERIFIED | Current implementation is visible, but its product rationale or intended policy is not confirmed |
+| INVARIANT_UNVERIFIED | A candidate invariant is supported by some layers but lacks complete enforcement or runtime proof |
+| STATE_TRANSITION_UNCLEAR | Allowed values are known, but the complete allowed-from/to graph is not established |
+| WORKFLOW_UNCLEAR | Stored state or partial handlers exist without a complete actor-to-outcome workflow |
+| TENANT_BEHAVIOR_UNCLEAR | Tenant selection, propagation, or lifecycle behavior is incomplete or unverified |
+| OWNERSHIP_RULE_UNCLEAR | Ownership behavior is application-maintained, distributed, or unverified under concurrency |
+| PUBLICATION_BEHAVIOR_UNCLEAR | Publication state or its post-commit effects lack a complete guarantee |
+| REVISION_BEHAVIOR_UNCLEAR | Version counters, snapshots, retention, or restoration semantics are incomplete |
+| DELETION_BEHAVIOR_UNCLEAR | Delete, cascade, archive, cleanup, retention, or restoration semantics are incomplete |
+| VALIDATION_RULE_UNCLEAR | Validation ownership, parity, or semantic coverage is incomplete across layers |
+| CROSS_MODULE_ORCHESTRATION_UNCLEAR | Transactional and external side effects do not have one verified completion contract |
 
 Never remove or weaken a marker without stronger evidence or an explicit owner decision.
 
@@ -228,7 +256,7 @@ Use the [Route Group Catalog](api/route-group-catalog.md) for source-module work
 
 ## Using the Index
 
-Start with [index.yaml](index.yaml). Its documents list records every current Phase 1 through Phase 6 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
+Start with [index.yaml](index.yaml). Its documents list records every current Phase 1 through Phase 8 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
 
 Paths in index.yaml are relative to the okf directory unless a field explicitly identifies a repository-relative evidence path.
 
@@ -241,10 +269,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 5. Read the [Frontend Overview](frontend/overview.md) and owning [feature document](frontend/feature-catalog.md) before changing frontend behavior.
 6. Read the [Database Overview](database/overview.md), schema catalog, and owning entity document before changing persistence.
 7. Read the [API Overview](api/overview.md), exact endpoint entry, and owning route-group/family document before changing a transport contract.
-8. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
-9. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
-10. Verify behavior against current code, migrations, configuration, and tests.
-11. Record conflicts instead of silently treating a historical document as current.
+8. Read the [Domain Overview](domain/overview.md), owning domain document, business-rule catalog, and workflow document before changing business behavior.
+9. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
+10. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
+11. Verify behavior against current code, migrations, configuration, and tests.
+12. Record conflicts instead of silently treating a historical document as current.
 
 ## For AI Coding Agents
 
@@ -256,10 +285,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 6. For frontend work, read okf/frontend/README.md, the feature catalog entry, and the owning feature document.
 7. For database work, read okf/database/README.md, schema-catalog.md, relationships.md, and the owning entity document.
 8. For API work, read okf/api/README.md, endpoint-catalog.md, and the owning route-group and endpoint-family documents.
-9. Read relevant specialized OKF documents before modifying a subsystem.
-10. Verify critical claims against source code and migrations.
-11. Update related OKF documents when implementation changes invalidate them.
-12. Never invent undocumented business rules.
+9. For business behavior, read okf/domain/README.md, domain-catalog.md, business-rule-catalog.md, and the relevant workflow document.
+10. Read relevant specialized OKF documents before modifying a subsystem.
+11. Verify critical claims against source code and migrations.
+12. Update related OKF documents when implementation changes invalidate them.
+13. Never invent undocumented business rules.
 
 If a specialized OKF document is still planned, use [Navigation Guide - Missing Documentation](project/navigation-guide.md#when-documentation-is-missing), then consult current source, tests, existing documentation, and Phase Zero evidence.
 
@@ -267,14 +297,12 @@ If a specialized OKF document is still planned, use [Navigation Guide - Missing 
 
 | Target phase | Planned area |
 | ---: | --- |
-| 7 | Authentication, authorization, tenant isolation, upload security, and threat model |
-| 8 | Business rules, workflows, billing, delivery, and multi-tenancy |
 | 9 | Built-in plugins, Marketplace, and extensibility |
 | 10 | Development, testing, deployment, operations, observability, recovery, and troubleshooting |
 | 11 | Mermaid selection, correction, parser/render validation, and diagram index |
 | 12 | Full validation, traceability, and synchronization |
 
-These later areas are registered as planned in index.yaml. Their files do not exist yet.
+These later areas are registered as planned in index.yaml. Phase 8 documents Marketplace behavior only where it participates in current cross-domain rules; Phase 9 remains the dedicated extensibility phase.
 
 ## Update Policy
 
@@ -291,8 +319,12 @@ During a review:
 
 ## Phase Status
 
-Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 established the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Phase 5 added 16 database guides, 18 entity documents, and five database diagrams based on all 26 migrations and current persistence code. Phase 6 added 19 primary API documents, 17 route-group documents, 21 endpoint-family documents, and five API diagrams covering all 168 registered handler-method endpoints. Phase 7 is complete: it adds 21 primary security documents, 11 role documents, eight permission-group documents, and six security diagrams. Business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 8 through 12.
+Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 established the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Phase 5 added 16 database guides, 18 entity documents, and five database diagrams based on all 26 migrations and current persistence code. Phase 6 added 19 primary API documents, 17 route-group documents, 21 endpoint-family documents, and five API diagrams covering all 168 registered handler-method endpoints. Phase 7 added 21 primary security documents, 11 role documents, eight permission-group documents, and six security diagrams. Phase 8 is complete: it adds 20 primary domain documents, ten domain documents, 14 workflow documents, and six diagrams. Extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 9 through 12.
 
 ## Phase 7 Security Reading Order
 
 Start with [Security Overview](security/overview.md), [Authentication Architecture](security/authentication-architecture.md), [Authorization Architecture](security/authorization-architecture.md), and [Tenant Access Control](security/tenant-access-control.md). Use the [Roles and Permissions Catalog](security/roles-and-permissions-catalog.md) to navigate every role and permission-group document. Use [Security Testing](security/security-testing.md), [Threat Register](security/threat-register.md), and [Security Risks](security/security-risks.md) for assurance limits and follow-up work. All six diagrams are linked from the [Security README](security/README.md).
+
+## Phase 8 Business Rules and Domain Workflow Reading Order
+
+Start with [Domain Overview](domain/overview.md), [Domain Catalog](domain/domain-catalog.md), [Business Rule Catalog](domain/business-rule-catalog.md), and [Domain Invariants](domain/invariants.md). Use [Cross-Module Workflows](domain/cross-module-workflows.md) to navigate all 14 workflow documents, [State Transitions](domain/state-transitions.md) for lifecycle matrices, and [Domain Risks](domain/domain-risks.md) plus [Business Rule Testing](domain/business-rule-testing.md) for assurance limits. All six diagrams are linked from the [Domain README](domain/README.md).

@@ -1,0 +1,21 @@
+%% title: ZinharCMS Tenant Membership and Ownership Workflow
+%% sources: backend/src/routes/organizations.rs; backend/src/middleware/tenant.rs; backend/src/services/quota.rs
+flowchart TD
+    Inviter["Owner or admin"] --> Validate["Validate role, email, and member capacity"]
+    Validate --> Pending["Upsert pending invitation<br/>store token hash"]
+    Pending --> Email["Send invitation email"]
+    Recipient["Authenticated recipient"] --> Accept["Submit invitation token"]
+    Accept --> Match{"Token, email, pending, unexpired?"}
+    Match -->|"No"| Reject["Reject as invalid invitation"]
+    Match -->|"Yes"| Capacity{"Member capacity available?"}
+    Capacity -->|"No"| Reject
+    Capacity -->|"Yes"| Tx["Transaction: activate membership<br/>mark invitation accepted"]
+    Tx --> Active["Active organization membership"]
+    Active --> Context["Tenant middleware creates TenantContext"]
+    Active --> Transfer{"Owner transfers ownership?"}
+    Transfer -->|"Yes"| OwnerTx["Transaction: old owner to admin<br/>target to owner; update owner_id"]
+    Active --> Remove{"Leave or remove member?"}
+    Remove --> LastOwner{"Would remove last owner?"}
+    LastOwner -->|"Yes"| Reject
+    LastOwner -->|"No"| Deleted["Hard-delete membership"]
+

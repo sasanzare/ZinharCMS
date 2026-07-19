@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "observed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/main.rs"
   - "backend/src/config.rs"
@@ -269,3 +269,7 @@ Tenant transactions set organization/user/bypass context locally before queries;
 ## Security Runtime Flows
 
 Phase 7 adds the verified [Authentication Flow](../security/diagrams/authentication-flow.mmd), [Session and Token Lifecycle](../security/diagrams/session-token-lifecycle.mmd), [Authorization Decision Flow](../security/diagrams/authorization-decision-flow.mmd), and [Tenant Access Control](../security/diagrams/tenant-access-control.mmd). These diagrams separate global claims, organization membership, resource checks, and RLS rather than collapsing them into one permission decision.
+
+## Phase 8 Domain Runtime Flows
+
+[Cross-Module Workflows](../domain/cross-module-workflows.md) connects request, transaction, filesystem, cache, broadcast, email, provider, webhook, and Marketplace effects. The [Cross-Module Orchestration](../domain/diagrams/cross-module-orchestration.mmd) diagram distinguishes committed database changes from best-effort or spawned side effects. Detailed sequences are maintained in `domain/workflows/`; they do not imply a durable workflow engine, queue, or outbox.

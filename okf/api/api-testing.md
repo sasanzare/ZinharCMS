@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes"
   - "backend/src/middleware"
@@ -60,3 +60,7 @@ Add a generated set comparison between Axum registration and Utoipa operations, 
 ## Phase 7 Security Matrix
 
 Add register/login/refresh/logout cookie integration tests, malformed/expired/stale token cases, complete global and organization role matrices, owner/IDOR cases, live cross-tenant RLS CRUD, bypass preconditions, CSRF/CORS/header behavior, audit effects, and Marketplace permission expansion/runtime kill-switch cases. [Security Testing](../security/security-testing.md) records current evidence and `SECURITY_TEST_COVERAGE_UNCLEAR STCU-01`.
+
+## Phase 8 Domain Workflow Matrix
+
+For every workflow in [Cross-Module Workflows](../domain/cross-module-workflows.md), test precondition denial, valid transition, transaction rollback, retry/idempotency behavior, and observable side effects. Priority API scenarios include concurrent owner removal, entry/page transition permissions, page restore validation, media quota and file failure, unsafe webhook URL and timeout, out-of-order Stripe events, Marketplace permission reapproval, refund entitlement revocation, and tenant-scoped access. See [Business Rule Testing](../domain/business-rule-testing.md).

@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
-last_verified_date: "2026-07-17"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/main.rs"
   - "backend/src/state.rs"
@@ -119,3 +119,7 @@ Repository configuration demonstrates how the system can run. It does not demons
 ## Phase 7 Security Risk Link
 
 Security-specific consequences of shared-process boundaries, distributed authorization, explicit RLS bypass, local file serving, provider integrations, and configuration-dependent deployment controls are prioritized in [Security Risks](../security/security-risks.md) and [Threat Register](../security/threat-register.md). Architecture risk is not closed merely because Phase 7 documents the boundary.
+
+## Phase 8 Domain Risk Link
+
+[Domain Risks](../domain/domain-risks.md) prioritizes application-only invariants, last-owner concurrency, same-tenant relationship proof, non-atomic files and external side effects, in-process webhook loss, public default-tenant routing, incomplete revision/restore behavior, model/migration drift, and missing end-to-end workflow tests. These are architecture risks when they cross persistence, process, storage, or provider boundaries; documentation does not close them.

@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "README.md"
   - "backend/migrations"
@@ -157,3 +157,17 @@ For the broader context, see [Project Identity](overview.md#1-project-identity),
 - **Marketplace permission snapshot:** The complete approved dot-delimited permission list stored for a specific installation.
 
 See [Security Overview](../security/overview.md), [RBAC Model](../security/rbac-model.md), and [Tenant Access Control](../security/tenant-access-control.md).
+
+## Business Rules and Workflow Terms
+
+- **Business rule:** An observed or explicitly documented condition that decides whether a domain action is allowed, how it changes state, or which side effects follow.
+- **Domain invariant:** A condition intended to remain true for persisted or request-scoped domain state; enforcement may be split across database, backend, and frontend layers.
+- **Workflow:** A named sequence of actors, preconditions, decisions, state changes, transactions, side effects, and failure paths that produces a domain outcome.
+- **Editorial state:** One of `draft`, `pending_review`, `published`, or `archived` for content entries; page support includes a documented model conflict around `pending_review`.
+- **Publication:** A state transition that makes an entry or page eligible for public delivery and triggers cache, plugin, broadcast, or webhook behavior according to resource type.
+- **Content entry version:** A monotonically incremented integer on the current entry row; it is not a stored entry-snapshot history.
+- **Page version:** An immutable page document snapshot identified by a positive version number within one page.
+- **Organization owner:** The active tenant member with the `owner` role; `organizations.owner_id` is a related pointer whose alignment is application-maintained.
+- **Host-owned adapter:** A capability exposed by ZinharCMS to installed Marketplace code after installation state, readiness, declarations, and approved permissions are checked.
+
+See [Domain Overview](../domain/overview.md), [Domain Invariants](../domain/invariants.md), and [State Transitions](../domain/state-transitions.md).

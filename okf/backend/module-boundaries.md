@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "mixed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes/mod.rs"
   - "backend/src/services/mod.rs"
@@ -167,3 +167,7 @@ These rules must not be treated as implemented architecture until verified in co
 ## Related Documentation
 
 Use the [module catalog](module-catalog.md) for module identity, the [dependency map](dependency-map.md) for concrete edges, [services and domain](services-and-domain.md) for responsibility placement, [Database Module Data Ownership](../database/module-data-ownership.md) for table ownership, and [Phase 2 boundaries](../architecture/boundaries.md) for system-level boundaries.
+
+## Phase 8 Workflow Boundary Guidance
+
+A domain workflow may cross route, service, migration, frontend, filesystem, cache, provider, and webhook boundaries without creating a new module. [Cross-Module Workflows](../domain/cross-module-workflows.md) records current orchestration and failure ownership. In particular, database commits do not make subsequent email, cache, file, webhook, or provider effects atomic; proposed outbox, retry, or compensation designs remain unimplemented until source evidence changes.

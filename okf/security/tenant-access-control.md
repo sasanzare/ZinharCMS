@@ -8,7 +8,7 @@ status: "current"
 source_of_truth: false
 implementation_view: "observed"
 security_status: "partially_verified"
-last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/middleware/tenant.rs"
@@ -54,3 +54,7 @@ Organization roles are assigned through bootstrap mapping, invitation acceptance
 `TENANT_ACCESS_UNVERIFIED TAV-01`: migration definitions and query helpers were inspected, but the applied database catalog, database login role privileges, live cross-tenant behavior, Redis isolation, and all handler query paths were not executed in this phase.
 
 Tenant and parent foreign keys do not universally prove same-organization parent-child coherence; retain `TENANT_ISOLATION_UNVERIFIED TIV-01` from Phase 5.
+
+## Phase 8 Tenant Lifecycle
+
+[Multi-Tenancy Behavior](../domain/multi-tenancy-behavior.md) and the tenant workflows document organization provisioning, invitation acceptance, membership mutation, owner protection, and ownership transfer after the initial middleware decision. They preserve the distinction between authentication, active membership, organization role, resource ownership, and RLS. Public delivery tenant selection remains a separate unresolved routing boundary.

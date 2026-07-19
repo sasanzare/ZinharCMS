@@ -7,8 +7,8 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - ".gitignore"
   - "package.json"
@@ -316,3 +316,7 @@ The following paths should not normally be used as project-knowledge sources:
 ## Security Documentation and Evidence Map
 
 The Phase 7 entry point is [Authentication, Authorization, and Security Architecture](../security/README.md). Primary implementation evidence is under `backend/src/routes/auth.rs`, `backend/src/middleware/`, `backend/src/services/{jwt,password,security,rbac,rls,audit}.rs`, identity/organization/RLS/security migrations, and `frontend/src/{services,stores,components,pages}`. Role and permission navigation is in the [Roles and Permissions Catalog](../security/roles-and-permissions-catalog.md); threats and gaps are in [Security Risks](../security/security-risks.md).
+
+## Business Rules and Domain Workflow Map
+
+The Phase 8 entry point is [Business Rules and Domain Workflows](../domain/README.md). `okf/domain/domains/` maps ten significant domains to backend routes, services, models, migrations, frontend consumers, and adjacent OKF documents. `okf/domain/workflows/` records 14 end-to-end workflows. `okf/domain/diagrams/` contains six visual summaries. Start with the [Domain Catalog](../domain/domain-catalog.md), [Business Rule Catalog](../domain/business-rule-catalog.md), and [Cross-Module Workflows](../domain/cross-module-workflows.md); use [Domain Risks](../domain/domain-risks.md) for incomplete or non-atomic behavior.

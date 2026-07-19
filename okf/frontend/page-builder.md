@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "frontend/src/pages/PagesPage.tsx"
   - "frontend/src/pages/PagesPage.test.tsx"
@@ -126,3 +126,6 @@ Active Marketplace component packs contribute definitions to the palette. Active
 - [Backend Pages, Builder, and Preview](../backend/modules/pages-builder-preview.md)
 - [Backend Marketplace Runtime Adapters](../backend/modules/marketplace-runtime-adapters.md)
 
+## Phase 8 Page Builder Rules
+
+[Page Builder Rules](../domain/page-builder-rules.md) records the current document invariants: one `root`, registered descendants, unique bounded node IDs, object props/styles, maximum depth 12, and maximum 500 nodes. [Page Builder Save and Version](../domain/workflows/page-builder-save-and-version.md) and [Page Version Restoration](../domain/workflows/page-version-restoration.md) distinguish transactional snapshots from publication, cache, and broadcast side effects. Restore resets the page to draft; cache revalidation after restore is not verified.

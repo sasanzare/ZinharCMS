@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes/mod.rs"
   - "backend/src/routes"
@@ -366,3 +366,7 @@ Static `/uploads/*` is documented in [System, Health, OpenAPI, and Static Endpoi
 ## Maintenance
 
 Regenerate or manually compare this inventory whenever route registration changes. Then review the owning family and group, DTOs, middleware zone, RBAC/ownership checks, RLS context, frontend wrapper/type, OpenAPI annotation, tests, and database side effects. Never infer reachability solely from a handler or Utoipa annotation.
+
+## Phase 8 Workflow Cross-Reference
+
+Endpoint families initiate the 14 workflows cataloged in [Cross-Module Workflows](../domain/cross-module-workflows.md). The endpoint contract ends at the HTTP response, while business completion may also require committed state, file generation, cache invalidation, broadcast, email, webhook, payment-provider, or entitlement effects. Use the owning workflow document to review those post-request outcomes and failures.

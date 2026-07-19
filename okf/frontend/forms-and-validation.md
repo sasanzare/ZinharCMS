@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-last_verified_date: "2026-07-17"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "frontend/package.json"
   - "frontend/src/components/DynamicForm.tsx"
@@ -100,3 +100,6 @@ Many controls are wrapped in labels, and native constraints provide browser beha
 - [Frontend Risks](frontend-risks.md)
 - [Frontend State Flow](diagrams/frontend-state-flow.mmd)
 
+## Phase 8 Validation Cross-Reference
+
+[Validation Rules](../domain/validation-rules.md) compares frontend, backend, and database enforcement for slugs, dynamic content schemas, Page Builder documents, uploads, webhooks, billing, membership, and Marketplace operations. Frontend validation improves feedback but does not prove authorization, tenant scope, quota availability, detected media type, current workflow state, or persistence constraints. Dynamic content and Page Builder props remain the highest-drift areas.

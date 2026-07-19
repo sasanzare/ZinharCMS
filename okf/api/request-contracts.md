@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes"
   - "backend/src/middleware/auth.rs"
@@ -74,3 +74,7 @@ Several workflow actions are modeled as `POST` with no JSON payload, for example
 ## Review Checklist
 
 When changing a request, verify the Axum extractor, Serde attributes, handler validation, frontend call and TypeScript type, Utoipa request body and parameters, tests, endpoint catalog entry, and any provider signature rules.
+
+## Phase 8 Business Validation
+
+Transport validity does not imply business validity. [Validation Rules](../domain/validation-rules.md) adds tenant membership, roles, resource state, quotas, current schema/component registries, detected file type, provider-event ordering, installation readiness, and permission approval to the review surface. The [Business Rule Catalog](../domain/business-rule-catalog.md) identifies the deciding layer and failure behavior for each observed rule.

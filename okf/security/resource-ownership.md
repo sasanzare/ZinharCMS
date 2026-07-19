@@ -8,7 +8,7 @@ status: "current"
 source_of_truth: false
 implementation_view: "observed"
 security_status: "mixed"
-last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes/content.rs"
@@ -56,3 +56,7 @@ Comments and audit logs identify target resources with `entity_type` and `entity
 ## Uncertainty
 
 `RESOURCE_OWNERSHIP_UNVERIFIED ROU-01`: no complete resource-action-owner matrix or end-to-end IDOR suite was found. Marketplace static security contracts cover selected ownership paths, but content, page, media, comments, and operational resources do not share one ownership policy engine.
+
+## Phase 8 Ownership Workflows
+
+[Membership and Ownership](../domain/membership-and-ownership.md), [Tenant Invitation and Membership](../domain/workflows/tenant-invitation-and-membership.md), and [Organization Ownership Transfer](../domain/workflows/organization-ownership-transfer.md) record the concrete organization-owner rules. The normal paths maintain membership roles and `organizations.owner_id`, but no database invariant proves alignment and the last-owner count/check is not verified under concurrent mutation.

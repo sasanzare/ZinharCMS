@@ -8,8 +8,8 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
-last_verified_date: "2026-07-18"
+last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+last_verified_date: "2026-07-19"
 primary_sources:
   - "backend/src/routes"
   - "backend/src/services"
@@ -372,3 +372,7 @@ Phase 3 identifies 18 significant documentation modules. It consolidates smaller
 ## Catalog Maintenance
 
 Add a module only when it has a distinct domain/feature responsibility, independent router/service logic, meaningful interface, owned persistence behavior, dedicated tests, or clear architectural significance. Small cross-cutting helpers belong in [Shared Infrastructure](shared-infrastructure.md). Update the module document, boundaries, dependency map, testing map, diagrams, and index together.
+
+## Phase 8 Domain Cross-Reference
+
+Backend modules are grouped into ten behavioral domains in the [Domain Catalog](../domain/domain-catalog.md). The mapping is many-to-many: editorial publication uses content, workflow, cache, plugins, preview/broadcast, and webhooks; Marketplace purchase uses finance, Stripe, entitlements, runtime state, and notifications. Use [Cross-Module Workflows](../domain/cross-module-workflows.md) when a change spans more than one module document.
