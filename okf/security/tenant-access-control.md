@@ -58,3 +58,7 @@ Tenant and parent foreign keys do not universally prove same-organization parent
 ## Phase 8 Tenant Lifecycle
 
 [Multi-Tenancy Behavior](../domain/multi-tenancy-behavior.md) and the tenant workflows document organization provisioning, invitation acceptance, membership mutation, owner protection, and ownership transfer after the initial middleware decision. They preserve the distinction between authentication, active membership, organization role, resource ownership, and RLS. Public delivery tenant selection remains a separate unresolved routing boundary.
+
+## Extensibility Scope
+
+Built-in plugin enablement is global even though invocation receives organization context. Marketplace installations and derived adapter operations are organization-scoped and depend on tenant middleware/RBAC/RLS. Global and organization kill switches overlay runtime readiness. See [Tenant and Global Scope](../extensibility/tenant-and-global-scope.md).

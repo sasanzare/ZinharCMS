@@ -150,3 +150,7 @@ No external authentication provider, search service, object-store API, message b
 ## Security Integration Notes
 
 No external identity provider, MFA provider, secret manager, security-event exporter, or deployed WAF is verified. Stripe signature verification, email/webhook delivery, Redis limiting, filesystem uploads, and Marketplace host-operation authorization cross trust boundaries documented in [Security Trust Boundaries](../security/trust-boundaries.md), [Secrets and Configuration](../security/secrets-and-configuration.md), and [Threat Register](../security/threat-register.md).
+
+## Marketplace Integration Classification
+
+Marketplace package upload, Stripe-facing commerce, filesystem artifacts, host adapters, and tenant component synchronization are verified integration points. No dynamic plugin loader or uploaded-code execution path was found. See [Marketplace Architecture](../extensibility/marketplace-architecture.md) and [Isolation and Trust](../extensibility/isolation-and-trust.md).

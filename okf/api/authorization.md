@@ -74,3 +74,7 @@ Do not infer authorization from HTTP method, frontend visibility, DTO extractors
 ## Phase 7 Detail
 
 [Authorization Architecture](../security/authorization-architecture.md), [RBAC Model](../security/rbac-model.md), [Roles and Permissions Catalog](../security/roles-and-permissions-catalog.md), [Resource Ownership](../security/resource-ownership.md), and [Administrative Access](../security/administrative-access.md) now map the full decision layers. Stored `roles.permissions` arrays are not read by inspected runtime RBAC (`RBAC_MAPPING_UNCLEAR RMU-01`).
+
+## Plugin and Marketplace Authorization
+
+Global plugin-manager RBAC protects built-in registry actions. Tenant Marketplace actions combine active membership, organization RBAC, ownership/RLS, lifecycle gates, exact permission approval, and kill switches. Built-in callback execution itself has no per-plugin capability check. See [Plugin Permissions](../extensibility/plugin-permissions.md).

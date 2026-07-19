@@ -59,3 +59,7 @@ The catalog groups 51 technical tables into 18 significant domain entities. `Ten
 ## Phase 8 Domain Cross-Reference
 
 The 18 persistence entity groups support ten significant behavioral domains; the mapping is recorded in the [Domain Catalog](../domain/domain-catalog.md). [Domain Invariants](../domain/invariants.md) identifies 31 conditions and states which are database-enforced, application-supported, or unverified. A table or foreign key is persistence evidence, not by itself a complete business workflow.
+
+## Extensibility Data Groups
+
+Global cms_plugins stores compiled-plugin metadata and enablement. Marketplace creator/catalog/version data is global publication state; installations, permission snapshots, hooks, imports, purchases, entitlements, reviews, and reports include tenant ownership where applicable. See [Plugin Data and Migrations](../extensibility/plugin-data-and-migrations.md).

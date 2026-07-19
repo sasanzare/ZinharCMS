@@ -112,3 +112,7 @@ When adding a test, update the owning module document and this map. Prefer tests
 ## Phase 8 Business Rule Test Map
 
 [Business Rule Testing](../domain/business-rule-testing.md) maps current workflow, validation, quota, webhook, Stripe, Marketplace, security, and frontend evidence to the rule catalog. Highest-priority gaps are live tenant/RLS tests, concurrent last-owner changes, route-level editorial transitions, page restore/cache behavior, filesystem/database failure injection, durable webhook recovery, provider callback idempotency under concurrency, and end-to-end Marketplace purchase/entitlement flows.
+
+## Phase 9 Extensibility Testing
+
+[Extensibility Testing](../extensibility/extensibility-testing.md) maps SEO, manifest/package, installation, runtime-policy, host-adapter, Marketplace frontend, and Page Builder evidence. Highest-priority gaps are real database/RLS flows, registry cleanup and collisions, built-in route integration, lifecycle concurrency, and creator-to-install-to-adapter end-to-end coverage.

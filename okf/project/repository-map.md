@@ -320,3 +320,7 @@ The Phase 7 entry point is [Authentication, Authorization, and Security Architec
 ## Business Rules and Domain Workflow Map
 
 The Phase 8 entry point is [Business Rules and Domain Workflows](../domain/README.md). `okf/domain/domains/` maps ten significant domains to backend routes, services, models, migrations, frontend consumers, and adjacent OKF documents. `okf/domain/workflows/` records 14 end-to-end workflows. `okf/domain/diagrams/` contains six visual summaries. Start with the [Domain Catalog](../domain/domain-catalog.md), [Business Rule Catalog](../domain/business-rule-catalog.md), and [Cross-Module Workflows](../domain/cross-module-workflows.md); use [Domain Risks](../domain/domain-risks.md) for incomplete or non-atomic behavior.
+
+## Phase 9 Repository Map
+
+The Phase 9 entry point is [Plugins, Marketplace, and Extensibility](../extensibility/README.md). The extensibility/plugins directory contains only verified concrete plugins, extensibility/extension-points contains significant verified contracts, extensibility/marketplace covers implemented Marketplace areas, and extensibility/diagrams contains seven source-aligned Mermaid views.

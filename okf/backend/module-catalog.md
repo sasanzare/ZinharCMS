@@ -376,3 +376,7 @@ Add a module only when it has a distinct domain/feature responsibility, independ
 ## Phase 8 Domain Cross-Reference
 
 Backend modules are grouped into ten behavioral domains in the [Domain Catalog](../domain/domain-catalog.md). The mapping is many-to-many: editorial publication uses content, workflow, cache, plugins, preview/broadcast, and webhooks; Marketplace purchase uses finance, Stripe, entitlements, runtime state, and notifications. Use [Cross-Module Workflows](../domain/cross-module-workflows.md) when a change spans more than one module document.
+
+## Phase 9 Extensibility Mapping
+
+Built-in Plugins owns the static CmsPlugin contract and SEO Auto implementation. Marketplace Creator/Review, Catalog/Installation, Runtime/Adapters, Finance, and Feedback/Analytics collectively own the declarative Marketplace platform. The [Extensibility Catalog](../extensibility/extensibility-catalog.md) maps these modules to one concrete plugin and six significant extension-point documents.

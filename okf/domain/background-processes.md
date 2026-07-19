@@ -54,3 +54,6 @@ These absences are reported as `PLANNED_NOT_IMPLEMENTED` only where current proj
 
 The web process owns all observed async work. Process restarts, request cancellation, or network failures can separate committed business state from side effects. `CROSS_MODULE_ORCHESTRATION_UNCLEAR` applies to exactly when operators should consider these workflows complete.
 
+## Extensibility Background Work
+
+No independent plugin worker, package executor, scheduled plugin runtime, or durable hook queue was found. CMS callbacks are synchronous and Marketplace adapter operations are request-driven host actions. See [Plugin Architecture](../extensibility/plugin-architecture.md).

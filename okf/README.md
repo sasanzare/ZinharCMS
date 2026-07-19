@@ -328,3 +328,7 @@ Start with [Security Overview](security/overview.md), [Authentication Architectu
 ## Phase 8 Business Rules and Domain Workflow Reading Order
 
 Start with [Domain Overview](domain/overview.md), [Domain Catalog](domain/domain-catalog.md), [Business Rule Catalog](domain/business-rule-catalog.md), and [Domain Invariants](domain/invariants.md). Use [Cross-Module Workflows](domain/cross-module-workflows.md) to navigate all 14 workflow documents, [State Transitions](domain/state-transitions.md) for lifecycle matrices, and [Domain Risks](domain/domain-risks.md) plus [Business Rule Testing](domain/business-rule-testing.md) for assurance limits. All six diagrams are linked from the [Domain README](domain/README.md).
+
+## Phase 9: Plugins, Marketplace, and Extensibility
+
+Start with [Plugins, Marketplace, and Extensibility](extensibility/README.md), then use the [Extensibility Catalog](extensibility/extensibility-catalog.md) and [Marketplace Architecture](extensibility/marketplace-architecture.md). Phase 9 verifies one statically compiled built-in plugin, declarative component/template/hook adapters, and a substantial Marketplace lifecycle. It does not identify dynamic package loading or uploaded-code execution.

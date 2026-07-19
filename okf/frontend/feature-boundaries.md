@@ -112,3 +112,6 @@ These are review rules derived from current evidence, not claims of automated en
 - [System Boundaries](../architecture/boundaries.md)
 - [Backend Module Boundaries](../backend/module-boundaries.md)
 
+## Phase 9 Boundary Note
+
+The frontend owns rendering and API orchestration; Marketplace manifests provide data, not React modules. Declarative public hook names do not establish a general navigation/widget/form injector in inspected frontend code. See [Frontend Extension Points](../extensibility/frontend-extension-points.md).

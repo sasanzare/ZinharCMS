@@ -74,3 +74,7 @@ related_diagrams:
 ## Treatment Boundary
 
 These are documentation findings, not implemented fixes. Owners, acceptance, deadlines, and product priorities require explicit confirmation.
+
+## Extensibility Security Risks
+
+Built-ins remain fully trusted in-process code. Marketplace runtime policy validates requests but is not an execution sandbox, and future package execution requires an explicit trust, signing, isolation, resource, and incident model. See [Isolation and Trust](../extensibility/isolation-and-trust.md).

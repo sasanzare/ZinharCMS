@@ -105,3 +105,6 @@ Source contains semantic `main`, `nav`, `aside`, `header`, labels, tables, butto
 - [Forms and Validation](forms-and-validation.md)
 - [Styling and Design System](styling-and-design-system.md)
 
+## Extensible Component Boundary
+
+Page Builder component registration is metadata-driven. System and tenant records plus Marketplace definitions provide keys and props schemas, while host React code remains responsible for rendering. See [Component and Block Registration](../extensibility/component-and-block-registration.md).

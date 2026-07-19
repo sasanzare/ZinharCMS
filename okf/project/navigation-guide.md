@@ -219,3 +219,10 @@ Use this guide to choose the shortest evidence path for a common repository task
 - To change Page Builder save, validation, publication, or restore behavior, read [Page Builder Rules](../domain/page-builder-rules.md) and both Page Builder workflow documents.
 - Before changing cross-boundary side effects, read [Cross-Module Workflows](../domain/cross-module-workflows.md), [Domain Events](../domain/domain-events.md), [Background Processes](../domain/background-processes.md), and [Domain Risks](../domain/domain-risks.md).
 - Treat rules marked `UNENFORCED_DOCUMENTED_RULE`, `INVARIANT_UNVERIFIED`, or another uncertainty marker as follow-up evidence requirements, not established guarantees.
+
+## Phase 9 Navigation
+
+- For plugin implementation and lifecycle, start at [Plugin Architecture](../extensibility/plugin-architecture.md).
+- For all verified mechanisms, use the [Extensibility Catalog](../extensibility/extensibility-catalog.md).
+- For Marketplace flows and limitations, use [Marketplace Architecture](../extensibility/marketplace-architecture.md) and [Marketplace Workflows](../extensibility/marketplace-workflows.md).
+- Treat runtime authorization as a policy result, not package execution; consult [Isolation and Trust](../extensibility/isolation-and-trust.md).

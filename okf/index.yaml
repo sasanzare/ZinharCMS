@@ -4,9 +4,9 @@ project:
   repository: "https://github.com/sasanzare/ZinharCMS"
   repository_name: "ZinharCMS"
   knowledge_status: "in_progress"
-  current_phase: 8
+  current_phase: 9
   current_phase_status: "complete"
-  last_verified_commit: "5a6f4f3147cc44a22c00ca0f02c8599fd927244f"
+  last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
   last_verified_date: "2026-07-19"
 
 authority:
@@ -67,6 +67,14 @@ entry_points:
       purpose: "End-to-end workflow catalog and orchestration boundaries"
     - path: "domain/domain-risks.md"
       purpose: "Prioritized business-rule and workflow risks"
+    - path: "extensibility/README.md"
+      purpose: "Phase 9 plugins, Marketplace, and extensibility entry point"
+    - path: "extensibility/extensibility-catalog.md"
+      purpose: "Verified plugin and extension-point catalog"
+    - path: "extensibility/marketplace-architecture.md"
+      purpose: "Marketplace subsystem, host-adapter, and execution-boundary overview"
+    - path: "extensibility/extensibility-risks.md"
+      purpose: "Prioritized extensibility risks and uncertainty markers"
     - path: "project/navigation-guide.md"
       purpose: "Short task-oriented navigation guide"
   ai:
@@ -132,6 +140,22 @@ entry_points:
       purpose: "Navigation for 14 end-to-end workflow documents"
     - path: "domain/domain-risks.md"
       purpose: "Unverified invariants, orchestration gaps, and test priorities"
+    - path: "extensibility/overview.md"
+      purpose: "Verified extensibility classification and implementation limits"
+    - path: "extensibility/extensibility-catalog.md"
+      purpose: "Machine-navigable plugin and extension-point inventory"
+    - path: "extensibility/extension-points.md"
+      purpose: "Significant verified extension contracts and exclusions"
+    - path: "extensibility/plugin-permissions.md"
+      purpose: "Built-in authority and Marketplace capability model"
+    - path: "extensibility/isolation-and-trust.md"
+      purpose: "Trusted-code, untrusted-artifact, and no-execution boundary"
+    - path: "extensibility/marketplace-workflows.md"
+      purpose: "Creator, install, update, adapter, and governance workflows"
+    - path: "extensibility/extensibility-testing.md"
+      purpose: "Observed coverage and prioritized integration gaps"
+    - path: "extensibility/extensibility-risks.md"
+      purpose: "Prioritized plugin and Marketplace uncertainty register"
     - path: "project/navigation-guide.md"
       purpose: "Task-to-source navigation and AI agent rules"
 
@@ -200,8 +224,8 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
-    last_verified_date: "2026-07-17"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
     primary_evidence_paths:
       - "okf-bootstrap/09-knowledge-gaps.md"
       - "okf-bootstrap/10-proposed-okf-structure.md"
@@ -6399,7 +6423,810 @@ documents:
     related_documents: ["domain/cross-module-workflows.md", "domain/domain-events.md", "domain/background-processes.md"]
 
 
+  - id: "extensibility-activation-deactivation"
+    path: "extensibility/activation-and-deactivation.md"
+    title: "Activation and Deactivation"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/plugins.rs","backend/src/plugins/mod.rs","backend/src/routes/marketplace.rs","backend/src/routes/marketplace_runtime.rs"]
+    related_documents: ["extensibility/plugin-lifecycle.md","extensibility/plugin-permissions.md","extensibility/tenant-and-global-scope.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-lifecycle.mmd"]
+
+  - id: "backend-extension-points"
+    path: "extensibility/backend-extension-points.md"
+    title: "Backend Extension Points"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/content.rs","backend/src/routes/marketplace_adapters.rs","backend/src/services/marketplace_runtime.rs"]
+    related_documents: ["extensibility/extension-points.md","extensibility/hooks-and-events.md","extensibility/isolation-and-trust.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd"]
+
+  - id: "plugin-compatibility-versioning"
+    path: "extensibility/compatibility-and-versioning.md"
+    title: "Compatibility and Versioning"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_manifest.rs","backend/src/services/marketplace_installation.rs","backend/src/routes/marketplace.rs","backend/src/plugins/seo.rs"]
+    related_documents: ["extensibility/plugin-manifest.md","extensibility/plugin-lifecycle.md","extensibility/marketplace/installation-update-rollback.md"]
+    related_diagrams: ["extensibility/diagrams/marketplace-installation-flow.mmd"]
+
+  - id: "component-block-registration"
+    path: "extensibility/component-and-block-registration.md"
+    title: "Component and Block Registration"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/pages.rs","backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace_adapters.rs","frontend/src/pages/PagesPage.tsx","backend/migrations/0001_initial_schema.sql","backend/migrations/0021_v3_phase_eight_runtime_adapters.sql"]
+    related_documents: ["frontend/page-builder.md","domain/page-builder-rules.md","extensibility/extension-points/page-builder-component-registry.md"]
+    related_diagrams: ["extensibility/diagrams/component-registration.mmd"]
+
+  - id: "extensibility-development-workflow"
+    path: "extensibility/development-workflow.md"
+    title: "Extensibility Development Workflow"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins","scripts/marketplace-cli.mjs","docs/MARKETPLACE_CREATOR_GUIDE.md","docs/V3_MARKETPLACE_MANIFEST_SCHEMA.md","docs/V3_PACKAGE_STORAGE.md"]
+    related_documents: ["extensibility/plugin-manifest.md","extensibility/compatibility-and-versioning.md","extensibility/extensibility-testing.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-registration-flow.mmd"]
+
+  - id: "extensibility-catalog"
+    path: "extensibility/extensibility-catalog.md"
+    title: "Extensibility Catalog"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins","backend/src/routes/plugins.rs","backend/src/routes/pages.rs","backend/src/routes/marketplace_adapters.rs","backend/src/services/marketplace_adapters.rs","backend/src/services/marketplace_runtime.rs"]
+    related_documents: ["extensibility/plugins/seo-auto.md","extensibility/extension-points/cms-entry-before-save.md","extensibility/extension-points/cms-entry-after-publish.md","extensibility/extension-points/page-builder-component-registry.md","extensibility/extension-points/marketplace-template-adapter.md","extensibility/extension-points/marketplace-public-hook-adapter.md","extensibility/extension-points/marketplace-runtime-authorization.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd"]
+
+  - id: "extensibility-risks"
+    path: "extensibility/extensibility-risks.md"
+    title: "Extensibility Risks"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/plugins.rs","backend/src/services/marketplace_runtime.rs","backend/src/routes/marketplace_adapters.rs","backend/migrations"]
+    related_documents: ["extensibility/plugin-architecture.md","extensibility/plugin-permissions.md","extensibility/plugin-data-and-migrations.md","extensibility/compatibility-and-versioning.md","extensibility/isolation-and-trust.md","extensibility/extensibility-testing.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd","extensibility/diagrams/plugin-permission-flow.mmd"]
+
+  - id: "extensibility-testing"
+    path: "extensibility/extensibility-testing.md"
+    title: "Extensibility Testing"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/seo.rs","backend/src/services/marketplace_manifest.rs","backend/src/services/marketplace_installation.rs","backend/src/services/marketplace_runtime.rs","backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace.rs","backend/src/routes/marketplace_runtime.rs","backend/src/routes/marketplace_adapters.rs","frontend/src/pages/MarketplacePage.test.tsx","frontend/src/pages/PagesPage.test.tsx",".github/workflows/backend-ci.yml",".github/workflows/frontend-ci.yml"]
+    related_documents: ["backend/testing-map.md","frontend/testing-map.md","api/api-testing.md","extensibility/plugins/seo-auto.md","extensibility/extension-points/cms-entry-before-save.md","extensibility/extension-points/marketplace-runtime-authorization.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-lifecycle.mmd"]
+
+  - id: "extension-points"
+    path: "extensibility/extension-points.md"
+    title: "Extension Points"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/content.rs","backend/src/routes/pages.rs","backend/src/routes/marketplace_adapters.rs","backend/src/services/marketplace_adapters.rs","backend/src/services/marketplace_runtime.rs"]
+    related_documents: ["extensibility/backend-extension-points.md","extensibility/frontend-extension-points.md","extensibility/component-and-block-registration.md","extensibility/hooks-and-events.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd","extensibility/diagrams/component-registration.mmd"]
+
+  - id: "extension-point-cms-entry-after-publish"
+    path: "extensibility/extension-points/cms-entry-after-publish.md"
+    title: "CMS Entry After-Publish Extension Point"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/content.rs"]
+    related_documents: ["extensibility/extension-points.md","extensibility/hooks-and-events.md","domain/publication-workflow.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-registration-flow.mmd"]
+    implementation_status: "implemented_no_verified_subscriber"
+    extension_point_id: "EP-002"
+    extension_point_name: "CMS Entry After-Publish"
+    extension_point_category: "backend_lifecycle_hook"
+    registration_type: "static_compiled_trait"
+
+  - id: "extension-point-cms-entry-before-save"
+    path: "extensibility/extension-points/cms-entry-before-save.md"
+    title: "CMS Entry Before-Save Extension Point"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/content.rs","backend/src/plugins/seo.rs"]
+    related_documents: ["extensibility/extension-points.md","extensibility/plugins/seo-auto.md","extensibility/hooks-and-events.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-registration-flow.mmd"]
+    implementation_status: "implemented"
+    extension_point_id: "EP-001"
+    extension_point_name: "CMS Entry Before-Save"
+    extension_point_category: "backend_lifecycle_hook"
+    registration_type: "static_compiled_trait"
+
+  - id: "extension-point-marketplace-public-hook-adapter"
+    path: "extensibility/extension-points/marketplace-public-hook-adapter.md"
+    title: "Marketplace Public Hook Adapter Extension Point"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace_adapters.rs","backend/migrations/0021_v3_phase_eight_runtime_adapters.sql"]
+    related_documents: ["extensibility/extension-points.md","extensibility/hooks-and-events.md","extensibility/marketplace/runtime-permissions-adapters.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-permission-flow.mmd"]
+    implementation_status: "authorization_only"
+    extension_point_id: "EP-005"
+    extension_point_name: "Marketplace Public Hook Adapter"
+    extension_point_category: "declarative_host_hook"
+    registration_type: "active_installation_manifest"
+
+  - id: "extension-point-marketplace-runtime-authorization"
+    path: "extensibility/extension-points/marketplace-runtime-authorization.md"
+    title: "Marketplace Runtime Authorization Extension Point"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_runtime.rs","backend/src/routes/marketplace_runtime.rs","backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql"]
+    related_documents: ["extensibility/extension-points.md","extensibility/plugin-permissions.md","extensibility/isolation-and-trust.md","security/permissions/marketplace-runtime-capabilities.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-permission-flow.mmd"]
+    implementation_status: "policy_implemented_execution_not_implemented"
+    extension_point_id: "EP-006"
+    extension_point_name: "Marketplace Runtime Authorization"
+    extension_point_category: "host_capability_policy"
+    registration_type: "static_operation_catalog_and_manifest"
+
+  - id: "extension-point-marketplace-template-adapter"
+    path: "extensibility/extension-points/marketplace-template-adapter.md"
+    title: "Marketplace Template Adapter Extension Point"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace_adapters.rs","frontend/src/pages/PagesPage.tsx","backend/migrations/0021_v3_phase_eight_runtime_adapters.sql"]
+    related_documents: ["extensibility/extension-points.md","extensibility/marketplace/runtime-permissions-adapters.md","domain/page-builder-rules.md"]
+    related_diagrams: ["extensibility/diagrams/component-registration.mmd","extensibility/diagrams/marketplace-installation-flow.mmd"]
+    implementation_status: "implemented"
+    extension_point_id: "EP-004"
+    extension_point_name: "Marketplace Template Adapter"
+    extension_point_category: "declarative_page_import"
+    registration_type: "active_installation_manifest"
+
+  - id: "extension-point-page-builder-component-registry"
+    path: "extensibility/extension-points/page-builder-component-registry.md"
+    title: "Page Builder Component Registry Extension Point"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/pages.rs","backend/src/routes/marketplace_adapters.rs","backend/src/services/marketplace_adapters.rs","frontend/src/pages/PagesPage.tsx","backend/migrations/0001_initial_schema.sql","backend/migrations/0021_v3_phase_eight_runtime_adapters.sql"]
+    related_documents: ["extensibility/extension-points.md","extensibility/component-and-block-registration.md","frontend/page-builder.md","domain/page-builder-rules.md"]
+    related_diagrams: ["extensibility/diagrams/component-registration.mmd"]
+    implementation_status: "implemented"
+    extension_point_id: "EP-003"
+    extension_point_name: "Page Builder Component Registry"
+    extension_point_category: "declarative_component_registry"
+    registration_type: "database_api_seed_or_marketplace_upsert"
+
+  - id: "frontend-extension-points"
+    path: "extensibility/frontend-extension-points.md"
+    title: "Frontend Extension Points"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["frontend/src/pages/PagesPage.tsx","frontend/src/pages/MarketplacePage.tsx","frontend/src/services/api.ts","backend/src/routes/marketplace_adapters.rs"]
+    related_documents: ["frontend/component-architecture.md","frontend/page-builder.md","extensibility/component-and-block-registration.md"]
+    related_diagrams: ["extensibility/diagrams/component-registration.mmd"]
+
+  - id: "hooks-and-events"
+    path: "extensibility/hooks-and-events.md"
+    title: "Hooks and Events"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/content.rs","backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace_adapters.rs","backend/src/services/audit.rs","backend/src/services/webhooks.rs"]
+    related_documents: ["domain/domain-events.md","domain/background-processes.md","extensibility/extension-points.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-registration-flow.mmd"]
+
+  - id: "extensibility-installation-removal"
+    path: "extensibility/installation-and-removal.md"
+    title: "Installation and Removal"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs","backend/src/services/marketplace_installation.rs","backend/migrations/0019_v3_phase_six_installation_lifecycle.sql"]
+    related_documents: ["extensibility/plugin-lifecycle.md","extensibility/plugin-data-and-migrations.md","extensibility/marketplace/installation-update-rollback.md"]
+    related_diagrams: ["extensibility/diagrams/marketplace-installation-flow.mmd"]
+
+  - id: "plugin-isolation-trust"
+    path: "extensibility/isolation-and-trust.md"
+    title: "Isolation and Trust"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/services/marketplace_validation.rs","backend/src/services/marketplace_runtime.rs","backend/src/routes/marketplace_runtime.rs"]
+    related_documents: ["security/trust-boundaries.md","security/threat-register.md","extensibility/plugin-permissions.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-permission-flow.mmd","extensibility/diagrams/extensibility-context.mmd"]
+
+  - id: "marketplace-area-commerce-entitlements"
+    path: "extensibility/marketplace/commerce-entitlements.md"
+    title: "Marketplace Commerce and Entitlements"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace_finance.rs","backend/src/services/marketplace_finance.rs","backend/migrations/0022_v3_phase_nine_marketplace_finance.sql","frontend/src/pages/MarketplacePage.tsx"]
+    related_documents: ["extensibility/marketplace-architecture.md","extensibility/marketplace-workflows.md","domain/domains/marketplace.md"]
+    related_diagrams: ["extensibility/diagrams/marketplace-installation-flow.mmd"]
+    implementation_status: "implemented_contracts_deployment_unverified"
+    marketplace_area_id: "MPA-005"
+    marketplace_area_name: "Commerce and Entitlements"
+
+  - id: "marketplace-area-creator-listing-version"
+    path: "extensibility/marketplace/creator-listing-version.md"
+    title: "Marketplace Creator, Listing, and Version Management"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs","backend/src/services/marketplace_domain.rs","backend/src/services/marketplace_submission.rs","backend/migrations/0015_v3_phase_one_marketplace_foundation.sql","frontend/src/pages/MarketplacePage.tsx"]
+    related_documents: ["extensibility/marketplace-architecture.md","extensibility/marketplace-workflows.md","extensibility/marketplace/package-validation-review.md"]
+    related_diagrams: ["extensibility/diagrams/marketplace-installation-flow.mmd"]
+    implementation_status: "implemented"
+    marketplace_area_id: "MPA-001"
+    marketplace_area_name: "Creator Listing and Version Management"
+
+  - id: "marketplace-area-feedback-moderation-analytics"
+    path: "extensibility/marketplace/feedback-moderation-analytics.md"
+    title: "Marketplace Feedback, Moderation, and Analytics"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs","backend/src/routes/marketplace_analytics.rs","backend/src/services/marketplace_feedback.rs","backend/src/services/marketplace_analytics.rs","backend/migrations/0024_v3_phase_ten_ratings_abuse.sql","frontend/src/pages/MarketplacePage.tsx"]
+    related_documents: ["extensibility/marketplace-architecture.md","extensibility/marketplace-workflows.md","extensibility/marketplace/package-validation-review.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd"]
+    implementation_status: "implemented"
+    marketplace_area_id: "MPA-006"
+    marketplace_area_name: "Feedback Moderation and Analytics"
+
+  - id: "marketplace-area-installation-update-rollback"
+    path: "extensibility/marketplace/installation-update-rollback.md"
+    title: "Marketplace Installation, Update, and Rollback"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs","backend/src/services/marketplace_installation.rs","backend/migrations/0019_v3_phase_six_installation_lifecycle.sql"]
+    related_documents: ["extensibility/marketplace-architecture.md","extensibility/installation-and-removal.md","extensibility/plugin-lifecycle.md"]
+    related_diagrams: ["extensibility/diagrams/marketplace-installation-flow.mmd"]
+    implementation_status: "implemented_with_product_type_gate"
+    marketplace_area_id: "MPA-003"
+    marketplace_area_name: "Installation Update and Rollback"
+
+  - id: "marketplace-area-package-validation-review"
+    path: "extensibility/marketplace/package-validation-review.md"
+    title: "Marketplace Package Validation and Review"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_manifest.rs","backend/src/services/marketplace_package.rs","backend/src/services/marketplace_validation.rs","backend/src/services/marketplace_review.rs","backend/src/routes/marketplace.rs"]
+    related_documents: ["extensibility/marketplace-architecture.md","extensibility/plugin-manifest.md","extensibility/marketplace/creator-listing-version.md"]
+    related_diagrams: ["extensibility/diagrams/marketplace-installation-flow.mmd"]
+    implementation_status: "implemented"
+    marketplace_area_id: "MPA-002"
+    marketplace_area_name: "Package Validation and Review"
+
+  - id: "marketplace-area-runtime-permissions-adapters"
+    path: "extensibility/marketplace/runtime-permissions-adapters.md"
+    title: "Marketplace Runtime Permissions and Host Adapters"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_runtime.rs","backend/src/routes/marketplace_runtime.rs","backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace_adapters.rs","backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql","backend/migrations/0021_v3_phase_eight_runtime_adapters.sql"]
+    related_documents: ["extensibility/marketplace-architecture.md","extensibility/plugin-permissions.md","extensibility/isolation-and-trust.md","extensibility/extension-points/marketplace-runtime-authorization.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-permission-flow.mmd","extensibility/diagrams/component-registration.mmd"]
+    implementation_status: "authorization_and_declarative_adapters_implemented"
+    marketplace_area_id: "MPA-004"
+    marketplace_area_name: "Runtime Permissions and Host Adapters"
+
+  - id: "marketplace-architecture"
+    path: "extensibility/marketplace-architecture.md"
+    title: "Marketplace Architecture"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs","backend/src/routes/marketplace_adapters.rs","backend/src/routes/marketplace_runtime.rs","backend/src/routes/marketplace_finance.rs","backend/src/routes/marketplace_analytics.rs","backend/src/services","backend/migrations/0015_v3_phase_one_marketplace_foundation.sql","frontend/src/pages/MarketplacePage.tsx"]
+    related_documents: ["extensibility/marketplace-workflows.md","extensibility/marketplace/creator-listing-version.md","extensibility/marketplace/package-validation-review.md","extensibility/marketplace/installation-update-rollback.md","extensibility/marketplace/runtime-permissions-adapters.md","extensibility/marketplace/commerce-entitlements.md","extensibility/marketplace/feedback-moderation-analytics.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd","extensibility/diagrams/marketplace-installation-flow.mmd"]
+
+  - id: "marketplace-workflows"
+    path: "extensibility/marketplace-workflows.md"
+    title: "Marketplace Workflows"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs","backend/src/routes/marketplace_adapters.rs","backend/src/routes/marketplace_runtime.rs","backend/src/routes/marketplace_finance.rs","backend/src/routes/marketplace_analytics.rs"]
+    related_documents: ["extensibility/marketplace-architecture.md","extensibility/installation-and-removal.md","extensibility/activation-and-deactivation.md"]
+    related_diagrams: ["extensibility/diagrams/marketplace-installation-flow.mmd","extensibility/diagrams/plugin-permission-flow.mmd"]
+
+  - id: "extensibility-overview"
+    path: "extensibility/overview.md"
+    title: "Extensibility Overview"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/plugins/seo.rs","backend/src/services/marketplace_manifest.rs","backend/src/services/marketplace_runtime.rs","backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace_adapters.rs"]
+    related_documents: ["extensibility/extensibility-catalog.md","extensibility/plugin-architecture.md","extensibility/marketplace-architecture.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd"]
+
+  - id: "plugin-architecture"
+    path: "extensibility/plugin-architecture.md"
+    title: "Plugin Architecture"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/plugins/seo.rs","backend/src/routes/plugins.rs","backend/src/routes/content.rs","backend/migrations/0006_phase_six_workflow_collaboration.sql"]
+    related_documents: ["extensibility/plugin-discovery-and-registration.md","extensibility/plugin-lifecycle.md","extensibility/plugin-permissions.md","extensibility/plugin-data-and-migrations.md","extensibility/compatibility-and-versioning.md","extensibility/isolation-and-trust.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-registration-flow.mmd","extensibility/diagrams/plugin-lifecycle.mmd"]
+
+  - id: "plugin-configuration"
+    path: "extensibility/plugin-configuration.md"
+    title: "Plugin Configuration"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "partially_verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "partially_verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/plugins.rs","backend/migrations/0006_phase_six_workflow_collaboration.sql","backend/src/services/marketplace_adapters.rs"]
+    related_documents: ["extensibility/plugin-architecture.md","extensibility/plugin-manifest.md","extensibility/tenant-and-global-scope.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-data-ownership.mmd"]
+
+  - id: "plugin-data-migrations"
+    path: "extensibility/plugin-data-and-migrations.md"
+    title: "Plugin Data and Migrations"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/migrations/0006_phase_six_workflow_collaboration.sql","backend/migrations/0015_v3_phase_one_marketplace_foundation.sql","backend/migrations/0019_v3_phase_six_installation_lifecycle.sql","backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql","backend/migrations/0021_v3_phase_eight_runtime_adapters.sql"]
+    related_documents: ["database/module-data-ownership.md","database/migrations.md","backend/persistence-access.md","extensibility/tenant-and-global-scope.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-data-ownership.mmd"]
+
+  - id: "plugin-discovery-registration"
+    path: "extensibility/plugin-discovery-and-registration.md"
+    title: "Plugin Discovery and Registration"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/plugins.rs","backend/src/services/marketplace_adapters.rs","backend/src/routes/marketplace_adapters.rs"]
+    related_documents: ["extensibility/plugin-architecture.md","extensibility/plugin-lifecycle.md","extensibility/component-and-block-registration.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-registration-flow.mmd"]
+
+  - id: "plugin-lifecycle"
+    path: "extensibility/plugin-lifecycle.md"
+    title: "Plugin Lifecycle"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/plugins.rs","backend/src/services/marketplace_installation.rs","backend/src/routes/marketplace.rs","backend/migrations/0019_v3_phase_six_installation_lifecycle.sql"]
+    related_documents: ["extensibility/installation-and-removal.md","extensibility/activation-and-deactivation.md","extensibility/compatibility-and-versioning.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-lifecycle.mmd","extensibility/diagrams/marketplace-installation-flow.mmd"]
+
+  - id: "plugin-manifest"
+    path: "extensibility/plugin-manifest.md"
+    title: "Plugin Manifest"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_manifest.rs","docs/V3_MARKETPLACE_MANIFEST_SCHEMA.md","scripts/marketplace-cli.mjs"]
+    related_documents: ["extensibility/compatibility-and-versioning.md","extensibility/plugin-permissions.md","extensibility/marketplace-architecture.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-registration-flow.mmd"]
+
+  - id: "plugin-permissions"
+    path: "extensibility/plugin-permissions.md"
+    title: "Plugin Permissions"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_manifest.rs","backend/src/services/marketplace_runtime.rs","backend/migrations/0020_v3_phase_seven_permission_sandbox_kill_switch.sql","backend/src/services/rbac.rs"]
+    related_documents: ["security/roles-and-permissions-catalog.md","security/permissions/marketplace-runtime-capabilities.md","extensibility/isolation-and-trust.md","extensibility/tenant-and-global-scope.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-permission-flow.mmd"]
+
+  - id: "plugin-seo-auto"
+    path: "extensibility/plugins/seo-auto.md"
+    title: "SEO Auto Generator Plugin"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/seo.rs","backend/src/plugins/mod.rs","backend/src/routes/content.rs","backend/src/routes/plugins.rs"]
+    related_documents: ["extensibility/extensibility-catalog.md","extensibility/plugin-architecture.md","extensibility/plugin-lifecycle.md","extensibility/extension-points/cms-entry-before-save.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-registration-flow.mmd","extensibility/diagrams/plugin-lifecycle.mmd"]
+    plugin_id: "seo-auto"
+    plugin_name: "SEO Auto Generator"
+    plugin_type: "built_in_backend_plugin"
+    plugin_scope: "global_enablement_with_tenant_invocation_context"
+    implementation_status: "implemented"
+    compatibility_status: "compiled_with_host_no_declared_range"
+
+  - id: "extensibility-readme"
+    path: "extensibility/README.md"
+    title: "Plugins, Marketplace, and Extensibility"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins","backend/src/routes/plugins.rs","backend/src/routes/marketplace.rs","backend/src/routes/marketplace_adapters.rs","backend/src/routes/marketplace_runtime.rs","backend/src/services","backend/migrations","frontend/src/pages/MarketplacePage.tsx","frontend/src/pages/PagesPage.tsx"]
+    related_documents: ["backend/module-catalog.md","frontend/page-builder.md","database/entity-catalog.md","api/endpoint-catalog.md","security/trust-boundaries.md","domain/page-builder-rules.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd","extensibility/diagrams/plugin-registration-flow.mmd","extensibility/diagrams/plugin-lifecycle.mmd","extensibility/diagrams/component-registration.mmd","extensibility/diagrams/plugin-permission-flow.mmd","extensibility/diagrams/plugin-data-ownership.mmd","extensibility/diagrams/marketplace-installation-flow.mmd"]
+
+  - id: "extensibility-tenant-global-scope"
+    path: "extensibility/tenant-and-global-scope.md"
+    title: "Tenant and Global Scope"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "mixed"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "mixed"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/migrations/0006_phase_six_workflow_collaboration.sql","backend/migrations/0008_v2_phase_one_organizations.sql","backend/migrations/0009_v2_phase_three_rls.sql","backend/migrations/0015_v3_phase_one_marketplace_foundation.sql","backend/src/middleware/tenant.rs"]
+    related_documents: ["security/tenant-access-control.md","database/multi-tenancy.md","database/module-data-ownership.md","extensibility/plugin-data-and-migrations.md"]
+    related_diagrams: ["extensibility/diagrams/plugin-data-ownership.mmd"]
+
+  - id: "extensibility-terminology"
+    path: "extensibility/terminology.md"
+    title: "Extensibility Terminology"
+    category: "extensibility"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/services/marketplace_manifest.rs","backend/src/services/marketplace_adapters.rs"]
+    related_documents: ["extensibility/overview.md","extensibility/extensibility-catalog.md"]
+    related_diagrams: ["extensibility/diagrams/extensibility-context.mmd"]
+
+  - id: "extensibility-diagram-context"
+    path: "extensibility/diagrams/extensibility-context.mmd"
+    title: "Extensibility Context"
+    category: "extensibility-diagram"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/marketplace_adapters.rs"]
+    related_documents: ["extensibility/README.md","extensibility/overview.md"]
+
+  - id: "extensibility-diagram-plugin-registration"
+    path: "extensibility/diagrams/plugin-registration-flow.mmd"
+    title: "Plugin Registration Flow"
+    category: "extensibility-diagram"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/plugins/mod.rs","backend/src/routes/plugins.rs"]
+    related_documents: ["extensibility/plugin-discovery-and-registration.md","extensibility/plugin-architecture.md"]
+
+  - id: "extensibility-diagram-plugin-lifecycle"
+    path: "extensibility/diagrams/plugin-lifecycle.mmd"
+    title: "Plugin Lifecycle"
+    category: "extensibility-diagram"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/plugins.rs"]
+    related_documents: ["extensibility/plugin-lifecycle.md","extensibility/activation-and-deactivation.md"]
+
+  - id: "extensibility-diagram-component-registration"
+    path: "extensibility/diagrams/component-registration.mmd"
+    title: "Component Registration"
+    category: "extensibility-diagram"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/pages.rs","backend/src/routes/marketplace_adapters.rs","frontend/src/pages/PagesPage.tsx"]
+    related_documents: ["extensibility/component-and-block-registration.md","extensibility/extension-points/page-builder-component-registry.md"]
+
+  - id: "extensibility-diagram-plugin-permission"
+    path: "extensibility/diagrams/plugin-permission-flow.mmd"
+    title: "Plugin Permission Flow"
+    category: "extensibility-diagram"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/services/marketplace_runtime.rs","backend/src/routes/marketplace_runtime.rs"]
+    related_documents: ["extensibility/plugin-permissions.md","extensibility/isolation-and-trust.md"]
+
+  - id: "extensibility-diagram-plugin-data-ownership"
+    path: "extensibility/diagrams/plugin-data-ownership.mmd"
+    title: "Plugin Data Ownership"
+    category: "extensibility-diagram"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/migrations/0006_phase_six_workflow_collaboration.sql","backend/migrations/0015_v3_phase_one_marketplace_foundation.sql","backend/migrations/0021_v3_phase_eight_runtime_adapters.sql"]
+    related_documents: ["extensibility/plugin-data-and-migrations.md","extensibility/tenant-and-global-scope.md"]
+
+  - id: "extensibility-diagram-marketplace-installation"
+    path: "extensibility/diagrams/marketplace-installation-flow.mmd"
+    title: "Marketplace Installation Flow"
+    category: "extensibility-diagram"
+    status: "current"
+    phase: 9
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    extensibility_status: "verified"
+    last_verified_commit: "56d733985fdd7aa3f25ee6981b88cf29c52f65c9"
+    last_verified_date: "2026-07-19"
+    primary_evidence_paths: ["backend/src/routes/marketplace.rs","backend/src/services/marketplace_installation.rs"]
+    related_documents: ["extensibility/marketplace-workflows.md","extensibility/marketplace/installation-update-rollback.md"]
+
 uncertainty_register:
+  extensibility_phase_nine:
+    - id: "PLUGIN_LIFECYCLE_UNCLEAR EXU-01"
+      summary: "Compiled-plugin removal does not reconcile stale cms_plugins rows"
+    - id: "PLUGIN_CONFIGURATION_UNCLEAR EXU-02"
+      summary: "Stored built-in plugin settings are not passed into the current callback contract"
+    - id: "PLUGIN_COMPATIBILITY_UNCLEAR EXU-03"
+      summary: "CmsPlugin has no declared host-version or API compatibility policy"
+    - id: "PLUGIN_ISOLATION_UNVERIFIED EXU-04"
+      summary: "Built-ins execute in-process and no uploaded-package execution sandbox exists"
+    - id: "COMPONENT_REGISTRATION_UNCLEAR EXU-05"
+      summary: "Marketplace-derived component collision and stale-row cleanup behavior lacks integration verification"
+    - id: "HOOK_DELIVERY_UNCLEAR EXU-06"
+      summary: "Marketplace public hooks are listed and authorized but not executed by inspected code"
+    - id: "PLUGIN_DATA_OWNERSHIP_UNCLEAR EXU-07"
+      summary: "Artifact retention and derived-record cleanup after uninstall are not governed by a complete policy"
+    - id: "MARKETPLACE_BEHAVIOR_UNCLEAR EXU-08"
+      summary: "Provider deployment state and end-to-end tenant runtime behavior were not executed in Phase 9"
+    - id: "TEST_COVERAGE_GAP EXU-09"
+      summary: "No real-database creator-to-install-to-adapter and built-in plugin route suite was found"
+
   domain_phase_eight:
     - id: "WORKFLOW_UNCLEAR DWU-01"
       summary: "Public settings and navigation have persisted delivery reads but no complete authenticated management workflow was found"
@@ -6849,12 +7676,12 @@ current_sections:
     title: "Business Rules and Domain Workflows"
     status: "current"
     completed_phase: 8
-
-planned_sections:
   - id: "plugins-marketplace-extensibility"
     title: "Plugins, Marketplace, and Extensibility"
-    status: "planned"
-    target_phase: 9
+    status: "current"
+    completed_phase: 9
+
+planned_sections:
   - id: "development-operations-testing"
     title: "Development, Deployment, Operations, and Testing"
     status: "planned"

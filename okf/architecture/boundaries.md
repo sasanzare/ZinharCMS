@@ -245,3 +245,7 @@ The browser/API, public router, bearer middleware, tenant membership, handler RB
 ## Phase 8 Domain Boundary Refinement
 
 The [Domain Catalog](../domain/domain-catalog.md) identifies ten behavior boundaries without asserting separate deployable services. Cross-domain workflows commonly commit PostgreSQL state before cache invalidation, filesystem work, email, webhooks, or provider calls. Marketplace packages cross a host-adapter permission boundary; CMS built-in plugins remain compiled, process-local behavior. These distinctions are summarized in [Domain Events](../domain/domain-events.md) and [Domain Risks](../domain/domain-risks.md).
+
+## Extensibility Boundary
+
+[Plugin Architecture](../extensibility/plugin-architecture.md) separates trusted in-process CmsPlugin callbacks from tenant-owned Marketplace installation state and declarative host adapters. [Isolation and Trust](../extensibility/isolation-and-trust.md) confirms that runtime authorization is not an execution sandbox.

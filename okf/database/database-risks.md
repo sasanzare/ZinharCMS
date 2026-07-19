@@ -55,3 +55,7 @@ The principal evidence views are [Schema Catalog](schema-catalog.md), [Migration
 ## Phase 7 Security Correlation
 
 Security risks `SEC-06`, `SEC-07`, `SEC-08`, and `SEC-09` cover authorization-agnostic RLS bypass, permission-model drift, static tenant-isolation assurance, and incomplete audit coverage. See [Tenant Access Control](../security/tenant-access-control.md), [RBAC Model](../security/rbac-model.md), and [Audit and Security Events](../security/audit-and-security-events.md).
+
+## Extensibility Persistence Risks
+
+Stale built-in registry rows, Marketplace-derived component cleanup, artifact retention, cross-tenant tests, and absent generic plugin data ownership remain open. These are tracked in [Extensibility Risks](../extensibility/extensibility-risks.md).

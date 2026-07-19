@@ -68,3 +68,7 @@ The most operationally sensitive files are 0008, 0009, 0016, 0017, and 0023. Mig
 ## Validation and Rollback Expectations
 
 Repository evidence does not define maintenance windows, lock budgeting, preflight queries, deployment sequencing, or rollback ownership (`NOC-14`). A safe future change should include forward and compatibility analysis, data-volume-aware backfill planning, RLS-policy tests, query/model compatibility checks, and an explicit operational fallback. Schema rollback cannot be assumed from the absence of down files; application rollback may also become incompatible after a forward schema change.
+
+## Extensibility Migration Boundary
+
+Application migrations create and evolve plugin, component, and Marketplace tables. No package-supplied SQL or plugin migration callback is executed. Marketplace uninstall preserves organization data, while artifact and derived-registry retention need explicit operational policy. See [Plugin Data and Migrations](../extensibility/plugin-data-and-migrations.md).

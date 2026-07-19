@@ -238,3 +238,7 @@ Phase 4 selects a feature when current frontend code provides a meaningful user 
 ## Phase 8 Domain Cross-Reference
 
 Frontend features support, but do not authoritatively enforce, the business rules in the [Domain Catalog](../domain/domain-catalog.md). Content, pages, organization members, media, billing, SaaS/beta, plugins, and Marketplace screens expose actions and repeat selected validation. Backend authorization, database constraints, provider state, and side effects remain authoritative. Use the [Business Rule Catalog](../domain/business-rule-catalog.md) to distinguish UI cues from enforced outcomes.
+
+## Extensibility Feature Mapping
+
+MarketplacePage is a fixed host UI for Marketplace workflows. PagesPage combines the component registry with Marketplace component responses and invokes template preview/import APIs. Neither surface dynamically loads package JavaScript. See [Frontend Extension Points](../extensibility/frontend-extension-points.md).

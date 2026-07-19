@@ -55,3 +55,7 @@ Tenant-aware SQL helpers set `zinhar.organization_id`, `zinhar.user_id`, and `zi
 ## Unverified Deployment Edges
 
 TLS, proxy header normalization, network segmentation, database roles, Redis authentication, upload serving at an external proxy, and provider egress policy are outside this repository-only review. These relationships are dashed in the diagram and carry `SECURITY_HEADER_STATUS_UNCLEAR SHSU-01`, `COOKIE_SECURITY_UNVERIFIED CSU-01`, and `SECRET_HANDLING_UNVERIFIED SHU-01`.
+
+## Plugin Trust Boundary
+
+Compiled CmsPlugin code is inside the trusted backend process and has no isolation boundary. Marketplace artifacts remain untrusted input; current host code validates/stores them and interprets declarations without executing uploaded code. See [Isolation and Trust](../extensibility/isolation-and-trust.md).

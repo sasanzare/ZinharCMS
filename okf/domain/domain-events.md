@@ -55,3 +55,6 @@ Each outbound webhook uses `X-CMS-Event`, `X-CMS-Signature`, `X-Organization-Id`
 - `WORKFLOW_UNCLEAR`: no contract states whether consumers may depend on webhook order.
 - `PLANNED_NOT_IMPLEMENTED`: external delivery for critical Marketplace notifications and arbitrary plugin execution are absent.
 
+## Plugin and Marketplace Event Distinction
+
+CMS entry hooks are synchronous executable callbacks. Marketplace public hooks are declarative list/authorize contracts whose current response records not_executed. Audit actions, webhooks, and spawned work are separate host mechanisms. See [Hooks and Events](../extensibility/hooks-and-events.md).

@@ -106,3 +106,7 @@ See the [state composition diagram](diagrams/application-state-composition.mmd),
 ## Phase 7 Security Configuration
 
 [Secrets and Security Configuration](../security/secrets-and-configuration.md) inventories security-relevant variable names without exposing values. JWT secret length is validated, while token lifetimes, cookie `Secure`, CORS origin, login limits, tenant rate limits, upload limits, and provider modes are configurable. Deployment secret storage, rotation, TLS, and redaction remain `SECRET_HANDLING_UNVERIFIED SHU-01`.
+
+## Plugin and Marketplace State
+
+Global plugin settings are persisted JSON but are not passed into the current callback contract. Marketplace configuration is split across manifest declarations, installation snapshots, runtime state, hook config, component props schema, and template import input. See [Plugin Configuration](../extensibility/plugin-configuration.md).

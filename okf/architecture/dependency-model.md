@@ -198,3 +198,7 @@ For the backend-only dependency inventory, including module-to-module, shared-st
 For the frontend-only dependency inventory, use [Frontend Feature Boundaries](../frontend/feature-boundaries.md), [State Management](../frontend/state-management.md), [API Client](../frontend/api-client.md), [Frontend State Flow](../frontend/diagrams/frontend-state-flow.mmd), and [Frontend API Flow](../frontend/diagrams/frontend-api-flow.mmd).
 
 For schema and persistence dependencies, use the [Database Schema Catalog](../database/schema-catalog.md), [Relationships](../database/relationships.md), and [Database Ownership Diagram](../database/diagrams/module-data-ownership.mmd).
+
+## Extensibility Dependency Direction
+
+Built-in plugin implementations depend on the host CmsPlugin trait and are selected by the host; the host does not depend on external package code at runtime. Marketplace artifacts supply validated declarative data, while trusted host routes/services own database, page, permission, and provider actions. See [Backend Extension Points](../extensibility/backend-extension-points.md).

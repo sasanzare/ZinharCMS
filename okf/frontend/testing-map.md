@@ -127,3 +127,7 @@ Frontend authentication and Marketplace role/permission tests demonstrate render
 ## Phase 8 Workflow Test Interpretation
 
 Frontend tests demonstrate visible actions, validation messages, and client-call wiring for selected Page Builder, Marketplace, billing, and operational paths. They do not prove persisted invariants, transactional rollback, cache invalidation, file cleanup, webhook delivery, provider ordering, or cross-tenant denial. [Business Rule Testing](../domain/business-rule-testing.md) lists the required backend and end-to-end complements.
+
+## Extensibility Test Boundary
+
+MarketplacePage and PagesPage tests verify selected host UI and API-client wiring. They do not demonstrate third-party JavaScript execution, registry cleanup, adapter/database transactions, or cross-tenant isolation. See [Extensibility Testing](../extensibility/extensibility-testing.md).

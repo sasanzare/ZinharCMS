@@ -1,0 +1,47 @@
+flowchart LR
+    Developer["Plugin Developer"]
+    Admin["Global Plugin Administrator"]
+    Tenant["Organization Administrator or Editor"]
+    Creator["Marketplace Creator"]
+    Reviewer["Marketplace Reviewer"]
+    Extension["Plugin or Marketplace Extension Declaration"]
+    Host["ZinharCMS Host"]
+    BackendEP["Backend Extension Points"]
+    FrontendEP["Frontend Extension Points"]
+    Builtins["Compiled CmsPlugin Registry"]
+    PluginDB[("Global cms_plugins")]
+    Database[("PostgreSQL")]
+    Content["Content Orchestration"]
+    Marketplace["Marketplace Host Services"]
+    Artifact["Validated Package Artifact"]
+    Install[("Tenant Installation")]
+    Adapter["Host-Owned Adapters"]
+    Registry[("Component Registry")]
+    Pages["Page Builder"]
+    Runtime["Runtime Authorization Policy"]
+
+    Developer -->|"implement and compile"| Extension
+    Extension --> Builtins
+    Builtins --> BackendEP
+    Host --> BackendEP
+    Host --> FrontendEP
+    BackendEP --> Content
+    FrontendEP --> Pages
+    Admin -->|"sync, configure, enable"| PluginDB
+    Builtins -->|"metadata"| PluginDB
+    Content -->|"invoke enabled keys"| Builtins
+    Creator -->|"upload and submit"| Marketplace
+    Reviewer -->|"review and moderate"| Marketplace
+    Marketplace -->|"validate and store"| Artifact
+    Tenant -->|"approve permissions and install"| Marketplace
+    Marketplace --> Install
+    Marketplace --> Database
+    PluginDB --> Database
+    Registry --> Database
+    Install --> Database
+    Install --> Adapter
+    Adapter --> Registry
+    Registry --> Pages
+    Install --> Runtime
+    Runtime -->|"allowed or denied; not executed"| Tenant
+    Extension -.->|"uploaded package code is not dynamically loaded"| Artifact

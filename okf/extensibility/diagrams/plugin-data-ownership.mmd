@@ -1,0 +1,35 @@
+flowchart TB
+    Binary["Backend Binary and Built-in Plugin Code"]
+    Settings["Global Plugin Settings JSON"]
+    NoTables["No Generic Plugin-Owned Tables"]
+    Migrations["Application-Owned Migrations"]
+    Tenant["Tenant Context, RBAC, and RLS"]
+    GlobalDB[("Global cms_plugins")]
+    CatalogDB[("Global Marketplace Catalog and Versions")]
+    TenantDB[("Tenant Installations, Permission Snapshots, Hooks, Imports")]
+    Registry[("System or Tenant component_registry")]
+    ContentDB[("Tenant Content and Pages")]
+    Artifact["Stored Package Artifact"]
+    Audit[("Audit Records")]
+
+    Binary -->|"synchronizes metadata"| GlobalDB
+    Settings --> GlobalDB
+    Migrations --> GlobalDB
+    Migrations --> CatalogDB
+    Migrations --> TenantDB
+    NoTables -.->|"generic ownership contract absent"| TenantDB
+    Binary -->|"mutates EntryData through trusted hook"| ContentDB
+    CatalogDB -->|"pins approved version"| TenantDB
+    Artifact -->|"checksum and path verification"| TenantDB
+    TenantDB -->|"installation-linked definitions"| Registry
+    Tenant --> TenantDB
+    Tenant --> Registry
+    Tenant --> ContentDB
+    Registry --> ContentDB
+    TenantDB --> Audit
+    ContentDB --> Audit
+
+    classDef global fill:#dbeafe,stroke:#1d4ed8
+    classDef tenant fill:#dcfce7,stroke:#15803d
+    class GlobalDB,CatalogDB global
+    class TenantDB,ContentDB tenant

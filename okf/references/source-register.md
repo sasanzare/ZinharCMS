@@ -465,3 +465,7 @@ The [Security README](../security/README.md) organizes these sources without sup
 | `backend/migrations`, frontend pages/components/services/types | Persistence invariants, UI-supported actions, validation duplication, and test evidence |
 
 The [Domain Catalog](../domain/domain-catalog.md) and [Business Rule Catalog](../domain/business-rule-catalog.md) organize these sources. They do not supersede code, migrations, or tests.
+
+## Phase 9 Evidence Set
+
+Phase 9 prioritizes backend/src/plugins, plugin and Marketplace route modules, Marketplace service modules, migrations 0006 and 0015 through 0026, MarketplacePage and PagesPage, their tests, marketplace-cli, and current V3 manifest/package/creator documentation. The [Extensibility Catalog](../extensibility/extensibility-catalog.md) maps each verified mechanism to direct evidence.

@@ -64,3 +64,7 @@ Add register/login/refresh/logout cookie integration tests, malformed/expired/st
 ## Phase 8 Domain Workflow Matrix
 
 For every workflow in [Cross-Module Workflows](../domain/cross-module-workflows.md), test precondition denial, valid transition, transaction rollback, retry/idempotency behavior, and observable side effects. Priority API scenarios include concurrent owner removal, entry/page transition permissions, page restore validation, media quota and file failure, unsafe webhook URL and timeout, out-of-order Stripe events, Marketplace permission reapproval, refund entitlement revocation, and tenant-scoped access. See [Business Rule Testing](../domain/business-rule-testing.md).
+
+## Extensibility API Test Priorities
+
+Add real-router and database-backed tests for plugin registry synchronization/enablement, Marketplace install/update/rollback/uninstall, permission reapproval, kill-switch races, component/template adapters, and cross-tenant denial. See [Extensibility Testing](../extensibility/extensibility-testing.md).

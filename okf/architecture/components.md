@@ -182,3 +182,7 @@ Persistence ownership is not a separate application component: routes and servic
 The following are not verified as current components: durable worker, queue or broker, search cluster, object store, CDN adapter, external identity provider, API gateway, metrics exporter, APM collector, deployment controller, or data warehouse. Their absence from the repository must not be turned into a statement about unobserved production infrastructure.
 
 For the deeper backend-only component view, see the [Backend Overview](../backend/overview.md), [18-module catalog](../backend/module-catalog.md), [Backend Module Map](../backend/diagrams/backend-module-map.mmd), and [Application State Composition](../backend/diagrams/application-state-composition.mmd).
+
+## Extensibility Components
+
+The backend contains a compiled plugin registry, global plugin metadata, Marketplace host services, runtime policy, and adapter routes. Page Builder consumes system, tenant, and Marketplace-derived component metadata. See the [Extensibility Context](../extensibility/diagrams/extensibility-context.mmd).

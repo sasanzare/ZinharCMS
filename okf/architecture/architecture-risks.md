@@ -123,3 +123,7 @@ Security-specific consequences of shared-process boundaries, distributed authori
 ## Phase 8 Domain Risk Link
 
 [Domain Risks](../domain/domain-risks.md) prioritizes application-only invariants, last-owner concurrency, same-tenant relationship proof, non-atomic files and external side effects, in-process webhook loss, public default-tenant routing, incomplete revision/restore behavior, model/migration drift, and missing end-to-end workflow tests. These are architecture risks when they cross persistence, process, storage, or provider boundaries; documentation does not close them.
+
+## Extensibility Risks
+
+The prioritized extension risks are trusted in-process callback authority, absent executable-package isolation, stale registry reconciliation, derived component cleanup, compatibility policy, and missing database-backed end-to-end tests. See [Extensibility Risks](../extensibility/extensibility-risks.md).

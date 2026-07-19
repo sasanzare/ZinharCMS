@@ -77,3 +77,7 @@ Before changing a table:
 6. Update ownership documentation when a module gains write authority.
 
 `PERSISTENCE_BOUNDARY_UNCLEAR PBU-01` remains because no mandatory repository layer centralizes these responsibilities.
+
+## Plugin and Marketplace Ownership
+
+Built-in plugin code is binary-owned and its registry is global. Marketplace catalog data is global, installation/runtime/adapter data is organization-owned, and component_registry can be system-global or tenant-owned. No generic plugin-owned schema or migration namespace exists. See [Tenant and Global Scope](../extensibility/tenant-and-global-scope.md).

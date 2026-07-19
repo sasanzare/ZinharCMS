@@ -445,3 +445,7 @@ This catalog contains 50 evidence-backed rules. A status describes the strongest
 - Relations: reviews, installations, purchases, listings, versions.
 - Surface: review endpoints and Marketplace UI; Marketplace feedback flow; service and frontend tests exist.
 - Exceptions/confidence/owner: moderation lifecycle is separate and status transitions are not one central state machine; High; `STATE_TRANSITION_UNCLEAR` for moderation sequencing.
+
+## Phase 9 Extensibility Rules
+
+The extension-specific rules for static registration, enablement, exact permission approval, install eligibility, explicit updates, soft uninstall, runtime authorization, Page Builder registry validation, and host-owned adapters are consolidated in the [Extensibility Catalog](../extensibility/extensibility-catalog.md) and [Marketplace Workflows](../extensibility/marketplace-workflows.md).

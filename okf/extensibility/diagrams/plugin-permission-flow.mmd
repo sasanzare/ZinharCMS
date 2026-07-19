@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Creator
+    participant Validator as Manifest Validator
+    participant Approver as Organization Approver
+    participant Install as Installation Service
+    participant DB as Installation and Permission Snapshot
+    participant Host as Host Adapter or Runtime API
+    participant Policy as Runtime Policy
+
+    Creator->>Validator: Declare allowlisted permissions and entry points
+    Validator-->>Creator: Valid or rejected
+    Approver->>Install: Submit exact approved permission array
+    Install->>Install: Verify install, compatibility, artifact, entitlement, kill switch
+    Install->>DB: Persist active installation and snapshot
+    Host->>Policy: Request operation, entry point, payload
+    Policy->>DB: Read state and approved snapshot
+    Policy->>Policy: Check operation, product type, path, permission, size, kill switch
+    alt Policy allows
+        Policy-->>Host: allowed, execution not_executed
+    else Policy denies
+        Policy-->>Host: denied with bounded reason
+    end
+

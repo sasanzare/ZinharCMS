@@ -171,3 +171,7 @@ Use the [module catalog](module-catalog.md) for module identity, the [dependency
 ## Phase 8 Workflow Boundary Guidance
 
 A domain workflow may cross route, service, migration, frontend, filesystem, cache, provider, and webhook boundaries without creating a new module. [Cross-Module Workflows](../domain/cross-module-workflows.md) records current orchestration and failure ownership. In particular, database commits do not make subsequent email, cache, file, webhook, or provider effects atomic; proposed outbox, retry, or compensation designs remain unimplemented until source evidence changes.
+
+## Plugin and Marketplace Boundary
+
+CmsPlugin is trusted compiled application code; cms_plugins is metadata and enablement, not executable storage. Marketplace services validate artifacts and interpret declarations through host-owned routes. No Marketplace package can add a backend route or service in the inspected source. See [Plugin Architecture](../extensibility/plugin-architecture.md).

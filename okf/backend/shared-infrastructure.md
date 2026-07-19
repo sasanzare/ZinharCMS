@@ -72,3 +72,6 @@ Small helpers should remain documented here unless they acquire a distinct domai
 
 See the [Dependency Map](dependency-map.md), [Configuration and State](configuration-and-state.md), [Error Handling](error-handling.md), and each owning entry in the [Module Catalog](module-catalog.md).
 
+## Extensibility Infrastructure
+
+PostgreSQL stores global plugin metadata and Marketplace lifecycle state; filesystem storage holds uploaded artifacts; RBAC/RLS enforce management and tenant ownership; audit records trace sensitive transitions. Runtime permission policy and kill switches are host infrastructure. See [Plugin Data and Migrations](../extensibility/plugin-data-and-migrations.md).

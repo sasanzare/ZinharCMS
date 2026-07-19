@@ -1,0 +1,26 @@
+flowchart TD
+    Start["Select Approved Marketplace Version"]
+    Auth["Require Tenant Installer"]
+    Kill["Check Global and Organization Kill Switches"]
+    Gate["Validate Listing, Version, Review, Risk, Plan, Product Type"]
+    Paid{"Paid Product?"}
+    Entitlement["Require Completed Matching Entitlement"]
+    Permission["Require Exact Permission Approval"]
+    Artifact["Verify Stored Artifact Path, Size, and SHA-256"]
+    Transaction["Create Active Version-Pinned Installation and Audit"]
+    Ready["Installation Active and Runtime Ready"]
+    Adapter["Host-Owned Declarative Adapter"]
+    NoExec["No Uploaded Package Code Execution"]
+    Reject["Reject Request"]
+
+    Start --> Auth --> Kill --> Gate --> Paid
+    Paid -->|"yes"| Entitlement --> Permission
+    Paid -->|"no"| Permission
+    Permission --> Artifact --> Transaction --> Ready --> Adapter --> NoExec
+    Auth -->|"unauthorized"| Reject
+    Kill -->|"blocked"| Reject
+    Gate -->|"ineligible"| Reject
+    Entitlement -->|"missing"| Reject
+    Permission -->|"mismatch"| Reject
+    Artifact -->|"invalid"| Reject
+

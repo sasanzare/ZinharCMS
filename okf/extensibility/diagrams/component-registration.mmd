@@ -1,0 +1,27 @@
+flowchart TD
+    Seed["System Component Seed"]
+    Manager["Organization Component Manager"]
+    Package["Active Ready Component-Pack Manifest"]
+    Extract["Host Adapter Extracts Definitions"]
+    Namespace["Namespace Marketplace Keys"]
+    Upsert["Tenant Component Upsert"]
+    Registry[("component_registry")]
+    API["Pages Component API"]
+    MPAPI["Marketplace Runtime Components API"]
+    Palette["Page Builder Palette"]
+    Editor["Host Editor Renderer"]
+    Validator["Page JSON Validator"]
+    Persist["Page and Version Persistence"]
+    Published["Host Published Renderer"]
+
+    Seed --> Registry
+    Manager -->|"CRUD under RBAC and RLS"| API
+    API --> Registry
+    Package --> Extract --> Namespace --> Upsert --> Registry
+    Registry --> API --> Palette
+    Registry --> MPAPI --> Palette
+    Palette --> Editor
+    Editor --> Validator
+    Registry --> Validator
+    Validator --> Persist
+    Persist --> Published

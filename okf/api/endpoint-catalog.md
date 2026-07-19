@@ -370,3 +370,7 @@ Regenerate or manually compare this inventory whenever route registration change
 ## Phase 8 Workflow Cross-Reference
 
 Endpoint families initiate the 14 workflows cataloged in [Cross-Module Workflows](../domain/cross-module-workflows.md). The endpoint contract ends at the HTTP response, while business completion may also require committed state, file generation, cache invalidation, broadcast, email, webhook, payment-provider, or entitlement effects. Use the owning workflow document to review those post-request outcomes and failures.
+
+## Extensibility API Interpretation
+
+The plugins family manages global metadata and enablement for compiled built-ins. Marketplace endpoint families manage creator, catalog, install, runtime-policy, adapter, commerce, feedback, and analytics workflows. Runtime authorization and hook authorization do not execute package code. See [Extensibility Catalog](../extensibility/extensibility-catalog.md).

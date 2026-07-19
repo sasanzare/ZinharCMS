@@ -171,3 +171,13 @@ See [Security Overview](../security/overview.md), [RBAC Model](../security/rbac-
 - **Host-owned adapter:** A capability exposed by ZinharCMS to installed Marketplace code after installation state, readiness, declarations, and approved permissions are checked.
 
 See [Domain Overview](../domain/overview.md), [Domain Invariants](../domain/invariants.md), and [State Transitions](../domain/state-transitions.md).
+
+## Phase 9 Extensibility Terms
+
+- **Built-in plugin:** trusted Rust code returned by builtin_plugins() and compiled into the backend.
+- **Marketplace installation:** organization-owned, version-pinned record with an approved permission snapshot.
+- **Host adapter:** backend code interpreting declarative Marketplace data without loading package code.
+- **Runtime authorization:** an allowed/denied capability decision whose current response records execution as not_executed.
+- **Component registry:** Page Builder metadata/schema records; registration does not prove executable frontend code.
+
+See [Extensibility Terminology](../extensibility/terminology.md).

@@ -69,3 +69,7 @@ Three permission representations coexist:
 - nine dot-delimited Marketplace permission keys, which are validated, approved, persisted per installation, and mapped to runtime operations.
 
 This is `PERMISSION_SEMANTICS_UNCLEAR PSU-01`. Do not translate one vocabulary into another without implementation and migration changes.
+
+## Extensibility Permission Mapping
+
+Global plugin management controls metadata and enablement. Marketplace installer and permission-approver roles govern tenant lifecycle actions, while the nine Marketplace runtime capabilities constrain host-operation authorization. These runtime permissions are distinct from CMS RBAC roles. See [Plugin Permissions](../extensibility/plugin-permissions.md).

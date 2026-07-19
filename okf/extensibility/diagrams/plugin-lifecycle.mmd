@@ -1,0 +1,34 @@
+stateDiagram-v2
+    state "Compiled CMS Plugin" as BuiltIn {
+        [*] --> Compiled: included in builtin_plugins()
+        Compiled --> Synchronized: plugin-list metadata sync
+        Synchronized --> Enabled: enable
+        Synchronized --> Disabled: preserved or initial flag
+        Enabled --> Disabled: disable
+        Disabled --> Enabled: enable
+        Enabled --> Updated: metadata or settings update
+        Disabled --> Updated: metadata or settings update
+        Updated --> Enabled: enabled flag true
+        Updated --> Disabled: enabled flag false
+        Compiled --> SourceRemoved: removed and redeployed
+        SourceRemoved --> StaleMetadata: cleanup not found
+    }
+
+    state "Marketplace Installation Metadata" as Marketplace {
+        [*] --> Active: successful install
+        Active --> DisabledInstallation: disable
+        DisabledInstallation --> Active: enable
+        Active --> Blocked: emergency block
+        DisabledInstallation --> Blocked: emergency block
+        Active --> Active: update or rollback
+        DisabledInstallation --> DisabledInstallation: update or rollback
+        Active --> Uninstalled: soft uninstall
+        DisabledInstallation --> Uninstalled: soft uninstall
+        Blocked --> Uninstalled: soft uninstall
+        Uninstalled --> [*]
+    }
+
+    note right of Marketplace
+      Installation states do not imply
+      uploaded package code execution.
+    end note

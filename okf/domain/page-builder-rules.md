@@ -69,3 +69,6 @@ See [Frontend Page Builder](../frontend/page-builder.md) and the [Page Builder w
 
 Page deletion is a confirmed hard delete that cascades snapshots. Component deletion is a confirmed hard delete for non-system tenant components. Existing page JSON referencing a deleted component remains stored but can fail validation on the next save/restore: `INVARIANT_UNVERIFIED`.
 
+## Declarative Extension Rules
+
+Marketplace component and template definitions become Page Builder inputs only through host adapters. Component keys must resolve through the system-or-tenant registry, and imported templates must pass the same page JSON validation as host-authored pages. See [Component and Block Registration](../extensibility/component-and-block-registration.md).

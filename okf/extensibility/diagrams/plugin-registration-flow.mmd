@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Dev as Developer or Creator
+    participant Source as Built-in Source or Package
+    participant Manifest as Manifest Validator
+    participant Compat as Compatibility Gate
+    participant Registry as Host Registry
+    participant Permission as Permission Approval
+    participant Activation as Enablement or Installation
+    participant Runtime as Runtime Availability
+
+    alt Compiled built-in plugin
+        Dev->>Source: Implement CmsPlugin and add to builtin_plugins()
+        Source->>Registry: Rust build registers executable code
+        Registry->>Registry: Sync metadata and preserve is_enabled
+        Dev->>Activation: Authorized global enable
+        Activation->>Runtime: Enabled key matches compiled plugin
+        Runtime-->>Dev: Synchronous callback available
+    else Marketplace declarative product
+        Dev->>Source: Upload artifact and manifest
+        Source->>Manifest: Validate schema, paths, assets, permissions
+        Manifest->>Compat: Validate host, plan, status, and risk
+        Compat->>Registry: Persist approved version and tenant installation
+        Registry->>Permission: Require exact permission snapshot
+        Permission->>Activation: Create active, version-pinned installation
+        Activation->>Runtime: Check ready state and kill switches
+        Runtime-->>Dev: Host adapter available; execution not_executed
+    end
+
+    Source-->>Runtime: Dynamic package loading not found

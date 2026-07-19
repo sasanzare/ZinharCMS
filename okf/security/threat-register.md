@@ -54,3 +54,7 @@ related_diagrams:
 ## Ownership and Review
 
 No formal security owner, severity SLA, risk-acceptance authority, or review cadence was found. Assigning owners and treatment dates requires `NEEDS_OWNER_CONFIRMATION`; this register intentionally does not invent them.
+
+## Phase 9 Threat Mapping
+
+Extension-specific threats include trusted callback misuse, deceptive sandbox claims, permission escalation during update, unsafe artifact paths, oversized payloads, stale derived records, and future execution without isolation. Current controls and gaps are consolidated in [Extensibility Risks](../extensibility/extensibility-risks.md).

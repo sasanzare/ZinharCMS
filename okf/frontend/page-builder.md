@@ -129,3 +129,7 @@ Active Marketplace component packs contribute definitions to the palette. Active
 ## Phase 8 Page Builder Rules
 
 [Page Builder Rules](../domain/page-builder-rules.md) records the current document invariants: one `root`, registered descendants, unique bounded node IDs, object props/styles, maximum depth 12, and maximum 500 nodes. [Page Builder Save and Version](../domain/workflows/page-builder-save-and-version.md) and [Page Version Restoration](../domain/workflows/page-version-restoration.md) distinguish transactional snapshots from publication, cache, and broadcast side effects. Restore resets the page to draft; cache revalidation after restore is not verified.
+
+## Marketplace Extension Integration
+
+Active, ready component-pack definitions are namespaced and synchronized by host adapters; PagesPage merges their responses into the builder catalog. Design templates are previewed and imported through host endpoints with tenant asset mapping and Page Builder validation. See [Component and Block Registration](../extensibility/component-and-block-registration.md).
