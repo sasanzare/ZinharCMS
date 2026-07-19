@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "mixed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services"]
 related_documents: ["database/schema-catalog.md", "database/relationships.md", "database/module-data-ownership.md"]
@@ -17,6 +17,12 @@ uncertainty_markers: ["ENTITY_OWNERSHIP_UNCLEAR EOU-01", "SOFT_DELETE_BEHAVIOR_U
 ---
 
 # Database Entity Catalog
+
+## Phase 6 API Cross-Reference
+
+Every Phase 6 endpoint-family document links to its primary entity documentation, and [API Backend Module Map](../api/backend-module-map.md) provides the complete route-to-module-to-persistence map. API access zone and organization role do not replace database isolation: tenant handlers should use `TenantContext` and the RLS helpers documented in [Multi-Tenancy](multi-tenancy.md), while public, authentication, callback, and global-administration paths require explicit non-tenant justification.
+
+The API catalog does not claim one endpoint maps to only one table. Marketplace, billing, workflow, auditing, webhook, and media operations commonly cross aggregate and side-effect boundaries; the endpoint-family and backend module documents identify those review paths.
 
 ## Catalog
 

@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "mixed"
-last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/config.rs"
@@ -53,6 +53,20 @@ uncertainty_markers:
 
 # Integration Points
 
+## Phase 6 Contract Cross-Reference
+
+| Integration | API boundary | Contract documentation |
+| --- | --- | --- |
+| Stripe inbound | `POST /api/billing/stripe/webhook`, raw bytes and signature headers | [Billing Endpoints](../api/endpoints/billing-subscription-and-usage.md) |
+| Stripe outbound | Billing checkout/portal and Marketplace commerce/payout operations | [Marketplace Commerce and Payouts](../api/endpoints/marketplace-commerce-and-payouts.md) |
+| CMS webhook destinations | Tenant-managed `/api/webhooks` plus outbound delivery services | [CMS Webhook Endpoints](../api/endpoints/cms-webhooks.md) |
+| Redis | Readiness, public-delivery cache, rate/quota/runtime support | [API Request Lifecycle](../api/route-architecture.md) |
+| Filesystem/static files | Media and Marketplace multipart uploads; public `/uploads` mount | [Uploads, Downloads, and Streaming](../api/uploads-downloads-and-streaming.md) |
+| Frontend administration app | 141 typed JSON request functions | [Frontend Contract Map](../api/frontend-contract-map.md) |
+| External/public delivery consumers | Eight public `/api/v1/*` handlers | [Public Delivery Endpoints](../api/endpoints/public-delivery.md) |
+
+Provider secrets, live account state, network policy, and deployed proxy behavior remain environment-dependent. Phase 6 documents repository-visible transport contracts, not live-provider verification.
+
 ## Integration Inventory
 
 | Integration and scope | Purpose | Source and configuration | Mechanism and authentication | Failure behavior | Local status | Production status | Evidence and documentation status |
@@ -61,7 +75,7 @@ uncertainty_markers:
 | Redis — internal infrastructure | Delivery cache, tenant rate limiting, readiness | Cache/rate services and readiness code; `REDIS_URL` | Redis protocol; no separate app credential behavior documented beyond URL | Cache fail-open; rate-limit and readiness fail-closed | Verified in default Compose | Production-like Compose only; capacity/HA unknown | Primary code/config evidence; operations detail deferred to Phase 10 |
 | Upload filesystem — internal storage | Media and Marketplace package bytes plus static reads | Media/Marketplace routes, config, static route; `UPLOAD_DIR` | Local filesystem I/O; application ownership checks on writes | Request failure and possible database/file partial success | Verified local path behavior | Production-like volume only; shared/durable/private topology unknown | Primary code/config evidence; NOC-02 and later data/security phases |
 | React SPA contract — internal application boundary | Administration UI communication | `frontend/src/services/api.ts`, `types/api.ts`, store; API base configuration | HTTP/JSON, multipart, WebSocket; bearer JWT, organization header, browser credentials | Non-success response parsed as client error; no automatic refresh retry verified | Verified development application | Built frontend/Nginx reference only; actual routing unknown | Primary client/server evidence; DDU-03 and Phases 4/6 |
-| Stripe API — external | Checkout, subscription, refund, and Marketplace finance operations | `backend/src/services/stripe_billing.rs`, billing/Marketplace routes, backend config | HTTPS to Stripe v1; bearer secret key | Provider/network error fails affected operation | Code path available when configured | Live account and secret wiring unknown | Primary code evidence; provider contract detail deferred to Phase 6 |
+| Stripe API — external | Checkout, subscription, refund, and Marketplace finance operations | `backend/src/services/stripe_billing.rs`, billing/Marketplace routes, backend config | HTTPS to Stripe v1; bearer secret key | Provider/network error fails affected operation | Code path available when configured | Live account and secret wiring unknown | Repository-visible contracts are documented in Phase 6; live provider behavior remains unverified |
 | Stripe webhook — external inbound | Apply provider billing events | Public billing route and backend config | HTTP callback; HMAC signature with webhook secret | Invalid signature rejected; handler/data errors return failure | Available when local webhook configuration exists | Live endpoint and delivery state unknown | Primary route evidence; DCC-09 protects path accuracy |
 | Email webhook — external | Deliver application email through configured target | `backend/src/services/email.rs`; email mode/URL/strict config | HTTP/HTTPS JSON; no provider-specific authorization found | Log/disabled/webhook mode; strict failure can affect origin operation | Log/disabled behavior verified; webhook configuration-dependent | Provider, retries, deliverability, and ownership unknown | Primary service evidence; U-14/NOC-04 |
 | CMS webhooks — external outbound | Notify customer-configured endpoints after selected events | `backend/src/routes/webhooks.rs`; `backend/src/services/webhooks.rs`; database webhook configuration | HTTP/HTTPS JSON with `X-CMS-Signature` HMAC | One spawned attempt with timeout and delivered/failed record; no durable retry | Implemented when subscription exists | Target/network operations and guarantee unknown | Primary route/service evidence; ABU-03/NOC-09 |

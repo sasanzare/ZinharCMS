@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources:
   - ".gitignore"
@@ -55,6 +55,17 @@ uncertainty_markers:
 ---
 
 # Repository Map
+
+## Phase 6 API Knowledge Map
+
+| Knowledge path | Source areas mapped | Purpose |
+| --- | --- | --- |
+| `okf/api/README.md` and primary API documents | `backend/src/routes`, `backend/src/middleware`, `backend/src/error.rs`, `frontend/src/services/api.ts` | API architecture, cross-cutting contracts, consistency, testing, and risks |
+| `okf/api/groups/` | The 17 route-registration groups under `backend/src/routes` plus the root/static surface | Module-oriented route ownership |
+| `okf/api/endpoints/` | 21 task-oriented endpoint families | Request, response, access, frontend, backend, persistence, and test navigation |
+| `okf/api/diagrams/` | Router composition and request/security/client flows | Visual API navigation |
+
+The authoritative route entry is `backend/src/routes/mod.rs`. Runtime OpenAPI is assembled there and exposed at `/openapi.json`. The administration client is centralized in `frontend/src/services/api.ts`, with manually maintained contracts in `frontend/src/types/api.ts`.
 
 This map tells developers and AI agents where to look. It does not enumerate every file or replace the detailed documentation planned for later OKF phases.
 
@@ -257,7 +268,7 @@ Start with [Frontend Routing](../frontend/routing.md), [Pages and Layouts](../fr
 
 ### I need to modify a database entity.
 
-Inspect the complete backend/migrations sequence affecting the entity, SQL queries in routes/services, selected models, RLS helpers/policies, tests, fixtures, and related API/frontend contracts. Do not edit an old applied migration without an explicit migration strategy; detailed database workflow is planned for Phase 5.
+Inspect the complete backend/migrations sequence affecting the entity, SQL queries in routes/services, selected models, RLS helpers/policies, tests, fixtures, and related API/frontend contracts. Do not edit an old applied migration without an explicit migration strategy; detailed database workflow is documented in Phase 5.
 
 ### I need to understand a module.
 

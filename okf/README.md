@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources:
   - "README.md"
@@ -38,6 +38,9 @@ related_documents:
   - "frontend/README.md"
   - "frontend/feature-catalog.md"
   - "frontend/frontend-risks.md"
+  - "api/README.md"
+  - "api/route-group-catalog.md"
+  - "api/endpoint-catalog.md"
 uncertainty_markers:
   - "UNKNOWN"
   - "NEEDS_OWNER_CONFIRMATION"
@@ -59,6 +62,15 @@ uncertainty_markers:
   - "DUPLICATED_CONTRACT"
   - "DEAD_OR_UNUSED_CODE_UNCONFIRMED"
   - "UI_BEHAVIOR_UNVERIFIED"
+  - "OPENAPI_IMPLEMENTATION_CONFLICT"
+  - "REQUEST_CONTRACT_UNCLEAR"
+  - "RESPONSE_CONTRACT_UNCLEAR"
+  - "ERROR_CONTRACT_UNCLEAR"
+  - "AUTHENTICATION_REQUIREMENT_UNCLEAR"
+  - "AUTHORIZATION_REQUIREMENT_UNCLEAR"
+  - "TENANT_CONTEXT_UNCLEAR"
+  - "VERSIONING_BEHAVIOR_UNCLEAR"
+  - "FRONTEND_BACKEND_CONTRACT_CONFLICT"
 ---
 
 # ZinharCMS Open Knowledge Format
@@ -68,6 +80,8 @@ uncertainty_markers:
 The okf directory is the organized knowledge and navigation layer for ZinharCMS. It gives human contributors and AI coding agents a verified starting point for understanding the product, locating implementation evidence, recognizing uncertainty, and finding the most relevant existing documentation.
 
 > Source code remains the primary source of truth for implemented behavior. OKF documents explain project context, structure, decisions, responsibilities, and verified relationships.
+
+Phase 6 adds the verified [API Architecture and Contracts](api/README.md): 168 registered handler-method endpoints, 17 route groups, 21 endpoint families, request/response/error contracts, authentication and tenant boundaries, OpenAPI consistency, frontend/backend mappings, tests, risks, and five diagrams.
 
 OKF does not replace repository README files, API specifications, tests, source-code comments, database migrations, Architecture Decision Records, or existing diagrams. It connects those sources and explains how their authority differs.
 
@@ -131,6 +145,15 @@ The cumulative ../HANDOFF.md file is operational recovery history, not canonical
 | ROUTING_BEHAVIOR_UNCLEAR | Route behavior is only partially established across source and actual hosting |
 | STATE_OWNERSHIP_UNCLEAR | Reactive, persistent, transport, or server-state ownership is distributed or undefined |
 | API_CONTRACT_UNCLEAR | Frontend and backend contract equivalence is not enforced or verified |
+| OPENAPI_IMPLEMENTATION_CONFLICT | Registered runtime behavior and generated OpenAPI disagree or OpenAPI omits required transport policy |
+| REQUEST_CONTRACT_UNCLEAR | A request shape or rejection is not completely established by a uniform application contract |
+| RESPONSE_CONTRACT_UNCLEAR | A response shape, status, or representation is dynamic, branch-specific, or framework-owned |
+| ERROR_CONTRACT_UNCLEAR | Not every failure source uses the application `ErrorBody` contract |
+| AUTHENTICATION_REQUIREMENT_UNCLEAR | Authentication requirements are not represented consistently across route registration and documentation |
+| AUTHORIZATION_REQUIREMENT_UNCLEAR | Role, ownership, workflow, or resource-state authorization is distributed or incompletely represented |
+| TENANT_CONTEXT_UNCLEAR | Tenant selection or propagation is not represented consistently across transport and persistence layers |
+| VERSIONING_BEHAVIOR_UNCLEAR | Compatibility, deprecation, or version support policy is not established |
+| FRONTEND_BACKEND_CONTRACT_CONFLICT | A frontend method, path, DTO, status, or access assumption conflicts with backend implementation |
 | AUTHORIZATION_BEHAVIOR_UNVERIFIED | Browser visibility or guards do not prove backend authorization |
 | RESPONSIBILITY_OVERLAP | More than one feature or module owns adjacent behavior |
 | DUPLICATED_CONTRACT | The same contract is maintained independently in more than one source area |
@@ -192,9 +215,17 @@ Recommended reading order: [Database Overview](database/overview.md), [Schema Ca
 
 Select one of the 18 entity groups from the [Entity Catalog](database/entity-catalog.md) and use the [Database Domain Map](database/diagrams/database-domain-map.mmd), [Entity Relationship Overview](database/diagrams/entity-relationship-overview.mmd), [Module Data Ownership Diagram](database/diagrams/module-data-ownership.mmd), [Tenant Isolation Flow](database/diagrams/tenant-isolation.mmd), or [Migration Lifecycle](database/diagrams/migration-lifecycle.mmd) for visual navigation.
 
+## Phase 6 API Documents
+
+The [API Architecture and Contracts](api/README.md) entry point documents all 168 registered handler-method endpoints, the public/authenticated/tenant router zones, 17 route groups, 21 endpoint families, request/response/error contracts, authentication, authorization, tenant context, versioning, pagination, uploads and WebSocket preview, OpenAPI consistency, frontend/backend ownership, tests, risks, and five API diagrams.
+
+Recommended reading order: [API Overview](api/overview.md), [Route Architecture](api/route-architecture.md), [Route Group Catalog](api/route-group-catalog.md), [Endpoint Catalog](api/endpoint-catalog.md), [Request Contracts](api/request-contracts.md), [Response Contracts](api/response-contracts.md), [Error Contracts](api/error-contracts.md), [Authentication](api/authentication.md), [Authorization](api/authorization.md), [Tenant Context](api/tenant-context.md), [OpenAPI Consistency](api/openapi-consistency.md), [Frontend Contract Map](api/frontend-contract-map.md), [API Testing](api/api-testing.md), and [API Risks](api/api-risks.md).
+
+Use the [Route Group Catalog](api/route-group-catalog.md) for source-module work and the [Endpoint Catalog](api/endpoint-catalog.md) for exact method/path contracts and task-oriented endpoint families.
+
 ## Using the Index
 
-Start with [index.yaml](index.yaml). Its documents list records every current Phase 1 through Phase 5 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
+Start with [index.yaml](index.yaml). Its documents list records every current Phase 1 through Phase 6 file, verification commit, evidence paths, related documents, diagrams, and relevant marker IDs. Its `current_sections` and `planned_sections` distinguish completed knowledge areas from future work.
 
 Paths in index.yaml are relative to the okf directory unless a field explicitly identifies a repository-relative evidence path.
 
@@ -206,10 +237,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 4. Read the [Backend Overview](backend/overview.md) and owning [module document](backend/module-catalog.md) before changing backend behavior.
 5. Read the [Frontend Overview](frontend/overview.md) and owning [feature document](frontend/feature-catalog.md) before changing frontend behavior.
 6. Read the [Database Overview](database/overview.md), schema catalog, and owning entity document before changing persistence.
-7. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
-8. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
-9. Verify behavior against current code, migrations, configuration, and tests.
-10. Record conflicts instead of silently treating a historical document as current.
+7. Read the [API Overview](api/overview.md), exact endpoint entry, and owning route-group/family document before changing a transport contract.
+8. Check the [Glossary](project/glossary.md) before introducing or redefining project terminology.
+9. Follow the [Navigation Guide](project/navigation-guide.md) for common tasks.
+10. Verify behavior against current code, migrations, configuration, and tests.
+11. Record conflicts instead of silently treating a historical document as current.
 
 ## For AI Coding Agents
 
@@ -220,10 +252,11 @@ Paths in index.yaml are relative to the okf directory unless a field explicitly 
 5. For backend work, read okf/backend/README.md, the catalog entry, and the owning module document.
 6. For frontend work, read okf/frontend/README.md, the feature catalog entry, and the owning feature document.
 7. For database work, read okf/database/README.md, schema-catalog.md, relationships.md, and the owning entity document.
-8. Read relevant specialized OKF documents before modifying a subsystem.
-9. Verify critical claims against source code and migrations.
-10. Update related OKF documents when implementation changes invalidate them.
-11. Never invent undocumented business rules.
+8. For API work, read okf/api/README.md, endpoint-catalog.md, and the owning route-group and endpoint-family documents.
+9. Read relevant specialized OKF documents before modifying a subsystem.
+10. Verify critical claims against source code and migrations.
+11. Update related OKF documents when implementation changes invalidate them.
+12. Never invent undocumented business rules.
 
 If a specialized OKF document is still planned, use [Navigation Guide - Missing Documentation](project/navigation-guide.md#when-documentation-is-missing), then consult current source, tests, existing documentation, and Phase Zero evidence.
 
@@ -231,7 +264,6 @@ If a specialized OKF document is still planned, use [Navigation Guide - Missing 
 
 | Target phase | Planned area |
 | ---: | --- |
-| 6 | API route and contract inventory, errors, realtime/provider contracts, and OpenAPI coverage |
 | 7 | Authentication, authorization, tenant isolation, upload security, and threat model |
 | 8 | Business rules, workflows, billing, delivery, and multi-tenancy |
 | 9 | Built-in plugins, Marketplace, and extensibility |
@@ -256,4 +288,4 @@ During a review:
 
 ## Phase Status
 
-Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 established the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Phase 5 is complete: it adds 16 database guides, 18 entity documents, and five database diagrams based on all 26 migrations and current persistence code. API, security, business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 6 through 12.
+Phase 1 established the OKF entry point and project navigation layer. Phase 2 established verified system architecture, boundaries, components, dependency direction, runtime flows, integrations, risks, decisions, and five diagrams. Phase 3 established the verified backend module catalog, 18 module documents, structural guides, risk/test maps, and four backend-specific diagrams. Phase 4 established the verified frontend application and feature catalogs, 13 feature documents, shared architecture guides, risk/test maps, and five frontend-specific diagrams. Phase 5 added 16 database guides, 18 entity documents, and five database diagrams based on all 26 migrations and current persistence code. Phase 6 is complete: it adds 19 primary API documents, 17 route-group documents, 21 endpoint-family documents, and five API diagrams covering all 168 registered handler-method endpoints. Security, business, extension, operations, diagram-hardening, and final synchronization work remains planned for Phases 7 through 12.

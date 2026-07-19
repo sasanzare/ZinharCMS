@@ -1,0 +1,29 @@
+%% Title: ZinharCMS Frontend API Contract Flow
+%% Phase: 6
+%% Status: verified
+%% Source evidence: frontend/src/services/api.ts; frontend/src/types/api.ts; backend/src/routes; backend/src/error.rs
+%% Related documentation: ../frontend-contract-map.md; ../request-contracts.md; ../response-contracts.md
+sequenceDiagram
+    autonumber
+    participant Feature as React Feature
+    participant Types as TypeScript Contract
+    participant Client as Shared API Client
+    participant Router as Axum Route
+    participant DTO as Rust DTO and Handler
+
+    Feature->>Types: Construct typed request or expected response
+    Feature->>Client: Call domain API method
+    Client->>Client: Resolve base URL and JSON headers
+    opt Authenticated call
+        Client->>Client: Add bearer and selected organization headers
+    end
+    Client->>Router: HTTP method and path
+    Router->>DTO: Extract, deserialize, validate, and authorize
+    alt Success
+        DTO-->>Client: JSON response
+        Client-->>Feature: Parsed generic type T
+    else Failure
+        DTO-->>Client: ErrorBody or non-uniform transport failure
+        Client-->>Feature: ApiError with status and message
+    end
+    Note over Types,DTO: TypeScript contracts are manually duplicated from Rust; no generated parity check exists

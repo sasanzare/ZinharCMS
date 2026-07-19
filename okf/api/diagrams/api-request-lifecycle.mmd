@@ -1,0 +1,43 @@
+%% Title: ZinharCMS API Request Lifecycle
+%% Phase: 6
+%% Status: verified
+%% Source evidence: backend/src/lib.rs; backend/src/routes/mod.rs; backend/src/middleware; backend/src/error.rs
+%% Related documentation: ../route-architecture.md; ../request-contracts.md; ../error-contracts.md
+sequenceDiagram
+    autonumber
+    participant Client
+    participant Global as Global Tower Layers
+    participant Router as Axum Router
+    participant Identity as Auth or Tenant Middleware
+    participant Handler
+    participant Policy as RBAC and Domain Services
+    participant Data as PostgreSQL and RLS
+    participant Effects as Redis, Files, Providers, or Webhooks
+
+    Client->>Global: Request
+    Global->>Router: Timeout, headers, CORS, compression, ID, tracing
+    alt Public handler
+        Router->>Handler: Extract path, query, headers, or body
+    else Authenticated handler
+        Router->>Identity: Validate bearer access token
+        Identity->>Handler: Claims
+    else Tenant-protected handler
+        Router->>Identity: Validate token and organization membership
+        Identity->>Identity: Apply rate and quota gates
+        Identity->>Handler: Claims and TenantContext
+    end
+    Handler->>Handler: Deserialize and validate request
+    Handler->>Policy: Check role, ownership, workflow, and domain rules
+    Policy->>Data: Tenant-scoped or explicit global persistence
+    Data-->>Policy: Rows or error
+    opt Cross-system side effect
+        Policy->>Effects: Cache, file, provider, audit, preview, or webhook action
+        Effects-->>Policy: Result
+    end
+    Policy-->>Handler: Domain result
+    alt Success
+        Handler-->>Global: Typed response
+    else AppError
+        Handler-->>Global: Status and JSON ErrorBody
+    end
+    Global-->>Client: HTTP response or WebSocket upgrade

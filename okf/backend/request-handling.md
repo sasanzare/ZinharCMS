@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/main.rs"
@@ -33,6 +33,12 @@ uncertainty_markers:
 ---
 
 # Backend Request Handling
+
+## Phase 6 Route Contract Cross-Reference
+
+The exhaustive method/path inventory now lives in the [API Endpoint Catalog](../api/endpoint-catalog.md), with router composition in [API Route Architecture](../api/route-architecture.md). Registration establishes 168 handler-method endpoints: 17 public, 12 bearer-authenticated, and 139 bearer-and-tenant.
+
+Handler extractors define path, query, JSON, raw-byte, multipart, header, connection, and WebSocket-upgrade inputs. Router placement—not the presence of a `Claims` or `TenantContext` parameter alone—defines the access zone. Review [Request Contracts](../api/request-contracts.md), [Authentication](../api/authentication.md), and [Tenant Context](../api/tenant-context.md) before changing middleware or extractors.
 
 ## Request Entry
 
@@ -111,4 +117,3 @@ Runtime proxy behavior, deployed timeout interactions, full extractor rejection 
 ## Related Documentation
 
 Use the [request lifecycle diagram](diagrams/backend-request-lifecycle.mmd), [module catalog](module-catalog.md), [Persistence Access](persistence-access.md), and [Phase 2 Runtime Flows](../architecture/runtime-flows.md).
-

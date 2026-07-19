@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources:
   - "README.md"
@@ -117,6 +117,22 @@ uncertainty_markers:
 ---
 
 # Source Register
+
+## Phase 6 API Sources
+
+| Source | Authority and use | Phase 6 finding |
+| --- | --- | --- |
+| `backend/src/routes/mod.rs` | Authoritative router composition and Utoipa root | 168 handlers across public, authenticated, and tenant subtrees; 149 listed in OpenAPI |
+| `backend/src/routes/*.rs` | Authoritative registered handler paths, extractors, DTOs, statuses, validation, and route-level policy | 17 significant route modules and 21 endpoint families |
+| `backend/src/middleware/auth.rs` | Bearer authentication contract | Standard header plus preview query-token exception |
+| `backend/src/middleware/tenant.rs` | Tenant selection, membership, rate, and quota contract | `X-Organization-Id` plus preview query-organization exception |
+| `backend/src/services/rbac.rs` | Reusable global and organization capability checks | Role matrix documented in `api/authorization.md` |
+| `backend/src/error.rs` | Application error status and body mapping | Nine `AppError` variants; framework responses remain non-uniform |
+| `frontend/src/services/api.ts` | Authoritative shared frontend request construction | 141 current request functions, all matching registered method/path pairs |
+| `frontend/src/types/api.ts` | Handwritten frontend DTO projection | Duplicated contract; not generated from Rust or OpenAPI |
+| `docs/API.md` | Secondary manual documentation | `DOCUMENTATION_CODE_CONFLICT DCC-09`: obsolete billing webhook path |
+
+See [API OpenAPI Consistency](../api/openapi-consistency.md) for the exact 19 missing operations and security-scheme gap.
 
 This register records the material evidence used by the current Phase 1 project documents and Phase 2 architecture documents. It supports the [Project Overview](../project/overview.md), [System Architecture](../architecture/README.md), [Repository Map](../project/repository-map.md), [Project Glossary](../project/glossary.md), [Navigation Guide](../project/navigation-guide.md), [OKF Entry Point](../README.md), and [Machine-Readable Index](../index.yaml).
 

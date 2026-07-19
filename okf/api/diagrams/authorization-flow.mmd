@@ -1,0 +1,21 @@
+%% Title: ZinharCMS Authorization Flow
+%% Phase: 6
+%% Status: verified
+%% Source evidence: backend/src/middleware/tenant.rs; backend/src/services/rbac.rs; backend/src/services/rls.rs; backend/src/routes
+%% Related documentation: ../authorization.md; ../tenant-context.md
+flowchart TD
+    Request["Protected request"] --> Token{"Valid bearer token?"}
+    Token -- "No" --> Unauthorized["401 or middleware rejection"]
+    Token -- "Yes" --> Zone{"Tenant route?"}
+    Zone -- "No" --> GlobalRole["Evaluate handler global-role or identity rule"]
+    Zone -- "Yes" --> TenantHeader["Resolve X-Organization-Id or preview query fallback"]
+    TenantHeader --> Membership{"Active membership?"}
+    Membership -- "No" --> Forbidden["Reject tenant access"]
+    Membership -- "Yes" --> Gates["Rate limit and quota gates"]
+    Gates --> OrgRole["Evaluate organization capability"]
+    GlobalRole --> Specific["Evaluate ownership, workflow, provider, or resource state"]
+    OrgRole --> Specific
+    Specific --> Allowed{"All checks pass?"}
+    Allowed -- "No" --> Denied["403, 409, 422, or domain error"]
+    Allowed -- "Yes" --> RLS["Use tenant RLS context or explicit global data path"]
+    RLS --> Operation["Execute operation and side effects"]

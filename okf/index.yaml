@@ -4,9 +4,9 @@ project:
   repository: "https://github.com/sasanzare/ZinharCMS"
   repository_name: "ZinharCMS"
   knowledge_status: "in_progress"
-  current_phase: 5
+  current_phase: 6
   current_phase_status: "complete"
-  last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+  last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
   last_verified_date: "2026-07-18"
 
 authority:
@@ -47,6 +47,10 @@ entry_points:
       purpose: "Phase 5 database architecture entry point and reading order"
     - path: "database/entity-catalog.md"
       purpose: "Catalog of significant database entity groups and owning documents"
+    - path: "api/README.md"
+      purpose: "Phase 6 API architecture and contracts entry point"
+    - path: "api/endpoint-catalog.md"
+      purpose: "Exhaustive registered endpoint inventory and family navigation"
     - path: "project/navigation-guide.md"
       purpose: "Short task-oriented navigation guide"
   ai:
@@ -80,6 +84,12 @@ entry_points:
       purpose: "Foreign-key, logical relationship, and tenant-coherence map"
     - path: "database/multi-tenancy.md"
       purpose: "Tenant context, RLS, bypass, and isolation evidence"
+    - path: "api/route-architecture.md"
+      purpose: "Verified router composition, access zones, and middleware boundaries"
+    - path: "api/endpoint-catalog.md"
+      purpose: "All registered methods, paths, handlers, inputs, outputs, clients, and family links"
+    - path: "api/openapi-consistency.md"
+      purpose: "Runtime registration versus generated OpenAPI consistency findings"
     - path: "project/navigation-guide.md"
       purpose: "Task-to-source navigation and AI agent rules"
 
@@ -92,7 +102,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "README.md"
@@ -244,7 +254,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - ".gitignore"
@@ -296,7 +306,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "README.md"
@@ -341,7 +351,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "README.md"
@@ -407,7 +417,7 @@ documents:
     phase: 1
     review_status: "verified"
     source_of_truth: false
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "README.md"
@@ -791,7 +801,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "observed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/main.rs"
@@ -853,7 +863,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     architecture_status: "mixed"
-    last_verified_commit: "17e69e266c558c8568ec65524560d52d7cb89d4c"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/config.rs"
@@ -1270,7 +1280,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/error.rs"
@@ -1332,7 +1342,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/src/routes"
@@ -2259,7 +2269,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths:
       - "backend/src/main.rs"
@@ -2352,7 +2362,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths:
       - "backend/Cargo.toml"
@@ -2621,7 +2631,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths: ["frontend/src/services/api.ts", "frontend/src/types/api.ts", "frontend/src/stores/useAppStore.ts"]
     related_documents: ["frontend/state-management.md", "frontend/authentication-and-access.md", "backend/request-handling.md"]
@@ -2637,7 +2647,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths: ["frontend/src/pages/AuthPage.tsx", "frontend/src/components/RequireAuth.tsx", "frontend/src/stores/useAppStore.ts", "frontend/src/services/api.ts"]
     related_documents: ["frontend/routing.md", "frontend/state-management.md", "backend/modules/authentication.md", "backend/modules/tenant-authorization.md"]
@@ -2733,7 +2743,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "observed"
-    last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-17"
     primary_evidence_paths: ["frontend/vitest.config.ts", "frontend/src/test/setup.ts", "frontend/src/pages/DashboardPage.test.tsx", "frontend/src/pages/PagesPage.test.tsx", "frontend/src/pages/MarketplacePage.test.tsx"]
     related_documents: ["frontend/feature-catalog.md", "frontend/page-builder.md", "frontend/frontend-risks.md"]
@@ -3161,7 +3171,7 @@ documents:
     review_status: "verified"
     source_of_truth: false
     implementation_view: "mixed"
-    last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
     last_verified_date: "2026-07-18"
     primary_evidence_paths: ["backend/migrations", "backend/src/models", "backend/src/routes", "backend/src/services"]
     related_documents: ["database/schema-catalog.md", "database/relationships.md", "database/module-data-ownership.md"]
@@ -3803,6 +3813,937 @@ documents:
     related_documents: ["database/migrations.md", "database/technology-and-configuration.md"]
     known_uncertainty_markers: ["UNKNOWN U-02", "NEEDS_OWNER_CONFIRMATION NOC-14"]
 
+
+  - id: "api-risks"
+    path: "api/api-risks.md"
+    title: "API Risks"
+    category: "api-risk"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-testing"
+    path: "api/api-testing.md"
+    title: "API Testing"
+    category: "api-testing"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-authentication"
+    path: "api/authentication.md"
+    title: "API Authentication"
+    category: "api-security"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-authorization"
+    path: "api/authorization.md"
+    title: "API Authorization"
+    category: "api-security"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-backend-module-map"
+    path: "api/backend-module-map.md"
+    title: "API Backend Module Map"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-diagram-request-lifecycle"
+    path: "api/diagrams/api-request-lifecycle.mmd"
+    title: "ZinharCMS API Request Lifecycle"
+    category: "api-diagram"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-architecture.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-diagram-route-map"
+    path: "api/diagrams/api-route-map.mmd"
+    title: "ZinharCMS API Route Map"
+    category: "api-diagram"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-architecture.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-diagram-authentication-flow"
+    path: "api/diagrams/authentication-flow.mmd"
+    title: "ZinharCMS Authentication Flow"
+    category: "api-diagram"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-architecture.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-diagram-authorization-flow"
+    path: "api/diagrams/authorization-flow.mmd"
+    title: "ZinharCMS Authorization Flow"
+    category: "api-diagram"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-architecture.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-diagram-frontend-contract-flow"
+    path: "api/diagrams/frontend-api-contract-flow.mmd"
+    title: "ZinharCMS Frontend API Contract Flow"
+    category: "api-diagram"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-architecture.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoint-catalog"
+    path: "api/endpoint-catalog.md"
+    title: "API Endpoint Catalog"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-authentication-session"
+    path: "api/endpoints/authentication-and-session.md"
+    title: "Authentication and Session Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-beta-release"
+    path: "api/endpoints/beta-release-operations.md"
+    title: "Beta Release Operations Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-billing-subscription-usage"
+    path: "api/endpoints/billing-subscription-and-usage.md"
+    title: "Billing, Subscription, and Usage Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-built-in-plugins"
+    path: "api/endpoints/built-in-plugins.md"
+    title: "Built-In Plugin Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-cms-webhooks"
+    path: "api/endpoints/cms-webhooks.md"
+    title: "CMS Webhook Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-component-registry"
+    path: "api/endpoints/component-registry.md"
+    title: "Component Registry Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-content-entries-workflow"
+    path: "api/endpoints/content-entries-and-workflow.md"
+    title: "Content Entries and Workflow Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-content-types"
+    path: "api/endpoints/content-types.md"
+    title: "Content Type Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-editorial-comments"
+    path: "api/endpoints/editorial-comments.md"
+    title: "Editorial Comment Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-marketplace-commerce-payouts"
+    path: "api/endpoints/marketplace-commerce-and-payouts.md"
+    title: "Marketplace Commerce and Payout Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-marketplace-creator-catalog-review"
+    path: "api/endpoints/marketplace-creator-catalog-and-review.md"
+    title: "Marketplace Creator, Catalog, and Review Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-marketplace-feedback-analytics"
+    path: "api/endpoints/marketplace-feedback-and-analytics.md"
+    title: "Marketplace Feedback and Analytics Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-marketplace-host-adapters"
+    path: "api/endpoints/marketplace-host-adapters.md"
+    title: "Marketplace Host Adapter Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-marketplace-installation-lifecycle"
+    path: "api/endpoints/marketplace-installation-lifecycle.md"
+    title: "Marketplace Installation Lifecycle Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-marketplace-runtime-security"
+    path: "api/endpoints/marketplace-runtime-security.md"
+    title: "Marketplace Runtime Security Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-media-library"
+    path: "api/endpoints/media-library.md"
+    title: "Media Library Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-organizations-membership"
+    path: "api/endpoints/organizations-membership-and-invitations.md"
+    title: "Organizations, Membership, and Invitations Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-pages-workflow-preview"
+    path: "api/endpoints/pages-workflow-versions-and-preview.md"
+    title: "Pages, Workflow, Versions, and Preview Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-public-delivery"
+    path: "api/endpoints/public-delivery.md"
+    title: "Public Delivery Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-saas-operations"
+    path: "api/endpoints/saas-operations.md"
+    title: "SaaS Operations Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-endpoints-system-health-openapi-static"
+    path: "api/endpoints/system-health-openapi-and-static.md"
+    title: "System, Health, OpenAPI, and Static Endpoints"
+    category: "api-endpoint-family"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/services", "frontend/src/services/api.ts", "backend/migrations"]
+    related_documents: ["api/endpoint-catalog.md", "api/backend-module-map.md", "database/entity-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-error-contracts"
+    path: "api/error-contracts.md"
+    title: "API Error Contracts"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-frontend-contract-map"
+    path: "api/frontend-contract-map.md"
+    title: "Frontend API Contract Map"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-authentication"
+    path: "api/groups/authentication.md"
+    title: "Authentication Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-beta-release"
+    path: "api/groups/beta-release.md"
+    title: "Beta Release Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-billing-quota"
+    path: "api/groups/billing-and-quota.md"
+    title: "Billing and Quota Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-built-in-plugins"
+    path: "api/groups/built-in-plugins.md"
+    title: "Built-In Plugins Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-cms-webhooks"
+    path: "api/groups/cms-webhooks.md"
+    title: "CMS Webhooks Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-content-workflow"
+    path: "api/groups/content-and-workflow.md"
+    title: "Content and Workflow Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-editorial-comments"
+    path: "api/groups/editorial-comments.md"
+    title: "Editorial Comments Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-marketplace-adapters"
+    path: "api/groups/marketplace-adapters.md"
+    title: "Marketplace Adapters Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-marketplace-analytics"
+    path: "api/groups/marketplace-analytics.md"
+    title: "Marketplace Analytics Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-marketplace-core"
+    path: "api/groups/marketplace-core.md"
+    title: "Marketplace Core Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-marketplace-finance"
+    path: "api/groups/marketplace-finance.md"
+    title: "Marketplace Finance Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-marketplace-runtime"
+    path: "api/groups/marketplace-runtime.md"
+    title: "Marketplace Runtime Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-media"
+    path: "api/groups/media.md"
+    title: "Media Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-organizations-saas"
+    path: "api/groups/organizations-and-saas.md"
+    title: "Organizations and SaaS Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-pages-components-preview"
+    path: "api/groups/pages-components-and-preview.md"
+    title: "Pages, Components, and Preview Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-public-delivery"
+    path: "api/groups/public-delivery.md"
+    title: "Public Delivery Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-group-system-static"
+    path: "api/groups/system-and-static.md"
+    title: "System and Static Route Group"
+    category: "api-route-group"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "frontend/src/services/api.ts"]
+    related_documents: ["api/route-group-catalog.md", "api/endpoint-catalog.md", "backend/module-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-openapi-consistency"
+    path: "api/openapi-consistency.md"
+    title: "OpenAPI Consistency"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-overview"
+    path: "api/overview.md"
+    title: "API Overview"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-pagination-filtering-sorting"
+    path: "api/pagination-filtering-and-sorting.md"
+    title: "API Pagination, Filtering, and Sorting"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-readme"
+    path: "api/README.md"
+    title: "API Architecture and Contracts"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-request-contracts"
+    path: "api/request-contracts.md"
+    title: "API Request Contracts"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-response-contracts"
+    path: "api/response-contracts.md"
+    title: "API Response Contracts"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-route-architecture"
+    path: "api/route-architecture.md"
+    title: "API Route Architecture"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-route-group-catalog"
+    path: "api/route-group-catalog.md"
+    title: "API Route Group Catalog"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-tenant-context"
+    path: "api/tenant-context.md"
+    title: "API Tenant Context"
+    category: "api-security"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-uploads-downloads-streaming"
+    path: "api/uploads-downloads-and-streaming.md"
+    title: "API Uploads, Downloads, and Streaming"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
+  - id: "api-versioning-compatibility"
+    path: "api/versioning-and-compatibility.md"
+    title: "API Versioning and Compatibility"
+    category: "api"
+    status: "current"
+    phase: 6
+    review_status: "verified"
+    source_of_truth: false
+    implementation_view: "observed"
+    last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
+    last_verified_date: "2026-07-18"
+    primary_evidence_paths: ["backend/src/routes", "backend/src/middleware", "backend/src/error.rs", "frontend/src/services/api.ts"]
+    related_documents: ["api/README.md", "api/endpoint-catalog.md"]
+    known_uncertainty_markers: ["API_CONTRACT_UNCLEAR ACU-02"]
+
 uncertainty_register:
   unknown:
     - id: "UNKNOWN U-01"
@@ -3925,6 +4866,48 @@ uncertainty_register:
   api_contract_unclear:
     - id: "API_CONTRACT_UNCLEAR ACU-01"
       summary: "The handwritten frontend client and TypeScript types have no generated or runtime-validated equivalence to backend contracts"
+    - id: "API_CONTRACT_UNCLEAR ACU-02"
+      summary: "Phase 6 documents registered behavior, but dynamic JSON, framework rejections, provider responses, and branch-specific contracts are not one closed schema"
+
+  openapi_implementation_conflict:
+    - id: "OPENAPI_IMPLEMENTATION_CONFLICT OIC-01"
+      summary: "Nineteen registered handlers and all bearer and tenant-header security requirements are absent from generated OpenAPI"
+
+  request_contract_unclear:
+    - id: "REQUEST_CONTRACT_UNCLEAR RCU-01"
+      summary: "Axum extraction and rejection bodies are not normalized through the application validation envelope"
+    - id: "REQUEST_CONTRACT_UNCLEAR RCU-02"
+      summary: "Multipart rejection and framing-overhead behavior is partly framework-dependent"
+
+  response_contract_unclear:
+    - id: "RESPONSE_CONTRACT_UNCLEAR RSCU-01"
+      summary: "Dynamic JSON, provider branches, and WebSocket behavior prevent one closed response schema for every operation"
+    - id: "RESPONSE_CONTRACT_UNCLEAR RSCU-02"
+      summary: "Static-file method, range, conditional-request, and error behavior is delegated to Tower HTTP and lacks repository contract tests"
+
+  error_contract_unclear:
+    - id: "ERROR_CONTRACT_UNCLEAR ECU-01"
+      summary: "Framework, middleware, timeout, static-file, and WebSocket failures do not uniformly use ErrorBody"
+
+  authentication_requirement_unclear:
+    - id: "AUTHENTICATION_REQUIREMENT_UNCLEAR ARU-01"
+      summary: "OpenAPI does not represent bearer or preview-query authentication requirements; router composition is authoritative"
+
+  authorization_requirement_unclear:
+    - id: "AUTHORIZATION_REQUIREMENT_UNCLEAR AZU-01"
+      summary: "Authorization is distributed across router placement, RBAC helpers, ownership rules, workflow state, and RLS"
+
+  tenant_context_unclear:
+    - id: "TENANT_CONTEXT_UNCLEAR TCU-01"
+      summary: "OpenAPI does not represent X-Organization-Id or preview organization query context; middleware and explicit global paths are authoritative"
+
+  versioning_behavior_unclear:
+    - id: "VERSIONING_BEHAVIOR_UNCLEAR VBU-01"
+      summary: "Only public delivery uses /api/v1 and no repository-wide compatibility, deprecation, or support-window policy was found"
+
+  frontend_backend_contract_conflict:
+    - id: "FRONTEND_BACKEND_CONTRACT_CONFLICT FBCC-01"
+      summary: "Reserved marker for method, path, DTO, auth, or status drift; all 141 current frontend method/path pairs match registration"
 
   authorization_behavior_unverified:
     - id: "AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01"
@@ -4125,12 +5108,12 @@ current_sections:
     title: "Database Architecture"
     status: "current"
     completed_phase: 5
+  - id: "api"
+    title: "API Architecture and Contracts"
+    status: "current"
+    completed_phase: 6
 
 planned_sections:
-  - id: "api"
-    title: "API"
-    status: "planned"
-    target_phase: 6
   - id: "security"
     title: "Authentication, Authorization, and Security"
     status: "planned"

@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/routes"
@@ -35,6 +35,12 @@ uncertainty_markers:
 ---
 
 # Backend Module Catalog
+
+## Phase 6 API Ownership
+
+The [API Backend Module Map](../api/backend-module-map.md) connects all 17 route groups and 21 endpoint families to this catalog and the Phase 5 entity documents. Use the [Route Group Catalog](../api/route-group-catalog.md) for source-module navigation and the [Endpoint Catalog](../api/endpoint-catalog.md) for all 168 method/path/handler contracts.
+
+Marketplace routes intentionally map to several backend capability documents even when registered in one large source file; API family ownership is therefore task-oriented rather than a one-file-one-domain assumption.
 
 ## Selection Rule
 

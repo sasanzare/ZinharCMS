@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "debde2021c029d1827abaa38bcc32c682f53f55a"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "backend/src/error.rs"
@@ -30,6 +30,12 @@ uncertainty_markers:
 ---
 
 # Backend Error Handling
+
+## Phase 6 Wire Contract
+
+[API Error Contracts](../api/error-contracts.md) records the exact `AppError` mapping to `{ error, message }` for 400, 401, 403, 404, 409, 422, 429, 500, and 503 responses. It also records `ERROR_CONTRACT_UNCLEAR ECU-01`: Axum rejections, middleware short-circuits, the 408 timeout fallback, static files, and WebSocket failures do not all use `ErrorBody`.
+
+The frontend reduces failure JSON to `ApiError(status, message)` and does not retain the backend `error` code as a separate typed property. Database errors other than row-not-found and unique conflicts can expose the SQLx error string through the internal-error message and require Phase 7 review.
 
 ## Main Error Type
 

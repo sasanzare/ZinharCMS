@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "frontend/src/services/api.ts"
@@ -34,11 +34,17 @@ uncertainty_markers:
 
 # Frontend API Client
 
+## Phase 6 Contract Verification
+
+The [Frontend API Contract Map](../api/frontend-contract-map.md) verifies 141 request functions in `frontend/src/services/api.ts`; every current method/path pair matches a registered backend handler. The [Endpoint Catalog](../api/endpoint-catalog.md) lists the exact wrapper for each covered handler and the 27 handlers without a direct shared-client method.
+
+Success is always parsed with `response.json()`, so a future 204, text, XML, binary, or streaming endpoint needs a specialized parsing path. Failures become `ApiError(status, message)`. TypeScript interfaces remain manually duplicated from Rust DTOs and OpenAPI; there is no generated client or parity test.
+
 ## Client Boundary
 
 `VERIFIED`: All direct frontend `fetch` behavior is centralized in `frontend/src/services/api.ts`. Pages call methods on one exported `api` object. The client is handwritten and uses types from `frontend/src/types/api.ts`; no generated client, OpenAPI runtime, GraphQL client, query cache, or feature-specific transport module was found.
 
-This document describes frontend integration structure. Detailed method/path contracts belong to Phase 6.
+This document describes frontend integration structure. Detailed method/path contracts are documented in the Phase 6 [API Endpoint Catalog](../api/endpoint-catalog.md).
 
 ## Base URL and Request Construction
 
@@ -115,4 +121,3 @@ Frontend header attachment does not establish authorization. See [Authentication
 - [Frontend API Flow](diagrams/frontend-api-flow.mmd)
 - [Backend Request Handling](../backend/request-handling.md)
 - [Architecture Dependency Model](../architecture/dependency-model.md)
-

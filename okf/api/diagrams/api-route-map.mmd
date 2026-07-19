@@ -1,0 +1,39 @@
+%% Title: ZinharCMS API Route Map
+%% Phase: 6
+%% Status: verified
+%% Source evidence: backend/src/routes/mod.rs; backend/src/routes
+%% Related documentation: ../route-architecture.md; ../route-group-catalog.md; ../endpoint-catalog.md
+flowchart TD
+    Client["HTTP or WebSocket client"] --> Global["Global Tower layers"]
+    Global --> Root["Axum root router"]
+
+    Root --> Public["Public zone: 17 handlers"]
+    Root --> Authenticated["Authenticated zone: 12 handlers"]
+    Root --> Tenant["Tenant-protected zone: 139 handlers"]
+    Root --> Static["Public /uploads ServeDir"]
+
+    Public --> System["System: 4"]
+    Public --> AuthPublic["Auth public: 4"]
+    Public --> Stripe["Stripe webhook: 1"]
+    Public --> Delivery["Public delivery /api/v1: 8"]
+
+    Authenticated --> AuthProtected["Auth protected: 2"]
+    Authenticated --> BetaGlobal["Beta global: 2"]
+    Authenticated --> OrgBootstrap["Organization bootstrap: 3"]
+    Authenticated --> Plugins["Built-in plugins: 5"]
+
+    Tenant --> Content["Content: 16"]
+    Tenant --> BetaTenant["Beta tenant: 7"]
+    Tenant --> Billing["Billing tenant: 7"]
+    Tenant --> Media["Media: 5"]
+    Tenant --> Market["Marketplace: 52"]
+    Tenant --> OrgTenant["Organizations tenant: 19"]
+    Tenant --> Pages["Pages and components: 20"]
+    Tenant --> Comments["Comments: 6"]
+    Tenant --> Webhooks["CMS webhooks: 7"]
+
+    Market --> MarketCore["Core: 31"]
+    Market --> MarketAdapters["Adapters: 5"]
+    Market --> MarketAnalytics["Analytics: 2"]
+    Market --> MarketFinance["Finance: 8"]
+    Market --> MarketRuntime["Runtime: 6"]

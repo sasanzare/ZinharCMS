@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/Cargo.toml"
@@ -28,6 +28,12 @@ uncertainty_markers:
 ---
 
 # Backend Testing Map
+
+## Phase 6 API Contract Coverage
+
+[API Testing](../api/api-testing.md) identifies the transport-level gap: no comprehensive `backend/tests` real-router suite, route/OpenAPI parity test, authentication/tenant matrix, complete error matrix, or multipart/static/WebSocket contract suite was found. Route-local tests exist in beta, billing, delivery, Marketplace core/adapters/runtime, plus security middleware, while Marketplace services provide stronger domain-rule coverage.
+
+Future contract tests should assert method/path reachability, middleware zone, status, headers, body shape, tenant isolation, persistence, audit, cache, webhook, file, and provider side effects for representative families.
 
 ## Frameworks and Commands
 

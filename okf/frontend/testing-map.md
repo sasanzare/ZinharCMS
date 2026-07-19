@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "frontend/package.json"
@@ -32,6 +32,12 @@ uncertainty_markers:
 ---
 
 # Frontend Testing Map
+
+## Phase 6 API Contract Gap
+
+No frontend test was found that directly exercises the shared API client. Existing feature tests therefore do not establish base-URL construction, bearer/tenant headers, credential handling, JSON/error parsing, or backend schema parity. See [API Testing](../api/api-testing.md) and [Frontend Contract Map](../api/frontend-contract-map.md).
+
+High-value additions are request-construction tests, `ApiError` parsing tests for JSON and non-JSON failures, auth/tenant header tests, and shared fixtures checked against representative Rust responses.
 
 ## Test Stack
 
@@ -112,4 +118,3 @@ The repository-defined frontend commands are `npm run lint`, `npm run typecheck`
 - [Page Builder](page-builder.md)
 - [Frontend Risks](frontend-risks.md)
 - [Backend Testing Map](../backend/testing-map.md)
-

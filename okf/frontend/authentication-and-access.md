@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 implementation_view: "observed"
-last_verified_commit: "7d25e4cbc53284a78033478e2681d8e9ebeb2fb1"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-17"
 primary_sources:
   - "frontend/src/pages/AuthPage.tsx"
@@ -38,6 +38,12 @@ uncertainty_markers:
 ---
 
 # Frontend Authentication and Access
+
+## Phase 6 Transport Contract
+
+The frontend stores access token, refresh token, and selected organization ID in local storage. Shared calls marked `auth: true` attach `Authorization: Bearer` and, when selected, `X-Organization-Id`; requests include credentials for the `HttpOnly` refresh cookie. There is explicit refresh support but no automatic refresh/replay interceptor.
+
+Backend details and boundaries are in [API Authentication](../api/authentication.md), [API Authorization](../api/authorization.md), and [API Tenant Context](../api/tenant-context.md). Page-preview WebSocket construction is the special case: browser limitations permit access token and organization ID in query parameters.
 
 ## Scope Boundary
 
@@ -113,4 +119,3 @@ Tokens are persisted in `localStorage`. `PagesPage` can place access token and o
 - [Backend Authentication](../backend/modules/authentication.md)
 - [Backend Tenant Authorization](../backend/modules/tenant-authorization.md)
 - [System Boundaries](../architecture/boundaries.md)
-

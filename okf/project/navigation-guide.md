@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources:
   - "README.md"
@@ -67,6 +67,14 @@ uncertainty_markers:
 ---
 
 # Navigation Guide
+
+## API and Contract Tasks
+
+- Start at [API Architecture and Contracts](../api/README.md) for the Phase 6 reading order and authority rules.
+- Use the [Endpoint Catalog](../api/endpoint-catalog.md) for an exact method, path, handler, access zone, extractor, return type, OpenAPI status, frontend wrapper, and endpoint-family link across all 168 registered handlers.
+- Use the [Route Group Catalog](../api/route-group-catalog.md) when the owning Axum module is known.
+- Review [Authentication](../api/authentication.md), [Authorization](../api/authorization.md), and [Tenant Context](../api/tenant-context.md) together before moving a route or changing access policy.
+- Compare [OpenAPI Consistency](../api/openapi-consistency.md) and [Frontend Contract Map](../api/frontend-contract-map.md) whenever a transport contract changes.
 
 Use this guide to choose the shortest evidence path for a common repository task. The [Repository Map](repository-map.md) provides the fuller structural inventory, and the [Source Register](../references/source-register.md) explains the reliability of the referenced sources.
 

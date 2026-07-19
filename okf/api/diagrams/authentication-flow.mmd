@@ -1,0 +1,32 @@
+%% Title: ZinharCMS Authentication Flow
+%% Phase: 6
+%% Status: verified
+%% Source evidence: backend/src/routes/auth.rs; backend/src/middleware/auth.rs; backend/src/services/jwt.rs; frontend/src/services/api.ts
+%% Related documentation: ../authentication.md; ../endpoints/authentication-and-session.md
+sequenceDiagram
+    autonumber
+    participant Browser
+    participant AuthRoutes as Public Auth Routes
+    participant Tokens as JWT and Refresh Token Service
+    participant Database
+    participant Protected as Protected Router
+
+    Browser->>AuthRoutes: Register or login JSON
+    AuthRoutes->>Database: Validate or create active user and memberships
+    AuthRoutes->>Tokens: Issue access and refresh tokens
+    Tokens->>Database: Store hashed refresh token
+    AuthRoutes-->>Browser: AuthResponse and HttpOnly refresh cookie
+
+    Browser->>Protected: Authorization Bearer access token
+    Protected->>Tokens: Validate access token
+    Tokens-->>Protected: Claims
+    Protected-->>Browser: Protected response
+
+    Browser->>AuthRoutes: Refresh cookie or JSON refresh token
+    AuthRoutes->>Database: Validate and revoke prior refresh record
+    AuthRoutes->>Tokens: Rotate token pair
+    AuthRoutes-->>Browser: New AuthResponse and refresh cookie
+
+    Browser->>Protected: Logout with bearer token and refresh token source
+    Protected->>Database: Revoke refresh token when supplied
+    Protected-->>Browser: LogoutResponse and cleared cookie

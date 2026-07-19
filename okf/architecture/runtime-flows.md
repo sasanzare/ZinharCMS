@@ -8,7 +8,7 @@ status: "current"
 review_status: "verified"
 source_of_truth: false
 architecture_status: "observed"
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources:
   - "backend/src/main.rs"
@@ -63,6 +63,12 @@ uncertainty_markers:
 ---
 
 # Runtime Flows
+
+## Phase 6 API Request Flow
+
+The verified transport flow is documented in [API Route Architecture](../api/route-architecture.md) and [API Request Lifecycle](../api/diagrams/api-request-lifecycle.mmd). Requests pass global timeout/security/CORS/compression/request-ID/tracing layers, enter one of the public, authenticated, or tenant-protected router zones, run extractor and domain validation, apply role/ownership/workflow rules, use tenant RLS or an explicit global path, perform side effects, and return a typed response or error.
+
+The handler inventory is 17 public, 12 authenticated non-tenant, and 139 tenant-protected endpoints. The page preview flow upgrades `GET /api/preview/{page_id}` to WebSocket after preview-specific token and organization selection.
 
 ## Flow Register
 

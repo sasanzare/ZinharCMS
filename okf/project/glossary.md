@@ -7,7 +7,7 @@ phase: 1
 status: "current"
 review_status: "verified"
 source_of_truth: false
-last_verified_commit: "70b972428799304c7defd7e67f95459cd4a3644e"
+last_verified_commit: "eed1e0dbdf6d873457d1165158b3c8fbfd6647e1"
 last_verified_date: "2026-07-18"
 primary_sources:
   - "README.md"
@@ -47,6 +47,19 @@ uncertainty_markers:
 ---
 
 # Project Glossary
+
+## Phase 6 API Terms
+
+| Term | Meaning in ZinharCMS |
+| --- | --- |
+| Access zone | One of public, bearer-authenticated, or bearer-and-tenant route subtrees established by router composition |
+| Endpoint ID | Stable Phase 6 identifier in `<route-group>.<operation>` form; see the API endpoint catalog |
+| Route group | A coherent Axum registration module or root-router surface documented under `okf/api/groups/` |
+| Endpoint family | A task-oriented API capability spanning one or more related operations, documented under `okf/api/endpoints/` |
+| Tenant context | Verified organization, user, and organization-role context inserted by tenant middleware after active-membership validation |
+| Public delivery API | The versioned `/api/v1/*` read surface that resolves the default public organization internally |
+| `ErrorBody` | Application error JSON object with `error` and `message`; not guaranteed for framework, middleware, timeout, static, or WebSocket failures |
+| OpenAPI implementation conflict | A recorded disagreement between registered runtime behavior and Utoipa-generated documentation |
 
 This glossary defines the vocabulary used by the Phase 1 OKF documents. It is descriptive, not authoritative: executable code, migrations, and configuration remain the primary evidence. Status values distinguish direct evidence from interpretation and unresolved terminology.
 
