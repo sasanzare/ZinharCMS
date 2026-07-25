@@ -10,12 +10,12 @@
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `4e93657d7e11768a1319fc2325e104fd96131692 docs: correct V3 release status and Node prerequisites`
-- **Working tree:** Uncommitted GPLv3 repository licensing and aligned manifest, README, OKF, and handoff changes
+- **Latest relevant commit:** `04dc10e5c3ffb9bfebd71f0b744dcfdbdbe75dc3 chore(license): adopt GPL-3.0-only`
+- **Working tree:** Uncommitted GitHub Actions Node.js 24 runtime upgrades and this handoff checkpoint
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
 - **Current phase:** V3 release preparation
-- **Current subphase:** GNU GPL version 3 only licensing is aligned and locally validated across the root license, manifests, README, inventories, and affected OKF governance records; the change awaits review and commit authorization.
-- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, and pushed GitHub CI gates. Repository licensing is resolved as `GPL-3.0-only`. Production image build remains unverified because the required base images are not cached. Production GA still requires the licensing commit, successful production image builds, an approved tag, target-environment go/no-go validation, and owner sign-off.
+- **Current subphase:** GitHub Actions Node.js 20 deprecation warnings are being removed by upgrading the checkout and setup-node actions to their Node.js 24-based v5 runtimes; local static validation is complete and pushed CI verification is pending.
+- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, and pushed GitHub CI gates. Repository licensing is resolved as `GPL-3.0-only`, and the previously failed Frontend CI run passed on rerun attempt 2. Production image build remains unverified because the required base images are not cached. Production GA still requires successful production image builds, an approved tag, target-environment go/no-go validation, and owner sign-off.
 
 ## 2. Project Overview
 
@@ -1612,3 +1612,24 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - **Exact Next Action:** review the GPLv3 licensing diff and, only after
   explicit owner authorization, commit and push it before retrying production
   image builds or creating `v3.0.0`.
+
+### 2026-07-25 - GitHub Actions Node.js 24 runtime checkpoint
+
+- Verified through the public GitHub Actions API that Frontend CI run
+  `30163197148` completed successfully on rerun attempt 2 for commit
+  `04dc10e5c3ffb9bfebd71f0b744dcfdbdbe75dc3`.
+- Upgraded `actions/checkout` from v4 to v5 in both backend and frontend CI,
+  and upgraded `actions/setup-node` from v4 to v5 in frontend CI.
+- Preserved the explicit Node.js 24 application toolchain and disabled the new
+  setup-node package-manager cache behavior to keep the existing no-cache CI
+  semantics.
+- Static validation passed with `git diff --check`, and all workflow action
+  references resolve to the intended v5 majors. Local `actionlint` validation
+  was not run because `actionlint` is not installed.
+- No product source, dependency, manifest, tag, release, or remote state was
+  changed. No files were staged or committed.
+- **Modified files:** `.github/workflows/backend-ci.yml`,
+  `.github/workflows/frontend-ci.yml`, and `HANDOFF.md`.
+- **Exact Next Action:** review the three-file diff, then commit and push it
+  only with explicit owner authorization. Require Backend CI and Frontend CI to
+  pass without the Node.js 20 deprecation annotation before proceeding.
