@@ -10,12 +10,12 @@
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `201058d197b1bca5c7215965a3031ad0447ba695 docs: rewrite README for V3 release preparation`
-- **Working tree:** Uncommitted, locally validated V3 release-candidate hardening, version, dependency, CI, runtime, documentation, and handoff changes
+- **Latest relevant commit:** `1aafdcddc80196d865b1e32bd69e0dd50cc19337 release: prepare ZinharCMS v3.0.0 candidate`
+- **Working tree:** Uncommitted root README accuracy corrections and the associated `HANDOFF.md` checkpoint; the V3 release-candidate hardening commit is pushed
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
 - **Current phase:** V3 release preparation
-- **Current subphase:** Repository-controlled release blockers are resolved and locally validated; changes await review and commit authorization.
-- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, and Phase 15 gates. Production image build remains unverified because Docker Hub DNS failed and the base images are not cached. Production GA still requires a reviewed commit, green pushed CI, an approved tag, target-environment go/no-go validation, license-owner confirmation, and owner sign-off.
+- **Current subphase:** The V3 release-candidate commit is pushed and both GitHub CI workflows are green; the two root README accuracy corrections are applied locally and await review, commit, and push.
+- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, and pushed GitHub CI gates. Production image build remains unverified because Docker Hub DNS failed and the base images are not cached. Production GA still requires the documentation-only correction commit, an approved tag, target-environment go/no-go validation, license-owner confirmation, and owner sign-off.
 
 ## 2. Project Overview
 
@@ -1560,3 +1560,22 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   both GitHub CI workflows to pass, retry the two production image builds when
   Docker Hub is reachable, obtain the license and production go/no-go owner
   decisions, and only then create the approved `v3.0.0` tag/release.
+
+### 2026-07-25 - Pushed release-candidate README review
+
+- Reconciled Git state after the owner committed and pushed the release
+  candidate. Local `HEAD`, `origin/main`, and the public HTTPS `main` reference
+  all resolve to `1aafdcddc80196d865b1e32bd69e0dd50cc19337`.
+- Verified that Backend CI and Frontend CI both completed successfully for the
+  pushed commit.
+- Reviewed the root README against current manifests, workflows, public tags,
+  and repository paths. All 37 Markdown links resolve and no stale Vite 6,
+  `npm install`, `0.1.0`, or Phase 5 wording remains.
+- Applied two small accuracy corrections: CI and supported local development
+  use Node.js 24 with npm 11, not Node.js 22; and the tag row now states
+  specifically that the V3 tag is unpublished while public `v1.0.0` and
+  `v2.0.0` tags already exist.
+- No source, workflow, tag, release, or remote state was changed.
+- **Modified files:** `README.md` and `HANDOFF.md`.
+- **Exact Next Action:** review the two-file documentation diff and, only after
+  explicit owner authorization, commit and push it before creating `v3.0.0`.

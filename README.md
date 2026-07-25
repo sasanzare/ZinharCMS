@@ -22,7 +22,7 @@ occurred; the target environment must still pass the documented go/no-go gates.
 | V3 Marketplace | Implementation phases 0.1 through 15 complete |
 | V3 production launch | Requires target-environment validation and owner sign-off |
 | Release candidate version | `3.0.0` across the root, backend, and frontend manifests |
-| Published Git tag | No release tag is currently recorded |
+| V3 release tag | Not yet published; `v1.0.0` and `v2.0.0` are the existing public tags |
 | OKF knowledge base | Complete with documented open owner and operational questions |
 
 V3 launch criteria, known limitations, support expectations, and rollback
@@ -101,8 +101,8 @@ and evidence.
 
 - Git.
 - Rust 1.96 with `cargo`, `rustfmt`, and `clippy`.
-- Node.js and npm. CI uses Node.js 22; the production frontend image currently
-  uses Node.js 24. A formal supported local version range is not defined.
+- Node.js 24.x and npm 11.x. CI and both frontend container builds use Node.js
+  24.
 - Docker with Docker Compose for the repository-provided local infrastructure.
 - PowerShell only when running the supplied release and readiness scripts.
 
