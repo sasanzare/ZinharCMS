@@ -34,13 +34,11 @@ uncertainty_markers:
   - "UNKNOWN U-06"
   - "UNKNOWN U-08"
   - "UNKNOWN U-09"
-  - "UNKNOWN U-10"
   - "UNKNOWN U-12"
   - "UNKNOWN U-14"
   - "UNKNOWN U-15"
   - "NEEDS_OWNER_CONFIRMATION NOC-10"
   - "NEEDS_OWNER_CONFIRMATION NOC-15"
-  - "NEEDS_OWNER_CONFIRMATION NOC-16"
   - "DOCUMENTATION_CODE_CONFLICT DCC-01"
   - "DOCUMENTATION_CODE_CONFLICT DCC-02"
   - "DOCUMENTATION_CODE_CONFLICT DCC-03"
@@ -73,7 +71,7 @@ uncertainty_markers:
 | Project type | API-first headless content management system with a separate administration SPA |
 | High-level category | Multi-tenant SaaS CMS with page building, delivery APIs, operations controls, and a governed product Marketplace |
 | Current repository status | Source, migrations, tests, UI, scripts, and documentation implement the original CMS phases, V2 SaaS phases, and V3 Marketplace phases through Phase 15. This is repository implementation evidence, not proof of production deployment or launch. |
-| Project-level license | UNKNOWN U-10 and NEEDS_OWNER_CONFIRMATION NOC-16. backend/Cargo.toml declares MIT OR Apache-2.0 for the Rust crate, but no root license file establishes terms for the whole repository. |
+| Project-level license | GNU General Public License version 3 only (`GPL-3.0-only`), established by the root `LICENSE` file and aligned root, frontend, and backend manifest metadata. |
 | Primary maintainership | UNKNOWN U-12 and NEEDS_OWNER_CONFIRMATION NOC-15. No CODEOWNERS file, maintainer roster, or contribution guide assigns ownership. |
 
 ## 2. Project Purpose
@@ -270,7 +268,6 @@ No existing documentation was changed during Phase 1.
 | UNKNOWN U-06 | Environment promotion, release cadence, rollback authority, and incident ownership |
 | UNKNOWN U-08 | Intended public organization/custom-domain delivery selection contract |
 | UNKNOWN U-09 | Officially supported Rust, Node.js, browser, and contributor toolchain versions |
-| UNKNOWN U-10 | Project-level license and distribution policy |
 | UNKNOWN U-12 | Code ownership, required reviewers, branch protection, and merge policy |
 | UNKNOWN U-14 | Production email provider and retry/failure behavior |
 | UNKNOWN U-15 | Support and security incident escalation contacts |

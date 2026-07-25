@@ -11,6 +11,7 @@ only mirroring the directory tree.
 | Path | Responsibility | Domain | Kind | Main symbols, services, or settings | Related future diagrams |
 | --- | --- | --- | --- | --- | --- |
 | `README.md` | Current project overview and quick start. Useful as context only after code/schema evidence. | Product scope, local dev | Documentation | V1/V2/V3 phase summary, ports, default services | Context map, release scope timeline |
+| `LICENSE` | Repository-wide GNU GPL version 3 only terms. | Project governance | License | `GPL-3.0-only` | Release scope and governance |
 | `.env.example` | Primary local backend/frontend environment contract. | Runtime configuration | Configuration | `DATABASE_URL`, `REDIS_URL`, `JWT_*`, `COOKIE_SECURE`, `CORS_ORIGIN`, `STRIPE_*`, `EMAIL_WEBHOOK_URL`, rate limits | Deployment/config diagram |
 | `env.example` | Older sample environment file with a smaller variable set. | Runtime configuration | Configuration | Database, Redis, JWT, upload, CORS, Stripe variables | Configuration drift diagram |
 | `docker-compose.yml` | Local infrastructure only. | Local infrastructure | Configuration | PostgreSQL 16, Redis 7, pgAdmin, named volumes | Local development diagram |

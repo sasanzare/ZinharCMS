@@ -10,12 +10,12 @@
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `1aafdcddc80196d865b1e32bd69e0dd50cc19337 release: prepare ZinharCMS v3.0.0 candidate`
-- **Working tree:** Uncommitted root README accuracy corrections and the associated `HANDOFF.md` checkpoint; the V3 release-candidate hardening commit is pushed
+- **Latest relevant commit:** `4e93657d7e11768a1319fc2325e104fd96131692 docs: correct V3 release status and Node prerequisites`
+- **Working tree:** Uncommitted GPLv3 repository licensing and aligned manifest, README, OKF, and handoff changes
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
 - **Current phase:** V3 release preparation
-- **Current subphase:** The V3 release-candidate commit is pushed and both GitHub CI workflows are green; the two root README accuracy corrections are applied locally and await review, commit, and push.
-- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, and pushed GitHub CI gates. Production image build remains unverified because Docker Hub DNS failed and the base images are not cached. Production GA still requires the documentation-only correction commit, an approved tag, target-environment go/no-go validation, license-owner confirmation, and owner sign-off.
+- **Current subphase:** GNU GPL version 3 only licensing is aligned and locally validated across the root license, manifests, README, inventories, and affected OKF governance records; the change awaits review and commit authorization.
+- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, and pushed GitHub CI gates. Repository licensing is resolved as `GPL-3.0-only`. Production image build remains unverified because the required base images are not cached. Production GA still requires the licensing commit, successful production image builds, an approved tag, target-environment go/no-go validation, and owner sign-off.
 
 ## 2. Project Overview
 
@@ -1579,3 +1579,36 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - **Modified files:** `README.md` and `HANDOFF.md`.
 - **Exact Next Action:** review the two-file documentation diff and, only after
   explicit owner authorization, commit and push it before creating `v3.0.0`.
+
+### 2026-07-25 - GPLv3 repository licensing checkpoint
+
+- Reconciled the clean pushed state at `4e93657d` before starting the licensing
+  change. The project owner selected GNU General Public License version 3 only,
+  represented by the SPDX identifier `GPL-3.0-only`.
+- Added the complete 674-line GNU GPL version 3 text as root `LICENSE`. The
+  normalized file exactly matches the GNU-distributed reference text and has
+  SHA-256
+  `8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b`.
+- Replaced the backend crate's `MIT OR Apache-2.0` metadata and aligned root,
+  frontend, and frontend lockfile project metadata on `GPL-3.0-only`.
+  Third-party dependency license metadata remains unchanged.
+- Added the README license section, removed the obsolete no-license warning,
+  registered `LICENSE` in repository inventories, and resolved UNKNOWN U-10
+  and NOC-16 in the current OKF index and governance documents. Historical
+  Phase Zero rows remain with explicit resolution notices.
+- Validation passed for JSON parsing and project license metadata, Cargo
+  metadata, eight-source release-version consistency, exact GPLv3 text
+  comparison, changed Markdown local links, English-only changed files, and Git
+  whitespace. The `okf/index.yaml` diff only removes the resolved entries and
+  passed static indentation/quote checks; parser-level YAML validation was not
+  rerun because no local parser was available and the temporary dependency
+  install was unavailable offline.
+- Product tests were not rerun because this change affects license metadata and
+  documentation only. No dependency license was rewritten.
+- No file was staged, committed, pushed, tagged, released, or deployed.
+- **Modified/untracked files:** root `LICENSE`; root/frontend/backend manifest
+  metadata; frontend lockfile root metadata; README; repository inventories;
+  affected OKF current and historical governance records; and this handoff.
+- **Exact Next Action:** review the GPLv3 licensing diff and, only after
+  explicit owner authorization, commit and push it before retrying production
+  image builds or creating `v3.0.0`.

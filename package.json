@@ -2,6 +2,7 @@
   "name": "ZinharCMS",
   "private": true,
   "version": "3.0.0",
+  "license": "GPL-3.0-only",
   "scripts": {
     "dev:infra": "docker compose up -d postgres redis pgadmin",
     "dev": "docker compose up --build",

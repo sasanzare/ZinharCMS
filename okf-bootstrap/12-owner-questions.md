@@ -4,6 +4,11 @@
 
 These questions cannot be answered reliably from repository code, migrations, tests, or existing documents. They are not blockers for repository-derived Phase One work. Each answer should be recorded with decision date, decision owner, rationale, and affected OKF paths.
 
+> Resolution update, 2026-07-25: NOC-16 is resolved. The project owner selected
+> GNU GPL version 3 only (`GPL-3.0-only`), represented by the root `LICENSE`
+> file and aligned package manifests. The original question below is retained
+> as historical Phase Zero evidence.
+
 ## High-Priority Questions
 
 | ID | Question | Why the repository cannot answer it | Affected OKF areas | Can Phase One start without it? |
@@ -41,7 +46,7 @@ These questions cannot be answered reliably from repository code, migrations, te
 
 1. Resolve NOC-01 through NOC-06 before finalizing architecture and operations claims.
 2. Resolve NOC-09 and NOC-10 before finalizing failure semantics and Marketplace roadmap boundaries.
-3. Resolve NOC-07, NOC-08, and NOC-11 through NOC-16 before final validation of development, API, ownership, and governance documents.
+3. Resolve NOC-07, NOC-08, and NOC-11 through NOC-15 before final validation of development, API, ownership, and governance documents.
 4. Resolve NOC-17 and NOC-18 when repository hygiene and glossary work require them.
 
 ## Decision Recording Template

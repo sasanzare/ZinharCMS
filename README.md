@@ -317,6 +317,11 @@ Generated and dependency directories such as `backend/target`,
 `frontend/node_modules`, `frontend/dist`, and `marketplace-dist` are not source
 of truth.
 
+## License
+
+ZinharCMS is licensed under the GNU General Public License version 3 only
+(`GPL-3.0-only`). See [LICENSE](LICENSE) for the complete license terms.
+
 ## Security and Project Governance
 
 - Never commit `.env` files, credentials, tokens, private keys, or production
@@ -324,7 +329,7 @@ of truth.
 - Review [Security Architecture](okf/security/README.md) and
   [Secrets and Configuration](okf/security/secrets-and-configuration.md) before
   changing authentication, authorization, tenant isolation, or secret handling.
-- No repository-wide `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`,
-  `CODE_OF_CONDUCT.md`, or ownership policy is currently tracked.
-- Do not infer redistribution rights or a vulnerability disclosure channel
-  until the project owner publishes those policies.
+- No repository-wide `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, or
+  ownership policy is currently tracked.
+- Do not infer a vulnerability disclosure channel until the project owner
+  publishes a security policy.

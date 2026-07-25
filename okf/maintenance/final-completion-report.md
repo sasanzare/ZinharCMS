@@ -92,7 +92,7 @@ No unresolved question blocks continued repository-derived engineering. The high
 
 ## Validation Summary
 
-YAML, frontmatter, IDs, index parity, metadata, relative links, source paths, language, status markers, scope, and Git whitespace checks pass. Static Mermaid checks pass for 50 diagrams; parser/render validation remains unavailable. Sixteen conflicts and eighteen owner questions are retained. No generated OKF secret values were found; one source-code exposure category remains registered. See [Validation Report](validation-report.md) and [Cross-Phase Conflicts](cross-phase-conflicts.md).
+YAML, frontmatter, IDs, index parity, metadata, relative links, source paths, language, status markers, scope, and Git whitespace checks pass. Static Mermaid checks pass for 50 diagrams; parser/render validation remains unavailable. Sixteen conflicts and seventeen owner questions remain unresolved; NOC-16 is resolved by the repository-wide `GPL-3.0-only` license decision. No generated OKF secret values were found; one source-code exposure category remains registered. See [Validation Report](validation-report.md) and [Cross-Phase Conflicts](cross-phase-conflicts.md).
 
 ## Remaining Work
 

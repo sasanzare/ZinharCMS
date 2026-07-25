@@ -108,6 +108,7 @@ ZinharCMS/
   scripts/                 Marketplace CLI and readiness/load/GA scripts
   docker-compose.yml       Local infrastructure services
   docker-compose.prod.yml  Production-like container definition
+  LICENSE                  GNU GPL version 3 only repository terms
   package.json             Root developer command aliases
   README.md                Repository scope and quick start
 ~~~
@@ -128,6 +129,7 @@ Generated, dependency, cache, runtime-data, and local-secret paths are intention
 | okf/ | Organized knowledge/navigation layer | Markdown, YAML, and Mermaid; non-runtime | README.md and index.yaml are entry points; project, architecture, and backend knowledge are current | Every Markdown file has front matter; index.yaml registers current/planned knowledge | Phases 1 through 3 current; later phases planned |
 | docker-compose.yml | Local infrastructure definition | Docker Compose; runtime/development | PostgreSQL 16, Redis 7, pgAdmin | Uses named volumes and development credentials | Phase 2 and 10 |
 | docker-compose.prod.yml | Production-like reference definition | Docker Compose; deployment reference | PostgreSQL, Redis, backend, frontend, and upload volume | Requires environment values and builds production Dockerfiles; actual production use is UNKNOWN U-01 | Phase 2 and 10 |
+| LICENSE | Repository license | Legal/governance; non-runtime | Establishes GNU GPL version 3 only terms for the repository | Manifest metadata uses `GPL-3.0-only` | Phase 1 and 10 |
 | package.json | Root command aliases | npm; tooling | Starts Compose infrastructure, backend, frontend, tests, frontend build, and Marketplace CLI | Does not make the repository an npm workspace | Phase 10 |
 | .env.example and env.example | Non-secret configuration templates | Environment files; configuration | Database, Redis, JWT, uploads, CORS, rate limits, email, Stripe, and frontend URL names | .env is ignored and must not be copied into documentation | Phase 10 |
 | README.md | Repository overview and quick start | Markdown; non-runtime | Current scope summary and basic commands | Source and manifests remain more authoritative | Phase 1 links it; do not duplicate phase history |

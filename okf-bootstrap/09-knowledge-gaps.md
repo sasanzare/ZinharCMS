@@ -6,6 +6,12 @@
 - NEEDS_OWNER_CONFIRMATION identifies a product, policy, operational, or architectural decision that the repository cannot make.
 - DOCUMENTATION_CODE_CONFLICT identifies a concrete mismatch between current implementation and documentation.
 
+> Resolution update, 2026-07-25: UNKNOWN U-10 and
+> NEEDS_OWNER_CONFIRMATION NOC-16 were resolved when the project owner selected
+> GNU GPL version 3 only (`GPL-3.0-only`) and authorized the root `LICENSE`
+> file. The original rows below are retained as the historical Phase Zero
+> inventory.
+
 ## UNKNOWN Index
 
 | ID | Unknown fact | Why it matters | Best verification source | Priority |

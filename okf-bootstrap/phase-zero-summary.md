@@ -6,6 +6,11 @@ Phase Zero is complete as an analysis and planning deliverable. Fourteen require
 
 The repository and Git state were treated as authoritative when the previous handoff was stale. The work began on branch docs/okf-phase-zero at commit 61ed3b38 with a clean worktree.
 
+> Resolution update, 2026-07-25: UNKNOWN U-10 and
+> NEEDS_OWNER_CONFIRMATION NOC-16 are resolved by the owner-approved GNU GPL
+> version 3 only (`GPL-3.0-only`) repository license. The original Phase Zero
+> counts and register rows remain below as historical audit evidence.
+
 ## 2. Scope and Method
 
 The audit covered tracked repository files, technology manifests, runtime composition, backend and frontend modules, migrations, routes, tests, documentation, Mermaid sources, CI, containers, scripts, and ignored/generated boundaries visible from repository configuration.

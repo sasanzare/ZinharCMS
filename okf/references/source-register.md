@@ -57,7 +57,6 @@ uncertainty_markers:
   - "UNKNOWN U-07"
   - "UNKNOWN U-08"
   - "UNKNOWN U-09"
-  - "UNKNOWN U-10"
   - "UNKNOWN U-11"
   - "UNKNOWN U-12"
   - "UNKNOWN U-13"
@@ -78,7 +77,6 @@ uncertainty_markers:
   - "NEEDS_OWNER_CONFIRMATION NOC-13"
   - "NEEDS_OWNER_CONFIRMATION NOC-14"
   - "NEEDS_OWNER_CONFIRMATION NOC-15"
-  - "NEEDS_OWNER_CONFIRMATION NOC-16"
   - "NEEDS_OWNER_CONFIRMATION NOC-17"
   - "NEEDS_OWNER_CONFIRMATION NOC-18"
   - "DOCUMENTATION_CODE_CONFLICT DCC-01"
@@ -152,8 +150,9 @@ The Phase 1 baseline entries were checked against commit `49b2c1886168497e99f708
 | Path | Source type | Information derived | Reliability | Verified commit | Notes and conflicts |
 |---|---|---|---|---|---|
 | `README.md` | Root project introduction | Project identity, high-level scope, quick start, local commands, API and documentation links | SUPPORTING | `49b2c188` | Cross-check operational claims against manifests and Compose files. |
+| `LICENSE` | Repository license | GNU General Public License version 3 terms for the repository | PRIMARY | Working tree, 2026-07-25 | Manifest metadata uses the SPDX identifier `GPL-3.0-only`. |
 | `package.json` | Root npm manifest | Workspace orchestration, test/build commands, Marketplace CLI entry | PRIMARY | `49b2c188` | `dev` invokes the default Compose file, which currently contains infrastructure services only. |
-| `backend/Cargo.toml` | Rust crate manifest | Backend package identity, Rust dependencies, declared crate license | PRIMARY | `49b2c188` | Crate license does not establish a repository-wide license file; U-10 and NOC-16 remain open. |
+| `backend/Cargo.toml` | Rust crate manifest | Backend package identity, Rust dependencies, declared crate license | PRIMARY | Working tree, 2026-07-25 | The crate license is aligned with the repository-wide `GPL-3.0-only` policy. |
 | `backend/Cargo.lock` | Rust lockfile | Resolved backend dependency graph | PRIMARY | `49b2c188` | Dependency versions are implementation evidence, not a product capability statement. |
 | `frontend/package.json` | Frontend npm manifest | React/Vite stack, scripts, runtime and test dependencies | PRIMARY | `49b2c188` | Use with the lockfile and Vite configuration. |
 | `frontend/package-lock.json` | Frontend lockfile | Resolved frontend dependency graph | PRIMARY | `49b2c188` | Generated dependency resolution. |

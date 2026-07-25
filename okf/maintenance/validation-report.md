@@ -39,7 +39,7 @@ Validation covered the complete `okf/` tree at source commit `131c4f30583affc7a0
 | Represented phases | 1 through 10 |
 | Top-level OKF directories | 14 |
 | Cross-phase conflicts | 16 |
-| Unresolved owner questions | 18 |
+| Unresolved owner questions | 17 |
 | Broken Markdown/index/relation links | 0 |
 | Invalid evidence/source paths | 0 |
 

@@ -28,7 +28,7 @@ No CODEOWNERS file, maintainer roster, team directory, on-call schedule, or appr
 
 | OKF section | Ownership classification | Required collaboration | Evidence/status |
 | --- | --- | --- | --- |
-| Project | `PROJECT_OWNER`, `NEEDS_OWNER_CONFIRMATION` | All maintainers for scope changes | Product intent and license require owner decisions |
+| Project | `PROJECT_OWNER`, `NEEDS_OWNER_CONFIRMATION` | All maintainers for scope changes | Product intent still requires owner decisions; repository licensing is resolved as `GPL-3.0-only` |
 | Architecture | `SHARED_OWNERSHIP` | Backend, frontend, database, security, DevOps | Cross-cutting evidence; no named architect |
 | Backend | `BACKEND_MAINTAINERS` | Database/security/domain as affected | Source boundary is clear; people are unknown |
 | Frontend | `FRONTEND_MAINTAINERS` | API/security/design/product as affected | Source boundary is clear; people are unknown |

@@ -26,7 +26,12 @@ related_diagrams: []
 
 # Unresolved Owner Questions
 
-Repository evidence was rechecked before carrying these questions forward. No question below has a complete owner-approved answer in the repository. There are no `BLOCKER` questions for continued evidence-based development, but several are `HIGH` for safe production operation.
+Repository evidence was rechecked before carrying these questions forward.
+NOC-16 was resolved on 2026-07-25 when the project owner selected GNU GPL
+version 3 only (`GPL-3.0-only`) and authorized a root `LICENSE` file. Every
+question remaining below still lacks a complete owner-approved answer in the
+repository. There are no `BLOCKER` questions for continued evidence-based
+development, but several are `HIGH` for safe production operation.
 
 | ID | Question | Category | Priority | Why it matters | Affected documents | Can work continue? | Recommended owner | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -45,7 +50,6 @@ Repository evidence was rechecked before carrying these questions forward. No qu
 | NOC-13 | Which documents are canonical, who owns them, and how are stale documents retired? | Documentation | MEDIUM | Conflicting historical docs persist | Project, references, maintenance | Yes, use source priority | Project owner | `NEEDS_OWNER_CONFIRMATION` |
 | NOC-14 | What branch, commit, review, required-check, coverage, E2E, migration-test, and docs policy applies? | Contribution | HIGH | Merge quality/governance is not tracked | Development, delivery, maintenance | Yes, label inference | Project/maintainer owner | `NEEDS_OWNER_CONFIRMATION` |
 | NOC-15 | Who owns modules, Marketplace review, support, security response, operations, and final docs approval? | Ownership | HIGH | Escalation and approval are unavailable | All sections | Yes, ownership remains unclear | Project owner | `NEEDS_OWNER_CONFIRMATION` |
-| NOC-16 | What product/repository license and distribution terms are authoritative? | Governance | MEDIUM | Backend crate license is not whole-repository policy | Project, contribution, release | Yes, avoid license inference | Project/legal owner | `NEEDS_OWNER_CONFIRMATION` |
 | NOC-17 | What retention lifecycle applies to ignored Marketplace archives and local generated samples? | Tooling/artifacts | LOW | Local output cleanup/reproducibility is unclear | Project, extensibility, development | Yes | Marketplace/maintainer owner | `NEEDS_OWNER_CONFIRMATION` |
 | NOC-18 | Which terms/abbreviations are preferred where code, UI, and historical docs differ? | Terminology | MEDIUM | Inconsistent language causes drift | Glossary and all sections | Yes, preserve identifiers | Project/documentation owner | `NEEDS_OWNER_CONFIRMATION` |
 
