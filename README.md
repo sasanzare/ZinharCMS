@@ -1,257 +1,323 @@
 # ZinharCMS
 
-ZinharCMS is a Rust/Axum + React headless CMS with a visual page builder roadmap.
-This repository currently implements phases zero through ten from the original project
-proposal plus V3 Marketplace phases 0.1 through 15: a runnable monorepo foundation, local infrastructure, CI, environment
-configuration, auth, RBAC, content type CRUD, entry CRUD, media library APIs,
-page JSON storage, component registry, page versioning, live preview streaming,
-delivery APIs, webhooks, editorial workflow, collaboration comments, plugin
-management, security hardening, i18n-ready admin localization, V2 multi-tenant SaaS operations, beta feedback tooling, GA release operations, a React admin panel for those capabilities, the V3 Marketplace phase 4 review, decision, and moderation workflow, and the phase 5 public catalog, search, and listing detail experience.
+[![Backend CI](https://github.com/sasanzare/ZinharCMS/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/sasanzare/ZinharCMS/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://github.com/sasanzare/ZinharCMS/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/sasanzare/ZinharCMS/actions/workflows/frontend-ci.yml)
 
-## Phase Zero Scope
+ZinharCMS is a multi-tenant headless CMS and SaaS administration platform built
+with Rust, Axum, React, PostgreSQL, and Redis. It combines structured content,
+a visual page builder, public delivery APIs, organization management, billing,
+and a reviewed-product Marketplace in one repository.
 
-- `backend/`: Rust 2024 + Axum 0.8 API scaffold with health/readiness endpoints.
-- `backend/src/routes/`: phase-one auth, content, entry, and media APIs.
-- `frontend/`: React 19 + Vite 6 admin workspace scaffold.
-- `docker-compose.yml`: PostgreSQL 16, Redis 7, and pgAdmin only.
-- `.github/workflows/`: initial backend and frontend CI.
-- `backend/migrations/`: database schema based on the proposal ERD.
-- `docs/`: architecture, API, and phase-zero notes.
-- Internationalization: typed frontend locale dictionaries for en and fa-IR, persisted language selection, and RTL document direction support. See docs/I18N.md.
+The repository implementation includes the original CMS phases, the V2 SaaS
+track, and V3 Marketplace phases 0.1 through 15. V3 implementation completion
+does not by itself prove that a production General Availability launch has
+occurred; the target environment must still pass the documented go/no-go gates.
 
-## Phase One Scope
+## Release Status
 
-- Auth: register, login, refresh, logout, and current-user endpoints.
-- Security: Argon2id password hashing and HMAC-SHA256 access tokens.
-- RBAC: `super_admin`, `admin`, `editor`, `author`, and `viewer` role checks.
-- Content Types: admin-managed field schemas stored in PostgreSQL `JSONB`.
-- Entries: CRUD, schema validation, pagination, sorting, publish, and unpublish.
-- Media: multipart upload, metadata editing, listing, details, deletion, and image variants.
+| Track | Repository status |
+| --- | --- |
+| Core CMS | Implemented through the original Phase Seven scope |
+| V2 SaaS | Implemented through the Phase Ten GA-readiness scope |
+| V3 Marketplace | Implementation phases 0.1 through 15 complete |
+| V3 production launch | Requires target-environment validation and owner sign-off |
+| Package version | `0.1.0` in the root, backend, and frontend manifests |
+| Published Git tag | No release tag is currently recorded |
+| OKF knowledge base | Complete with documented open owner and operational questions |
 
-## Phase Two Scope
+V3 launch criteria, known limitations, support expectations, and rollback
+conditions are defined in the
+[Phase 15 guide](docs/V3_PHASE_FIFTEEN.md),
+[release notes](docs/V3_MARKETPLACE_RELEASE_NOTES.md), and
+[operations runbook](docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md).
 
-- Component Registry: seeded system components plus custom component CRUD.
-- Pages: JSON layout CRUD, slug lookup, pagination, status filtering, publish, and unpublish.
-- Validation: page metadata, layout tree, registered component types, props/styles objects, and size/depth limits.
-- Versions: snapshots on create/update/restore, version history, and restore-to-draft.
-- Live Preview: authenticated WebSocket stream at `/api/preview/{page_id}`.
+## Capabilities
 
-## Phase Three Scope
+### Core CMS
 
-- Auth UI: login/register, stored session, protected admin routes, and logout.
-- Dashboard: backend health plus live CMS counts.
-- Content Types: schema list/create/edit/delete with a field builder.
-- Entries: dynamic forms generated from content type field schemas, CRUD, publish, and unpublish.
-- Media: upload, search, metadata editing, copy URL, and delete.
-- Pages: JSON editor for phase-two pages, publish/unpublish, versions, restore, and preview WebSocket URL copy.
+- Authentication, refresh-token sessions, global RBAC, and security hardening.
+- Content-type schemas, validated content entries, editorial workflow, and
+  collaboration comments.
+- Media uploads, metadata, image variants, and organization-scoped ownership.
+- Visual page builder, component registry, page versions, restoration, and live
+  preview streaming.
+- Public delivery APIs, SEO endpoints, Redis-backed caching, and signed
+  webhooks.
+- Built-in plugin registration and English/Persian admin localization with RTL
+  support.
 
-## Phase Four Scope
+### Multi-Tenant SaaS
 
-- Page Builder: component palette, drag-and-drop canvas, sortable blocks, and generated props editor.
-- Preview: live local preview of the current page JSON plus WebSocket preview URL copy for saved pages.
-- Persistence: manual save for new pages and debounced autosave for existing page drafts.
-- Compatibility: uses the existing `page_json`, page versions, publish/unpublish, and component registry APIs.
+- Organizations, memberships, invitations, workspace URLs, and custom-domain
+  records.
+- Tenant-aware middleware and PostgreSQL forced row-level security.
+- Subscription plans, usage quotas, Stripe subscription hooks, and billing
+  administration.
+- Audit logs, email-delivery records, SaaS alerts, beta feedback, dashboards,
+  and GA blocker tracking.
 
-## Phase Five Scope
+### V3 Marketplace
 
-- Delivery API: public `/api/v1` endpoints for published content, pages, settings, and navigation.
-- SEO: sitemap and robots endpoints generated from published pages and entry slugs.
-- Cache: Redis-backed delivery responses with publish/update invalidation and PostgreSQL fallback when Redis is unavailable.
-- Webhooks: admin-managed subscriptions for entry/page publish and unpublish events with HMAC signatures and delivery logs.
+- Creator profiles, listings, package versions, submissions, and immutable
+  artifact metadata.
+- Manifest, ZIP structure, compatibility, permission, and security validation.
+- Reviewer queues, approval decisions, moderation, takedown, and emergency
+  blocking.
+- Tenant-aware catalog, search, listing details, installation lifecycle,
+  version pinning, update, and rollback.
+- Permission snapshots, host-owned adapters, runtime authorization policy, and
+  organization/global kill switches.
+- Free and paid one-time purchases, entitlements, full-refund revocation,
+  revenue ledger entries, and payout-provider onboarding.
+- Customer reviews, abuse reports, internal critical notifications, creator
+  analytics, and global administration analytics.
+- Creator CLI commands, sample packages, security QA, performance baselines,
+  beta-readiness checks, and GA-readiness tooling.
 
-## Phase Six Scope
+## Architecture
 
-- Workflow: draft, pending review, published, and archived transitions for entries and pages.
-- Collaboration: comments on entries/pages with resolve and reopen actions.
-- Plugins: built-in plugin registry and a `seo-auto` before-save hook for entry slugs.
-- Admin UI: Workflow page for review queues, comments, and plugin toggles.
+| Area | Implementation |
+| --- | --- |
+| Backend | Rust 2024, Axum 0.8, Tokio, SQLx; modular monolith |
+| Frontend | React 19, TypeScript, Vite 6, React Router, Zustand |
+| Database | PostgreSQL 16 with embedded SQLx migrations and forced RLS |
+| Cache and limits | Redis 7 for delivery caching and rate-limit counters |
+| Storage | Local filesystem for CMS uploads and Marketplace artifacts |
+| Authentication | Argon2id passwords, HMAC-SHA256 access tokens, hashed refresh tokens |
+| Local infrastructure | Docker Compose for PostgreSQL, Redis, and pgAdmin |
+| Production-like images | Rust backend image and Nginx-hosted frontend image |
+| CI | Separate GitHub Actions workflows for backend and frontend validation |
 
-## Phase Seven Scope
+ZinharCMS is not implemented as independently deployed microservices. The
+backend owns API routing, business services, persistence access, migrations,
+and host-controlled extension adapters.
 
-- Auth security: failed-login rate limiting and HttpOnly refresh-token cookies.
-- API security: credentialed CORS and CSP/security response headers.
-- Content security: richtext sanitization before saving entries.
-- Webhook security: SSRF-focused URL validation for webhook registration.
-- Upload security: allowlisted MIME types verified from file content signatures.
+See the [architecture guide](docs/ARCHITECTURE.md), the
+[architecture diagrams](docs/diagrams/README.md), and the
+[OKF architecture section](okf/architecture/README.md) for verified boundaries
+and evidence.
 
-## V2 Beta Scope
+## Prerequisites
 
-- Multi-tenant organization model with membership-based access.
-- Tenant-aware API context, PostgreSQL RLS, billing plans, quotas, and Stripe lifecycle hooks.
-- Organization operations for invitations, workspace URLs, domains, rate limits, audit logs, email deliveries, and SaaS alerts.
-- Phase 8 hardening coverage for tenant isolation, billing webhook ordering, security headers, and production readiness checks.
-- Phase 9 beta release tooling for selected organizations, in-product feedback, product dashboarding, and GA blocker tracking.
+- Git.
+- A Rust stable toolchain with `cargo`, `rustfmt`, and `clippy`.
+- Node.js and npm. CI uses Node.js 22; the production frontend image currently
+  uses Node.js 24. A formal supported local version range is not defined.
+- Docker with Docker Compose for the repository-provided local infrastructure.
+- PowerShell only when running the supplied release and readiness scripts.
 
-## V2 GA Scope
+See [Development Prerequisites](okf/development/prerequisites.md) for the
+evidence-backed version and environment matrix.
 
-- Phase 10 release notes, migration guide, admin guide, billing guide, operational runbook, and support/rollback plan.
-- GA release checklist for freeze, final migration, post-release monitoring, paid plan enablement, billing support, account access support, and rollback readiness.
-- `scripts/v2-ga-check.ps1` for release-candidate backend tests, frontend lint/build, and optional live health/readiness checks.
-- Backend static tests that keep the GA documentation set and release checklist from silently regressing.
+## Quick Start
 
-## V3 Marketplace Phase 0.1 Scope
+Clone the repository and create a local environment file:
 
-- Marketplace scope lock for the first V3 implementation.
-- Product taxonomy for Component Pack, Design Template, Integration Plugin, Backend Extension, and Unsupported submissions.
-- Initial Marketplace review, approval, rejection, quarantine, moderation, and takedown policy.
-- Backend static tests that keep the phase 0.1 scope and policy documents from silently regressing.
+```powershell
+git clone https://github.com/sasanzare/ZinharCMS.git
+Set-Location ZinharCMS
+Copy-Item .env.example .env
+```
 
-## V3 Marketplace Phase 0.2 Scope
+Review `.env` before starting services. The template is for local development;
+do not reuse development credentials or secret values in a deployed
+environment.
 
-- V2 readiness audit for Marketplace dependencies on organizations, billing, RBAC, audit logs, and RLS.
-- Dependency matrix that fixes ownership, entitlement, permission, and audit decisions before domain modeling.
-- Gap list for plugin install, creator payment, Marketplace permissions, audit taxonomy, and operational runbooks.
-- Backend static tests that keep the phase 0.2 readiness audit and gap list from silently regressing.
+Install frontend dependencies:
 
-## V3 Marketplace Phase 1 Scope
+```powershell
+Set-Location frontend
+npm install
+Set-Location ..
+```
 
-- Marketplace domain model for Creator, Listing, Package, Version, Submission, Installation, and future Purchase.
-- Standard Marketplace manifest contract with required fields, supported product types, permissions, compatibility, entry points, and assets.
-- Base migration for `marketplace_creators`, `marketplace_listings`, `marketplace_versions`, `marketplace_submissions`, and `marketplace_installations`.
-- Package artifact storage contract with object keys, SHA-256 checksum validation, size limits, metadata, and immutable approved artifacts.
-- Backend helpers and tests for manifest validation, package checksum/object-key rules, migration coverage, and tenant-owned installation RLS.
+Start PostgreSQL, Redis, and pgAdmin:
 
-## V3 Marketplace Phase 2 Scope
+```powershell
+npm run dev:infra
+```
 
-- Creator profile request workflow with slug, display name, bio, support email, and pending verification status.
-- Creator verification states for pending, approved, suspended, and rejected Marketplace creators.
-- Listing submission metadata for product type, title, summary, description, category, screenshots, price, license, and support URL.
-- Package version upload API with manifest validation, SHA-256 checksum calculation, local artifact persistence, and review submission creation.
-- Admin panel Marketplace page for creator profile, listings, review submission, and package upload.
+Start the backend from the repository root in a separate terminal:
 
-## V3 Marketplace Phase 3 Scope
+```powershell
+npm run dev:backend
+```
 
-- Static package validation for ZIP file tree, unsafe paths, asset limits, manifest entry points, semantic versions, and dependency metadata.
-- Initial security scan for forbidden files, executable artifacts, external references, sensitive permissions, remote dependencies, and backend extensions.
-- Compatibility reports for ZinharCMS version bounds, required Marketplace features, required plan, and machine-readable install eligibility.
-- Validation report persistence on package versions and review submissions.
-- Creator-facing and reviewer-facing Marketplace report APIs plus admin UI report panels.
+Backend startup connects to PostgreSQL and Redis, applies embedded migrations,
+and may seed development bootstrap data when the users table is empty.
 
-## V3 Marketplace Phase 4 Scope
+Start the frontend from the repository root in another terminal:
 
-- Admin-only review queue for queued, validating, blocked, and submitted Marketplace submissions.
-- Review decision flow for approve, reject, and request changes with internal comments and creator-facing messages.
-- Append-only Marketplace review event log plus audit log entries for every decision.
-- Moderation and takedown actions for listing suspension, version unpublish, and emergency blocking.
-- Admin UI controls for review decisions, moderation actions, and recent event history.
-## V3 Marketplace Phase 5 Scope
+```powershell
+npm run dev:frontend
+```
 
-- Tenant-aware public catalog API for approved, safe, compatible Marketplace listings.
-- Search and filters for query text, category, product type, and pricing type while excluding suspended or incompatible products.
-- Listing detail API and admin UI panels for description, screenshots, changelog, permissions, compatible versions, customer reviews, license, and support links.
-- Compatibility reports recalculated against the active organization's plan before catalog display.
+Local endpoints:
 
-## V3 Marketplace Phase 6 Scope
+| Service | URL |
+| --- | --- |
+| Admin UI | `http://localhost:5173` |
+| API | `http://localhost:8080` |
+| Liveness | `http://localhost:8080/health` |
+| Readiness | `http://localhost:8080/ready` |
+| pgAdmin | `http://localhost:5050` |
+| PostgreSQL | `localhost:5432` |
+| Redis | `localhost:6379` |
 
-- Organization-owned install records for approved, safe, compatible free Component Packs and Design Templates.
-- Exact install-time permission approval plus package existence, size, and SHA-256 integrity gates.
-- Owner/admin enable, disable, soft-uninstall, semver update, version pinning, and safe rollback operations.
-- Tenant-transactional lifecycle audit logs, preserved organization data, lifecycle timestamps, and forced-RLS isolation.
-- Paid/custom Marketplace installs remain blocked until purchase and entitlement support is implemented.
+Verify the backend:
 
-## V3 Marketplace Phase 7 Scope
+```powershell
+Invoke-RestMethod http://localhost:8080/health
+Invoke-RestMethod http://localhost:8080/ready
+```
 
-- Permission catalog for content, page, media, webhook, settings, and external integration capabilities with risk and product-type metadata.
-- Allowlisted sandbox host API policy for declared runtime operations, safe entry-point paths, approved permission snapshots, and bounded JSON payloads.
-- Runtime authorization decisions that never execute uploaded package code and deny inactive, incompatible, unapproved, unsafe, or oversized requests.
-- Organization and global Marketplace kill switches with reason, status, lift, forced-RLS organization handling, cross-organization admin bypass boundaries, and audit records.
+Stop the backend and frontend with `Ctrl+C`. Stop local infrastructure without
+removing its named volumes:
 
-## V3 Marketplace Phase 8 Scope
+```powershell
+docker compose stop
+```
 
-- Component Pack manifest definitions materialized into the organization-scoped Page Builder palette.
-- Design Template preview and independent page clone with organization-owned media asset mapping.
-- Public Plugin Hook MVP registry for sidebar items, dashboard widgets, form fields, and webhook adapters.
-- Adapter endpoints remain host-owned and policy-checked; uploaded Marketplace package code is never executed.
+> The root `npm run dev` command runs the local Compose file. That file contains
+> infrastructure services only; it does not start the backend or frontend
+> processes.
 
-## V3 Marketplace Phase 9 Scope
+For failure indicators, reset cautions, and environment details, use the
+[Local Environment Guide](okf/development/local-environment.md) and
+[Troubleshooting Guide](okf/operations/troubleshooting.md).
 
-- Free and paid organization purchases with receipts, tax metadata, and Stripe one-time Checkout for paid products.
-- Active entitlements gate paid install, re-enable, update, and rollback operations; full refunds revoke access.
-- Idempotent revenue split ledger entries record platform commission, creator share, and refund reversals.
-- Creator payout-provider onboarding and admin verification prevent unverified creators from becoming payout eligible.
-- Marketplace finance remains separate from organization subscription billing.
+## Validation
 
-## V3 Marketplace Phase 10 Scope
+Start required infrastructure before environment-dependent backend tests.
 
-- Organization-installed or purchased products can receive one customer rating and review per organization, with pending/published/rejected moderation.
-- Catalog ratings use only published reviews; the ownership gate is enforced by the API and recorded in tenant audit logs.
-- Abuse reports collect violation type, severity, description, and JSON evidence in a global-admin moderation queue.
-- Critical reports create a persisted unread internal admin notification and audit event; external notification delivery and automatic takedown remain future work.
+Backend tests:
 
-## V3 Marketplace Phase 11 Scope
+```powershell
+npm run test:backend
+```
 
-- Creator analytics summarize each creator's own listings, installs, active installs, revenue, conversion, ratings, reports, and persisted error signals.
-- Internal admin analytics summarize Marketplace submission rate, approval time, installs, refunds, reports, critical reports, blocked packages, and risky/repetitive products.
-- Analytics are read-only projections over existing Marketplace tables; runtime execution error telemetry, warehouse export, and anomaly alerting remain future work.
+Frontend quality gates:
 
-## V3 Marketplace Phase 12 Scope
+```powershell
+npm --prefix frontend run lint
+npm --prefix frontend run typecheck
+npm run test:frontend
+npm run build:frontend
+```
 
-- Creator-side CLI tooling validates Marketplace manifests, package file trees, permissions, compatibility, adapter declarations, and security findings before upload.
-- The CLI packs validated package directories into ZIP artifacts and can submit them to the existing Marketplace version upload API.
-- Creator documentation covers manifest requirements, permissions, review policy, CLI workflow, and sample packages.
-- Component Pack and Integration Plugin sample packages are available under `docs/marketplace-samples`.
-- Backend review remains the final authority and uploaded Marketplace package code is still never executed.
+The backend CI additionally enforces:
 
-Creator tooling quick check:
+```powershell
+cargo fmt --manifest-path backend/Cargo.toml --check
+cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
+```
+
+See the [Command Catalog](okf/development/commands.md),
+[Testing Workflow](okf/development/testing-workflow.md), and
+[CI Architecture](okf/delivery/ci-architecture.md) for command provenance and
+known limitations.
+
+## Marketplace Creator Tooling
+
+Validate and package the tracked Component Pack sample:
 
 ```powershell
 npm run marketplace -- validate docs/marketplace-samples/component-pack
 npm run marketplace -- pack docs/marketplace-samples/component-pack --force
 ```
 
-## V3 Marketplace Phase 13 Scope
+The CLI can also submit a package to an authenticated Marketplace API. Submission
+is an external mutation and requires an approved creator/listing context. See
+the [Marketplace Creator Guide](docs/MARKETPLACE_CREATOR_GUIDE.md).
 
-- P0 Marketplace security QA now covers IDOR, permission bypass, malicious package, refund abuse, and review abuse contracts.
-- Catalog/listing performance has query-aligned index tuning for search, latest approved versions, active install counts, entitlement gates, and existing checkout detection.
-- Catalog and listing detail responses use a private 60-second cache policy because compatibility depends on the authenticated organization plan.
-- `scripts/marketplace-phase13-load-smoke.ps1` records catalog/search/listing P95 latency baselines and can opt into install mutation sampling only when explicitly requested.
+## V3 Release Readiness
 
-## V3 Marketplace Phase 14 Scope
-
-- Private Creator Beta evidence uses existing beta participants, feedback, GA blockers, and creator analytics to validate 5 to 10 real creator products.
-- Customer Beta evidence uses existing Marketplace install, uninstall, purchase, support-feedback, and report paths for real organization testing.
-- `scripts/marketplace-phase14-beta-readiness.ps1` produces a read-only readiness summary over existing beta and Marketplace APIs.
-- No parallel Marketplace beta API is introduced; uploaded Marketplace package code remains unexecuted.
-
-## V3 Marketplace Phase 15 Scope
-
-- Launch Readiness is documented in `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md`, including support workflow, rollback, and incident checklist for broken install, malicious product, wrong payment, report abuse, and emergency block.
-- General Availability release notes live in `docs/V3_MARKETPLACE_RELEASE_NOTES.md` and point to public creator, policy, API, runbook, and phase docs.
-- `scripts/marketplace-phase15-ga-check.ps1` runs the Phase 15 contract checks, Marketplace regression, frontend lint/build, and optional live health/readiness/Marketplace smoke.
-- Marketplace GA uses existing approved-product install, analytics, report, purchase, and beta-readiness surfaces; no new launch API or uploaded-code execution is introduced.
-
-## Quick Start
-
-Copy the environment template and start the local stack:
+Run the local/static Phase 15 readiness report:
 
 ```powershell
-Copy-Item .env.example .env
-docker compose up -d postgres redis pgadmin
+powershell -ExecutionPolicy Bypass -File scripts/marketplace-phase15-ga-check.ps1 -ReportOnly -SkipFrontendBuild
 ```
 
-Local services:
+A production release additionally requires a safe target environment, explicit
+authorization, organization and authentication context, reviewed beta evidence,
+assigned support/release/rollback owners, healthy `/health` and `/ready`
+responses, and resolution or approval of reported exceptions.
 
-- pgAdmin: http://localhost:5050
-- PostgreSQL: localhost:5432
-- Redis: localhost:6379
-- API: http://localhost:8080
-- Admin UI: http://localhost:5173
+The repository contains production-like container build definitions, but it
+does not define a production provider, deployment workflow, environment
+promotion system, automatic backup/restore process, or application
+metrics/alerting integration. Do not infer those guarantees from
+`docker-compose.prod.yml`.
 
-## Local Development Without Docker
+## Marketplace Runtime Boundaries
 
-Start the infrastructure:
+- Uploaded Marketplace package code is never executed.
+- Component Packs, Design Templates, and public Plugin Hooks use host-owned
+  adapters and policy checks.
+- Only reviewed, approved, compatible, and safe product versions are eligible
+  for catalog/install flows.
+- Automated payout transfers are not implemented.
+- Partial Marketplace refunds are not supported.
+- External critical-report notification delivery is deferred; persisted
+  internal notifications and moderation queues remain authoritative.
+- Runtime execution telemetry, warehouse export, and anomaly alerting are not
+  implemented.
 
-Run the backend:
+These boundaries are part of the release contract. See the
+[Marketplace Scope](docs/V3_MARKETPLACE_SCOPE.md),
+[Product Taxonomy](docs/V3_PRODUCT_TAXONOMY.md), and
+[Marketplace Policy](docs/V3_MARKETPLACE_POLICY.md).
 
-```powershell
-cd backend
-cargo run
-```
+## Documentation
 
-Run the frontend:
+| Topic | Document |
+| --- | --- |
+| API routes and contracts | [API Guide](docs/API.md) |
+| System architecture | [Architecture Guide](docs/ARCHITECTURE.md) |
+| Localization and RTL | [Internationalization Guide](docs/I18N.md) |
+| V3 scope | [Marketplace Scope](docs/V3_MARKETPLACE_SCOPE.md) |
+| V3 domain model | [Marketplace Domain Model](docs/V3_MARKETPLACE_DOMAIN_MODEL.md) |
+| Package manifest | [Manifest Schema](docs/V3_MARKETPLACE_MANIFEST_SCHEMA.md) |
+| Package storage | [Package Storage](docs/V3_PACKAGE_STORAGE.md) |
+| Creator workflow | [Marketplace Creator Guide](docs/MARKETPLACE_CREATOR_GUIDE.md) |
+| Review and moderation | [Marketplace Policy](docs/V3_MARKETPLACE_POLICY.md) |
+| GA criteria | [Phase 15](docs/V3_PHASE_FIFTEEN.md) |
+| Release notes | [V3 Marketplace Release Notes](docs/V3_MARKETPLACE_RELEASE_NOTES.md) |
+| Operations | [Marketplace Operations Runbook](docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md) |
+| Complete knowledge base | [Open Knowledge Format](okf/README.md) |
+| Repository navigation | [OKF Navigation Guide](okf/project/navigation-guide.md) |
+| Final documentation status | [OKF Completion Report](okf/maintenance/final-completion-report.md) |
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+Historical implementation records remain under `docs/`. Current source code,
+configuration, migrations, and tests take precedence when historical phase
+documents conflict with implementation.
+
+## Repository Layout
+
+| Path | Purpose |
+| --- | --- |
+| `backend/` | Rust API, services, middleware, migrations, tests, and container builds |
+| `frontend/` | React administration application, tests, and frontend container build |
+| `docs/` | Product, API, architecture, Marketplace, release, and runbook documents |
+| `docs/diagrams/` | Evidence-linked Mermaid architecture diagrams |
+| `docs/marketplace-samples/` | Creator tooling sample packages |
+| `scripts/` | Marketplace CLI, smoke checks, and release-readiness scripts |
+| `okf/` | Structured, indexed, evidence-based repository knowledge |
+| `okf-bootstrap/` | Original OKF inventory and planning analysis |
+| `.github/workflows/` | Backend and frontend CI definitions |
+
+Generated and dependency directories such as `backend/target`,
+`frontend/node_modules`, `frontend/dist`, and `marketplace-dist` are not source
+of truth.
+
+## Security and Project Governance
+
+- Never commit `.env` files, credentials, tokens, private keys, or production
+  data.
+- Review [Security Architecture](okf/security/README.md) and
+  [Secrets and Configuration](okf/security/secrets-and-configuration.md) before
+  changing authentication, authorization, tenant isolation, or secret handling.
+- No repository-wide `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, or ownership policy is currently tracked.
+- Do not infer redistribution rights or a vulnerability disclosure channel
+  until the project owner publishes those policies.

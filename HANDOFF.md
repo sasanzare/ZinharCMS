@@ -5,17 +5,17 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-17 (Europe/London)
+- **Last updated:** 2026-07-25 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
-- **Current branch:** `docs/okf-phase-zero`
+- **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `61ed3b38 feat(marketplace): add v3 phase 15 launch readiness`
-- **Working tree at session start:** Clean branch `docs/okf-phase-zero` at `61ed3b38`; no staged or unstaged changes were present.
+- **Latest relevant commit:** `cff48071 docs(okf): complete phase ten operations and final validation`
+- **Working tree:** `README.md` and this handoff contain the uncommitted V3 release-facing README checkpoint.
 - **Current version:** `0.1.0` in root, frontend, and backend manifests
-- **Current phase:** OKF Phase Zero - complete
-- **Current subphase:** Reports authored and locally validated; awaiting authorization for Phase One
-- **Overall status:** All fourteen required English reports exist under `okf-bootstrap/`. Product code, APIs, database schema, runtime behavior, existing project documentation other than this mandatory handoff, Mermaid sources, and the final `okf/` directory remain unchanged.
+- **Current phase:** V3 release preparation
+- **Current subphase:** Root GitHub README rewritten and locally validated; awaiting review and commit authorization
+- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. Production GA still requires version/tag decisions and the documented target-environment go/no-go validation.
 
 ## 2. Project Overview
 
@@ -1486,3 +1486,27 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - **Exact Next Action:** wait for explicit owner authorization, then start OKF
   Phase One with the root OKF index and project overview files listed in section
   16. Do not start later phases automatically.
+
+### 2026-07-25 - V3 release-facing root README rewrite
+
+- Verified Git source of truth: `main`, `origin/main`, and the completed OKF
+  branch all point to `cff48071`; the working tree was clean before this change.
+- Replaced the phase-log-oriented root `README.md` with a release-facing project
+  entry point covering current V3 status, core/SaaS/Marketplace capabilities,
+  architecture, prerequisites, executable local startup, validation commands,
+  Marketplace tooling, GA readiness, runtime boundaries, documentation links,
+  repository layout, security, and governance gaps.
+- Corrected the stale Page Builder roadmap claim and the misleading Quick Start
+  that previously started infrastructure while presenting the API and frontend
+  as available.
+- Preserved the evidence-based distinction between completed repository
+  implementation and an actual production GA launch. Root, frontend, and
+  backend manifests remain at `0.1.0`, and no release tag exists.
+- README validation found 35 Markdown links with zero broken local targets, no
+  Persian/Arabic script, and all twelve checked command/endpoint references.
+  Product tests were not rerun because this change only rewrites documentation.
+- No file was staged, committed, tagged, published, or deployed.
+- **Modified files:** `README.md`, `HANDOFF.md`.
+- **Exact Next Action:** review the README diff and, only after explicit user
+  authorization, commit it with this handoff. Then decide the V3 semantic
+  version/tag and run the documented release go/no-go process.
