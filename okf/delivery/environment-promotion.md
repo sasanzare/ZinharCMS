@@ -33,7 +33,7 @@ related_diagrams:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Local | Developer infrastructure and separately run apps | `.env` from templates; local Compose | Source tree/local builds | Persistent PostgreSQL volume; startup migrations | Developer-managed ignored `.env` | Manual | stdout, health/readiness | Synthetic/development expected | `VERIFIED` configuration |
 | CI backend | Format/lint/test | Inline workflow environment | Checked-out source and Cargo cache | PostgreSQL service; test command, no explicit deployment | Synthetic inline values | Matching push/PR | Job logs | Synthetic | `VERIFIED` |
-| CI frontend | Lint/typecheck/test/build | Workflow Node 22 | Checked-out source/npm install | None | No secret reference | Matching push/PR | Job logs | Synthetic | `VERIFIED` |
+| CI frontend | Version/install/audit/lint/typecheck/test/build | Workflow Node 24 | Checked-out source/`npm ci` | None | No secret reference | Matching push/PR | Job logs | Synthetic | `VERIFIED` |
 | Production-like Compose | Reference runtime assembly | Required/default Compose variables | Local source builds through production Dockerfiles | Persistent volume; startup migrations | Caller environment; mechanism unknown | Manual command not defined | Container logs and app endpoints only | Potentially sensitive | `INFERRED_FROM_CONFIGURATION`; not deployed evidence |
 | Development environment | No separate tracked remote environment | N/A | N/A | N/A | N/A | N/A | N/A | Unknown | `DEPLOYMENT_TARGET_UNCLEAR` |
 | Staging | Mentioned by runbooks, no tracked environment definition | N/A | N/A | Runbook intent only | N/A | N/A | N/A | Unknown | `DEPLOYMENT_TARGET_UNCLEAR` |

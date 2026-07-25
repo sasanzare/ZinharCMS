@@ -8,6 +8,15 @@ use crate::error::AppError;
 use crate::middleware::tenant::TenantContext;
 use crate::services::rls;
 
+struct TransactionalEmail<'a> {
+    organization_id: Uuid,
+    recipient_email: &'a str,
+    template: &'a str,
+    subject: &'a str,
+    body: &'a str,
+    payload: Value,
+}
+
 pub async fn send_invitation_email(
     pool: &PgPool,
     config: &Config,
@@ -30,12 +39,14 @@ pub async fn send_invitation_email(
     send_transactional_email(
         pool,
         config,
-        tenant.organization_id,
-        recipient_email,
-        "organization_invitation",
-        &subject,
-        &body,
-        payload,
+        TransactionalEmail {
+            organization_id: tenant.organization_id,
+            recipient_email,
+            template: "organization_invitation",
+            subject: &subject,
+            body: &body,
+            payload,
+        },
     )
     .await
 }
@@ -63,12 +74,14 @@ pub async fn send_billing_notification(
     send_transactional_email(
         pool,
         config,
-        tenant.organization_id,
-        recipient_email,
-        "billing_notification",
-        &subject,
-        &body,
-        payload,
+        TransactionalEmail {
+            organization_id: tenant.organization_id,
+            recipient_email,
+            template: "billing_notification",
+            subject: &subject,
+            body: &body,
+            payload,
+        },
     )
     .await
 }
@@ -76,13 +89,16 @@ pub async fn send_billing_notification(
 async fn send_transactional_email(
     pool: &PgPool,
     config: &Config,
-    organization_id: Uuid,
-    recipient_email: &str,
-    template: &str,
-    subject: &str,
-    body: &str,
-    payload: Value,
+    message: TransactionalEmail<'_>,
 ) -> Result<(), AppError> {
+    let TransactionalEmail {
+        organization_id,
+        recipient_email,
+        template,
+        subject,
+        body,
+        payload,
+    } = message;
     let provider = config.email_provider.trim().to_ascii_lowercase();
     let mut db = rls::organization_connection(pool, organization_id, None).await?;
     let delivery_id = sqlx::query_scalar::<_, Uuid>(

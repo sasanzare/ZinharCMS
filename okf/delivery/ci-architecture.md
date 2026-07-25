@@ -30,7 +30,7 @@ related_diagrams:
 | Workflow | File | Triggers and paths | Jobs | Services | Cache | Artifacts |
 | --- | --- | --- | --- | --- | --- | --- |
 | `Backend CI` | `.github/workflows/backend-ci.yml` | `push` and `pull_request` when `backend/**` or the workflow file changes | `test` | PostgreSQL 16, Redis 7 | `Swatinem/rust-cache@v2` | None uploaded |
-| `Frontend CI` | `.github/workflows/frontend-ci.yml` | `push` and `pull_request` when `frontend/**` or the workflow file changes | `test` | None | No explicit cache | None uploaded |
+| `Frontend CI` | `.github/workflows/frontend-ci.yml` | `push` and `pull_request` when frontend, shared version-source, version-checker, or workflow paths change | `test` | None | No explicit cache | None uploaded |
 
 ## Trigger and Execution Model
 
@@ -44,9 +44,9 @@ related_diagrams:
 
 ## Dependencies, Caches, Services, and Secrets
 
-Backend CI checks out source, installs the stable Rust toolchain with rustfmt/Clippy, restores a Rust cache, and supplies synthetic CI configuration for PostgreSQL, Redis, JWT, upload, CORS, logging, and port variables. No real secret value is required by the tracked workflow. Frontend CI selects Node 22 and uses `npm install`; it has no explicit cache or secret.
+Backend CI checks out source, verifies release-version consistency, installs Rust 1.96 with rustfmt/Clippy, restores a Rust cache, and supplies synthetic CI configuration for PostgreSQL, Redis, JWT, upload, CORS, logging, and port variables. No real secret value is required by the tracked workflow. Frontend CI selects Node 24, verifies release-version consistency, uses `npm ci`, and fails on high-severity npm audit findings; it has no explicit cache or secret.
 
-External actions use major/stable references (`actions/checkout@v4`, `actions/setup-node@v4`, `dtolnay/rust-toolchain@stable`, `Swatinem/rust-cache@v2`) rather than immutable commit SHAs. This is a verifiable supply-chain configuration fact, not evidence of compromise.
+External actions use major or release references (`actions/checkout@v4`, `actions/setup-node@v4`, `dtolnay/rust-toolchain@1.96.0`, `Swatinem/rust-cache@v2`) rather than immutable commit SHAs. This is a verifiable supply-chain configuration fact, not evidence of compromise.
 
 ## Coverage and Failure Behavior
 

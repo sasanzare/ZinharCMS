@@ -32,8 +32,9 @@ related_diagrams: []
 | Environment startup | Compose infrastructure plus separate backend and frontend processes | `EXPLICIT_CONVENTION` in manifests/README | Developer-controlled |
 | Code changes | Backend, frontend, migrations, tests, and docs are stored in separate top-level areas | `INFERRED_CONVENTION` from structure | Review-controlled; ownership unknown |
 | Backend formatting | `cargo fmt --check` | `EXPLICIT_CONVENTION` | Backend CI |
-| Backend linting | `cargo clippy --all-targets --all-features -- -D warnings` | `EXPLICIT_CONVENTION` | Backend CI; known legacy warnings may keep it red |
+| Backend linting | `cargo clippy --all-targets --all-features -- -D warnings` | `EXPLICIT_CONVENTION` | Backend CI; locally verified green for the V3 release candidate |
 | Backend tests | `cargo test --all-features` | `EXPLICIT_CONVENTION` | Backend CI |
+| Frontend dependency audit | `npm audit --audit-level=high` | `EXPLICIT_CONVENTION` | Frontend CI |
 | Frontend linting | `npm run lint` | `EXPLICIT_CONVENTION` | Frontend CI |
 | Frontend type checking | `npm run typecheck` and as part of build | `EXPLICIT_CONVENTION` | Frontend CI |
 | Frontend tests | `npm test` (`vitest --run`) | `EXPLICIT_CONVENTION` | Frontend CI |

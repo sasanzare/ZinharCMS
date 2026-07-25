@@ -58,16 +58,16 @@ pub fn validate_marketplace_manifest(manifest: &Value) -> Result<(), ManifestVal
     );
     require_string(object, "name", &mut errors, None);
 
-    if let Some(version) = require_string(object, "version", &mut errors, None) {
-        if !is_semver(version) {
-            errors.push("version must use semantic version format".to_owned());
-        }
+    if require_string(object, "version", &mut errors, None)
+        .is_some_and(|version| !is_semver(version))
+    {
+        errors.push("version must use semantic version format".to_owned());
     }
 
-    if let Some(product_type) = require_string(object, "type", &mut errors, None) {
-        if !SUPPORTED_MARKETPLACE_PRODUCT_TYPES.contains(&product_type) {
-            errors.push(format!("unsupported product type '{product_type}'"));
-        }
+    if let Some(product_type) = require_string(object, "type", &mut errors, None)
+        .filter(|product_type| !SUPPORTED_MARKETPLACE_PRODUCT_TYPES.contains(product_type))
+    {
+        errors.push(format!("unsupported product type '{product_type}'"));
     }
 
     validate_permissions(object.get("permissions"), &mut errors);
@@ -102,10 +102,8 @@ fn require_string<'a>(
         return None;
     };
 
-    if let Some(expected) = expected {
-        if value != expected {
-            errors.push(format!("{field} must be '{expected}'"));
-        }
+    if let Some(expected) = expected.filter(|expected| value != *expected) {
+        errors.push(format!("{field} must be '{expected}'"));
     }
 
     Some(value)
@@ -211,19 +209,15 @@ pub fn is_semver(value: &str) -> bool {
     let (core_and_pre, build) = value
         .split_once('+')
         .map_or((value, None), |(left, right)| (left, Some(right)));
-    if let Some(build) = build {
-        if !is_semver_identifier_list(build, true) {
-            return false;
-        }
+    if build.is_some_and(|build| !is_semver_identifier_list(build, true)) {
+        return false;
     }
 
     let (core, prerelease) = core_and_pre
         .split_once('-')
         .map_or((core_and_pre, None), |(left, right)| (left, Some(right)));
-    if let Some(prerelease) = prerelease {
-        if !is_semver_identifier_list(prerelease, false) {
-            return false;
-        }
+    if prerelease.is_some_and(|prerelease| !is_semver_identifier_list(prerelease, false)) {
+        return false;
     }
 
     let parts: Vec<&str> = core.split('.').collect();

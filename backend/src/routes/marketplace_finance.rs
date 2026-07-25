@@ -204,7 +204,7 @@ pub async fn get_creator_balance(
     Path(creator_id): Path<Uuid>,
 ) -> Result<Json<MarketplaceCreatorBalanceResponse>, AppError> {
     let mut tx = rls::begin_bypass_transaction(&state.db).await?;
-    ensure_creator_owner(&mut *tx, creator_id, claims.sub).await?;
+    ensure_creator_owner(&mut tx, creator_id, claims.sub).await?;
     let row = sqlx::query_as::<_, (Option<String>, i64, i64, i64)>(
         "SELECT MAX(currency), COALESCE(SUM(creator_share_cents + adjustment_cents) FILTER (WHERE created_at < now() - make_interval(days => $2)), 0), COALESCE(SUM(creator_share_cents + adjustment_cents) FILTER (WHERE created_at >= now() - make_interval(days => $2)), 0), COALESCE(SUM(creator_share_cents + adjustment_cents), 0) FROM marketplace_revenue_ledger WHERE creator_id = $1",
     )
@@ -480,7 +480,7 @@ pub async fn request_payout(
 ) -> Result<(axum::http::StatusCode, Json<MarketplacePayoutResponse>), AppError> {
     rbac::require_org_marketplace_installer(&tenant.role)?;
     let mut tx = rls::begin_bypass_transaction(&state.db).await?;
-    ensure_creator_owner(&mut *tx, creator_id, claims.sub).await?;
+    ensure_creator_owner(&mut tx, creator_id, claims.sub).await?;
     let account = sqlx::query_as::<_, (String, String, bool, bool, Option<String>)>(
         "SELECT creator.status, account.status, account.payouts_enabled, account.details_submitted, account.provider_account_id FROM marketplace_creators creator JOIN marketplace_payout_accounts account ON account.creator_id = creator.id WHERE creator.id = $1",
     )

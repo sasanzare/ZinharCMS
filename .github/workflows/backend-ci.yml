@@ -4,10 +4,18 @@ on:
   push:
     paths:
       - "backend/**"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - "package.json"
+      - "scripts/check-version-consistency.mjs"
       - ".github/workflows/backend-ci.yml"
   pull_request:
     paths:
       - "backend/**"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - "package.json"
+      - "scripts/check-version-consistency.mjs"
       - ".github/workflows/backend-ci.yml"
 
 jobs:
@@ -52,7 +60,10 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify release version
+        run: node scripts/check-version-consistency.mjs
+        working-directory: ${{ github.workspace }}
+      - uses: dtolnay/rust-toolchain@1.96.0
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2

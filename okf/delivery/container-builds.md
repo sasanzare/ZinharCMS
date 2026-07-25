@@ -32,9 +32,9 @@ related_diagrams:
 
 | Image definition | Context/stages | Base images | Runtime user | Port/command | Configuration and storage | Health check | Tags/registry/platform/cache |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `backend/Dockerfile` | Single stage; copies manifest, lock, migrations, source; debug build | `rust:1.87-bookworm` | Root/default | `8080`; `cargo run` | Runtime environment external; source/migrations inside image | None | Not defined; build cache follows Docker layers |
-| `backend/Dockerfile.prod` | Rust builder then Debian runtime | `rust:1.87-bookworm`, `debian:bookworm-slim` | System user `cms` UID 10001 | `8080`; `/app/cms-backend` | `/app/uploads` created; Compose mounts volume; migrations copied | None | Not defined; target platform not declared |
-| `frontend/Dockerfile` | Single Node development stage | `node:24-alpine` | Root/default | `5173`; Vite dev server | Installs with `npm install`; source copied | None | Not defined |
+| `backend/Dockerfile` | Single stage; copies manifest, lock, migrations, source; debug build | `rust:1.96-bookworm` | Root/default | `8080`; `cargo run` | Runtime environment external; source/migrations inside image | None | Not defined; build cache follows Docker layers |
+| `backend/Dockerfile.prod` | Rust builder then Debian runtime | `rust:1.96-bookworm`, `debian:bookworm-slim` | System user `cms` UID 10001 | `8080`; `/app/cms-backend` | `/app/uploads` created; Compose mounts volume; migrations copied | None | Not defined; target platform not declared |
+| `frontend/Dockerfile` | Single Node development stage | `node:24-alpine` | Root/default | `5173`; Vite dev server | Installs with `npm ci`; source copied | None | Not defined |
 | `frontend/Dockerfile.prod` | Node builder then Nginx runtime | `node:24-alpine`, `nginx:1.27-alpine` | Image default | `80`; `nginx -g daemon off;` | `VITE_API_URL` build argument; static bundle; SPA fallback | None | Not defined; no registry/push |
 
 ## Compose Relationships
@@ -45,7 +45,7 @@ Local Compose uses PostgreSQL, Redis, and pgAdmin only. Production-like Compose 
 
 - Production backend runs as non-root; other custom application stages do not declare a non-root user.
 - Base images use mutable tags rather than digests.
-- Frontend dependency installation uses `npm install`; backend uses the tracked Cargo lock.
+- Frontend dependency installation uses `npm ci`; backend uses the tracked Cargo lock.
 - No image scan, SBOM, signature, provenance, registry credentials, push step, target architecture, resource limit, read-only filesystem, capability drop, or application container health check is defined.
 - Secret values are injected at runtime/build invocation, not baked by these tracked files; `VITE_API_URL` is intentionally browser-visible.
 

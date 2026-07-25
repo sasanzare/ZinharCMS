@@ -76,8 +76,11 @@ mod tests {
         assert!(LOAD_SMOKE_SCRIPT.contains("$_.Status -lt 200 -or $_.Status -ge 400"));
         assert!(LOAD_SMOKE_SCRIPT.contains("P95Ms"));
         assert!(LOAD_SMOKE_SCRIPT.contains("AllowInstallMutation"));
-        assert!(MARKETPLACE_CATALOG_P95_TARGET_MS <= 300);
-        assert!(MARKETPLACE_LISTING_P95_TARGET_MS <= 250);
-        assert!(MARKETPLACE_INSTALL_P95_TARGET_MS <= 750);
+        let catalog_target_ms = MARKETPLACE_CATALOG_P95_TARGET_MS;
+        let listing_target_ms = MARKETPLACE_LISTING_P95_TARGET_MS;
+        let install_target_ms = MARKETPLACE_INSTALL_P95_TARGET_MS;
+        assert!(catalog_target_ms <= 300);
+        assert!(listing_target_ms <= 250);
+        assert!(install_target_ms <= 750);
     }
 }

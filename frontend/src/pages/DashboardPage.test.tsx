@@ -5,7 +5,7 @@ import { DashboardPage } from "./DashboardPage";
 
 vi.mock("../hooks/useHealth", () => ({
   useHealth: () => ({
-    health: { status: "ok", version: "0.1.0" },
+    health: { status: "ok", version: "3.0.0" },
     readiness: {
       status: "ready",
       checks: [

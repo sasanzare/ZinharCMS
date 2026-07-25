@@ -27,8 +27,8 @@ related_diagrams:
 
 | Job ID | Workflow | Purpose | Trigger | Runner | Dependencies/services | Main steps and commands | Artifacts/cache | Secrets | Failure behavior | Required status | Confidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| CI-BE-TEST | `Backend CI` | Format, lint, and test backend | Matching push/PR | `ubuntu-latest` | PostgreSQL 16 and Redis 7 service containers | Checkout; stable Rust with Clippy/rustfmt; Rust cache; `cargo fmt --check`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test --all-features` | Rust cache only; no uploaded artifact | No GitHub secret reference; synthetic env is inline | First nonzero run step fails job | External branch-protection status `CI_BEHAVIOR_UNCLEAR` | `VERIFIED` definition |
-| CI-FE-TEST | `Frontend CI` | Install, lint, type-check, test, and build frontend | Matching push/PR | `ubuntu-latest` | Node 22; package registry access | Checkout; setup Node; `npm install`; `npm run lint`; `npm run typecheck`; `npm test`; `npm run build` | Build remains ephemeral; no explicit cache/artifact | No secret reference | First nonzero run step fails job | External branch-protection status `CI_BEHAVIOR_UNCLEAR` | `VERIFIED` definition |
+| CI-BE-TEST | `Backend CI` | Verify version, format, lint, and test backend | Matching push/PR | `ubuntu-latest` | PostgreSQL 16 and Redis 7 service containers | Checkout; release-version check; Rust 1.96 with Clippy/rustfmt; Rust cache; `cargo fmt --check`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test --all-features` | Rust cache only; no uploaded artifact | No GitHub secret reference; synthetic env is inline | First nonzero run step fails job | External branch-protection status `CI_BEHAVIOR_UNCLEAR` | `VERIFIED` definition |
+| CI-FE-TEST | `Frontend CI` | Verify version, install, audit, lint, type-check, test, and build frontend | Matching push/PR | `ubuntu-latest` | Node 24; package registry access | Checkout; setup Node; release-version check; `npm ci`; `npm audit --audit-level=high`; `npm run lint`; `npm run typecheck`; `npm test`; `npm run build` | Build remains ephemeral; no explicit cache/artifact | No secret reference | First nonzero run step fails job | External branch-protection status `CI_BEHAVIOR_UNCLEAR` | `VERIFIED` definition |
 
 ## Review Findings
 
@@ -38,7 +38,7 @@ related_diagrams:
 - Backend CI does not build the production image or upload a binary. Frontend CI builds but does not upload the bundle.
 - Missing areas include browser E2E, documentation/YAML/link/Mermaid checks, dependency/security/image scanning, API/OpenAPI parity, migration deployment smoke, and release/deploy validation.
 - Action references are not immutable SHAs. Effective GitHub token permissions are unclear because `permissions` is omitted.
-- Frontend uses `npm install`, not an explicitly immutable install command.
+- Frontend uses the tracked lockfile through `npm ci`.
 
 See [Testing Workflow](../development/testing-workflow.md), [Backend Testing](../backend/testing-map.md), [Frontend Testing](../frontend/testing-map.md), and [CI Architecture](ci-architecture.md).
 

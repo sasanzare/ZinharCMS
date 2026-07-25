@@ -14,6 +14,7 @@ primary_sources:
   - "package.json"
   - "backend/Cargo.toml"
   - "frontend/package.json"
+  - "scripts/check-version-consistency.mjs"
   - "docs/V2_RELEASE_NOTES.md"
   - "docs/V3_MARKETPLACE_RELEASE_NOTES.md"
   - "scripts/v2-ga-check.ps1"
@@ -36,7 +37,7 @@ related_diagrams:
 
 | Concern | Evidence-based status |
 | --- | --- |
-| Version source | Root package, backend crate, and frontend package each declare `0.1.0`; no automated consistency check |
+| Version source | Root package, backend crate, frontend package, lockfiles, Marketplace runtime, and dashboard fallback declare `3.0.0`; `npm run check:version` enforces consistency |
 | Tag format | No Git tag and no documented tag policy found |
 | Trigger | No release trigger/workflow; readiness scripts are manually invoked |
 | Changelog | No root changelog found |
@@ -53,7 +54,7 @@ related_diagrams:
 
 ## Best-Supported Manual Gate
 
-The strongest repository-derived release candidate sequence is: run component CI-equivalent checks, use the relevant GA/readiness script, review migrations and operational unknowns, build intended artifacts, and obtain explicit owner approval. That is a documented synthesis, not evidence that a production release has occurred.
+The strongest repository-derived release candidate sequence is: run `npm run check:version`, run component CI-equivalent checks, use the relevant GA/readiness script, review migrations and operational unknowns, build intended artifacts, and obtain explicit owner approval. That is a documented synthesis, not evidence that a production release has occurred.
 
 See [Artifact Production](artifact-production.md), [Rollback and Recovery](rollback-and-recovery.md), [Release Flow](diagrams/release-flow.mmd), and [Runbook Catalog](../operations/runbook-catalog.md).
 

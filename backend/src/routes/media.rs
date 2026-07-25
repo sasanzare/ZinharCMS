@@ -403,7 +403,7 @@ async fn load_media_detail(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<MediaDetailResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     let media = sqlx::query_as::<_, MediaResponse>(
         r#"
         SELECT id,

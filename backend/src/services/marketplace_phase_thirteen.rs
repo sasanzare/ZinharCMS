@@ -58,7 +58,7 @@ mod tests {
 
         for required in [
             "ensure_creator_owner(db.as_mut(), creator_id, tenant.user_id)",
-            "ensure_creator_owner(&mut *tx, creator_id, claims.sub)",
+            "ensure_creator_owner(&mut tx, creator_id, claims.sub)",
         ] {
             assert!(
                 MARKETPLACE_FINANCE_ROUTES.contains(required),

@@ -17,8 +17,8 @@ flowchart TD
 %% Evidence: docs/diagrams/AMBIGUITIES.md
 
 subgraph ci_support["CI and operational support"]
-    backend_ci["Backend CI [IMPLEMENTED]\nRust stable, fmt, clippy, tests with PostgreSQL and Redis service containers"]
-    frontend_ci["Frontend CI [IMPLEMENTED]\nNode 22, npm install, lint, typecheck, tests, build"]
+    backend_ci["Backend CI [IMPLEMENTED]\nRust 1.96, version check, fmt, clippy, tests with PostgreSQL and Redis service containers"]
+    frontend_ci["Frontend CI [IMPLEMENTED]\nNode 24, version check, npm ci, security audit, lint, typecheck, tests, build"]
     runbook["Operations runbook [PARTIAL]\nManual deployment order, backup reminder, health/readiness checks, rollback guidance"]
     no_deploy_pipeline["Deployment automation [DOCUMENTED ONLY]\nNo GitHub Actions deployment job found"]
 end

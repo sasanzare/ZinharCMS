@@ -14,7 +14,7 @@ import {
   Workflow,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router";
 
 import { useHealth } from "../hooks/useHealth";
 import { LanguageSelect, useI18n, type MessageKey } from "../i18n";

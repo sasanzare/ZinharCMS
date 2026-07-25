@@ -6,8 +6,8 @@ flowchart LR
     BackendJob["Backend CI / test\nUbuntu latest"]
     Services["PostgreSQL 16 + Redis 7"]
     BackendGates["cargo fmt --check\ncargo clippy ... -D warnings\ncargo test --all-features"]
-    FrontendJob["Frontend CI / test\nUbuntu latest + Node 22"]
-    FrontendGates["npm install\nlint\ntypecheck\ntest\nbuild"]
+    FrontendJob["Frontend CI / test\nUbuntu latest + Node 24"]
+    FrontendGates["version check\nnpm ci\nhigh-severity audit\nlint\ntypecheck\ntest\nbuild"]
     NoArtifacts["No uploaded CI artifacts"]
     Uncovered["Root, docs, Compose, and scripts may be uncovered"]
 

@@ -17,7 +17,7 @@ only mirroring the directory tree.
 | `docker-compose.prod.yml` | Containerized production-like stack. | Deployment | Configuration | backend, frontend, postgres, redis, nginx, health checks | Deployment topology diagram |
 | `package.json` | Root workspace orchestration scripts. | Developer workflow | Configuration | `dev:infra`, `dev:backend`, `dev:frontend`, test/build scripts | Developer workflow diagram |
 | `.github/workflows/backend-ci.yml` | Backend quality gate. | CI/CD | Configuration | PostgreSQL and Redis services, `cargo fmt`, `cargo clippy`, `cargo test` | CI pipeline diagram |
-| `.github/workflows/frontend-ci.yml` | Frontend quality gate. | CI/CD | Configuration | Node 22, `npm install`, lint, typecheck, test, build | CI pipeline diagram |
+| `.github/workflows/frontend-ci.yml` | Frontend quality gate. | CI/CD | Configuration | Node 24, version check, `npm ci`, high-severity audit, lint, typecheck, test, build | CI pipeline diagram |
 | `scripts/v2-ga-check.ps1` | GA release checklist runner. | GA readiness | Script/test | Backend tests, frontend lint/build, health/ready checks | Release readiness workflow |
 | `scripts/phase8-load-smoke.ps1` | Tenant and load smoke helper. | Hardening, tenant checks | Script/test | Smoke paths, local endpoint checks | Hardening test flow |
 | `scripts/marketplace-phase13-load-smoke.ps1` | Marketplace catalog/listing/install latency smoke helper. | Marketplace QA/performance | Script/test | Authenticated catalog/search/listing checks, optional install mutation, P95 budget reporting | Marketplace QA/performance diagram |

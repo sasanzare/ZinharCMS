@@ -1,12 +1,14 @@
 {
   "name": "ZinharCMS",
   "private": true,
-  "version": "0.1.0",
+  "version": "3.0.0",
   "scripts": {
     "dev:infra": "docker compose up -d postgres redis pgadmin",
     "dev": "docker compose up --build",
     "dev:backend": "cargo run --manifest-path backend/Cargo.toml",
     "dev:frontend": "npm --prefix frontend run dev",
+    "check:version": "node scripts/check-version-consistency.mjs",
+    "audit:frontend": "npm --prefix frontend audit --audit-level=high",
     "marketplace": "node scripts/marketplace-cli.mjs",
     "test:backend": "cargo test --manifest-path backend/Cargo.toml --all-features",
     "test:frontend": "npm --prefix frontend test",

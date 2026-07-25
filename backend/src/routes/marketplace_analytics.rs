@@ -174,7 +174,7 @@ pub async fn get_creator_analytics(
     Path(creator_id): Path<Uuid>,
 ) -> Result<Json<MarketplaceCreatorAnalyticsResponse>, AppError> {
     let mut tx = rls::begin_bypass_transaction(&state.db).await?;
-    ensure_creator_owner(&mut *tx, creator_id, claims.sub).await?;
+    ensure_creator_owner(&mut tx, creator_id, claims.sub).await?;
 
     let products = sqlx::query_as::<_, MarketplaceCreatorProductAnalyticsRow>(
         r#"

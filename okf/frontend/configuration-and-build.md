@@ -70,15 +70,15 @@ ESLint uses the JavaScript recommended set, TypeScript ESLint recommended sets, 
 
 | File | Observed behavior |
 |---|---|
-| `frontend/Dockerfile` | Node 24 Alpine development image; `npm install`; Vite dev server on 5173 |
-| `frontend/Dockerfile.prod` | Node 24 Alpine builder; optional `VITE_API_URL`; `npm install`; build; copy `dist` into Nginx 1.27 Alpine |
+| `frontend/Dockerfile` | Node 24 Alpine development image; `npm ci`; Vite dev server on 5173 |
+| `frontend/Dockerfile.prod` | Node 24 Alpine builder; optional `VITE_API_URL`; `npm ci`; build; copy `dist` into Nginx 1.27 Alpine |
 | `frontend/nginx.conf` | Static root, SPA history fallback, immutable one-year cache for `/assets/` |
 
 The Nginx image does not proxy the API; browser requests go to the compiled API base URL.
 
 ## CI
 
-`.github/workflows/frontend-ci.yml` runs on frontend/workflow changes for pushes and pull requests. It uses Node 22, runs `npm install`, then lint, typecheck, tests, and build in that order.
+`.github/workflows/frontend-ci.yml` runs on frontend, shared version-source, version-checker, and workflow changes for pushes and pull requests. It uses Node 24, runs the release-version consistency check, `npm ci`, and a high-severity audit gate, then lint, typecheck, tests, and build in that order.
 
 The repository therefore uses different Node majors in CI and Docker images. `UNKNOWN U-09` covers the unsupported official toolchain matrix. The workflow is a validation pipeline, not deployment evidence.
 
@@ -103,4 +103,4 @@ Production-like images, Nginx behavior, and Compose configuration establish an a
 
 ## Development, CI, and Container Build
 
-Vite development binds `0.0.0.0:5173`. `npm run build` runs `tsc -b` then Vite. Frontend CI uses Node 22 and `npm install`, while development/production container builders use Node 24; no supported-version policy reconciles them. The production image serves `dist` through Nginx 1.27 with SPA fallback and build-time `VITE_API_URL`; it has no application health check, API proxy, TLS, registry, or deployment target. See [Prerequisites](../development/prerequisites.md), [Build and Quality](../development/build-and-quality.md), and [Container Builds](../delivery/container-builds.md).
+Vite development binds `0.0.0.0:5173`. `npm run build` runs `tsc -b` then Vite. Frontend CI and development/production container builders use Node 24 and enforce the tracked lockfile with `npm ci`. The production image serves `dist` through Nginx 1.27 with SPA fallback and build-time `VITE_API_URL`; it has no application health check, API proxy, TLS, registry, or deployment target. See [Prerequisites](../development/prerequisites.md), [Build and Quality](../development/build-and-quality.md), and [Container Builds](../delivery/container-builds.md).

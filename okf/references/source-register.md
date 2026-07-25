@@ -215,7 +215,7 @@ The Phase 1 baseline entries were checked against commit `49b2c1886168497e99f708
 | `frontend/vitest.config.ts` and `frontend/src/test/setup.ts` | Test configuration | jsdom and jest-dom test environment | PRIMARY | `7d25e4cb` | Test cases are page-level. |
 | `frontend/src/pages/*.test.tsx` | Frontend tests | Dashboard, Pages shell, and selected Marketplace behavior | PRIMARY | `7d25e4cb` | Three files and 14 observed cases; no coverage artifact. |
 | `frontend/Dockerfile`, `frontend/Dockerfile.prod`, `frontend/nginx.conf` | Packaging and static-host configuration | Development Vite image, production-like Nginx image, SPA fallback | PRIMARY | `7d25e4cb` | Packaging capability is not deployment proof. |
-| `.github/workflows/frontend-ci.yml` | CI workflow | Node 22 install, lint, typecheck, test, and build gates | PRIMARY | `7d25e4cb` | Docker images use Node 24; supported matrix remains unknown. |
+| `.github/workflows/frontend-ci.yml` | CI workflow | Node 24 lockfile install, version check, high-severity audit, lint, typecheck, test, and build gates | PRIMARY | `7d25e4cb` | CI and Docker images now align on Node 24. |
 
 ## Database Sources
 
@@ -251,7 +251,7 @@ The Phase 1 baseline entries were checked against commit `49b2c1886168497e99f708
 | `frontend/src/pages/PagesPage.test.tsx` | Vitest test file | Page-builder UI behavior | PRIMARY | `49b2c188` | Covers selected page interactions. |
 | `frontend/src/test/setup.ts` | Test setup | Shared Testing Library/Vitest environment | PRIMARY | `49b2c188` | Loaded through Vitest configuration. |
 | `.github/workflows/backend-ci.yml` | CI workflow | Backend format, lint and test gates | PRIMARY | `49b2c188` | CI evidence does not prove a particular local run passed. |
-| `.github/workflows/frontend-ci.yml` | CI workflow | Frontend install, lint, typecheck, test and build gates | PRIMARY | `49b2c188` | No deployment job was found. |
+| `.github/workflows/frontend-ci.yml` | CI workflow | Frontend version, lockfile install, dependency audit, lint, typecheck, test, and build gates | PRIMARY | `49b2c188` | No deployment job was found. |
 
 ## Infrastructure and Operations Sources
 

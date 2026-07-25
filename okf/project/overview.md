@@ -175,7 +175,7 @@ docker-compose.yml defines local PostgreSQL, Redis, and pgAdmin. docker-compose.
 
 | Technology | Role | Verified version or constraint | Evidence |
 | --- | --- | --- | --- |
-| Rust | Backend language | Edition 2024; Docker pins 1.87; CI uses stable | backend/Cargo.toml; backend/Dockerfile; backend CI |
+| Rust | Backend language | Edition 2024; Cargo, Docker, and CI align on Rust 1.96 | backend/Cargo.toml; backend/Dockerfile; backend CI |
 | Axum | HTTP routing, extractors, middleware, multipart, WebSocket | 0.8 | backend/Cargo.toml; backend/src/routes |
 | Tokio | Async runtime and process-local tasks/broadcasts | 1.45 | backend/Cargo.toml; backend/src/main.rs; backend/src/state.rs |
 | SQLx | PostgreSQL pool, migrations, and handwritten queries | 0.8 | backend/Cargo.toml; backend/src/db; backend/migrations |
@@ -184,7 +184,7 @@ docker-compose.yml defines local PostgreSQL, Redis, and pgAdmin. docker-compose.
 | React | Administration SPA | 19.1 | frontend/package.json |
 | TypeScript | Frontend language and contract typing | 5.8.x | frontend/package.json; TypeScript configs |
 | Vite | Frontend development/build tooling | 6.3 | frontend/package.json; frontend/vite.config.ts |
-| React Router and Zustand | Browser routing and application/session/organization state | 7.6 and 5.0 | frontend/package.json; router.tsx; useAppStore.ts |
+| React Router and Zustand | Browser routing and application/session/organization state | 8.3 and 5.0 | frontend/package.json; router.tsx; useAppStore.ts |
 | Docker Compose and Nginx | Reference orchestration and static SPA serving | Compose 3.9 files; Nginx 1.27 image | docker-compose files; frontend/Dockerfile.prod |
 | GitHub Actions | Backend/frontend quality gates | Workflow action versions are declared in YAML | .github/workflows |
 
@@ -218,7 +218,7 @@ Only commands declared by README files, manifests, CI workflows, scripts, or Doc
 | Start default Compose definition | Repository root | npm run dev | package.json; current default Compose file contains infrastructure services only |
 | Run backend | Repository root | npm run dev:backend | package.json |
 | Run backend directly | backend | cargo run | README.md |
-| Install frontend dependencies | frontend | npm install | README.md and frontend CI |
+| Install frontend dependencies | frontend | npm ci | README.md and frontend CI |
 | Run frontend | Repository root | npm run dev:frontend | package.json |
 | Run frontend directly | frontend | npm run dev | frontend/package.json |
 | Test backend | Repository root | npm run test:backend | package.json |

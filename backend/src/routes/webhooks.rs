@@ -315,7 +315,7 @@ async fn load_webhook_response(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<WebhookResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, WebhookResponse>(
         r#"
         SELECT id, name, url, events, secret, is_active, created_at, updated_at
@@ -335,7 +335,7 @@ async fn load_webhook(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<webhooks::Webhook, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, webhooks::Webhook>(
         r#"
         SELECT id,

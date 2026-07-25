@@ -112,11 +112,7 @@ mod tests {
 
     #[test]
     fn load_smoke_manifest_covers_public_and_tenant_paths() {
-        assert!(
-            PHASE8_LOAD_SMOKE_ENDPOINTS
-                .iter()
-                .any(|path| *path == "/health")
-        );
+        assert!(PHASE8_LOAD_SMOKE_ENDPOINTS.contains(&"/health"));
         assert!(
             PHASE8_LOAD_SMOKE_ENDPOINTS
                 .iter()

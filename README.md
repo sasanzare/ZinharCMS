@@ -21,7 +21,7 @@ occurred; the target environment must still pass the documented go/no-go gates.
 | V2 SaaS | Implemented through the Phase Ten GA-readiness scope |
 | V3 Marketplace | Implementation phases 0.1 through 15 complete |
 | V3 production launch | Requires target-environment validation and owner sign-off |
-| Package version | `0.1.0` in the root, backend, and frontend manifests |
+| Release candidate version | `3.0.0` across the root, backend, and frontend manifests |
 | Published Git tag | No release tag is currently recorded |
 | OKF knowledge base | Complete with documented open owner and operational questions |
 
@@ -79,7 +79,7 @@ conditions are defined in the
 | Area | Implementation |
 | --- | --- |
 | Backend | Rust 2024, Axum 0.8, Tokio, SQLx; modular monolith |
-| Frontend | React 19, TypeScript, Vite 6, React Router, Zustand |
+| Frontend | React 19.2, TypeScript, Vite 7, React Router 8, Zustand |
 | Database | PostgreSQL 16 with embedded SQLx migrations and forced RLS |
 | Cache and limits | Redis 7 for delivery caching and rate-limit counters |
 | Storage | Local filesystem for CMS uploads and Marketplace artifacts |
@@ -100,7 +100,7 @@ and evidence.
 ## Prerequisites
 
 - Git.
-- A Rust stable toolchain with `cargo`, `rustfmt`, and `clippy`.
+- Rust 1.96 with `cargo`, `rustfmt`, and `clippy`.
 - Node.js and npm. CI uses Node.js 22; the production frontend image currently
   uses Node.js 24. A formal supported local version range is not defined.
 - Docker with Docker Compose for the repository-provided local infrastructure.
@@ -127,7 +127,7 @@ Install frontend dependencies:
 
 ```powershell
 Set-Location frontend
-npm install
+npm ci
 Set-Location ..
 ```
 
@@ -190,6 +190,12 @@ For failure indicators, reset cautions, and environment details, use the
 
 Start required infrastructure before environment-dependent backend tests.
 
+Release version consistency:
+
+```powershell
+npm run check:version
+```
+
 Backend tests:
 
 ```powershell
@@ -199,6 +205,7 @@ npm run test:backend
 Frontend quality gates:
 
 ```powershell
+npm run audit:frontend
 npm --prefix frontend run lint
 npm --prefix frontend run typecheck
 npm run test:frontend

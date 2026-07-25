@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 
 import { AppShell } from "./AppShell";
 import { useAppStore } from "../stores/useAppStore";

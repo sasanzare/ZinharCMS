@@ -27,20 +27,20 @@ pub fn catalog_compatibility_report(manifest: &Value, organization_plan_slug: &s
     let required_features = array_of_strings(&compatibility, "required_features");
 
     let mut reasons = Vec::new();
-    if let Some(min_version) = min_version.as_deref() {
-        if is_semver(min_version) && compare_semver(CURRENT_ZINHAR_VERSION, min_version).is_lt() {
-            reasons.push(format!(
-                "requires ZinharCMS {min_version} or newer; current is {CURRENT_ZINHAR_VERSION}"
-            ));
-        }
+    if let Some(min_version) = min_version.as_deref().filter(|version| {
+        is_semver(version) && compare_semver(CURRENT_ZINHAR_VERSION, version).is_lt()
+    }) {
+        reasons.push(format!(
+            "requires ZinharCMS {min_version} or newer; current is {CURRENT_ZINHAR_VERSION}"
+        ));
     }
 
-    if let Some(max_version) = max_version.as_deref() {
-        if is_semver(max_version) && compare_semver(CURRENT_ZINHAR_VERSION, max_version).is_gt() {
-            reasons.push(format!(
-                "supports ZinharCMS up to {max_version}; current is {CURRENT_ZINHAR_VERSION}"
-            ));
-        }
+    if let Some(max_version) = max_version.as_deref().filter(|version| {
+        is_semver(version) && compare_semver(CURRENT_ZINHAR_VERSION, version).is_gt()
+    }) {
+        reasons.push(format!(
+            "supports ZinharCMS up to {max_version}; current is {CURRENT_ZINHAR_VERSION}"
+        ));
     }
 
     let supported_features: HashSet<&str> =

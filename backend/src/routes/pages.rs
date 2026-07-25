@@ -947,7 +947,7 @@ async fn transition_page(
     status: workflow::WorkflowStatus,
     can_bypass_review: bool,
 ) -> Result<PageResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     let current = load_page_by_id(state, tenant, id).await?;
     workflow::require_transition(&current.status, status, can_bypass_review)?;
     let next_status = status.as_str();
@@ -991,7 +991,7 @@ async fn load_page_by_id(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<PageResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, PageResponse>(
         r#"
         SELECT id,
@@ -1019,7 +1019,7 @@ async fn load_page_by_slug(
     tenant: &TenantContext,
     slug: &str,
 ) -> Result<PageResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, PageResponse>(
         r#"
         SELECT id,
@@ -1047,7 +1047,7 @@ async fn load_component(
     tenant: &TenantContext,
     component_key: &str,
 ) -> Result<ComponentRegistryResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, ComponentRegistryResponse>(
         r#"
         SELECT id,
@@ -1102,7 +1102,7 @@ async fn load_component_keys(
     state: &AppState,
     tenant: &TenantContext,
 ) -> Result<HashSet<String>, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     let rows = sqlx::query_scalar::<_, String>(
         "SELECT component_key FROM component_registry WHERE is_system = TRUE OR organization_id = $1",
     )

@@ -134,4 +134,4 @@ MarketplacePage and PagesPage tests verify selected host UI and API-client wirin
 
 ## CI and Coverage Boundary
 
-Frontend CI runs lint, typecheck, Vitest, and production build after `npm install`. Three tracked test files cover Dashboard, Marketplace, and Pages; no browser E2E, accessibility, visual regression, coverage threshold, telemetry, or deployment smoke job exists. See [Testing Workflow](../development/testing-workflow.md), [CI Job Catalog](../delivery/ci-job-catalog.md), and [Development Risks](../development/development-risks.md).
+Frontend CI verifies release-version consistency, installs with `npm ci`, fails on high-severity audit findings, and runs lint, typecheck, Vitest, and production build. Three tracked test files cover Dashboard, Marketplace, and Pages; no browser E2E, accessibility, visual regression, coverage threshold, telemetry, or deployment smoke job exists. See [Testing Workflow](../development/testing-workflow.md), [CI Job Catalog](../delivery/ci-job-catalog.md), and [Development Risks](../development/development-risks.md).

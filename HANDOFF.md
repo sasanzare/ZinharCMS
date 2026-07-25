@@ -10,12 +10,12 @@
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `cff48071 docs(okf): complete phase ten operations and final validation`
-- **Working tree:** `README.md` and this handoff contain the uncommitted V3 release-facing README checkpoint.
-- **Current version:** `0.1.0` in root, frontend, and backend manifests
+- **Latest relevant commit:** `201058d197b1bca5c7215965a3031ad0447ba695 docs: rewrite README for V3 release preparation`
+- **Working tree:** Uncommitted, locally validated V3 release-candidate hardening, version, dependency, CI, runtime, documentation, and handoff changes
+- **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
 - **Current phase:** V3 release preparation
-- **Current subphase:** Root GitHub README rewritten and locally validated; awaiting review and commit authorization
-- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. Production GA still requires version/tag decisions and the documented target-environment go/no-go validation.
+- **Current subphase:** Repository-controlled release blockers are resolved and locally validated; changes await review and commit authorization.
+- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, and Phase 15 gates. Production image build remains unverified because Docker Hub DNS failed and the base images are not cached. Production GA still requires a reviewed commit, green pushed CI, an approved tag, target-environment go/no-go validation, license-owner confirmation, and owner sign-off.
 
 ## 2. Project Overview
 
@@ -55,7 +55,7 @@ package code is still never executed.
 ## 3. Technology Stack
 
 - **Backend:** Rust 2024, Axum 0.8, Tokio, modular route/service architecture.
-- **Frontend:** React 19, TypeScript, Vite 6, React Router, Zustand, React Hook Form, Zod.
+- **Frontend:** React 19.2, TypeScript, Vite 7, React Router 8, Zustand, React Hook Form, Zod.
 - **Database:** PostgreSQL 16 accessed through SQLx migrations and queries.
 - **Authentication:** Argon2id password hashing, HMAC-SHA256 JWT access tokens, hashed refresh tokens in HttpOnly cookies.
 - **Authorization:** Global roles plus organization membership roles, tenant middleware, PostgreSQL forced RLS.
@@ -1155,13 +1155,13 @@ results in this file before planning Phase 8 adapters.
 ## 18. Environment and Setup Notes
 
 - **Platform observed:** Windows PowerShell, repository at `D:\All projects\ZinharCMS`.
-- **Backend runtime:** Rust stable toolchain; run Cargo commands with `--manifest-path backend/Cargo.toml` from the repository root.
-- **Frontend runtime:** Node/npm; CI specifies Node 22. Frontend commands can be run with `npm --prefix frontend ...`.
+- **Backend runtime:** Rust 1.96; run Cargo commands with `--manifest-path backend/Cargo.toml` from the repository root.
+- **Frontend runtime:** Node 24/npm; frontend commands can be run with `npm --prefix frontend ...`.
 - **Local infrastructure:** PostgreSQL 16, Redis 7, and pgAdmin from `docker-compose.yml`.
 - **Production-like infrastructure:** `docker-compose.prod.yml` also runs backend and Nginx-served frontend images, using environment variable names from `.env.example`.
 - **Safe setup:** copy `.env.example` to `.env`, then start only the required local infrastructure with `docker compose up -d postgres redis pgadmin`. Do not expose or copy `.env` values into documentation.
 - **Backend development:** `cargo run --manifest-path backend/Cargo.toml` after required environment variables and database/Redis are available.
-- **Frontend development:** `npm install --prefix frontend`, then `npm --prefix frontend run dev`.
+- **Frontend development:** `npm ci --prefix frontend`, then `npm --prefix frontend run dev`.
 - **Validation:** `cargo fmt --manifest-path backend/Cargo.toml -- --check`, `cargo test --manifest-path backend/Cargo.toml --all-features`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend test`, `npm --prefix frontend run build`.
 - **Required variable names:** `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY`, `UPLOAD_DIR`, `MAX_UPLOAD_SIZE`, `CORS_ORIGIN`, `PORT`, `VITE_API_URL`, and the optional billing/email/rate-limit names listed in `.env.example`.
 
@@ -1510,3 +1510,53 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - **Exact Next Action:** review the README diff and, only after explicit user
   authorization, commit it with this handoff. Then decide the V3 semantic
   version/tag and run the documented release go/no-go process.
+
+### 2026-07-25 - V3 release-candidate hardening checkpoint
+
+- Reconciled the stale handoff with Git source of truth at `201058d1` on
+  `main`; the session began from a clean working tree.
+- Reproduced the failed backend CI gate locally and fixed all Rust 1.96 Clippy
+  errors with behavior-preserving refactors, then aligned Cargo, CI, and both
+  backend Dockerfiles on Rust 1.96.
+- Refactored transactional email and subscription update parameters into input
+  structs, implemented the standard `AsMut<PgConnection>` trait for tenant
+  connections, removed needless borrows/dereferences, and simplified linted
+  validation paths without changing their behavior.
+- Backend formatting, exact Clippy with denied warnings, and the all-features
+  backend test command completed successfully after the fixes.
+- Aligned application release sources to `3.0.0`, added
+  `scripts/check-version-consistency.mjs`, wired it into both CI workflows, and
+  changed frontend CI and both frontend Dockerfiles from `npm install` to
+  lockfile-enforced `npm ci`.
+- Aligned the supported build toolchains on Rust 1.96 and Node 24. Upgraded the
+  frontend security baseline to React 19.2.7, React Router 8.3, Vite 7.3.6,
+  ESLint 10, and compatible plugins/types. Migrated router imports according to
+  the React Router 8 package boundary.
+- Added a high-severity npm audit CI gate. The clean install and final audit
+  reported zero vulnerabilities.
+- Final local validation passed: eight-source version consistency; backend
+  format, denied-warning Clippy, and 117 tests; frontend lint, typecheck, 14
+  tests, and production build; complete Phase 15 report-only checks with four
+  contract tests, 79 Marketplace tests, frontend lint/build, and both readiness
+  booleans true; Git whitespace; YAML/JSON parsing; local Markdown links;
+  changed-file English-language enforcement; and static Mermaid declarations.
+- The frontend production bundle completed with a non-blocking chunk-size
+  warning: 613.44 kB minified and 169.04 kB gzip for the main JavaScript chunk.
+- Production Compose interpolation/config validation passed with non-secret
+  validation-only values. The backend/frontend image build could not start
+  because Docker Hub DNS authorization lookups failed, and none of the four
+  required base images was cached locally.
+- Updated the release-facing README, V3 release notes, diagrams, and affected
+  OKF delivery/development/frontend/project documents while preserving the
+  distinction between a local release candidate and production GA.
+- No files were staged, committed, tagged, pushed, published, or deployed.
+- **Modified/untracked files:** backend lint fixes; root/backend/frontend
+  version and toolchain sources; frontend dependency/runtime migration; both CI
+  workflows; Docker/Compose definitions; release documentation; diagrams; OKF
+  knowledge documents; this handoff; and
+  `scripts/check-version-consistency.mjs`.
+- **Exact Next Action:** review the complete uncommitted release-candidate diff.
+  Only after explicit authorization, stage and commit it. After push, require
+  both GitHub CI workflows to pass, retry the two production image builds when
+  Docker Hub is reachable, obtain the license and production go/no-go owner
+  decisions, and only then create the approved `v3.0.0` tag/release.

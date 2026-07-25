@@ -776,7 +776,7 @@ async fn transition_entry(
     status: workflow::WorkflowStatus,
     can_bypass_review: bool,
 ) -> Result<ContentEntryResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     let content_type = load_content_type_by_slug(state, tenant, type_slug).await?;
     let current = load_entry(state, tenant, type_slug, id).await?;
     workflow::require_transition(&current.status, status, can_bypass_review)?;
@@ -821,7 +821,7 @@ async fn load_content_type_by_id(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<ContentTypeResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         SELECT id, name, slug, fields, created_by, created_at, updated_at
@@ -841,7 +841,7 @@ async fn load_content_type_by_slug(
     tenant: &TenantContext,
     slug: &str,
 ) -> Result<ContentTypeResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, ContentTypeResponse>(
         r#"
         SELECT id, name, slug, fields, created_by, created_at, updated_at
@@ -862,7 +862,7 @@ async fn load_entry(
     type_slug: &str,
     id: Uuid,
 ) -> Result<ContentEntryResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, ContentEntryResponse>(
         r#"
         SELECT e.id,

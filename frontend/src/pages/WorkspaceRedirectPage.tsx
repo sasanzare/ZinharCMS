@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";

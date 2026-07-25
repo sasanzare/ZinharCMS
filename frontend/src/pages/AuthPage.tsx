@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { LockKeyhole, LogIn, UserPlus } from "lucide-react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { LanguageSelect, useI18n } from "../i18n";

@@ -26,7 +26,7 @@ pub fn require_any(claims: &Claims, roles: &[&str]) -> Result<(), AppError> {
 }
 
 pub fn require_org_any(role: &str, roles: &[&str]) -> Result<(), AppError> {
-    if role == ORG_OWNER || roles.iter().any(|allowed| *allowed == role) {
+    if role == ORG_OWNER || roles.contains(&role) {
         Ok(())
     } else {
         Err(AppError::Forbidden(format!(

@@ -7,7 +7,7 @@ command and establishes the project contracts for future backend and frontend wo
 
 - Monorepo structure for backend, frontend, docs, Docker, and CI.
 - Rust 2024 + Axum 0.8 backend scaffold.
-- React 19 + Vite 6 frontend scaffold.
+- React 19 + Vite frontend scaffold, currently upgraded to Vite 7.
 - PostgreSQL 16 and Redis 7 local infrastructure.
 - pgAdmin local database management service.
 - PostgreSQL schema and foundation seed migration.

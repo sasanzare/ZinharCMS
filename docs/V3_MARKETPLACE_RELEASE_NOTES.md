@@ -7,6 +7,14 @@ installation lifecycle, permission controls, host-owned adapters, one-time
 purchases, customer reviews, abuse reporting, analytics, creator tooling, QA,
 performance, and beta readiness phases.
 
+## Release Identity
+
+- Candidate application version: `3.0.0`.
+- Intended Git tag after approval: `v3.0.0`.
+- Current status: release candidate; the tag has not been created and
+  production General Availability is not claimed until the target-environment
+  go/no-go checks and owner sign-off pass.
+
 ## Highlights
 
 - Approved Component Packs and Design Templates can be discovered, inspected,

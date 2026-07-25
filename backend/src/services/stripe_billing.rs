@@ -42,6 +42,18 @@ struct OrganizationBillingProfile {
     owner_email: Option<String>,
 }
 
+struct SubscriptionUpdate<'a> {
+    organization_id: Uuid,
+    plan_id: Uuid,
+    status: &'a str,
+    customer_id: Option<&'a str>,
+    subscription_id: Option<&'a str>,
+    period_start: Option<DateTime<Utc>>,
+    period_end: Option<DateTime<Utc>>,
+    cancel_at_period_end: bool,
+    provider_event_created_at: Option<DateTime<Utc>>,
+}
+
 pub fn price_id_for_plan(config: &Config, plan: &quota::PlanLimits) -> Option<String> {
     plan.stripe_price_id
         .clone()
@@ -493,15 +505,17 @@ async fn apply_checkout_completed(
 
     let applied = upsert_subscription(
         tx,
-        organization_id,
-        plan_id,
-        "active",
-        customer_id.as_deref(),
-        subscription_id.as_deref(),
-        None,
-        None,
-        false,
-        provider_event_created_at,
+        SubscriptionUpdate {
+            organization_id,
+            plan_id,
+            status: "active",
+            customer_id: customer_id.as_deref(),
+            subscription_id: subscription_id.as_deref(),
+            period_start: None,
+            period_end: None,
+            cancel_at_period_end: false,
+            provider_event_created_at,
+        },
     )
     .await?;
     Ok((organization_id, applied))
@@ -558,15 +572,17 @@ async fn apply_subscription_event(
 
     let applied = upsert_subscription(
         tx,
-        organization_id,
-        plan_id,
-        &status,
-        customer_id.as_deref(),
-        subscription_id.as_deref(),
-        period_start,
-        period_end,
-        cancel_at_period_end,
-        provider_event_created_at,
+        SubscriptionUpdate {
+            organization_id,
+            plan_id,
+            status: &status,
+            customer_id: customer_id.as_deref(),
+            subscription_id: subscription_id.as_deref(),
+            period_start,
+            period_end,
+            cancel_at_period_end,
+            provider_event_created_at,
+        },
     )
     .await?;
     Ok((organization_id, applied))
@@ -906,10 +922,12 @@ async fn plan_id_for_subscription(
     price_id: Option<&str>,
     plan_slug: Option<&str>,
 ) -> Result<Option<Uuid>, AppError> {
-    if let Some(slug) = plan_slug {
-        if let Some(plan_id) = plan_id_by_slug(tx, slug).await? {
-            return Ok(Some(plan_id));
-        }
+    let metadata_plan_id = match plan_slug {
+        Some(slug) => plan_id_by_slug(tx, slug).await?,
+        None => None,
+    };
+    if let Some(plan_id) = metadata_plan_id {
+        return Ok(Some(plan_id));
     }
     if let Some(price_id) = price_id {
         if let Some(plan_id) = sqlx::query_scalar::<_, Uuid>(
@@ -972,16 +990,19 @@ async fn organization_id_by_provider_ids(
 
 async fn upsert_subscription(
     tx: &mut Transaction<'_, Postgres>,
-    organization_id: Uuid,
-    plan_id: Uuid,
-    status: &str,
-    customer_id: Option<&str>,
-    subscription_id: Option<&str>,
-    period_start: Option<DateTime<Utc>>,
-    period_end: Option<DateTime<Utc>>,
-    cancel_at_period_end: bool,
-    provider_event_created_at: Option<DateTime<Utc>>,
+    update: SubscriptionUpdate<'_>,
 ) -> Result<bool, AppError> {
+    let SubscriptionUpdate {
+        organization_id,
+        plan_id,
+        status,
+        customer_id,
+        subscription_id,
+        period_start,
+        period_end,
+        cancel_at_period_end,
+        provider_event_created_at,
+    } = update;
     let applied = sqlx::query_scalar::<_, Uuid>(
         r#"
         INSERT INTO organization_subscriptions (

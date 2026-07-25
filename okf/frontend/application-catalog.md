@@ -51,8 +51,8 @@ An application must have a distinct startup, build, runtime, or deployment bound
 | Startup entry point | `frontend/src/main.tsx` |
 | Route entry point | `frontend/src/router.tsx` |
 | Package manifest | `frontend/package.json` |
-| Framework and language | React 19 and strict TypeScript |
-| Bundler and development server | Vite 6 |
+| Framework and language | React 19.2 and strict TypeScript |
+| Bundler and development server | Vite 7 |
 | Runtime | User browser |
 | Primary backend | ZinharCMS Rust API through `VITE_API_URL` |
 | Development container | `frontend/Dockerfile`, Node 24 Alpine, Vite port 5173 |

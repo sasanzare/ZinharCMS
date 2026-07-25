@@ -314,7 +314,7 @@ async fn load_comment(
     tenant: &TenantContext,
     id: Uuid,
 ) -> Result<CommentResponse, AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, CommentResponse>(
         r#"
         SELECT c.id,
@@ -345,7 +345,7 @@ async fn ensure_entity_exists(
     entity_type: &str,
     entity_id: Uuid,
 ) -> Result<(), AppError> {
-    let mut db = rls::tenant_connection(&state.db, &tenant).await?;
+    let mut db = rls::tenant_connection(&state.db, tenant).await?;
     match entity_type {
         "entry" => {
             sqlx::query_scalar::<_, Uuid>(

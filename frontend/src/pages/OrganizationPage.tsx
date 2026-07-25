@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, AlertTriangle, Building2, Copy, Crown, Gauge, Globe2, LogOut, Mail, Plus, RefreshCw, Send, Shield, Trash2, UserPlus, Users } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n, type MessageKey } from "../i18n";

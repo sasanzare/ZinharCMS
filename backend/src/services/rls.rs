@@ -9,8 +9,8 @@ pub struct TenantConnection {
     connection: PoolConnection<Postgres>,
 }
 
-impl TenantConnection {
-    pub fn as_mut(&mut self) -> &mut PgConnection {
+impl AsMut<PgConnection> for TenantConnection {
+    fn as_mut(&mut self) -> &mut PgConnection {
         self.connection.as_mut()
     }
 }

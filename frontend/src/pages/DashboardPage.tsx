@@ -182,7 +182,7 @@ const [stats, setStats] = useState<DashboardStats>({ contentTypes: 0, entries: 0
         <div className="panel-header">
           <div>
             <h2>{t("dashboard.runtime")}</h2>
-            <span>{t("dashboard.version", { version: health?.version ?? "0.1.0" })}</span>
+            <span>{t("dashboard.version", { version: health?.version ?? "3.0.0" })}</span>
           </div>
           <StatusBadge
             label={loading ? t("app.status.checking") : error ? t("app.status.unavailable") : readiness?.status ?? t("app.status.unknown")}

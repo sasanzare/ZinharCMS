@@ -41,13 +41,14 @@ pub fn validate_creator_profile(
         validate_optional_text(bio, "bio", MAX_TEXT_LENGTH, &mut errors);
     }
 
-    if let Some(email) = support_email
+    if support_email
         .map(str::trim)
         .filter(|value| !value.is_empty())
+        .is_some_and(|email| {
+            !email.contains('@') || email.contains(char::is_whitespace) || email.len() > 254
+        })
     {
-        if !email.contains('@') || email.contains(char::is_whitespace) || email.len() > 254 {
-            errors.push("support email must be a valid email address".to_owned());
-        }
+        errors.push("support email must be a valid email address".to_owned());
     }
 
     finish(errors)
