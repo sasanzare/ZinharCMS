@@ -9,9 +9,10 @@ a visual page builder, public delivery APIs, organization management, billing,
 and a reviewed-product Marketplace in one repository.
 
 The repository implementation includes the original CMS phases, the V2 SaaS
-track, and V3 Marketplace phases 0.1 through 15. V3 implementation completion
-does not by itself prove that a production General Availability launch has
-occurred; the target environment must still pass the documented go/no-go gates.
+track, and V3 Marketplace phases 0.1 through 15. The planned `v3.0.0`
+publication is a GitHub source-code release: it publishes the tracked source
+and documentation but does not deploy or enable a production environment.
+Production General Availability remains a separate operational decision.
 
 ## Release Status
 
@@ -20,13 +21,13 @@ occurred; the target environment must still pass the documented go/no-go gates.
 | Core CMS | Implemented through the original Phase Seven scope |
 | V2 SaaS | Implemented through the Phase Ten GA-readiness scope |
 | V3 Marketplace | Implementation phases 0.1 through 15 complete |
-| V3 production launch | Requires target-environment validation and owner sign-off |
-| Release candidate version | `3.0.0` across the root, backend, and frontend manifests |
-| V3 release tag | Not yet published; `v1.0.0` and `v2.0.0` are the existing public tags |
+| V3 source release | Application version `3.0.0`; GitHub source tag `v3.0.0` |
+| V3 production deployment | Not part of the source release; requires separate target-environment validation and owner sign-off |
+| Application version | `3.0.0` across the root, backend, and frontend manifests |
 | OKF knowledge base | Complete with documented open owner and operational questions |
 
-V3 launch criteria, known limitations, support expectations, and rollback
-conditions are defined in the
+V3 source-release scope, deployment criteria, known limitations, support
+expectations, and rollback conditions are defined in the
 [Phase 15 guide](docs/V3_PHASE_FIFTEEN.md),
 [release notes](docs/V3_MARKETPLACE_RELEASE_NOTES.md), and
 [operations runbook](docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md).
@@ -245,10 +246,16 @@ Run the local/static Phase 15 readiness report:
 powershell -ExecutionPolicy Bypass -File scripts/marketplace-phase15-ga-check.ps1 -ReportOnly -SkipFrontendBuild
 ```
 
-A production release additionally requires a safe target environment, explicit
-authorization, organization and authentication context, reviewed beta evidence,
-assigned support/release/rollback owners, healthy `/health` and `/ready`
-responses, and resolution or approval of reported exceptions.
+The GitHub source release requires consistent `3.0.0` version metadata,
+successful applicable CI checks, GPLv3 metadata, reviewed release notes, a clean
+pushed `main` commit, and explicit owner approval. It publishes repository
+source archives only; it does not publish container images, binaries, or a
+hosted service.
+
+A future production deployment additionally requires a safe target environment,
+explicit authorization, organization and authentication context, reviewed beta
+evidence, assigned support/release/rollback owners, healthy `/health` and
+`/ready` responses, and resolution or approval of reported exceptions.
 
 The repository contains production-like container build definitions, but it
 does not define a production provider, deployment workflow, environment

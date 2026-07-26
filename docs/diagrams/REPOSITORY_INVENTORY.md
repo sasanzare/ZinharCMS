@@ -282,7 +282,7 @@ only mirroring the directory tree.
 | `docs/V3_PHASE_FOURTEEN.md` | Private Creator Beta and Customer Beta readiness notes. | Marketplace beta readiness | Documentation | Context for beta cohort evidence, creator feedback, install/uninstall/purchase/support/report gates, and read-only readiness script. |
 | `docs/V3_PHASE_FIFTEEN.md` | Marketplace Launch Readiness and General Availability notes. | Marketplace launch/GA readiness | Documentation | Context for runbook, final policy, support workflow, rollback, incident checklist, release notes, public docs, monitoring dashboard, and support plan. |
 | `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md` | Marketplace operational runbook. | Marketplace launch/GA readiness | Documentation | Support workflow, broken install, malicious product, wrong payment, refund/dispute/payout, abuse report, emergency block, rollback, and monitoring. |
-| `docs/V3_MARKETPLACE_RELEASE_NOTES.md` | Marketplace GA release notes. | Marketplace launch/GA readiness | Documentation | Public docs, monitoring dashboard, support plan, known limitations, go/no-go criteria, and approved-product production enablement. |
+| `docs/V3_MARKETPLACE_RELEASE_NOTES.md` | V3 GitHub source release notes. | Marketplace release and launch/GA readiness | Documentation | Source-release scope and go/no-go criteria, plus separate future deployment monitoring, support, and production enablement requirements. |
 
 ## Search And Inspection Notes
 

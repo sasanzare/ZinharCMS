@@ -5,17 +5,17 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-25 (Europe/London)
+- **Last updated:** 2026-07-26 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `c7876099 ci: upgrade GitHub Actions to Node 24 runtimes`
-- **Working tree:** Only this uncommitted Docker validation and final release go/no-go checkpoint
+- **Latest relevant commit:** `4396b556 test(frontend): eliminate dashboard teardown race`
+- **Working tree:** Uncommitted source-release documentation and handoff updates; no product code change
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
 - **Current phase:** V3 release preparation
-- **Current subphase:** Final V3 release go/no-go review. Docker production builds and the Node.js 24 action runtime migration are verified, but repeated Frontend CI test flakiness, target-environment validation, and owner sign-off remain open gates.
-- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, production image builds, and the latest pushed GitHub CI checks. Repository licensing is resolved as `GPL-3.0-only`, and the Node.js 20 action annotation is gone. The current release decision remains no-go because Frontend CI run `30165038602` failed twice at `npm test` before succeeding on attempt 3. Production GA also still requires target-environment go/no-go validation and explicit owner sign-off.
+- **Current subphase:** V3 GitHub source-release preflight. The owner selected a source-code-only `v3.0.0` release; release-facing documentation is aligned, while review, commit, push, and final publication approval remain open.
+- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, production image builds, and the applicable pushed GitHub CI checks. Repository licensing is resolved as `GPL-3.0-only`, the Node.js 20 action annotation is gone, and Frontend CI run `30207051877` passed on attempt 1 with zero annotations. The GitHub source release does not require target-environment API smoke and does not claim production General Availability; deployment remains a separate future gate.
 
 ## 2. Project Overview
 
@@ -1729,3 +1729,88 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   owner authorization, commit and push it. Require the resulting Frontend CI
   run to pass on attempt 1 before starting target-environment Phase 15
   validation and owner sign-off.
+
+### 2026-07-26 - Fresh first-attempt Frontend CI verification
+
+- Reconciled the repository after the owner committed and pushed the teardown
+  race fix. Local `main`, `origin/main`, and `origin/HEAD` resolve to
+  `4396b556a6e722adbdd818db9fb19074c46ee3fb`; the working tree was clean
+  before this handoff update.
+- Verified through the public GitHub Actions API that Frontend CI run
+  `30207051877` completed successfully on `run_attempt: 1`.
+- Every required job step passed: version consistency, `npm ci`, high-severity
+  audit, lint, typecheck, all 14 tests, and the production build.
+- Check run `89806841336` reports `annotations_count: 0`; no Node.js runtime
+  deprecation or other check annotation remains.
+- Backend CI was not expected to run because the pushed commit changed only
+  the frontend test and this handoff, which do not match the backend workflow's
+  path filters. The most recent backend-affecting commit remains covered by its
+  previously verified successful Backend CI run.
+- The repeated Frontend CI failure gate is closed. No tag, GitHub release,
+  deployment, or publication was created.
+- **Modified files:** `HANDOFF.md` only.
+- **Exact Next Action:** complete the read-only Phase 15 go/no-go validation
+  against the approved target environment using `API_BASE_URL`,
+  `ACCESS_TOKEN`, and `ORGANIZATION_ID`, optionally with admin checks. Record
+  the evidence and obtain explicit release, support, rollback, and
+  communication owner sign-off before creating `v3.0.0`.
+
+### 2026-07-26 - Target-environment Phase 15 validation blocked
+
+- Reconciled the repository at `4396b556` with local `main` matching
+  `origin/main`. The only pre-existing working-tree change was the uncommitted
+  handoff update from the successful first-attempt Frontend CI verification.
+- Checked only whether the required target inputs were configured; no secret
+  value was printed or copied. `API_BASE_URL`, `ACCESS_TOKEN`, and
+  `ORGANIZATION_ID` are absent from both the process environment and the root
+  `.env` file.
+- Inspected `scripts/marketplace-phase15-ga-check.ps1`. Without
+  `API_BASE_URL`, it skips every API smoke check, so running it now would only
+  repeat previously completed local backend/frontend validation and could not
+  constitute target-environment go/no-go evidence.
+- No HTTP request was sent, no local validation was misrepresented as a target
+  pass, and no database, deployment, tag, release, or remote state was changed.
+- **Modified files:** `HANDOFF.md` only.
+- **Exact Next Action:** configure `API_BASE_URL`, `ACCESS_TOKEN`, and
+  `ORGANIZATION_ID` outside the repository for the approved staging or
+  production-like environment. If global-admin access is approved, also enable
+  the script's `-AdminMode`. Then rerun the read-only Phase 15 GA check and
+  record its endpoint-level results before requesting owner sign-off.
+
+### 2026-07-26 - GitHub source-release scope and documentation preflight
+
+- The owner explicitly limited `v3.0.0` to a GitHub source-code release.
+  Target-environment API smoke, production support ownership, deployment
+  rollback, and production communication gates are not applicable to this
+  source publication and remain separate prerequisites for any future
+  production General Availability claim.
+- Verified application version `3.0.0` across all eight release sources and
+  confirmed `GPL-3.0-only` in the root, frontend, and backend metadata.
+- The public GitHub API returned HTTP 404 for both the `v3.0.0` tag reference
+  and the `v3.0.0` Release endpoint. Existing public Releases remain `v1.0.0`
+  and `v2.0.0`.
+- Reworked the root README and V3 release notes to define a source-only release
+  without implying a hosted service, binary/container publication, target
+  health, or production GA. Kept the Phase 15 deployment gates as explicit
+  future requirements.
+- Updated the repository inventory and OKF release process with the selected
+  scope, observed semantic tag format, manual source-release gate, and
+  annotated-tag/GitHub-Release sequence.
+- Validation passed: four targeted Phase 15 backend contract tests, eight-source
+  version consistency, GPLv3 metadata checks, changed-document local links,
+  changed-file English-language scan, and Git whitespace validation.
+- The source-release files use timeless release identity; transient pre-tag
+  state is recorded only in this handoff.
+- No file was staged or committed, and no tag, GitHub Release, deployment,
+  binary, container image, or package was published.
+- **Modified files:** `README.md`,
+  `docs/V3_MARKETPLACE_RELEASE_NOTES.md`,
+  `docs/diagrams/REPOSITORY_INVENTORY.md`,
+  `okf/delivery/release-process.md`, and `HANDOFF.md`.
+- **Exact Next Action:** review and commit these five source-release
+  documentation files, then push `main`. Confirm the release commit is clean
+  and present on `origin/main`; documentation-only path filters are not
+  expected to trigger product CI. After explicit final publication approval,
+  create and push annotated tag `v3.0.0`, publish a non-prerelease GitHub
+  Release using `docs/V3_MARKETPLACE_RELEASE_NOTES.md`, and verify the tag
+  target plus GitHub-generated ZIP/tar source archives.
