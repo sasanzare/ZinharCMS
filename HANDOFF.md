@@ -10,12 +10,12 @@
 - **Repository:** ZinharCMS
 - **Current branch:** `main`
 - **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `04dc10e5c3ffb9bfebd71f0b744dcfdbdbe75dc3 chore(license): adopt GPL-3.0-only`
-- **Working tree:** Uncommitted GitHub Actions Node.js 24 runtime upgrades and this handoff checkpoint
+- **Latest relevant commit:** `c7876099 ci: upgrade GitHub Actions to Node 24 runtimes`
+- **Working tree:** Only this uncommitted Docker validation and final release go/no-go checkpoint
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
 - **Current phase:** V3 release preparation
-- **Current subphase:** GitHub Actions Node.js 20 deprecation warnings are being removed by upgrading the checkout and setup-node actions to their Node.js 24-based v5 runtimes; local static validation is complete and pushed CI verification is pending.
-- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, and pushed GitHub CI gates. Repository licensing is resolved as `GPL-3.0-only`, and the previously failed Frontend CI run passed on rerun attempt 2. Production image build remains unverified because the required base images are not cached. Production GA still requires successful production image builds, an approved tag, target-environment go/no-go validation, and owner sign-off.
+- **Current subphase:** Final V3 release go/no-go review. Docker production builds and the Node.js 24 action runtime migration are verified, but repeated Frontend CI test flakiness, target-environment validation, and owner sign-off remain open gates.
+- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, production image builds, and the latest pushed GitHub CI checks. Repository licensing is resolved as `GPL-3.0-only`, and the Node.js 20 action annotation is gone. The current release decision remains no-go because Frontend CI run `30165038602` failed twice at `npm test` before succeeding on attempt 3. Production GA also still requires target-environment go/no-go validation and explicit owner sign-off.
 
 ## 2. Project Overview
 
@@ -1633,3 +1633,99 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
 - **Exact Next Action:** review the three-file diff, then commit and push it
   only with explicit owner authorization. Require Backend CI and Frontend CI to
   pass without the Node.js 20 deprecation annotation before proceeding.
+
+### 2026-07-25 - Docker Hub recovery and production image validation
+
+- Reconciled the repository at clean pushed commit `c7876099` before the
+  Docker investigation. The workflow runtime upgrade was already committed and
+  pushed by the owner.
+- Confirmed that Windows DNS resolves `registry-1.docker.io`,
+  `auth.docker.io`, `production.cloudflare.docker.com`, and
+  `production.cloudfront.docker.com`. Docker Desktop 29.5.3 is running the
+  Linux engine with the `overlay2` driver.
+- Pulled the production base images `rust:1.96-bookworm`,
+  `debian:bookworm-slim`, `node:24-alpine`, `nginx:1.27-alpine`,
+  `postgres:16-alpine`, and `redis:7-alpine` successfully.
+- The first PostgreSQL refresh encountered one transient TLS handshake timeout
+  at `auth.docker.io`. A retry authenticated successfully, Docker recovered one
+  layer transfer through its internal retry mechanism, and the pull completed
+  with digest
+  `sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777`.
+  No Docker DNS, proxy, registry mirror, or Windows network setting was changed
+  because the failure was transient and DNS resolution was healthy.
+- Built `zinharcms-frontend:latest` successfully as image
+  `sha256:92a246b5ee2580d5fd6317b9164574f4b91338e02288cd10c304831b868b4bf8`.
+  The container build completed `npm ci`, reported zero vulnerabilities, and
+  completed the Vite production build. The known non-blocking 613.44 kB main
+  chunk warning remains.
+- Built `zinharcms-backend:latest` successfully as image
+  `sha256:aff5eec6c3d54c70070b1d4d906af81d3fab0a12ea9fdaaf24205529741cdb53`.
+  The clean containerized Cargo dependency download and optimized release build
+  completed in 4 minutes 1 second.
+- Production Compose interpolation and image resolution passed with
+  non-secret validation-only values. No service container was started, no
+  database or volume was mutated, and nothing was deployed or published.
+- **Modified files:** `HANDOFF.md` only. Docker's local image and build caches
+  changed as a result of the authorized pulls and builds.
+- **Exact Next Action:** verify Backend CI and Frontend CI for pushed commit
+  `c7876099`, including absence of the Node.js 20 deprecation annotation. Then
+  complete target-environment go/no-go validation and owner sign-off before
+  creating the approved `v3.0.0` tag and GitHub release.
+
+### 2026-07-25 - Final V3 release go/no-go audit
+
+- Reconciled local `HEAD`, `origin/main`, and public GitHub `main` at
+  `c7876099c35f3ec1a8b6994d6f7327c4e0e6ed2e`. The release version validator
+  passed across all eight `3.0.0` sources.
+- Backend CI run `30165038600` passed on attempt 1.
+- Frontend CI run `30165038602` failed at `npm test` on attempts 1 and 2,
+  then passed all steps on attempt 3. The two latest successful check runs
+  report zero annotations, confirming that the Node.js 20 deprecation warning
+  is resolved.
+- Public releases remain `v1.0.0` and `v2.0.0`; no `v3.0.0` release was
+  present during this audit.
+- `API_BASE_URL`, `ACCESS_TOKEN`, and `ORGANIZATION_ID` are not configured in
+  the current environment, so target-environment Phase 15 API smoke and final
+  operational go/no-go evidence remain unverified.
+- **Release decision:** no-go until the repeated Frontend CI test failure is
+  diagnosed and a fresh Frontend CI run passes on its first attempt, the
+  target-environment go/no-go validation is completed, and the release,
+  support, rollback, and communication owners sign off.
+- No tag, release, deployment, source change, dependency change, or external
+  mutation was performed.
+- **Modified files:** `HANDOFF.md` only.
+- **Exact Next Action:** diagnose and fix the Frontend CI `npm test`
+  flakiness using the failed attempt logs or a faithful CI reproduction, then
+  require a new first-attempt green Frontend CI run before completing the
+  target-environment Phase 15 validation and owner sign-off.
+
+### 2026-07-26 - Frontend CI teardown race fix
+
+- Reproduced the intermittent Frontend CI failure in a disposable
+  Linux/Node.js 24 container. The fourth consecutive run completed all 14 test
+  assertions but Vitest then failed with `ReferenceError: window is not
+  defined`, identified `DashboardPage.test.tsx` as the source, and reported
+  that the exception occurred after the test environment was torn down.
+- Confirmed the root cause: the Dashboard test ended after synchronous
+  foundation-card assertions while the component's asynchronous content,
+  media, page, entry, and billing requests were still pending.
+- Replaced the test's live API behavior with deterministic service mocks and
+  made the test await both the resolved dashboard statistics and billing
+  usage before completion. The fix does not add retries, ignore unhandled
+  errors, or weaken the CI gate.
+- Validation passed: the focused Dashboard test; 10 consecutive complete
+  Frontend test runs on Windows; 10 consecutive complete Frontend test runs
+  in a fresh Linux/Node.js 24 container; and the complete Linux Frontend CI
+  sequence (`npm ci`, high-severity audit with zero vulnerabilities, lint,
+  typecheck, 14 tests, and production build).
+- Release-version validation remains consistent at `3.0.0` across all eight
+  sources. The known non-blocking 613.44 kB minified main-chunk build warning
+  remains unchanged.
+- No file was staged or committed, and nothing was pushed, tagged, released,
+  published, or deployed.
+- **Modified files:** `frontend/src/pages/DashboardPage.test.tsx` and
+  `HANDOFF.md`.
+- **Exact Next Action:** review the two-file diff and, only after explicit
+  owner authorization, commit and push it. Require the resulting Frontend CI
+  run to pass on attempt 1 before starting target-environment Phase 15
+  validation and owner sign-off.
