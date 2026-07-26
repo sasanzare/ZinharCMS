@@ -163,12 +163,8 @@ pub fn require_org_comment_manager(role: &str) -> Result<(), AppError> {
     require_org_any(role, &[ORG_ADMIN, ORG_EDITOR])
 }
 
-pub fn default_registration_role(existing_users: i64) -> &'static str {
-    if existing_users == 0 {
-        SUPER_ADMIN
-    } else {
-        AUTHOR
-    }
+pub fn default_registration_role() -> &'static str {
+    AUTHOR
 }
 
 #[cfg(test)]
@@ -250,5 +246,10 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn public_registration_never_bootstraps_global_administration() {
+        assert_eq!(default_registration_role(), AUTHOR);
     }
 }

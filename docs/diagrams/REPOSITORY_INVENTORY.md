@@ -70,7 +70,7 @@ only mirroring the directory tree.
 | Path | Responsibility | Domain | Kind | Main symbols, route groups, or components | Related future diagrams |
 | --- | --- | --- | --- | --- | --- |
 | `backend/src/lib.rs` | Exposes backend module tree for tests and binary. | Backend composition | Executable code | module exports | Backend module map |
-| `backend/src/main.rs` | Starts runtime, migrations, default admin and organization seed, router, and shutdown. | Runtime bootstrap | Executable code | `db::run_migrations`, Redis client, `seed_default_admin`, `ensure_default_organization_membership` | Startup sequence diagram |
+| `backend/src/main.rs` | Starts runtime, migrations, optional configured bootstrap administrator and organization seed, router, and shutdown. | Runtime bootstrap | Executable code | `db::run_migrations`, Redis client, `seed_bootstrap_admin`, `ensure_default_organization_membership` | Startup sequence diagram |
 | `backend/src/config.rs` | Environment parsing and defaults. | Runtime configuration | Executable code | `Config`, Stripe, CORS, JWT, upload, rate limit, email settings | Config source diagram |
 | `backend/src/state.rs` | Shared application state. | Runtime composition | Executable code | `AppState`, `PagePreviewChannels`, Redis client, PostgreSQL pool | Runtime object graph |
 | `backend/src/error.rs` | API error representation. | API boundary | Executable code | `AppError`, `ErrorBody`, HTTP status mapping | Error flow diagram |

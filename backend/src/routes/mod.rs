@@ -16,8 +16,12 @@ pub mod plugins;
 pub mod webhooks;
 
 use axum::extract::DefaultBodyLimit;
+use axum::extract::Request;
 use axum::extract::State;
+use axum::http::StatusCode;
 use axum::middleware;
+use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
 use redis::AsyncCommands;
@@ -25,6 +29,7 @@ use serde::Serialize;
 use sqlx::Executor;
 use tower_http::services::ServeDir;
 use utoipa::{OpenApi, ToSchema};
+use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::auth_middleware;
@@ -33,7 +38,9 @@ use crate::state::AppState;
 
 pub fn router(state: AppState) -> Router {
     let upload_limit = state.config.max_upload_size.saturating_add(1_048_576) as usize;
-    let uploads = ServeDir::new(state.config.upload_dir.clone());
+    let uploads = Router::new()
+        .nest_service("/uploads", ServeDir::new(state.config.upload_dir.clone()))
+        .route_layer(middleware::from_fn(restrict_public_uploads));
     let protected = Router::new()
         .merge(auth::protected_router())
         .merge(beta::protected_router())
@@ -74,8 +81,47 @@ pub fn router(state: AppState) -> Router {
         .merge(delivery::router())
         .merge(protected)
         .merge(tenant_protected)
-        .nest_service("/uploads", uploads)
+        .merge(uploads)
         .with_state(state)
+}
+
+async fn restrict_public_uploads(request: Request, next: Next) -> Response {
+    if is_public_media_path(request.uri().path()) {
+        next.run(request).await
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
+
+fn is_public_media_path(path: &str) -> bool {
+    let Some(relative) = path.strip_prefix("/uploads/") else {
+        return false;
+    };
+    if relative
+        .chars()
+        .any(|character| matches!(character, '%' | '\\' | ':'))
+    {
+        return false;
+    }
+
+    let segments = relative.split('/').collect::<Vec<_>>();
+    let (organization_id, filename) = match segments.as_slice() {
+        [organization_id, filename] => (*organization_id, *filename),
+        [organization_id, "variants", filename] => (*organization_id, *filename),
+        _ => return false,
+    };
+
+    Uuid::parse_str(organization_id).is_ok() && is_safe_public_filename(filename)
+}
+
+fn is_safe_public_filename(filename: &str) -> bool {
+    !filename.is_empty()
+        && filename.len() <= 255
+        && filename != "."
+        && filename != ".."
+        && filename.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '.' | '-' | '_')
+        })
 }
 
 #[derive(OpenApi)]
@@ -446,10 +492,10 @@ async fn readiness(State(state): State<AppState>) -> Result<Json<ReadyResponse>,
             ok: true,
             message: "reachable".to_owned(),
         },
-        Err(error) => DependencyCheck {
+        Err(_) => DependencyCheck {
             name: "postgres".to_owned(),
             ok: false,
-            message: error.to_string(),
+            message: "unavailable".to_owned(),
         },
     };
     checks.push(db_ok);
@@ -461,16 +507,16 @@ async fn readiness(State(state): State<AppState>) -> Result<Json<ReadyResponse>,
                 ok: true,
                 message: "reachable".to_owned(),
             },
-            Err(error) => DependencyCheck {
+            Err(_) => DependencyCheck {
                 name: "redis".to_owned(),
                 ok: false,
-                message: error.to_string(),
+                message: "unavailable".to_owned(),
             },
         },
-        Err(error) => DependencyCheck {
+        Err(_) => DependencyCheck {
             name: "redis".to_owned(),
             ok: false,
-            message: error.to_string(),
+            message: "unavailable".to_owned(),
         },
     };
     checks.push(redis_ok);
@@ -493,4 +539,71 @@ async fn readiness(State(state): State<AppState>) -> Result<Json<ReadyResponse>,
 
 async fn openapi() -> Json<utoipa::openapi::OpenApi> {
     Json(ApiDoc::openapi())
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::Router;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use axum::middleware;
+    use axum::response::IntoResponse;
+    use tower::ServiceExt;
+    use uuid::Uuid;
+
+    use super::{is_public_media_path, restrict_public_uploads};
+
+    #[test]
+    fn public_upload_mount_exposes_only_generated_media_paths() {
+        let organization_id = Uuid::now_v7();
+        assert!(is_public_media_path(&format!(
+            "/uploads/{organization_id}/01900000-0000-7000-8000-000000000000.png"
+        )));
+        assert!(is_public_media_path(&format!(
+            "/uploads/{organization_id}/variants/01900000-0000-7000-8000-000000000000-thumbnail.webp"
+        )));
+        assert!(!is_public_media_path(
+            "/uploads/marketplace/packages/creator/listing/1.0.0/package.zip"
+        ));
+        assert!(!is_public_media_path(
+            "/uploads/%6darketplace/packages/creator/listing/1.0.0/package.zip"
+        ));
+        assert!(!is_public_media_path(&format!(
+            "/uploads/{organization_id}/../private.zip"
+        )));
+    }
+
+    #[tokio::test]
+    async fn public_upload_router_applies_the_policy_to_the_original_path() {
+        let organization_id = Uuid::now_v7();
+        let app = Router::new()
+            .nest_service(
+                "/uploads",
+                Router::new().fallback(|| async { StatusCode::OK.into_response() }),
+            )
+            .route_layer(middleware::from_fn(restrict_public_uploads));
+
+        let allowed = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/uploads/{organization_id}/image.png"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(allowed.status(), StatusCode::OK);
+
+        let blocked = app
+            .oneshot(
+                Request::builder()
+                    .uri("/uploads/marketplace/packages/private.zip")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(blocked.status(), StatusCode::NOT_FOUND);
+    }
 }

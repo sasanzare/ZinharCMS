@@ -22,7 +22,7 @@ subgraph developer_host["Developer workstation"]
     local_env["Local environment [IMPLEMENTED]\nDATABASE_URL localhost:5432; REDIS_URL localhost:6379; CORS_ORIGIN localhost:5173; VITE_API_URL localhost:8080"]
     local_uploads["Local upload directory [IMPLEMENTED]\nUPLOAD_DIR defaults to ./uploads; media and Marketplace artifacts share local filesystem; AMB-002"]
     startup_migrations["Backend startup migrations [IMPLEMENTED]\ndb::run_migrations runs before server bind"]
-    default_admin_seed["Default admin seed [IMPLEMENTED]\nadmin@example.com / password123 when users table is empty"]
+    default_admin_seed["Explicit bootstrap administrator [IMPLEMENTED]\nProvisioned only when both bootstrap environment values are configured and users table is empty"]
 end
 
 subgraph dev_compose["docker-compose.yml development services"]

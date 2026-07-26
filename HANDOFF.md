@@ -8,14 +8,21 @@
 - **Last updated:** 2026-07-26 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
-- **Current branch:** `main`
-- **Base branch:** `main` / `origin/main`
-- **Latest relevant commit:** `4396b556 test(frontend): eliminate dashboard teardown race`
-- **Working tree:** Uncommitted source-release documentation and handoff updates; no product code change
+- **Current branch:** `security/security-audit-fixes`
+- **Base branch:** `main`; current branch tracks `origin/security/security-audit-fixes`
+- **Latest relevant commit:** `64d780b6 docs(release): define v3.0.0 source-only publication`
+- **Working tree:** Phase 1 security baseline and low-risk hardening changes are complete and uncommitted; the branch was clean before this audit
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
-- **Current phase:** V3 release preparation
-- **Current subphase:** V3 GitHub source-release preflight. The owner selected a source-code-only `v3.0.0` release; release-facing documentation is aligned, while review, commit, push, and final publication approval remain open.
-- **Overall status:** V3 implementation phases 0.1 through 15 and OKF phases zero through ten are merged into `main`. The `3.0.0` release candidate passes local backend, frontend, dependency-audit, version, documentation, Phase 15, production image builds, and the applicable pushed GitHub CI checks. Repository licensing is resolved as `GPL-3.0-only`, the Node.js 20 action annotation is gone, and Frontend CI run `30207051877` passed on attempt 1 with zero annotations. The GitHub source release does not require target-environment API smoke and does not claim production General Availability; deployment remains a separate future gate.
+- **Current phase:** Security Audit and Hardening Phase 1
+- **Current subphase:** Security Audit and Hardening Phase 1 is implemented, documented, and locally validated; owner-side credential response and later hardening phases remain.
+- **Overall status:** The repository-wide source audit is complete at this checkpoint. Sixteen confirmed findings and five unverified risks are recorded in `docs/security/PHASE_01_SECURITY_BASELINE.md`. Low-risk fixes close deterministic privileged bootstrap/public-registration escalation, shared upload-root exposure, placeholder-secret acceptance, JWT signature comparison, internal error disclosure, insecure browser randomness fallback, production Compose cookie configuration, and all-interface local data-service ports. Final Rust and frontend quality/test suites, dependency audits, Compose rendering, sanitized secret scans, and diff validation passed. No commit or push was created. Existing deployments and Git history are not automatically remediated.
+
+> **Security Audit Phase 1 override (2026-07-26):** This completed security
+> checkpoint supersedes the older source-release and OKF exact-next-action text
+> for the current branch. Preserve all historical content below. Do not create
+> a commit or push without explicit user authorization. The exact next action is
+> the owner-side SEC-P01-001 deployment inventory/credential response described
+> in section 16, followed by an explicitly authorized Phase 2.
 
 ## 2. Project Overview
 
@@ -89,6 +96,7 @@ and `frontend/dist` are not source-of-truth directories.
 
 | Document | Role | Authority / freshness |
 | --- | --- | --- |
+| `docs/security/PHASE_01_SECURITY_BASELINE.md` | Repository-wide Phase 1 attack-surface baseline, stable findings, fixes, validation, limitations, and next-phase recommendation. | Current security-audit authority for branch `security/security-audit-fixes`; live deployment evidence still outranks source assumptions. |
 | `README.md` | Current repository scope and quick-start commands through V3 Phase 15. | Current summary; source code and migrations outrank it. |
 | `docs/V3_PHASE_SIX.md` | Phase 6 acceptance, install gates, lifecycle rules, update/rollback behavior, and deferred boundaries. | Current Phase 6 authority. |
 | `docs/V3_PHASE_SEVEN.md` | Phase 7 permission catalog, sandbox policy, runtime authorization, kill switch, and acceptance. | Current Phase 7 authority. |
@@ -123,6 +131,13 @@ External execution, runtime error telemetry, automated payout transfer
 execution, and arbitrary package execution remain deferred.
 
 ## 6. Current Objective
+
+> **Security Audit Phase 1 override (2026-07-26):** The requested Phase 1
+> repository-wide audit, low-risk hardening, baseline document, and local
+> validation are complete in the working tree. No commit or push is authorized.
+> Immediate remaining work is owner-side response for any administrator created
+> by the former deterministic bootstrap path; later code work begins only as a
+> separately authorized Phase 2.
 
 > **OKF Phase Zero override (2026-07-17):** The user explicitly requested a
 > repository-wide, evidence-based OKF bootstrap analysis. Create only the
@@ -186,6 +201,33 @@ planned and authorized:
 - no background automatic update is enabled; installations remain explicitly pinned.
 
 ## 7. Completed and Verified Work
+
+### Security Audit and Hardening Phase 1 checkpoint (2026-07-26)
+
+- [x] Reconciled `AGENTS.md`, this handoff, branch/status/diff, recent commits,
+  repository state, and relevant persistent lessons before changing code.
+- [x] Mapped backend/frontend architecture, 168 handler-method endpoints, public
+  static media, preview WebSocket, authentication/session, global/tenant RBAC,
+  RLS, Redis, file/package storage, webhooks, Stripe, Marketplace, Compose, CI,
+  scripts, dependency/tooling, logging, and error surfaces.
+- [x] Scanned the current tracked tree and Git history for selected
+  provider-token and private-key signatures without copying values; no real
+  committed secret was confirmed by the available patterns.
+- [x] Replaced deterministic privileged bootstrap with an explicit validated
+  configuration pair; public registration now always receives the author role,
+  and the login UI no longer prefills a deterministic identity/password.
+- [x] Restricted public static uploads to generated media paths, excluding the
+  Marketplace package namespace; unit and router-level allow/deny tests pass.
+- [x] Applied constant-time JWT signature verification, generic internal and
+  readiness error responses, placeholder-secret rejection, CSPRNG webhook-secret
+  fallback, loopback-only development service ports, and secure production
+  refresh-cookie Compose default.
+- [x] Added `docs/security/PHASE_01_SECURITY_BASELINE.md` with the exact required
+  sections, stable `SEC-P01-*` IDs, severities, confidence, evidence, status,
+  unverified risks, validation, limitations, and next-phase recommendation.
+- [x] Updated active setup/phase/diagram documentation and the external
+  recurring-mistakes log without adding secret values to repository documents.
+- [x] Completed the final validation matrix recorded in section 11.
 
 ### Phase 15 checkpoint override (2026-07-12 16:27)
 
@@ -436,6 +478,22 @@ planned and authorized:
 
 ## 8. Completed but Not Verified
 
+- [ ] Owner-side SEC-P01-001 response for every existing deployment.
+  - **Missing verification:** no deployment/account inventory, login/audit
+    history, or secret-manager access was available.
+  - **Required action:** identify and disable/rotate any administrator created
+    by the former deterministic bootstrap path, review relevant activity, and
+    decide whether Git-history rewriting is warranted.
+- [ ] Live PostgreSQL tenant/RLS and bypass matrix (SEC-P01-017).
+  - **Missing verification:** source/static policy tests passed, but this phase
+    did not start a populated database or execute cross-tenant requests.
+- [ ] Rust advisory assessment (SEC-P01-018).
+  - **Missing verification:** `cargo-audit` and `cargo-deny` were unavailable.
+- [ ] Deployment/edge/email-webhook/rich-text runtime checks (SEC-P01-019 through
+  SEC-P01-021).
+  - **Missing verification:** no live ingress, secret manager, egress policy,
+    receiver, or browser E2E environment was in scope.
+
 - [ ] Optional Phase 15 live GA smoke against a safe target environment.
   - **Files:** `scripts/marketplace-phase15-ga-check.ps1`, `docs/V3_PHASE_FIFTEEN.md`, `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md`.
   - **Missing verification:** an authenticated production/staging-like environment with a safe organization, approved products, and support/incident evidence.
@@ -449,6 +507,13 @@ planned and authorized:
   - **Reason:** only static declaration/fence validation was available.
 
 ## 9. Work in Progress
+
+### Security Audit Phase 1 active checkpoint override
+
+Phase 1 implementation, documentation, and local validation are complete. There
+is no partially implemented Phase 1 product code. The working tree is
+intentionally uncommitted. The next action requires owner/deployment authority,
+not additional source changes in this phase.
 
 ### Phase 15 active checkpoint override
 
@@ -483,6 +548,36 @@ and this handoff update.
   operational surfaces.
 
 ## 10. Current Git and Filesystem State
+
+### Actual state at Security Audit Phase 1 checkpoint
+
+- `HEAD` is `64d780b6` on `security/security-audit-fixes`, tracking
+  `origin/security/security-audit-fixes`.
+- The working tree was clean at Phase 1 start. Nothing is staged, committed,
+  pushed, deleted, reset, or cleaned by this phase.
+- Modified tracked files are `.env.example`,
+  `.github/workflows/backend-ci.yml`, `HANDOFF.md`, `README.md`,
+  `backend/src/config.rs`, `backend/src/error.rs`, `backend/src/main.rs`,
+  `backend/src/routes/auth.rs`, `backend/src/routes/mod.rs`,
+  `backend/src/services/jwt.rs`,
+  `backend/src/services/rbac.rs`, `docker-compose.prod.yml`,
+  `docker-compose.yml`, `docs/PHASE_ONE.md`, `docs/V2_PHASE_ONE.md`,
+  `docs/V2_PHASE_ZERO.md`,
+  `docs/diagrams/05-local-development-runtime.mmd`,
+  `docs/diagrams/06-production-deployment.mmd`,
+  `docs/diagrams/07-backend-component-architecture.mmd`,
+  `docs/diagrams/31-observability-and-failure-recovery.mmd`,
+  `docs/diagrams/REPOSITORY_INVENTORY.md`, `env.example`,
+  `frontend/src/pages/AuthPage.tsx`, and
+  `frontend/src/pages/SettingsPage.tsx`.
+- New untracked files are
+  `docs/security/PHASE_01_SECURITY_BASELINE.md` and
+  `frontend/src/pages/AuthPage.test.tsx`.
+- The ignored local `.env` was not modified. It still contains a JWT
+  placeholder and will be rejected by the hardened configuration until the
+  operator replaces it. Its value is intentionally absent from this handoff.
+- `D:\All projects\Mistakes\mistakes.md` was updated outside the repository as
+  required by `AGENTS.md`; it is not part of Git status.
 
 ### Actual state at Phase 15 checkpoint
 
@@ -611,6 +706,41 @@ should be created unless the user explicitly authorizes it.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
+
+### Security Audit Phase 1 validation results (2026-07-26)
+
+- `cargo fmt --manifest-path backend/Cargo.toml -- --check`: passed.
+- `cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings`: passed.
+- `cargo test --manifest-path backend/Cargo.toml --all-features`: passed, 124
+  tests, 0 failed.
+- Focused config, registration-role, JWT-tampering, internal-error, upload-path,
+  upload-router, and AuthPage regression tests: passed.
+- `npm --prefix frontend run lint`: passed.
+- `npm --prefix frontend run typecheck`: passed.
+- `npm --prefix frontend test`: passed, 15 tests, 0 failed.
+- `npm --prefix frontend run build`: passed; Vite retained the existing
+  >500-kB chunk warning.
+- `npm --prefix frontend audit --omit=dev --audit-level=low`: passed, 0 reported
+  vulnerabilities.
+- `npm --prefix frontend audit --audit-level=low`: passed, 0 reported
+  vulnerabilities.
+- `npm --prefix frontend ls --omit=dev --depth=0`: passed.
+- `cargo metadata --manifest-path backend/Cargo.toml --locked --offline --no-deps --format-version 1`: passed.
+- Development and production Compose `config --quiet`: passed. Rendered
+  PostgreSQL, Redis, and pgAdmin host bindings are `127.0.0.1`.
+- `git diff --check`: passed with line-ending warnings only.
+- Sanitized current/history selected-token/private-key scans: no matches.
+- Targeted source pattern scans found no Rust unsafe blocks, process execution,
+  dangerous React HTML API, or disabled TLS verification pattern.
+- Rust advisory/license scanning was not run because `cargo-audit` and
+  `cargo-deny` are unavailable. `cargo-geiger`, `actionlint`, `gitleaks`,
+  `trufflehog`, and `semgrep` are also unavailable.
+- Live PostgreSQL/Redis tenant integration, browser E2E, payment, outbound
+  webhook/email, and deployed-edge checks were not run in this source-only
+  phase.
+- An initial focused Rust compile found a missing `StatusCode` import introduced
+  by the new upload middleware. It was fixed before the final matrix; no final
+  validation failure remains.
 
 ### Phase 15 validation results (2026-07-12 16:27)
 
@@ -856,6 +986,20 @@ should be created unless the user explicitly authorizes it.
 
 ## 13. Known Issues, Risks, and Technical Debt
 
+### Security Audit Phase 1 override
+
+- **Critical owner action:** SEC-P01-001 is fixed in source but existing
+  deployments and Git history are not automatically remediated.
+- **High confirmed:** tenant webhook DNS/redirect SSRF exposure
+  (SEC-P01-002) and browser-readable token persistence (SEC-P01-003).
+- **Medium confirmed/deferred:** trusted-proxy identity, stale access-token role,
+  refresh rotation/reuse, preview query tokens, and missing CI security gates.
+- **High unverified:** live tenant/RLS isolation matrix and Rust advisory status.
+- The complete stable finding/risk register and evidence are in
+  `docs/security/PHASE_01_SECURITY_BASELINE.md`.
+- Historical statements below about Clippy failing are superseded: the exact
+  all-target/all-feature Clippy command passed at this checkpoint.
+
 ### Blocking issues
 
 - None for the locally validated Phase 15 work.
@@ -889,6 +1033,13 @@ should be created unless the user explicitly authorizes it.
 
 ### Confirmed facts
 
+- [x] The Phase 1 branch, starting commit, clean starting tree, and origin
+  tracking were verified before edits.
+- [x] No real committed secret was confirmed by the available current/history
+  signature scans; scanner limitations are documented.
+- [x] Phase 1 source fixes and the complete final local validation matrix pass.
+- [x] No commit, push, history rewrite, deployed credential rotation, or live
+  deployment mutation occurred.
 - [x] `main` and `origin/main` point to `87bc6d0e` at the Phase 15 checkpoint.
 - [x] The repository was clean before Phase 15 implementation began.
 - [x] Phase 14 is committed at `87bc6d0e`.
@@ -899,12 +1050,33 @@ should be created unless the user explicitly authorizes it.
 
 ### Unconfirmed assumptions
 
+- [ ] Whether any deployed environment still contains an administrator created
+  by the former deterministic bootstrap path.
+- [ ] Whether real ingress, egress, TLS, secret injection, backups, monitoring,
+  and email webhook configuration enforce stronger controls than the repository
+  demonstrates.
+- [ ] Whether every tenant/RLS policy and bypass path behaves correctly against
+  representative live data.
 - [ ] A production/staging-like environment has real approved products, support evidence, monitoring ownership, and credentials for meaningful Phase 15 live GA smoke.
 - [ ] A deployed environment has the expected `UPLOAD_DIR` contents and artifact files needed for end-to-end install/update/rollback smoke tests.
 - [ ] External monitoring/dashboard, backup, and support tooling are operationally provisioned outside this repository.
 - [ ] The user has not authorized committing the current Phase 15 working tree.
 
 ## 15. Remaining Work
+
+### Security Audit Phase 1 remaining-work override
+
+1. Owner/deployment operators must execute the SEC-P01-001 account inventory,
+   disable/rotate response, activity review, local/deployed placeholder
+   replacement, and Git-history decision without committing replacement
+   credentials.
+2. Review the uncommitted Phase 1 diff. Stage/commit/push only after explicit
+   user authorization.
+3. Start Phase 2 only after separate authorization. Prioritize SSRF-safe
+   outbound requests, transactional refresh families/reuse detection,
+   trusted-proxy handling, and a live RLS/tenant authorization matrix.
+4. Add Rust advisory and repository security scanners through a separately
+   reviewed CI/tooling change; do not force audit fixes or major upgrades.
 
 ### Phase 15 remaining-work override
 
@@ -1001,13 +1173,25 @@ active.
 
 ## 16. Exact Next Action
 
+Have the deployment owner inventory every ZinharCMS environment for an
+administrator created by the former deterministic bootstrap path; disable or
+rotate any such account, review relevant authentication/audit activity, replace
+the ignored local `.env` JWT placeholder and any deployed placeholders, and
+decide whether the five matching historical commits require history rewriting.
+Do not copy replacement values into Git, this handoff, logs, or chat. After that
+owner-side response, obtain explicit authorization before staging/committing
+Phase 1 or beginning the Phase 2 SSRF/session/RLS work.
+
+The older OKF and Phase 7 instructions below are historical and superseded by
+the Security Audit Phase 1 action above.
+
 Wait for explicit owner authorization before starting OKF Phase One. Once
 authorized, create `okf/README.md` and `okf/index.yaml`, then create
 `okf/project/overview.md`, `repository-map.md`, `glossary.md`, and
-`documentation-map.md` plus the initial reference registers. Import every
-Phase Zero UNKNOWN, NEEDS_OWNER_CONFIRMATION, and DOCUMENTATION_CODE_CONFLICT
-marker without guessing an answer. Do not modify product code, APIs,
-migrations, or existing Mermaid files as part of that start.
+`documentation-map.md` plus the initial reference registers. Import every Phase
+Zero UNKNOWN, NEEDS_OWNER_CONFIRMATION, and DOCUMENTATION_CODE_CONFLICT marker
+without guessing an answer. Do not modify product code, APIs, migrations, or
+existing Mermaid files as part of that start.
 
 The older Phase 7 instruction below is historical and superseded by the Phase 8
 action above.
@@ -1023,6 +1207,23 @@ paid products, or create a commit. Record the actual migration `0020` and API
 results in this file before planning Phase 8 adapters.
 
 ## 17. Acceptance Criteria for the Current Phase
+
+### Security Audit and Hardening Phase 1 acceptance override
+
+- [x] Entire tracked repository and relevant ignored local configuration were
+  inventoried without copying secret values.
+- [x] Required branch/state/handoff/recent-commit checks were completed and
+  existing work was preserved.
+- [x] `docs/security/PHASE_01_SECURITY_BASELINE.md` exists in English with every
+  required heading and stable findings.
+- [x] Confirmed findings distinguish severity, confidence, evidence, impact,
+  status, owner-side remediation, and deferred work.
+- [x] Only low-risk, source-supported hardening changes were applied.
+- [x] Final backend/frontend quality, test, dependency, Compose, secret-pattern,
+  and diff checks completed as recorded; unavailable/live checks are explicit.
+- [x] No claim of production readiness, penetration-test coverage, complete
+  security, or vulnerability-free status is made.
+- [x] No commit or push was created.
 
 ### OKF Phase Zero acceptance override
 
@@ -1814,3 +2015,30 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   create and push annotated tag `v3.0.0`, publish a non-prerelease GitHub
   Release using `docs/V3_MARKETPLACE_RELEASE_NOTES.md`, and verify the tag
   target plus GitHub-generated ZIP/tar source archives.
+
+### 2026-07-26 - Security Audit and Hardening Phase 1 completed
+
+- Verified the required `security/security-audit-fixes` branch at `64d780b6`
+  with a clean starting tree, then inventoried the complete repository security
+  surface and relevant Git history/local configuration without copying secret
+  values.
+- Created `docs/security/PHASE_01_SECURITY_BASELINE.md` with sixteen confirmed
+  findings, five unverified risks, applied changes, validation evidence,
+  limitations, and a Phase 2 recommendation.
+- Fixed the deterministic privileged bootstrap/public-registration path,
+  public Marketplace artifact exposure through the static upload root,
+  placeholder-secret acceptance, ordinary JWT signature comparison, raw
+  internal/readiness errors, browser non-CSPRNG fallback, production cookie
+  configuration, and development data-service host exposure.
+- Final Rust formatting, Clippy, and all-feature tests passed (124 tests).
+  Frontend lint, typecheck, tests (15 tests), and build passed. npm audits,
+  locked Rust metadata, Compose rendering, sanitized secret/source scans, and
+  `git diff --check` passed. Unavailable and live-environment checks are
+  explicitly documented.
+- No commit, push, history rewrite, deployed credential change, or live
+  environment mutation was performed.
+- **Modified/untracked files:** the Phase 1 files listed in section 10.
+- **Exact Next Action:** the deployment owner must complete the SEC-P01-001
+  account/credential/activity inventory and local/deployed placeholder
+  replacement without putting values in Git, then explicitly authorize either
+  review/stage/commit or Phase 2 SSRF/session/RLS work.

@@ -15,9 +15,9 @@ export function AuthPage() {
   const accessToken = useAppStore((state) => state.accessToken);
   const setSession = useAppStore((state) => state.setSession);
   const [mode, setMode] = useState<AuthMode>("login");
-  const [email, setEmail] = useState("admin@example.com");
-  const [name, setName] = useState("Admin User");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

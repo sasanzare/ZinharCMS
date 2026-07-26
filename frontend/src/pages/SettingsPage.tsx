@@ -32,7 +32,12 @@ function randomSecret() {
   if (window.crypto?.randomUUID) {
     return `${window.crypto.randomUUID()}${window.crypto.randomUUID()}`.replaceAll("-", "");
   }
-  return Math.random().toString(36).slice(2).padEnd(32, "0");
+  if (window.crypto?.getRandomValues) {
+    const bytes = window.crypto.getRandomValues(new Uint8Array(32));
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+  // An empty value asks the backend to generate the secret with its OS CSPRNG.
+  return "";
 }
 
 function apiMessage(caught: unknown, fallback: string) {

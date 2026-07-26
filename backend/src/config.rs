@@ -2,11 +2,13 @@ use std::env;
 
 use thiserror::Error;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Config {
     pub database_url: String,
     pub redis_url: String,
     pub jwt_secret: String,
+    pub bootstrap_admin_email: Option<String>,
+    pub bootstrap_admin_password: Option<String>,
     pub jwt_access_expiry: u64,
     pub jwt_refresh_expiry: u64,
     pub upload_dir: String,
@@ -39,21 +41,38 @@ pub enum ConfigError {
     Missing(&'static str),
     #[error("invalid value for {name}: {value}")]
     Invalid { name: &'static str, value: String },
-    #[error("JWT_SECRET must be at least 32 characters")]
+    #[error("JWT_SECRET must be at least 32 characters and must not be a placeholder")]
     WeakJwtSecret,
+    #[error("BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD must be set together")]
+    IncompleteBootstrapAdmin,
+    #[error("BOOTSTRAP_ADMIN_EMAIL must be a valid email address")]
+    InvalidBootstrapAdminEmail,
+    #[error(
+        "BOOTSTRAP_ADMIN_PASSWORD must be at least 12 characters and must not be a placeholder"
+    )]
+    WeakBootstrapAdminPassword,
 }
 
 impl Config {
     pub fn from_env() -> Result<Self, ConfigError> {
         let jwt_secret = get("JWT_SECRET", None)?;
-        if jwt_secret.len() < 32 {
+        if jwt_secret.len() < 32 || is_placeholder_secret(&jwt_secret) {
             return Err(ConfigError::WeakJwtSecret);
         }
+        let bootstrap_admin_email =
+            get_optional("BOOTSTRAP_ADMIN_EMAIL").map(|email| email.trim().to_ascii_lowercase());
+        let bootstrap_admin_password = get_optional("BOOTSTRAP_ADMIN_PASSWORD");
+        validate_bootstrap_admin(
+            bootstrap_admin_email.as_deref(),
+            bootstrap_admin_password.as_deref(),
+        )?;
 
         Ok(Self {
             database_url: get("DATABASE_URL", None)?,
             redis_url: get("REDIS_URL", Some("redis://localhost:6379"))?,
             jwt_secret,
+            bootstrap_admin_email,
+            bootstrap_admin_password,
             jwt_access_expiry: parse_u64("JWT_ACCESS_EXPIRY", 3600)?,
             jwt_refresh_expiry: parse_u64("JWT_REFRESH_EXPIRY", 604_800)?,
             upload_dir: get("UPLOAD_DIR", Some("./uploads"))?,
@@ -99,6 +118,39 @@ fn get_optional(name: &'static str) -> Option<String> {
         Ok(value) if !value.trim().is_empty() => Some(value),
         _ => None,
     }
+}
+
+fn validate_bootstrap_admin(
+    email: Option<&str>,
+    password: Option<&str>,
+) -> Result<(), ConfigError> {
+    match (email, password) {
+        (None, None) => Ok(()),
+        (Some(_), None) | (None, Some(_)) => Err(ConfigError::IncompleteBootstrapAdmin),
+        (Some(email), Some(password)) => {
+            let valid_email = email.split_once('@').is_some_and(|(local, domain)| {
+                !local.is_empty()
+                    && !domain.is_empty()
+                    && !domain.contains('@')
+                    && !email.chars().any(char::is_whitespace)
+            });
+            if !valid_email {
+                return Err(ConfigError::InvalidBootstrapAdminEmail);
+            }
+            if password.len() < 12 || is_placeholder_secret(password) {
+                return Err(ConfigError::WeakBootstrapAdminPassword);
+            }
+            Ok(())
+        }
+    }
+}
+
+fn is_placeholder_secret(value: &str) -> bool {
+    let normalized = value.trim().to_ascii_lowercase().replace(['-', ' '], "_");
+    normalized.starts_with("change_me")
+        || normalized.starts_with("changeme")
+        || normalized.starts_with("replace_me")
+        || normalized.starts_with("your_super_secret")
 }
 
 fn get(name: &'static str, default: Option<&str>) -> Result<String, ConfigError> {
@@ -154,6 +206,8 @@ impl Config {
             database_url: "postgresql://localhost/test".to_owned(),
             redis_url: "redis://localhost:6379".to_owned(),
             jwt_secret: "test-secret-with-at-least-32-characters".to_owned(),
+            bootstrap_admin_email: None,
+            bootstrap_admin_password: None,
             jwt_access_expiry: 3600,
             jwt_refresh_expiry: 604_800,
             upload_dir: "./uploads".to_owned(),
@@ -179,5 +233,53 @@ impl Config {
             organization_rate_limit_burst: 120,
             port: 8080,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ConfigError, is_placeholder_secret, validate_bootstrap_admin};
+
+    #[test]
+    fn tracked_secret_placeholders_are_rejected() {
+        assert!(is_placeholder_secret(
+            "CHANGE_ME_WITH_A_RANDOM_SECRET_OF_AT_LEAST_32_CHARACTERS"
+        ));
+        assert!(is_placeholder_secret(
+            "your-super-secret-jwt-key-min-32-chars"
+        ));
+        assert!(!is_placeholder_secret(
+            "ci-only-jwt-signing-secret-not-for-production"
+        ));
+    }
+
+    #[test]
+    fn bootstrap_admin_requires_an_explicit_safe_pair() {
+        assert!(validate_bootstrap_admin(None, None).is_ok());
+        assert!(matches!(
+            validate_bootstrap_admin(Some("owner@example.invalid"), None),
+            Err(ConfigError::IncompleteBootstrapAdmin)
+        ));
+        assert!(matches!(
+            validate_bootstrap_admin(
+                Some("owner@example.invalid"),
+                Some("CHANGE_ME_WITH_A_BOOTSTRAP_PASSWORD")
+            ),
+            Err(ConfigError::WeakBootstrapAdminPassword)
+        ));
+        assert!(matches!(
+            validate_bootstrap_admin(
+                Some("owner @example.invalid"),
+                Some("local-only-bootstrap-password")
+            ),
+            Err(ConfigError::InvalidBootstrapAdminEmail)
+        ));
+        assert!(
+            validate_bootstrap_admin(
+                Some("owner@example.invalid"),
+                Some("local-only-bootstrap-password")
+            )
+            .is_ok()
+        );
     }
 }

@@ -39,7 +39,7 @@ end
 subgraph backend_container["Backend container internals"]
     backend_binary["/app/cms-backend [IMPLEMENTED]\nDebian slim runtime, non-root cms user"]
     startup_migrations["Startup migrations [IMPLEMENTED]\ndb::run_migrations executes before serving requests; AMB-030"]
-    default_admin_seed["Default admin seed [IMPLEMENTED]\nSeeds only when users table is empty"]
+    default_admin_seed["Explicit bootstrap administrator [IMPLEMENTED]\nRequires both bootstrap environment values and an empty users table"]
     app_checks["Application checks [IMPLEMENTED]\nGET /health and GET /ready exist in Axum"]
     backend_compose_health["Backend Compose healthcheck [PARTIAL]\n/health and /ready exist but are not wired into docker-compose.prod.yml; AMB-029"]
 end

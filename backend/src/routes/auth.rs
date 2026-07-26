@@ -163,10 +163,7 @@ pub async fn register(
 
     let email = payload.email.trim().to_ascii_lowercase();
     let password_hash = password::hash_password(&payload.password)?;
-    let existing_users: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
-        .fetch_one(&state.db)
-        .await?;
-    let role = rbac::default_registration_role(existing_users);
+    let role = rbac::default_registration_role();
 
     let mut tx = state.db.begin().await?;
     let user = sqlx::query_as::<_, AuthUser>(

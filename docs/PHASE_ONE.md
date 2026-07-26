@@ -24,11 +24,16 @@ POST /api/auth/register
 Content-Type: application/json
 
 {
-  "email": "admin@example.com",
-  "password": "password123",
-  "name": "Admin User"
+  "email": "author@example.test",
+  "password": "<strong-unique-password>",
+  "name": "Author User"
 }
 ```
+
+Public registration creates a non-administrative account. On an empty database,
+configure both `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` before the
+first backend start when an initial administrator is required, then remove the
+bootstrap values after provisioning succeeds.
 
 Login:
 
@@ -37,8 +42,8 @@ POST /api/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@example.com",
-  "password": "password123"
+  "email": "<account-email>",
+  "password": "<strong-unique-password>"
 }
 ```
 

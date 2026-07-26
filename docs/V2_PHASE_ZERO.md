@@ -149,7 +149,7 @@ V1 query paths currently read and write global tables directly. Required V2 chan
 | Media variants | Generated on upload under global `/uploads/...` path | Move storage to `/uploads/{organization_id}/...`. |
 | Plugin hook `seo-auto` | Runs after entry publish | Hook context must include organization and read plugin settings in organization scope. |
 | DB migrations | Run on startup | V2 migrations must be dry-run in staging before RLS is enabled. |
-| Default admin seed | Creates only global user and role | Must also create default organization and owner membership. |
+| Configured bootstrap admin | Creates the explicitly configured global user and role | Must also create default organization and owner membership. |
 
 ## Final Tenant Routing Decision
 
@@ -240,7 +240,7 @@ slug: default
 status: active
 ```
 
-5. Create owner membership for the default admin.
+5. Create owner membership for the explicitly configured bootstrap administrator.
 
 ### Step 2: Add Organization Tables
 

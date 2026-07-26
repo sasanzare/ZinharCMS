@@ -29,9 +29,9 @@ async fn main() -> anyhow::Result<()> {
     db::run_migrations(&db)
         .await
         .context("failed to run database migrations")?;
-    seed_default_admin(&db)
+    seed_bootstrap_admin(&db, &config)
         .await
-        .context("failed to seed default admin user")?;
+        .context("failed to seed configured bootstrap admin user")?;
     let redis =
         redis::Client::open(config.redis_url.as_str()).context("failed to create Redis client")?;
     let state = AppState::new(config.clone(), db, redis);
@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn seed_default_admin(db: &sqlx::PgPool) -> anyhow::Result<()> {
+async fn seed_bootstrap_admin(db: &sqlx::PgPool, config: &Config) -> anyhow::Result<()> {
     let user_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
         .fetch_one(db)
         .await?;
@@ -88,7 +88,17 @@ async fn seed_default_admin(db: &sqlx::PgPool) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let password_hash = password::hash_password("password123")?;
+    let (Some(email), Some(bootstrap_password)) = (
+        config.bootstrap_admin_email.as_deref(),
+        config.bootstrap_admin_password.as_deref(),
+    ) else {
+        tracing::warn!(
+            "user table is empty and no bootstrap administrator is configured; public registration cannot grant administrative access"
+        );
+        return Ok(());
+    };
+
+    let password_hash = password::hash_password(bootstrap_password)?;
 
     let mut tx = db.begin().await?;
     let user_id = sqlx::query_scalar::<_, uuid::Uuid>(
@@ -98,9 +108,9 @@ async fn seed_default_admin(db: &sqlx::PgPool) -> anyhow::Result<()> {
         RETURNING id
         "#,
     )
-    .bind("admin@example.com")
+    .bind(email)
     .bind(&password_hash)
-    .bind("Admin")
+    .bind("Bootstrap Administrator")
     .fetch_one(&mut *tx)
     .await?;
 
@@ -119,7 +129,7 @@ async fn seed_default_admin(db: &sqlx::PgPool) -> anyhow::Result<()> {
 
     attach_default_organization_membership(&mut tx, user_id, rbac::SUPER_ADMIN).await?;
     tx.commit().await?;
-    tracing::info!("seeded default admin user admin@example.com");
+    tracing::info!("seeded explicitly configured bootstrap administrator");
     Ok(())
 }
 async fn attach_default_organization_membership(

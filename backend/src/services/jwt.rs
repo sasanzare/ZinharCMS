@@ -51,10 +51,7 @@ pub fn verify_access_token(token: &str, config: &Config) -> Result<Claims, AppEr
     }
 
     let signing_input = format!("{header}.{payload}");
-    let expected = sign_bytes(signing_input.as_bytes(), &config.jwt_secret)?;
-    if expected != signature {
-        return Err(AppError::Unauthorized("invalid token signature".to_owned()));
-    }
+    verify_signature(signing_input.as_bytes(), signature, &config.jwt_secret)?;
 
     let payload_bytes = URL_SAFE_NO_PAD
         .decode(payload)
@@ -100,4 +97,34 @@ fn sign_bytes(bytes: &[u8], secret: &str) -> Result<String, AppError> {
         .map_err(|error| AppError::Internal(error.to_string()))?;
     mac.update(bytes);
     Ok(URL_SAFE_NO_PAD.encode(mac.finalize().into_bytes()))
+}
+
+fn verify_signature(bytes: &[u8], signature: &str, secret: &str) -> Result<(), AppError> {
+    let signature = URL_SAFE_NO_PAD
+        .decode(signature)
+        .map_err(|_| AppError::Unauthorized("invalid token signature".to_owned()))?;
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
+        .map_err(|error| AppError::Internal(error.to_string()))?;
+    mac.update(bytes);
+    mac.verify_slice(&signature)
+        .map_err(|_| AppError::Unauthorized("invalid token signature".to_owned()))
+}
+
+#[cfg(test)]
+mod tests {
+    use uuid::Uuid;
+
+    use super::{sign_access_token, verify_access_token};
+    use crate::config::Config;
+
+    #[test]
+    fn access_token_signature_verification_rejects_tampering() {
+        let config = Config::test_with_stripe_secret("test-webhook-secret");
+        let token = sign_access_token(Uuid::now_v7(), "author", &config).unwrap();
+        assert!(verify_access_token(&token, &config).is_ok());
+
+        let mut parts = token.split('.').collect::<Vec<_>>();
+        parts[2] = "invalid-signature";
+        assert!(verify_access_token(&parts.join("."), &config).is_err());
+    }
 }

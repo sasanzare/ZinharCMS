@@ -33,6 +33,7 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        let message = self.client_message();
         let (status, error) = match self {
             Self::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "unauthorized"),
             Self::Forbidden(_) => (StatusCode::FORBIDDEN, "forbidden"),
@@ -47,10 +48,19 @@ impl IntoResponse for AppError {
 
         let body = ErrorBody {
             error: error.to_owned(),
-            message: self.to_string(),
+            message,
         };
 
         (status, Json(body)).into_response()
+    }
+}
+
+impl AppError {
+    fn client_message(&self) -> String {
+        match self {
+            Self::Internal(_) => "internal server error".to_owned(),
+            _ => self.to_string(),
+        }
     }
 }
 
@@ -63,5 +73,18 @@ impl From<sqlx::Error> for AppError {
             }
             other => Self::Internal(other.to_string()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AppError;
+
+    #[test]
+    fn internal_error_details_are_not_exposed_to_clients() {
+        let error = AppError::Internal(
+            "database connection failed for secret-bearing internal endpoint".to_owned(),
+        );
+        assert_eq!(error.client_message(), "internal server error");
     }
 }

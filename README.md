@@ -120,9 +120,13 @@ Set-Location ZinharCMS
 Copy-Item .env.example .env
 ```
 
-Review `.env` before starting services. The template is for local development;
-do not reuse development credentials or secret values in a deployed
-environment.
+Review `.env` before starting services. Replace the `JWT_SECRET` placeholder
+with a unique random value. On a new empty database, set both
+`BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` to provision the first
+administrator, then remove both values after the successful first startup.
+Public registration never grants an administrative role. The template is for
+local development; do not reuse development credentials or secret values in a
+deployed environment.
 
 Install frontend dependencies:
 
@@ -145,7 +149,8 @@ npm run dev:backend
 ```
 
 Backend startup connects to PostgreSQL and Redis, applies embedded migrations,
-and may seed development bootstrap data when the users table is empty.
+and provisions an administrator only when the user table is empty and both
+explicit bootstrap variables are configured.
 
 Start the frontend from the repository root in another terminal:
 

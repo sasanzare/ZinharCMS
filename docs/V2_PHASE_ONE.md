@@ -22,7 +22,7 @@ Phase 1 introduces the base multi-organization structure without fully enabling 
 - Scoped the `public_settings` primary key by organization.
 - Added organization indexes for future high-use queries.
 - Added triggers that synchronize `organization_id` on child tables such as entries, page versions, media variants, comments, and webhook deliveries.
-- Connected new user registration and default admin seeding to default organization membership.
+- Connected new user registration and configured bootstrap-administrator provisioning to default organization membership.
 - Updated `docs/sample-data.sql` to use the new conflict targets and organization-aware lookups.
 
 ## Prepared Tenant-Owned Tables
