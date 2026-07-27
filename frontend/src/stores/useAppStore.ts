@@ -1,17 +1,15 @@
 import { create } from "zustand";
 
-import { setApiAccessToken, setApiOrganizationId, setApiRefreshToken } from "../services/api";
+import { setApiAccessToken, setApiOrganizationId } from "../services/api";
 import type { AuthUser, OrganizationMembership } from "../types/api";
 
 const ACCESS_TOKEN_KEY = "zinhar.access_token";
-const REFRESH_TOKEN_KEY = "zinhar.refresh_token";
 const USER_KEY = "zinhar.user";
 const ORGANIZATIONS_KEY = "zinhar.organizations";
 const ACTIVE_ORGANIZATION_KEY = "zinhar.active_organization_id";
 
 type AuthSession = {
   accessToken: string;
-  refreshToken?: string | null;
   user: AuthUser;
   organizations: OrganizationMembership[];
   defaultOrganizationId?: string | null;
@@ -20,7 +18,6 @@ type AuthSession = {
 type AppStore = {
   sidebarCollapsed: boolean;
   accessToken: string | null;
-  refreshToken: string | null;
   user: AuthUser | null;
   organizations: OrganizationMembership[];
   activeOrganizationId: string | null;
@@ -69,21 +66,18 @@ setApiOrganizationId(storedActiveOrganizationId);
 export const useAppStore = create<AppStore>((set, get) => ({
   sidebarCollapsed: false,
   accessToken: window.localStorage.getItem(ACCESS_TOKEN_KEY),
-  refreshToken: window.localStorage.getItem(REFRESH_TOKEN_KEY),
   user: readStoredUser(),
   organizations: storedOrganizations,
   activeOrganizationId: storedActiveOrganizationId,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-  setSession: ({ accessToken, refreshToken, user, organizations, defaultOrganizationId }) => {
+  setSession: ({ accessToken, user, organizations, defaultOrganizationId }) => {
     const activeOrganizationId = selectActiveOrganization(organizations, defaultOrganizationId);
     setApiAccessToken(accessToken);
-    setApiRefreshToken(refreshToken ?? null);
     setApiOrganizationId(activeOrganizationId);
     window.localStorage.setItem(USER_KEY, JSON.stringify(user));
     window.localStorage.setItem(ORGANIZATIONS_KEY, JSON.stringify(organizations));
     set({
       accessToken,
-      refreshToken: refreshToken ?? null,
       user,
       organizations,
       activeOrganizationId,
@@ -106,13 +100,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
   clearSession: () => {
     setApiAccessToken(null);
-    setApiRefreshToken(null);
     setApiOrganizationId(null);
     window.localStorage.removeItem(USER_KEY);
     window.localStorage.removeItem(ORGANIZATIONS_KEY);
     set({
       accessToken: null,
-      refreshToken: null,
       user: null,
       organizations: [],
       activeOrganizationId: null,

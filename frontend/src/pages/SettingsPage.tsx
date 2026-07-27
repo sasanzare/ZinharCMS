@@ -4,7 +4,7 @@ import { PlugZap, Plus, RefreshCw, Send, Shield, Trash2, UserRound } from "lucid
 import { StatusBadge } from "../components/StatusBadge";
 import { useHealth } from "../hooks/useHealth";
 import { useI18n } from "../i18n";
-import { ApiError, api, getStoredRefreshToken } from "../services/api";
+import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import type { AuthUser, WebhookEvent, WebhookResponse } from "../types/api";
 
@@ -89,9 +89,8 @@ export function SettingsPage() {
   }, [loadMe, loadWebhooks]);
 
   async function logout() {
-    const refreshToken = getStoredRefreshToken();
     try {
-      await api.auth.logout(refreshToken);
+      await api.auth.logout();
     } catch {
       // Local logout remains valid when the refresh token is already revoked.
     }
@@ -199,7 +198,7 @@ export function SettingsPage() {
           </label>
           <label>
             Refresh token
-            <input value={getStoredRefreshToken() ? "Legacy localStorage" : "HttpOnly cookie"} readOnly />
+            <input value="HttpOnly cookie" readOnly />
           </label>
         </div>
 

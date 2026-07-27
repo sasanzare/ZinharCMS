@@ -34,7 +34,8 @@ async fn main() -> anyhow::Result<()> {
         .context("failed to seed configured bootstrap admin user")?;
     let redis =
         redis::Client::open(config.redis_url.as_str()).context("failed to create Redis client")?;
-    let state = AppState::new(config.clone(), db, redis);
+    let state =
+        AppState::new(config.clone(), db, redis).context("failed to initialize outbound HTTP")?;
 
     let cors_origin = HeaderValue::from_str(&config.cors_origin).context("invalid CORS_ORIGIN")?;
     let organization_header = HeaderName::from_static("x-organization-id");

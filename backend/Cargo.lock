@@ -315,6 +315,7 @@ dependencies = [
  "dotenvy",
  "hmac",
  "image",
+ "ipnet",
  "rand_core 0.6.4",
  "redis",
  "reqwest",

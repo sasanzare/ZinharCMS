@@ -1,6 +1,4 @@
-use std::net::IpAddr;
-use std::time::Duration;
-
+use axum::http::{HeaderMap, HeaderValue};
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use hmac::{Hmac, Mac};
@@ -10,7 +8,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::services::{jwt, rls};
+use crate::services::{jwt, outbound_http, rls};
 use crate::state::AppState;
 
 type HmacSha256 = Hmac<Sha256>;
@@ -41,56 +39,9 @@ pub fn generate_secret() -> String {
 }
 
 pub fn validate_url(value: &str) -> Result<(), AppError> {
-    let url = reqwest::Url::parse(value)
-        .map_err(|_| AppError::Validation("webhook url must be a valid URL".to_owned()))?;
-    if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
-        return Err(AppError::Validation(
-            "webhook url must use http or https with a host".to_owned(),
-        ));
-    }
-    if !url.username().is_empty() || url.password().is_some() {
-        return Err(AppError::Validation(
-            "webhook url cannot include credentials".to_owned(),
-        ));
-    }
-    let host = url.host_str().unwrap_or_default();
-    if is_forbidden_webhook_host(host) {
-        return Err(AppError::Validation(
-            "webhook url host is not allowed".to_owned(),
-        ));
-    }
-    Ok(())
-}
-
-fn is_forbidden_webhook_host(host: &str) -> bool {
-    let host = host.trim_end_matches('.').to_ascii_lowercase();
-    if matches!(
-        host.as_str(),
-        "localhost" | "ip6-localhost" | "metadata.google.internal"
-    ) || host.ends_with(".localhost")
-    {
-        return true;
-    }
-
-    match host.parse::<IpAddr>() {
-        Ok(IpAddr::V4(ip)) => {
-            ip.is_loopback()
-                || ip.is_private()
-                || ip.is_link_local()
-                || ip.is_multicast()
-                || ip.is_broadcast()
-                || ip.is_unspecified()
-                || ip.octets() == [169, 254, 169, 254]
-        }
-        Ok(IpAddr::V6(ip)) => {
-            ip.is_loopback()
-                || ip.is_multicast()
-                || ip.is_unspecified()
-                || ip.is_unique_local()
-                || ip.is_unicast_link_local()
-        }
-        Err(_) => false,
-    }
+    outbound_http::normalize_and_validate_url(value)
+        .map(|_| ())
+        .map_err(|_| AppError::Validation("webhook url is not allowed".to_owned()))
 }
 
 pub fn validate_events(events: &[String]) -> Result<(), AppError> {
@@ -185,22 +136,32 @@ pub async fn dispatch_webhook(
     let body =
         serde_json::to_string(payload).map_err(|error| AppError::Internal(error.to_string()))?;
     let signature = sign_payload(&webhook.secret, &body)?;
-    let response = reqwest::Client::new()
-        .post(&webhook.url)
-        .header("X-CMS-Event", event)
-        .header("X-CMS-Signature", signature)
-        .header("X-Organization-Id", webhook.organization_id.to_string())
-        .header("Content-Type", "application/json")
-        .body(body)
-        .timeout(Duration::from_secs(10))
-        .send()
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        "x-cms-event",
+        HeaderValue::from_str(event)
+            .map_err(|_| AppError::Internal("failed to build webhook headers".to_owned()))?,
+    );
+    headers.insert(
+        "x-cms-signature",
+        HeaderValue::from_str(&signature)
+            .map_err(|_| AppError::Internal("failed to build webhook headers".to_owned()))?,
+    );
+    headers.insert(
+        "x-organization-id",
+        HeaderValue::from_str(&webhook.organization_id.to_string())
+            .map_err(|_| AppError::Internal("failed to build webhook headers".to_owned()))?,
+    );
+    let response = state
+        .outbound_http
+        .post_json(&webhook.url, headers, body.as_bytes())
         .await;
 
     let delivery = match response {
         Ok(response) => {
-            let status_code = response.status().as_u16() as i32;
-            let delivered = response.status().is_success();
-            let response_body = response.text().await.unwrap_or_default();
+            let status_code = response.status.as_u16() as i32;
+            let delivered = response.status.is_success();
+            let response_body = String::from_utf8_lossy(&response.body);
             DeliveryAttempt {
                 organization_id: webhook.organization_id,
                 webhook_id: webhook.id,
@@ -220,7 +181,7 @@ pub async fn dispatch_webhook(
             status: "failed",
             status_code: None,
             response_body: None,
-            error: Some(truncate(&error.to_string(), 2_000)),
+            error: Some(error.to_string()),
         },
     };
 

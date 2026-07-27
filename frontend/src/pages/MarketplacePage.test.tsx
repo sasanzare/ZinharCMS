@@ -42,8 +42,6 @@ vi.mock("../services/api", () => ({
   },
   setApiAccessToken: vi.fn(),
   setApiOrganizationId: vi.fn(),
-  setApiRefreshToken: vi.fn(),
-  getStoredRefreshToken: vi.fn(),
   api: {
     baseUrl: "http://localhost:8080",
     marketplace: {

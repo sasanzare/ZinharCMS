@@ -35,12 +35,13 @@ pub async fn tenant_middleware(
     mut req: Request,
     next: Next,
 ) -> Result<Response, AppError> {
-    let claims = req
-        .extensions()
-        .get::<Claims>()
-        .cloned()
-        .map(Ok)
-        .unwrap_or_else(|| verify_claims(&state, &req))?;
+    let claims = match req.extensions().get::<Claims>().cloned() {
+        Some(claims) => claims,
+        None => {
+            let token = bearer_token(&req)?;
+            verify_claims(&state, &token).await?
+        }
+    };
     let organization_id = organization_id_from_request(&req)?;
     let tenant = load_tenant_context(&state, claims.sub, organization_id).await?;
     rate_limit::check_and_record_request(&state, &tenant).await?;
@@ -58,18 +59,21 @@ fn is_quota_exempt_path(path: &str) -> bool {
     path.starts_with("/api/billing")
 }
 
-fn verify_claims(state: &AppState, req: &Request) -> Result<Claims, AppError> {
-    let token = req
-        .headers()
+fn bearer_token(req: &Request) -> Result<String, AppError> {
+    req.headers()
         .get("Authorization")
         .and_then(|header| header.to_str().ok())
         .and_then(|value| value.strip_prefix("Bearer "))
         .or_else(|| preview_query_value(req, "access_token"))
         .or_else(|| preview_query_value(req, "token"))
-        .ok_or_else(|| AppError::Unauthorized("missing bearer token".to_owned()))?;
+        .map(str::to_owned)
+        .ok_or_else(|| AppError::Unauthorized("missing bearer token".to_owned()))
+}
 
-    jwt::verify_access_token(token, &state.config)
-        .map_err(|_| AppError::Unauthorized("invalid bearer token".to_owned()))
+async fn verify_claims(state: &AppState, token: &str) -> Result<Claims, AppError> {
+    let claims = jwt::verify_access_token(token, &state.config)
+        .map_err(|_| AppError::Unauthorized("invalid bearer token".to_owned()))?;
+    crate::services::sessions::validate_access_claims(&state.db, claims).await
 }
 
 fn organization_id_from_request(req: &Request) -> Result<Uuid, AppError> {

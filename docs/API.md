@@ -25,12 +25,19 @@ review, moderation, and catalog behavior.
 | `POST` | `/api/auth/logout` | Revoke refresh token and clear refresh cookie |
 | `GET` | `/api/auth/me` | Current authenticated user |
 
-Use the access token as `Authorization: Bearer <token>` for protected endpoints. Refresh tokens are issued as the `zinhar_refresh_token` HttpOnly cookie; legacy clients may still send `refresh_token` in the refresh/logout JSON body.
+Use the access token as `Authorization: Bearer <token>` for protected endpoints.
+Refresh tokens are issued only as the `zinhar_refresh_token` HttpOnly cookie.
+Refresh and logout consume that cookie and do not accept or return refresh
+tokens in JSON. Refresh-token rotation is one-time and family-based; detected
+reuse revokes the complete family.
 
 ## Authentication And Tenant Boundaries
 
 - Authentication-only routes require `Authorization: Bearer <token>`.
 - Tenant-aware routes additionally require `X-Organization-Id`.
+- Protected requests verify the user's current active state, global role, and
+  authentication version against PostgreSQL. Organization membership roles
+  remain separate and are verified by tenant middleware.
 - Preview WebSocket clients may send `access_token` and `organization_id` query
   parameters because browser WebSocket APIs cannot set arbitrary headers.
 - Tenant middleware requires an active organization and active membership, then
@@ -183,12 +190,17 @@ The `seo-auto` plugin runs on `entry.before_save` and fills `data.slug` from `da
 | Area | Control |
 | --- | --- |
 | Auth | Failed login attempts are limited by IP address. Default: 5 failures per 15 minutes. |
-| Auth | Refresh tokens are stored in `HttpOnly` cookies at `/api/auth`. |
+| Auth | Refresh tokens are stored as hashes and issued only in `HttpOnly` cookies at `/api/auth`; rotation is transactional and token-family reuse revokes that family. |
 | API | CORS is restricted to `CORS_ORIGIN` and supports credentialed requests. |
 | API | Responses include CSP, frame, content-type, referrer, and permissions policy headers. |
 | Content | Entry `richtext` fields are sanitized before validation and storage. |
-| Webhooks | Webhook URLs reject credentials, localhost, private IP ranges, and metadata hosts. |
+| Webhooks | Tenant destinations are DNS-validated at dispatch, pinned to approved addresses, sent without redirects or environment proxies, and use bounded timeouts and response reads. |
 | Uploads | File type is detected from content signatures and must match the declared MIME type. |
+
+Login rate-limit identity starts from the socket peer. Forwarding headers are
+used only when the immediate peer is inside `TRUSTED_PROXY_CIDRS`; the setting
+is empty by default. Header precedence is `Forwarded`, `X-Forwarded-For`, then
+`X-Real-IP`, and malformed selected headers fall back to the socket peer.
 
 ## Webhooks
 

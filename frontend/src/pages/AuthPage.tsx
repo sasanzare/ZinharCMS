@@ -33,7 +33,6 @@ export function AuthPage() {
         mode === "login" ? await api.auth.login(email, password) : await api.auth.register(email, password, name);
       setSession({
         accessToken: response.access_token,
-        refreshToken: response.refresh_token,
         user: response.user,
         organizations: response.organizations,
         defaultOrganizationId: response.default_organization_id,

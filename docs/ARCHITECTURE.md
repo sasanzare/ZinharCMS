@@ -33,9 +33,11 @@ The root Axum router exposes four distinct boundaries:
    routes.
 
 Tenant-aware requests require a valid access token and `X-Organization-Id`.
-`tenant_middleware` verifies an active organization and active membership, applies
-rate limits and API quota checks, and inserts `TenantContext`. Database helpers set
-PostgreSQL RLS session variables before tenant-owned queries.
+`tenant_middleware` verifies the current active user, global role, and
+authentication version, then verifies an active organization and active
+membership, applies rate limits and API quota checks, and inserts
+`TenantContext`. Database helpers set PostgreSQL RLS session variables before
+tenant-owned queries.
 
 ## Identity And Authorization
 
@@ -48,15 +50,25 @@ Global roles and organization membership roles are separate:
 Frontend route guards and hidden controls are user-experience controls. Backend
 middleware and handler/service role checks remain authoritative.
 
-Access tokens are signed JWTs and are not stored as database entities. Refresh
-tokens are random values stored as hashes in `refresh_tokens` and sent to browsers
-as `HttpOnly`, `SameSite=Lax` cookies scoped to `/api/auth`.
+Access tokens are signed JWTs and are not stored as database entities. They
+carry an authentication version, and protected middleware performs one indexed
+authoritative identity lookup so deactivation, sensitive identity changes, and
+global-role changes invalidate existing tokens. Global roles remain separate
+from organization membership roles.
+
+Refresh tokens are random values sent only as `HttpOnly`, `SameSite=Lax`
+cookies scoped to `/api/auth`. Only hashes are stored. Each login creates a
+token family with an absolute expiry. Rotation locks and updates the family in
+one database transaction, creates exactly one linked successor, and marks the
+predecessor rotated. Reuse of a rotated token revokes the complete family.
+Logout revokes the current family rather than every family for the user.
 
 ## Data And Tenant Isolation
 
-The final schema is migration-authoritative through migration `0026`.
+The final schema is migration-authoritative through migration `0027`.
 
-- Core identity: users, roles, user roles, refresh tokens, login attempts.
+- Core identity: users with authentication versions, roles, user roles, refresh
+  token families and hashed tokens, and login attempts.
 - Core CMS: content types, entries, pages, page versions, components, media,
   settings, navigation, comments, plugins, and webhooks.
 - Organizations: memberships, invitations, domains, rate limits, subscriptions,
@@ -68,10 +80,18 @@ The final schema is migration-authoritative through migration `0026`.
   reports, and critical-report internal notifications.
 
 Forced PostgreSQL RLS protects tenant-owned CMS, billing, operations, beta, and
-Marketplace installation tables. Global identity and Marketplace catalog/review
-entities use application authorization instead. A global `super_admin` does not
-automatically bypass tenant middleware; explicit bypass transactions are limited
-to selected platform operations such as Stripe webhook processing.
+Marketplace installation tables. The application database connection must use
+a non-superuser role without `BYPASSRLS`; tracked Compose initialization creates
+that separate role for fresh volumes. Existing initialized volumes require an
+operator-managed role migration because PostgreSQL init scripts do not rerun.
+
+Global identity and Marketplace catalog/review entities use application
+authorization instead. `organization_members` and `organization_invitations`
+also use application authorization because membership must be read before
+tenant session variables can be established. A global `super_admin` does not
+automatically bypass tenant middleware; explicit bypass transactions are
+limited to selected platform operations such as verified Stripe webhook
+processing.
 
 ## Core CMS And Page Builder
 
@@ -100,7 +120,12 @@ Filesystem and relational writes are not one atomic transaction, so partial medi
 or artifact cleanup remains an operational decision.
 
 CMS webhooks use HMAC-SHA256 signatures and transient `tokio::spawn` dispatch.
-Delivery attempts are stored, but no durable retry queue or worker exists.
+Tenant-configurable destinations pass through one reusable outbound client.
+Each delivery reparses and resolves the destination, denies non-global address
+candidates, pins the approved DNS result to the real connection, preserves the
+hostname for HTTP and TLS, disables redirects and environment proxies, applies
+connect and total timeouts, and limits the response body. Delivery attempts are
+stored, but no durable retry queue or worker exists.
 
 ## Billing And SaaS Operations
 
@@ -112,6 +137,12 @@ Audit logs and email-delivery records are persisted. Email supports `log`,
 `disabled`, and generic HTTP `webhook` modes; no specific email vendor is built in.
 SaaS alert definitions are seeded and listable, but there is no evaluator,
 scheduler, or alert destination runtime.
+
+Login rate-limit identity uses the socket peer by default.
+`TRUSTED_PROXY_CIDRS` is empty unless explicitly configured. Only a trusted
+immediate peer enables parsing of `Forwarded`, `X-Forwarded-For`, or
+`X-Real-IP`; the chain is walked from the nearest hop and only configured
+trusted proxies are removed.
 
 GA readiness is represented by documentation, static Rust tests, and
 `scripts/v2-ga-check.ps1`; it is not a runtime product service.

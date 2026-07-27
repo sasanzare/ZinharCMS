@@ -285,8 +285,6 @@ fn is_safe_public_filename(filename: &str) -> bool {
         auth::AuthModuleStatus,
         auth::RegisterRequest,
         auth::LoginRequest,
-        auth::RefreshRequest,
-        auth::LogoutRequest,
         auth::LogoutResponse,
         auth::AuthResponse,
         auth::AuthUser,

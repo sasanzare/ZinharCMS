@@ -105,8 +105,9 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 const ACCESS_TOKEN_KEY = "zinhar.access_token";
-const REFRESH_TOKEN_KEY = "zinhar.refresh_token";
 const ACTIVE_ORGANIZATION_KEY = "zinhar.active_organization_id";
+
+window.localStorage.removeItem("zinhar.refresh_token");
 
 let accessToken = window.localStorage.getItem(ACCESS_TOKEN_KEY);
 let activeOrganizationId = window.localStorage.getItem(ACTIVE_ORGANIZATION_KEY);
@@ -120,14 +121,6 @@ export function setApiAccessToken(token: string | null) {
   }
 }
 
-export function setApiRefreshToken(token: string | null) {
-  if (token) {
-    window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
-  } else {
-    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
-  }
-}
-
 export function setApiOrganizationId(organizationId: string | null) {
   activeOrganizationId = organizationId;
   if (organizationId) {
@@ -135,10 +128,6 @@ export function setApiOrganizationId(organizationId: string | null) {
   } else {
     window.localStorage.removeItem(ACTIVE_ORGANIZATION_KEY);
   }
-}
-
-export function getStoredRefreshToken() {
-  return window.localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 export class ApiError extends Error {
@@ -214,16 +203,14 @@ export const api = {
       request<AuthResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
     register: (email: string, password: string, name: string) =>
       request<AuthResponse>("/api/auth/register", { method: "POST", body: { email, password, name } }),
-    refresh: (refresh_token?: string | null) =>
+    refresh: () =>
       request<AuthResponse>("/api/auth/refresh", {
         method: "POST",
-        body: refresh_token ? { refresh_token } : undefined,
       }),
-    logout: (refresh_token?: string | null) =>
+    logout: () =>
       request<{ revoked: boolean }>("/api/auth/logout", {
         method: "POST",
         auth: true,
-        body: refresh_token ? { refresh_token } : undefined,
       }),
     me: () => request<MeResponse>("/api/auth/me", { auth: true }),
   },

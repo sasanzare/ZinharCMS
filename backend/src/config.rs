@@ -1,5 +1,6 @@
 use std::env;
 
+use ipnet::IpNet;
 use thiserror::Error;
 
 #[derive(Clone, Eq, PartialEq)]
@@ -17,6 +18,7 @@ pub struct Config {
     pub cookie_secure: bool,
     pub login_rate_limit_max_failures: i64,
     pub login_rate_limit_window_seconds: i64,
+    pub trusted_proxy_cidrs: Vec<IpNet>,
     pub stripe_secret_key: Option<String>,
     pub stripe_webhook_secret: Option<String>,
     pub stripe_success_url: String,
@@ -81,6 +83,9 @@ impl Config {
             cookie_secure: parse_bool("COOKIE_SECURE", false)?,
             login_rate_limit_max_failures: parse_i64("LOGIN_RATE_LIMIT_MAX_FAILURES", 5)?,
             login_rate_limit_window_seconds: parse_i64("LOGIN_RATE_LIMIT_WINDOW_SECONDS", 900)?,
+            trusted_proxy_cidrs: parse_trusted_proxy_cidrs(
+                &env::var("TRUSTED_PROXY_CIDRS").unwrap_or_default(),
+            )?,
             stripe_secret_key: get_optional("STRIPE_SECRET_KEY"),
             stripe_webhook_secret: get_optional("STRIPE_WEBHOOK_SECRET"),
             stripe_success_url: get(
@@ -190,6 +195,32 @@ fn parse_bool(name: &'static str, default: bool) -> Result<bool, ConfigError> {
         _ => Ok(default),
     }
 }
+
+fn parse_trusted_proxy_cidrs(value: &str) -> Result<Vec<IpNet>, ConfigError> {
+    if value.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+
+    value
+        .split(',')
+        .map(str::trim)
+        .map(|candidate| {
+            if candidate.is_empty() {
+                return Err(ConfigError::Invalid {
+                    name: "TRUSTED_PROXY_CIDRS",
+                    value: value.to_owned(),
+                });
+            }
+            candidate
+                .parse::<IpNet>()
+                .map_err(|_| ConfigError::Invalid {
+                    name: "TRUSTED_PROXY_CIDRS",
+                    value: candidate.to_owned(),
+                })
+        })
+        .collect()
+}
+
 fn parse_u16(name: &'static str, default: u16) -> Result<u16, ConfigError> {
     match env::var(name) {
         Ok(value) if !value.trim().is_empty() => value
@@ -216,6 +247,7 @@ impl Config {
             cookie_secure: false,
             login_rate_limit_max_failures: 5,
             login_rate_limit_window_seconds: 900,
+            trusted_proxy_cidrs: Vec::new(),
             stripe_secret_key: Some("sk_test_local".to_owned()),
             stripe_webhook_secret: Some(webhook_secret.to_owned()),
             stripe_success_url: "http://localhost:5173/billing?billing=success".to_owned(),
@@ -238,7 +270,9 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use super::{ConfigError, is_placeholder_secret, validate_bootstrap_admin};
+    use super::{
+        ConfigError, is_placeholder_secret, parse_trusted_proxy_cidrs, validate_bootstrap_admin,
+    };
 
     #[test]
     fn tracked_secret_placeholders_are_rejected() {
@@ -281,5 +315,20 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn trusted_proxy_configuration_rejects_invalid_cidrs() {
+        assert!(parse_trusted_proxy_cidrs("").unwrap().is_empty());
+        assert_eq!(
+            parse_trusted_proxy_cidrs("10.0.0.0/8, 2001:db8::/32")
+                .unwrap()
+                .len(),
+            2
+        );
+        assert!(matches!(
+            parse_trusted_proxy_cidrs("10.0.0.0/99"),
+            Err(ConfigError::Invalid { .. })
+        ));
     }
 }

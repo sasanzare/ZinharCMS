@@ -1,12 +1,11 @@
 use std::net::SocketAddr;
 
-use axum::body::Bytes;
 use axum::extract::{ConnectInfo, Extension, State};
 use axum::http::header::{COOKIE, SET_COOKIE};
 use axum::http::{HeaderMap, HeaderValue};
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Postgres, Transaction};
 use utoipa::ToSchema;
@@ -14,7 +13,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
-use crate::services::{jwt, password, rbac, security};
+use crate::services::{jwt, password, rbac, security, sessions};
 use crate::state::AppState;
 
 const REFRESH_COOKIE_NAME: &str = "zinhar_refresh_token";
@@ -54,16 +53,6 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct RefreshRequest {
-    pub refresh_token: String,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LogoutRequest {
-    pub refresh_token: String,
-}
-
 #[derive(Debug, Serialize, ToSchema)]
 pub struct LogoutResponse {
     pub revoked: bool,
@@ -72,7 +61,6 @@ pub struct LogoutResponse {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AuthResponse {
     pub access_token: String,
-    pub refresh_token: Option<String>,
     pub token_type: String,
     pub expires_in: u64,
     pub user: AuthUser,
@@ -112,12 +100,6 @@ struct LoginUser {
     name: String,
     avatar_url: Option<String>,
     password_hash: String,
-    role: String,
-}
-
-#[derive(Debug, FromRow)]
-struct RefreshRecord {
-    user_id: Uuid,
     role: String,
 }
 
@@ -212,7 +194,7 @@ pub async fn login(
     Json(payload): Json<LoginRequest>,
 ) -> Result<AuthResult, AppError> {
     let email = payload.email.trim().to_ascii_lowercase();
-    let ip_address = security::client_ip(&headers, addr.ip());
+    let ip_address = security::client_ip(&headers, addr.ip(), &state.config.trusted_proxy_cidrs);
     security::require_login_allowed(
         &state.db,
         &ip_address,
@@ -281,78 +263,36 @@ pub async fn login(
     post,
     path = "/api/auth/refresh",
     tag = "auth",
-    request_body = RefreshRequest,
     responses((status = 200, description = "Rotated token pair", body = AuthResponse))
 )]
-pub async fn refresh(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<AuthResult, AppError> {
-    let refresh_token = refresh_token_from_request(&headers, &body)?
-        .ok_or_else(|| AppError::Unauthorized("missing refresh token".to_owned()))?;
-    let token_hash = jwt::hash_refresh_token(&refresh_token);
-    let record = sqlx::query_as::<_, RefreshRecord>(
-        r#"
-        SELECT rt.user_id, r.name as role
-        FROM refresh_tokens rt
-        JOIN users u ON u.id = rt.user_id
-        JOIN user_roles ur ON ur.user_id = u.id
-        JOIN roles r ON r.id = ur.role_id
-        WHERE rt.token_hash = $1
-          AND rt.revoked_at IS NULL
-          AND rt.expires_at > now()
-          AND u.is_active = true
-        ORDER BY CASE r.name
-            WHEN 'super_admin' THEN 1
-            WHEN 'admin' THEN 2
-            WHEN 'editor' THEN 3
-            WHEN 'author' THEN 4
-            WHEN 'viewer' THEN 5
-            ELSE 99
-        END
-        LIMIT 1
-        "#,
-    )
-    .bind(&token_hash)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::Unauthorized("invalid refresh token".to_owned()))?;
-
-    sqlx::query("UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = $1")
-        .bind(&token_hash)
-        .execute(&state.db)
-        .await?;
-
-    let mut user = load_auth_user(&state, record.user_id).await?;
-    user.role = record.role;
-    let issued = issue_auth_response(&state, user).await?;
-    auth_response_with_cookie(&state, issued)
+pub async fn refresh(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    match refresh_session(&state, &headers).await {
+        Ok(response) => response.into_response(),
+        Err(error) => {
+            let clear_cookie = matches!(&error, AppError::Unauthorized(_));
+            let mut response = error.into_response();
+            if clear_cookie && let Ok(cookie) = clear_refresh_cookie(&state) {
+                response.headers_mut().insert(SET_COOKIE, cookie);
+            }
+            response
+        }
+    }
 }
 
 #[utoipa::path(
     post,
     path = "/api/auth/logout",
     tag = "auth",
-    request_body = LogoutRequest,
     responses((status = 200, description = "Logout result", body = LogoutResponse))
 )]
 pub async fn logout(
     State(state): State<AppState>,
     Extension(_claims): Extension<Claims>,
     headers: HeaderMap,
-    body: Bytes,
 ) -> Result<(HeaderMap, Json<LogoutResponse>), AppError> {
-    let refresh_token = refresh_token_from_request(&headers, &body)?;
+    let refresh_token = refresh_token_from_request(&headers);
     let revoked = if let Some(refresh_token) = refresh_token {
-        let token_hash = jwt::hash_refresh_token(&refresh_token);
-        let result = sqlx::query(
-            "UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL",
-        )
-        .bind(token_hash)
-        .execute(&state.db)
-        .await?;
-        result.rows_affected() > 0
+        sessions::revoke_refresh_family(&state.db, &refresh_token).await?
     } else {
         false
     };
@@ -435,38 +375,56 @@ async fn issue_auth_response(
     state: &AppState,
     user: AuthUser,
 ) -> Result<IssuedAuthResponse, AppError> {
-    let access_token = jwt::sign_access_token(user.id, &user.role, &state.config)?;
-    let refresh_token = jwt::generate_refresh_token();
-    let token_hash = jwt::hash_refresh_token(&refresh_token);
-    let expires_at = Utc::now() + Duration::seconds(state.config.jwt_refresh_expiry as i64);
+    let identity = sessions::load_current_auth_identity(&state.db, user.id)
+        .await?
+        .ok_or_else(|| AppError::Unauthorized("invalid credentials".to_owned()))?;
+    let refresh_token =
+        sessions::issue_refresh_family(&state.db, user.id, refresh_ttl_seconds(state)?).await?;
+    build_auth_response(state, user, identity, refresh_token).await
+}
 
-    sqlx::query(
-        r#"
-        INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
-        VALUES ($1, $2, $3)
-        "#,
-    )
-    .bind(user.id)
-    .bind(token_hash)
-    .bind(expires_at)
-    .execute(&state.db)
-    .await?;
-
+async fn build_auth_response(
+    state: &AppState,
+    mut user: AuthUser,
+    identity: sessions::CurrentAuthIdentity,
+    refresh_token: sessions::IssuedRefreshToken,
+) -> Result<IssuedAuthResponse, AppError> {
+    user.role = identity.role;
+    let access_token =
+        jwt::sign_access_token(user.id, &user.role, identity.auth_version, &state.config)?;
     let organizations = load_organization_memberships(state, user.id).await?;
     let default_organization_id = default_organization_id(&organizations);
 
     Ok(IssuedAuthResponse {
         body: AuthResponse {
             access_token,
-            refresh_token: None,
             token_type: "Bearer".to_owned(),
             expires_in: state.config.jwt_access_expiry,
             user,
             organizations,
             default_organization_id,
         },
-        refresh_token,
+        refresh_token: refresh_token.raw_token,
     })
+}
+
+async fn refresh_session(state: &AppState, headers: &HeaderMap) -> Result<AuthResult, AppError> {
+    let refresh_token = refresh_token_from_request(headers)
+        .ok_or_else(|| AppError::Unauthorized("invalid refresh token".to_owned()))?;
+    let rotation =
+        sessions::rotate_refresh_token(&state.db, &refresh_token, refresh_ttl_seconds(state)?)
+            .await?;
+    let sessions::RefreshRotation::Rotated { issued, identity } = rotation else {
+        return Err(AppError::Unauthorized("invalid refresh token".to_owned()));
+    };
+    let user = load_auth_user(state, identity.user_id).await?;
+    let issued = build_auth_response(state, user, identity, issued).await?;
+    auth_response_with_cookie(state, issued)
+}
+
+fn refresh_ttl_seconds(state: &AppState) -> Result<i64, AppError> {
+    i64::try_from(state.config.jwt_refresh_expiry)
+        .map_err(|_| AppError::Internal("refresh token lifetime is too large".to_owned()))
 }
 
 fn auth_response_with_cookie(
@@ -555,20 +513,8 @@ fn default_organization_id(organizations: &[OrganizationMembershipResponse]) -> 
         .map(|organization| organization.id)
 }
 
-fn refresh_token_from_request(
-    headers: &HeaderMap,
-    body: &[u8],
-) -> Result<Option<String>, AppError> {
-    if !body.is_empty() {
-        let payload: RefreshRequest = serde_json::from_slice(body)
-            .map_err(|error| AppError::BadRequest(error.to_string()))?;
-        let token = payload.refresh_token.trim();
-        if !token.is_empty() {
-            return Ok(Some(token.to_owned()));
-        }
-    }
-
-    Ok(cookie_value(headers, REFRESH_COOKIE_NAME))
+fn refresh_token_from_request(headers: &HeaderMap) -> Option<String> {
+    cookie_value(headers, REFRESH_COOKIE_NAME)
 }
 
 fn cookie_value(headers: &HeaderMap, name: &str) -> Option<String> {
@@ -616,4 +562,67 @@ fn validate_register(payload: &RegisterRequest) -> Result<(), AppError> {
         return Err(AppError::Validation("name is required".to_owned()));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::http::HeaderMap;
+    use serde_json::json;
+
+    use super::*;
+    use crate::config::Config;
+
+    #[test]
+    fn auth_json_never_contains_a_refresh_token() {
+        let response = AuthResponse {
+            access_token: "access-token".to_owned(),
+            token_type: "Bearer".to_owned(),
+            expires_in: 3600,
+            user: AuthUser {
+                id: Uuid::now_v7(),
+                email: "user@example.invalid".to_owned(),
+                name: "Test User".to_owned(),
+                avatar_url: None,
+                role: "author".to_owned(),
+            },
+            organizations: Vec::new(),
+            default_organization_id: None,
+        };
+
+        let value = serde_json::to_value(response).unwrap();
+        assert_eq!(value.get("access_token"), Some(&json!("access-token")));
+        assert!(value.get("refresh_token").is_none());
+    }
+
+    #[test]
+    fn refresh_token_is_accepted_only_from_the_http_only_cookie_contract() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            COOKIE,
+            HeaderValue::from_static("other=value; zinhar_refresh_token=cookie-token"),
+        );
+        assert_eq!(
+            refresh_token_from_request(&headers).as_deref(),
+            Some("cookie-token")
+        );
+        assert!(refresh_token_from_request(&HeaderMap::new()).is_none());
+    }
+
+    #[tokio::test]
+    async fn logout_cookie_clears_the_browser_session() {
+        let config = Config::test_with_stripe_secret("test-webhook-secret");
+        let db = crate::db::connect_lazy(&config.database_url).unwrap();
+        let redis = redis::Client::open(config.redis_url.clone()).unwrap();
+        let state = AppState::new(config, db, redis).unwrap();
+        let cookie = clear_refresh_cookie(&state)
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_owned();
+
+        assert!(cookie.contains("HttpOnly"));
+        assert!(cookie.contains("SameSite=Lax"));
+        assert!(cookie.contains("Path=/api/auth"));
+        assert!(cookie.contains("Max-Age=0"));
+    }
 }

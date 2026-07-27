@@ -10,12 +10,182 @@
 - **Repository:** ZinharCMS
 - **Current branch:** `security/security-audit-fixes`
 - **Base branch:** `main`; current branch tracks `origin/security/security-audit-fixes`
-- **Latest relevant commit:** `64d780b6 docs(release): define v3.0.0 source-only publication`
-- **Working tree:** Phase 1 security baseline and low-risk hardening changes are complete and uncommitted; the branch was clean before this audit
+- **Latest relevant commit:** `eaf90c43 fix(security): complete phase 1 audit and baseline hardening`
+- **Working tree:** Phase 2 security changes are in progress and uncommitted; the branch was clean when Phase 2 started
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
-- **Current phase:** Security Audit and Hardening Phase 1
-- **Current subphase:** Security Audit and Hardening Phase 1 is implemented, documented, and locally validated; owner-side credential response and later hardening phases remain.
-- **Overall status:** The repository-wide source audit is complete at this checkpoint. Sixteen confirmed findings and five unverified risks are recorded in `docs/security/PHASE_01_SECURITY_BASELINE.md`. Low-risk fixes close deterministic privileged bootstrap/public-registration escalation, shared upload-root exposure, placeholder-secret acceptance, JWT signature comparison, internal error disclosure, insecure browser randomness fallback, production Compose cookie configuration, and all-interface local data-service ports. Final Rust and frontend quality/test suites, dependency audits, Compose rendering, sanitized secret scans, and diff validation passed. No commit or push was created. Existing deployments and Git history are not automatically remediated.
+- **Current phase:** Security Audit and Hardening Phase 2
+- **Current subphase:** Phase 2 implementation, documentation, focused regressions, disposable PostgreSQL evidence, full validation, and cleanup verification are complete.
+- **Overall status:** Phase 2 began from clean commit `eaf90c43` on `security/security-audit-fixes`. The source changes close or substantially mitigate inherited findings `SEC-P01-002`, `SEC-P01-005`, `SEC-P01-007`, and `SEC-P01-008`. `SEC-P01-017` was reclassified after live non-superuser PostgreSQL evidence. That test exposed new High finding `SEC-P02-001`: tracked Compose used the PostgreSQL bootstrap superuser as the application role and bypassed RLS. Fresh-volume Compose initialization now creates a separate non-superuser, `NOBYPASSRLS` application role; existing volumes require owner action. The corrected live matrix passed 20 of 20 recorded cases with 32 RLS-enabled and 32 forced-RLS tables and 118 policies. Final backend/frontend/Compose/diff/language checks passed after the documented transient/test-fixture corrections. No commit or push has been created.
+
+> **Security Audit Phase 2 override (2026-07-26):** This current checkpoint
+> supersedes the Phase 1 exact-next-action text for the uncommitted working tree.
+> Phase 1 is committed at `eaf90c43`. Phase 2 now includes the pinned,
+> dispatch-time SSRF-safe webhook transport; transactional refresh-token
+> families and reuse response; authentication-version freshness; explicit
+> trusted-proxy CIDRs; cookie-only browser refresh compatibility; migration
+> `0027`; non-superuser Compose database initialization; live session, RLS, and
+> migration evidence; the English Phase 2 report; full repository validation;
+> and cleanup verification. Existing PostgreSQL volumes require owner migration to a verified
+> non-superuser, `NOBYPASSRLS` application role. Do not commit or push.
+
+### Phase 2 Current Checkpoint
+
+- **Branch:** `security/security-audit-fixes`
+- **Starting commit:** `eaf90c43 fix(security): complete phase 1 audit and baseline hardening`
+- **Objective:** close the inherited tenant-webhook SSRF, trusted-proxy,
+  access-freshness, and refresh-rotation findings; execute disposable live
+  PostgreSQL RLS and migration evidence; document limitations without expanding
+  into the deferred frontend/deployment phases.
+- **Inherited findings:** `SEC-P01-002`, `SEC-P01-005`, `SEC-P01-007`,
+  `SEC-P01-008`, and `SEC-P01-017`. Owner-side `SEC-P01-001` remains unresolved.
+- **New finding:** `SEC-P02-001` (High, Confirmed). The tracked Compose
+  application role was the PostgreSQL bootstrap superuser and bypassed forced
+  RLS. Source initialization is corrected for fresh volumes; existing
+  initialized volumes require owner migration or safe recreation.
+- **Migration created:** `backend/migrations/0027_security_phase_two_sessions.sql`.
+  It adds authentication versions and token-family state. Legacy refresh rows
+  are preserved as explicitly revoked one-token families, intentionally signing
+  out existing sessions.
+- **Files created:**
+  `backend/migrations/0027_security_phase_two_sessions.sql`,
+  `backend/src/services/outbound_http.rs`,
+  `backend/src/services/sessions.rs`,
+  `backend/tests/security_phase2_rls.rs`,
+  `backend/tests/docker-compose.phase2.yml`,
+  `docker/postgres-init-app-user.sh`,
+  `frontend/src/services/api.test.ts`, and
+  `docs/security/PHASE_02_OUTBOUND_SESSION_RLS_HARDENING.md`.
+- **Files modified:** `.env.example`, `env.example`, `backend/Cargo.toml`,
+  `backend/Cargo.lock`, `backend/src/config.rs`, `backend/src/main.rs`,
+  `backend/src/state.rs`, `backend/src/middleware/auth.rs`,
+  `backend/src/middleware/tenant.rs`, `backend/src/routes/auth.rs`,
+  `backend/src/routes/mod.rs`, `backend/src/services/jwt.rs`,
+  `backend/src/services/mod.rs`, `backend/src/services/security.rs`,
+  `backend/src/services/webhooks.rs`, `docker-compose.yml`,
+  `docker-compose.prod.yml`, `frontend/src/components/AppShell.tsx`,
+  `frontend/src/pages/AuthPage.tsx`,
+  `frontend/src/pages/MarketplacePage.test.tsx`,
+  `frontend/src/pages/PagesPage.test.tsx`,
+  `frontend/src/pages/SettingsPage.tsx`, `frontend/src/services/api.ts`,
+  `frontend/src/stores/useAppStore.ts`, `frontend/src/types/api.ts`,
+  `docs/API.md`, `docs/ARCHITECTURE.md`, and this handoff.
+- **SSRF design:** one reusable webhook client reparses and resolves on every
+  dispatch; denies any forbidden or mixed DNS result; supplies the validated
+  addresses to the real reqwest connection; preserves the hostname for HTTP/TLS;
+  disables redirects, environment proxies, and idle per-host reuse; uses
+  3-second connect and 10-second total timeouts; reads at most 64 KiB; and
+  returns generic errors. Existing signatures/events are preserved.
+- **Session-family design:** login/registration create one absolute-lifetime
+  family. Raw random tokens are issued only as HttpOnly cookies and hashes are
+  stored. Refresh locks token/family/user rows, rotates once in one transaction,
+  links the successor, and commits before cookie issuance. Reused rotated tokens
+  compromise and revoke the whole family. Logout revokes only the current
+  family and clears the cookie.
+- **Access-token design:** JWTs include `ver`. Auth and tenant middleware perform
+  one indexed current-user/global-role/version query. Database triggers bump
+  `auth_version` for active-state, password-hash, email, and global-role changes;
+  reactivation cannot revive an obsolete token. Organization roles remain
+  independent in `TenantContext`.
+- **Trusted-proxy policy:** `TRUSTED_PROXY_CIDRS` is empty by default, supports
+  IPv4/IPv6 CIDRs, and rejects malformed startup configuration. Socket peer is
+  authoritative unless it is trusted. Precedence is `Forwarded`,
+  `X-Forwarded-For`, then `X-Real-IP`; chains are walked nearest-to-original,
+  only configured proxies are removed, and malformed selected headers fall back
+  to the socket peer.
+- **RLS environment:** uniquely named Docker Compose project
+  `zinharcms-phase2-rls-019f9f34`, PostgreSQL 16 Alpine, tmpfs storage,
+  generated test-only values, and a dedicated `NOSUPERUSER NOBYPASSRLS`
+  application role. No developer volume, remote database, or real provider/user
+  data was used.
+- **RLS result:** migration 27; 34 tenant-keyed tables; 32 RLS-enabled; 32
+  forced-RLS; 118 policies; operation counts 32 INSERT, 25 DELETE, 32 SELECT,
+  and 29 UPDATE; 20 recorded matrix cases and 20 passed. The two tenant-keyed
+  non-RLS tables are the intentional membership bootstrap/control-plane tables
+  `organization_invitations` and `organization_members`.
+- **Bypass review:** 17 application call sites were inspected. Beta,
+  moderation, admin analytics, and global runtime paths require administrative
+  authority; creator analytics/finance paths perform ownership checks before
+  protected data use; Stripe verifies the provider signature before bypass;
+  catalog paths are authenticated and constrain published/current-tenant data.
+- **Findings closed:** `SEC-P01-002`, `SEC-P01-005`, `SEC-P01-007`, and
+  `SEC-P01-008`. `SEC-P01-017` is reclassified and closed for the executed
+  source/migration boundary after the corrected live matrix.
+- **Deferred:** owner response for `SEC-P01-001`; browser access-token
+  `localStorage`; preview WebSocket query tokens; OpenAPI security contracts;
+  rich-text browser corpus testing; advisory enforcement; operator email
+  webhook contract; production ingress/egress/TLS/secrets/backups/logs/runtime
+  hardening; exhaustive dynamic coverage of every handler and tenant row state.
+- **Compatibility:** migration 27 revokes legacy refresh sessions; access tokens
+  without `ver` are rejected; refresh/logout no longer accept JSON refresh
+  tokens; every protected request adds an indexed identity lookup; proxy
+  deployments must configure exact trusted CIDRs; webhook redirects and
+  responses over 64 KiB are rejected; production Compose requires separate
+  bootstrap/application credentials; existing volumes do not rerun init scripts.
+
+Validation commands and actual results:
+
+- `cargo fmt --manifest-path backend/Cargo.toml -- --check` — passed.
+- `cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings` — passed.
+- `cargo test --manifest-path backend/Cargo.toml --all-features` — passed:
+  150 backend unit tests, the conditional integration harness, and doc tests.
+  The general run had no Phase 2 database environment, so live behavior is
+  evidenced by the separately configured runs below.
+- `cargo test --manifest-path backend/Cargo.toml services::outbound_http::tests` —
+  passed 12 deterministic outbound tests.
+- `cargo test --manifest-path backend/Cargo.toml services::webhooks::tests` —
+  passed 3 tests.
+- `cargo test --manifest-path backend/Cargo.toml services::sessions::tests -- --nocapture`
+  with the disposable Phase 2 database environment — passed 3 live tests.
+- `cargo test --manifest-path backend/Cargo.toml --test security_phase2_rls -- --nocapture`
+  with the disposable Phase 2 database environment — passed 2 integration
+  tests; the RLS test printed 20 of 20 passing matrix cases and the migration
+  test completed the `0026` to `0027` upgrade path.
+- `npm --prefix frontend run lint` — passed.
+- `npm --prefix frontend run typecheck` — passed after correcting the partial
+  `Response` test-double type boundary.
+- `npm --prefix frontend test` — final run passed 5 files and 17 tests.
+- `npm --prefix frontend run build` — passed; Vite retained a non-fatal
+  large-chunk advisory.
+- `docker compose config --quiet` — passed with the existing obsolete-version
+  warning.
+- `docker compose -f docker-compose.prod.yml config --quiet` with placeholder
+  process-only required values — passed.
+- `git diff --check` — passed.
+- Phase 2 report exact-heading comparison — passed.
+- Changed source/Markdown Persian-range scan — passed with no matches.
+- Sensitive-pattern review — only the explicit placeholder connection templates
+  in `.env.example` and `env.example` matched; no real credential was identified.
+
+Failed or unavailable checks:
+
+- Expected tests-first Rust compilation and frontend compatibility regressions
+  failed before their respective implementations and passed afterward.
+- The first live RLS run exposed cross-tenant visibility because the application
+  role was a PostgreSQL superuser. It became `SEC-P02-001`; the role boundary was
+  corrected and the complete matrix passed on rerun.
+- The first final frontend run had one existing Marketplace test exceed its
+  five-second timeout. Its focused rerun passed, and the final full suite passed
+  all 17 tests.
+- The first new API test fixture failed full TypeScript validation because it
+  directly cast a partial object to `Response`; the explicit test-double
+  boundary was corrected and typecheck passed.
+- Rust dependency advisory scanning was unavailable because no pinned scanner
+  is installed. Production deployment controls and live provider requests were
+  unavailable and not authorized.
+
+Cleanup:
+
+- The temporary migration-upgrade database was dropped only after its generated
+  name was verified.
+- The Compose project was stopped with its orphan resources removed. Final
+  project-label queries returned no container, network, or volume.
+- No real webhooks, Stripe calls, emails, metadata calls, arbitrary public
+  service calls, staging access, or production access occurred.
+
+**Exact Next Action:** begin Phase 3 by writing failing frontend and backend
+regression tests for removal of `zinhar.access_token` from browser-readable
+persistent storage and replacement of preview WebSocket query tokens, while
+preserving the Phase 2 cookie-family and authoritative-access checks.
 
 > **Security Audit Phase 1 override (2026-07-26):** This completed security
 > checkpoint supersedes the older source-release and OKF exact-next-action text
@@ -79,7 +249,7 @@ package code is still never executed.
 | Path | Purpose |
 | --- | --- |
 | `backend/src/` | Rust/Axum routes, middleware, services, plugins, configuration, and application startup. |
-| `backend/migrations/` | SQLx migrations through `0026_v3_phase_thirteen_marketplace_qa_performance.sql`. |
+| `backend/migrations/` | SQLx migrations through `0027_security_phase_two_sessions.sql`. |
 | `frontend/src/` | React routes/pages, API client, state, types, translations, styles, and frontend tests. |
 | `docs/` | API, architecture, phase, V2/V3 Marketplace, operations, and localization documentation. |
 | `docs/diagrams/` | Evidence-based Mermaid architecture set, audit, traceability, and ambiguity records. |
@@ -96,6 +266,7 @@ and `frontend/dist` are not source-of-truth directories.
 
 | Document | Role | Authority / freshness |
 | --- | --- | --- |
+| `docs/security/PHASE_02_OUTBOUND_SESSION_RLS_HARDENING.md` | Phase 2 outbound request, session-family, access-freshness, trusted-proxy, live RLS, migration, compatibility, and residual-risk evidence. | Current Phase 2 source and disposable-local-test authority; deployment evidence still outranks it. |
 | `docs/security/PHASE_01_SECURITY_BASELINE.md` | Repository-wide Phase 1 attack-surface baseline, stable findings, fixes, validation, limitations, and next-phase recommendation. | Current security-audit authority for branch `security/security-audit-fixes`; live deployment evidence still outranks source assumptions. |
 | `README.md` | Current repository scope and quick-start commands through V3 Phase 15. | Current summary; source code and migrations outrank it. |
 | `docs/V3_PHASE_SIX.md` | Phase 6 acceptance, install gates, lifecycle rules, update/rollback behavior, and deferred boundaries. | Current Phase 6 authority. |

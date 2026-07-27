@@ -18,7 +18,7 @@ import { NavLink, Outlet, useLocation } from "react-router";
 
 import { useHealth } from "../hooks/useHealth";
 import { LanguageSelect, useI18n, type MessageKey } from "../i18n";
-import { api, getStoredRefreshToken } from "../services/api";
+import { api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import { StatusBadge } from "./StatusBadge";
 
@@ -53,9 +53,8 @@ export function AppShell() {
   const ready = readiness?.status === "ready" && !error;
 
   async function handleLogout() {
-    const refreshToken = getStoredRefreshToken();
     try {
-      await api.auth.logout(refreshToken);
+      await api.auth.logout();
     } catch {
       // Local logout should still complete if the token is already invalid.
     }

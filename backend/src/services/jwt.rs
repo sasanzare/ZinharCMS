@@ -21,12 +21,14 @@ struct JwtHeader {
 pub fn sign_access_token(
     user_id: uuid::Uuid,
     role: &str,
+    auth_version: i64,
     config: &Config,
 ) -> Result<String, AppError> {
     let now = Utc::now().timestamp();
     let claims = Claims {
         sub: user_id,
         role: role.to_owned(),
+        ver: auth_version,
         exp: now + config.jwt_access_expiry as i64,
         iat: now,
     };
@@ -112,19 +114,41 @@ fn verify_signature(bytes: &[u8], signature: &str, secret: &str) -> Result<(), A
 
 #[cfg(test)]
 mod tests {
+    use base64::Engine;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use serde_json::json;
     use uuid::Uuid;
 
-    use super::{sign_access_token, verify_access_token};
+    use super::{sign_access_token, sign_bytes, verify_access_token};
     use crate::config::Config;
 
     #[test]
     fn access_token_signature_verification_rejects_tampering() {
         let config = Config::test_with_stripe_secret("test-webhook-secret");
-        let token = sign_access_token(Uuid::now_v7(), "author", &config).unwrap();
+        let token = sign_access_token(Uuid::now_v7(), "author", 1, &config).unwrap();
         assert!(verify_access_token(&token, &config).is_ok());
 
         let mut parts = token.split('.').collect::<Vec<_>>();
         parts[2] = "invalid-signature";
         assert!(verify_access_token(&parts.join("."), &config).is_err());
+    }
+
+    #[test]
+    fn access_token_rejects_claims_without_authentication_version() {
+        let config = Config::test_with_stripe_secret("test-webhook-secret");
+        let header = URL_SAFE_NO_PAD.encode(br#"{"alg":"HS256","typ":"JWT"}"#);
+        let payload = URL_SAFE_NO_PAD.encode(
+            serde_json::to_vec(&json!({
+                "sub": Uuid::now_v7(),
+                "role": "author",
+                "exp": chrono::Utc::now().timestamp() + 3600,
+                "iat": chrono::Utc::now().timestamp()
+            }))
+            .unwrap(),
+        );
+        let signing_input = format!("{header}.{payload}");
+        let signature = sign_bytes(signing_input.as_bytes(), &config.jwt_secret).unwrap();
+
+        assert!(verify_access_token(&format!("{signing_input}.{signature}"), &config).is_err());
     }
 }

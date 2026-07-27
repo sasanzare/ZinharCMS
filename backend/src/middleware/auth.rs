@@ -13,6 +13,7 @@ use crate::state::AppState;
 pub struct Claims {
     pub sub: Uuid,
     pub role: String,
+    pub ver: i64,
     pub exp: i64,
     pub iat: i64,
 }
@@ -28,10 +29,14 @@ pub async fn auth_middleware(
         .and_then(|header| header.to_str().ok())
         .and_then(|value| value.strip_prefix("Bearer "))
         .or_else(|| preview_query_token(&req))
+        .map(str::to_owned)
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
     let claims =
-        jwt::verify_access_token(token, &state.config).map_err(|_| StatusCode::UNAUTHORIZED)?;
+        jwt::verify_access_token(&token, &state.config).map_err(|_| StatusCode::UNAUTHORIZED)?;
+    let claims = crate::services::sessions::validate_access_claims(&state.db, claims)
+        .await
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
     req.extensions_mut().insert(claims);
 
     Ok(next.run(req).await)

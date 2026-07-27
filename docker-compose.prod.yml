@@ -3,12 +3,16 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-cms_prod}
-      POSTGRES_USER: ${POSTGRES_USER:-cms_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?POSTGRES_SUPERUSER_PASSWORD is required}
+      APP_DB_NAME: ${POSTGRES_DB:-cms_prod}
+      APP_DB_USER: ${POSTGRES_APP_USER:-cms_user}
+      APP_DB_PASSWORD: ${POSTGRES_APP_PASSWORD:?POSTGRES_APP_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init-app-user.sh:/docker-entrypoint-initdb.d/10-app-user.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cms_user} -d ${POSTGRES_DB:-cms_prod}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_APP_USER:-cms_user} -d ${POSTGRES_DB:-cms_prod}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,6 +44,7 @@ services:
       MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-52428800}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
       RUST_LOG: ${RUST_LOG:-info}
       PORT: "8080"
     ports:
