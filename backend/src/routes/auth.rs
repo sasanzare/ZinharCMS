@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use axum::extract::{ConnectInfo, Extension, State};
-use axum::http::header::{COOKIE, SET_COOKIE};
+use axum::http::header::{COOKIE, ORIGIN, SET_COOKIE};
 use axum::http::{HeaderMap, HeaderValue};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
-use crate::services::{jwt, password, rbac, security, sessions};
+use crate::services::{jwt, password, preview_tickets, rbac, security, sessions};
 use crate::state::AppState;
 
 const REFRESH_COOKIE_NAME: &str = "zinhar_refresh_token";
@@ -26,12 +26,11 @@ pub fn public_router() -> Router<AppState> {
         .route("/api/auth/register", post(register))
         .route("/api/auth/login", post(login))
         .route("/api/auth/refresh", post(refresh))
+        .route("/api/auth/logout", post(logout))
 }
 
 pub fn protected_router() -> Router<AppState> {
-    Router::new()
-        .route("/api/auth/logout", post(logout))
-        .route("/api/auth/me", get(me))
+    Router::new().route("/api/auth/me", get(me))
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -266,6 +265,9 @@ pub async fn login(
     responses((status = 200, description = "Rotated token pair", body = AuthResponse))
 )]
 pub async fn refresh(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    if let Err(error) = validate_cookie_request_origin(&headers, &state) {
+        return error.into_response();
+    }
     match refresh_session(&state, &headers).await {
         Ok(response) => response.into_response(),
         Err(error) => {
@@ -287,9 +289,9 @@ pub async fn refresh(State(state): State<AppState>, headers: HeaderMap) -> Respo
 )]
 pub async fn logout(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
     headers: HeaderMap,
 ) -> Result<(HeaderMap, Json<LogoutResponse>), AppError> {
+    validate_cookie_request_origin(&headers, &state)?;
     let refresh_token = refresh_token_from_request(&headers);
     let revoked = if let Some(refresh_token) = refresh_token {
         sessions::revoke_refresh_family(&state.db, &refresh_token).await?
@@ -517,6 +519,29 @@ fn refresh_token_from_request(headers: &HeaderMap) -> Option<String> {
     cookie_value(headers, REFRESH_COOKIE_NAME)
 }
 
+fn validate_cookie_request_origin(headers: &HeaderMap, state: &AppState) -> Result<(), AppError> {
+    let mut origins = headers.get_all(ORIGIN).iter();
+    let Some(origin) = origins.next() else {
+        return Ok(());
+    };
+    if origins.next().is_some() {
+        return Err(AppError::Forbidden(
+            "request origin is not allowed".to_owned(),
+        ));
+    }
+    let origin = origin
+        .to_str()
+        .map_err(|_| AppError::Forbidden("request origin is not allowed".to_owned()))?;
+    let allowed = preview_tickets::canonical_origin(&state.config.cors_origin)
+        .ok_or_else(|| AppError::Internal("configured CORS origin is invalid".to_owned()))?;
+    if preview_tickets::canonical_origin(origin).as_deref() != Some(allowed.as_str()) {
+        return Err(AppError::Forbidden(
+            "request origin is not allowed".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
 fn cookie_value(headers: &HeaderMap, name: &str) -> Option<String> {
     headers
         .get(COOKIE)
@@ -606,6 +631,34 @@ mod tests {
             Some("cookie-token")
         );
         assert!(refresh_token_from_request(&HeaderMap::new()).is_none());
+    }
+
+    #[tokio::test]
+    async fn cookie_authenticated_endpoints_enforce_browser_origin() {
+        let config = Config::test_with_stripe_secret("test-webhook-secret");
+        let db = crate::db::connect_lazy(&config.database_url).unwrap();
+        let redis = redis::Client::open(config.redis_url.clone()).unwrap();
+        let state = AppState::new(config, db, redis).unwrap();
+
+        assert!(validate_cookie_request_origin(&HeaderMap::new(), &state).is_ok());
+        let mut allowed = HeaderMap::new();
+        allowed.insert(ORIGIN, HeaderValue::from_static("http://localhost:5173"));
+        assert!(validate_cookie_request_origin(&allowed, &state).is_ok());
+
+        let mut duplicate = HeaderMap::new();
+        duplicate.append(ORIGIN, HeaderValue::from_static("http://localhost:5173"));
+        duplicate.append(ORIGIN, HeaderValue::from_static("http://localhost:5173"));
+        assert!(validate_cookie_request_origin(&duplicate, &state).is_err());
+
+        for value in [
+            "null",
+            "https://evil.example.invalid",
+            "http://localhost:5173/path",
+        ] {
+            let mut rejected = HeaderMap::new();
+            rejected.insert(ORIGIN, HeaderValue::from_str(value).unwrap());
+            assert!(validate_cookie_request_origin(&rejected, &state).is_err());
+        }
     }
 
     #[tokio::test]

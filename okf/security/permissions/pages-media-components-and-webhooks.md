@@ -48,7 +48,11 @@ Read handlers often rely on active tenant membership and RLS without a dedicated
 
 ## Backend Enforcement and API
 
-`pages.rs`, `media.rs`, and `webhooks.rs` call named organization helpers. Preview also requires token and tenant context, with query-string compatibility. See the pages, media, component, and webhook endpoint families.
+`pages.rs`, `media.rs`, and `webhooks.rs` call named organization helpers.
+Preview-ticket issuance requires the preview-reader capability in current
+tenant context. The handshake consumes the bound ticket, rechecks the current
+user/version/member/permission/page, and rejects query strings. See the pages,
+media, component, and webhook endpoint families.
 
 ## Frontend Checks
 

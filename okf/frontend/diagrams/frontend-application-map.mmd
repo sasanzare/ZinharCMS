@@ -34,7 +34,7 @@ flowchart TB
 
     Backend["ZinharCMS Rust API"]
     Provider["Provider URLs returned by backend"]
-    Preview["External WebSocket preview client"]
+    Preview["One-time-ticket WebSocket preview client"]
 
     Browser --> Root
     Root --> I18n
@@ -54,5 +54,5 @@ flowchart TB
     Organizations --> Store
     Api --> Backend
     Billing --> Provider
-    Pages -.->|copies preview URL| Preview
+    Pages -.->|requests ticket and opens socket| Preview
     Preview --> Backend

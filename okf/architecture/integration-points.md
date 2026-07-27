@@ -109,7 +109,10 @@ No S3-compatible object-store adapter or CDN integration was found. Shared-volum
 
 The SPA communicates through `frontend/src/services/api.ts`. The client adds bearer and organization headers from browser-managed state and uses credentials on requests. `frontend/src/types/api.ts` manually mirrors the expected contract. There is no generated SDK or compile-time shared schema.
 
-The WebSocket preview URL carries access token and organization information in its query parameters. Operational logging and intermediary handling of those URLs must be considered in the security phase.
+The WebSocket preview URL carries no credentials or organization information.
+The client obtains a one-time ticket through authenticated HTTP and offers it
+through `Sec-WebSocket-Protocol`; operational logging must redact protocol
+headers because the offered ticket is transient credential material.
 
 ## Stripe
 

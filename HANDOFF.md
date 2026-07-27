@@ -5,17 +5,202 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-26 (Europe/London)
+- **Last updated:** 2026-07-27 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `security/security-audit-fixes`
 - **Base branch:** `main`; current branch tracks `origin/security/security-audit-fixes`
-- **Latest relevant commit:** `eaf90c43 fix(security): complete phase 1 audit and baseline hardening`
-- **Working tree:** Phase 2 security changes are in progress and uncommitted; the branch was clean when Phase 2 started
+- **Latest relevant commit:** `ff148ff9 fix(security): complete phase 2 session and RLS hardening`
+- **Working tree:** Phase 3 security changes are complete, validated, and uncommitted; the branch was clean when Phase 3 started
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
-- **Current phase:** Security Audit and Hardening Phase 2
-- **Current subphase:** Phase 2 implementation, documentation, focused regressions, disposable PostgreSQL evidence, full validation, and cleanup verification are complete.
-- **Overall status:** Phase 2 began from clean commit `eaf90c43` on `security/security-audit-fixes`. The source changes close or substantially mitigate inherited findings `SEC-P01-002`, `SEC-P01-005`, `SEC-P01-007`, and `SEC-P01-008`. `SEC-P01-017` was reclassified after live non-superuser PostgreSQL evidence. That test exposed new High finding `SEC-P02-001`: tracked Compose used the PostgreSQL bootstrap superuser as the application role and bypassed RLS. Fresh-volume Compose initialization now creates a separate non-superuser, `NOBYPASSRLS` application role; existing volumes require owner action. The corrected live matrix passed 20 of 20 recorded cases with 32 RLS-enabled and 32 forced-RLS tables and 118 policies. Final backend/frontend/Compose/diff/language checks passed after the documented transient/test-fixture corrections. No commit or push has been created.
+- **Current phase:** Security Audit and Hardening Phase 3
+- **Current subphase:** Phase 3 implementation, regression coverage, live Redis/browser verification, documentation synchronization, full validation, scans, and cleanup are complete.
+- **Overall status:** Phase 3 began from clean commit `ff148ff9` on `security/security-audit-fixes`. The uncommitted implementation removes browser access-token persistence, adds refresh-cookie bootstrap with single-tab and cross-tab coordination, retries only stable invalid-access-token responses once, validates Origin on refresh/logout, and replaces preview query credentials with Redis-backed one-time tickets carried in `Sec-WebSocket-Protocol`. Preview handshakes enforce an exact Origin allowlist, select only `zinhar.preview.v1`, atomically consume hash-only tickets, and periodically revalidate user, authentication version, membership, permission, and page access. Backend fmt/clippy/all tests, frontend lint/typecheck/all tests/build, both Compose configurations, live disposable Redis, authenticated local browser/WebSocket flows, leakage/language scans, report structure, Git whitespace, and cleanup checks passed. No commit, staging, push, history rewrite, or deployment was performed.
+
+> **Security Audit Phase 3 override (2026-07-27):** This checkpoint
+> supersedes earlier exact-next-action text for the current uncommitted tree.
+> Phase 2 is committed at `ff148ff9`. Preserve its session-family, SSRF, RLS,
+> and non-superuser database hardening. Do not commit, stage, push, reset, clean,
+> or deploy.
+
+### Phase 3 Completed Checkpoint
+
+- **Branch and starting commit:** `security/security-audit-fixes` at
+  `ff148ff9 fix(security): complete phase 2 session and RLS hardening`.
+- **Objective:** remove browser-readable authentication persistence, restore
+  sessions safely from the Phase 2 refresh cookie, coordinate refresh across
+  requests/tabs without weakening family reuse detection, and replace preview
+  URL credentials with one-time scope-bound WebSocket tickets.
+- **Inherited findings:** `SEC-P01-003` (High, Confirmed) and `SEC-P01-009`
+  (Medium, Confirmed) are closed. Phase 2 closures for `SEC-P01-006`,
+  `SEC-P01-007`, and `SEC-P01-008` are preserved.
+- **Browser model:** access tokens are volatile; legacy access/refresh storage
+  keys are deleted and ignored. `SessionBootstrap` restores authority from the
+  `HttpOnly` cookie before protected rendering and preserves the full requested
+  route. Cached identity projections are cleared on failed bootstrap/logout.
+- **Refresh design:** one promise single-flights a tab. Web Locks provide the
+  primary cross-tab critical section; BroadcastChannel carries transient
+  session/logout messages and supplies a bounded election fallback. Without
+  either safe primitive, automatic refresh fails closed. Only a stable
+  `401 access_token_invalid` response receives one refresh and one replay.
+- **Cookie/Origin boundary:** refresh and logout accept the refresh credential
+  only from the narrow `HttpOnly`, `SameSite=Lax` cookie. Browser Origin is
+  exact when present; null, malformed, duplicate, and untrusted values fail.
+  Missing Origin remains valid for non-browser clients. Logout requires no
+  bearer token and clears the cookie deterministically.
+- **Preview ticket design:** authenticated tenant
+  `POST /api/pages/{id}/preview-ticket` requires preview-reader permission.
+  Redis stores only a SHA-256-derived key plus user/organization/page/audience/
+  authentication-version/time scope, uses a 30-second default and maximum
+  60-second TTL, applies a separate issuance limit, fails closed, and consumes
+  atomically with `GETDEL`.
+- **WebSocket boundary:** `GET /api/preview/{page_id}` is outside bearer/tenant
+  middleware, rejects every query string, requires exactly one configured
+  canonical Origin plus `zinhar.preview.v1` and one ticket protocol, and
+  selects only the stable application protocol. Handshake authorization and
+  every configured 30–60-second tick reload current user/version, active
+  organization membership/role, preview permission, and page access using a
+  fresh tenant context. Denial or unavailable authoritative state closes with
+  policy code and a generic reason.
+- **Frontend preview lifecycle:** every connection/reconnect requests a new
+  ticket. URLs contain no credentials or organization IDs. Reconnect is
+  bounded and stops on logout, protocol/payload error, policy rejection, or a
+  definitive ticket API response.
+- **New findings:** `SEC-P03-001` (Medium, Confirmed) cross-tab refresh-family
+  availability race, `SEC-P03-002` (Medium, Confirmed) missing preview Origin
+  boundary, and `SEC-P03-003` (Medium, Confirmed) stale open-socket
+  authorization. All three are closed with regression evidence. No new
+  Critical or High source finding was confirmed.
+- **Files created:**
+  `backend/src/services/preview_tickets.rs`,
+  `backend/tests/docker-compose.phase3.yml`,
+  `frontend/src/components/SessionBootstrap.tsx`,
+  `frontend/src/components/RequireAuth.test.tsx`,
+  `frontend/src/services/authSession.ts`,
+  `frontend/src/services/authSession.test.ts`,
+  `frontend/src/services/previewSocket.ts`,
+  `frontend/src/services/previewSocket.test.ts`, and
+  `docs/security/PHASE_03_BROWSER_AUTH_PREVIEW_WS_HARDENING.md`.
+- **Files modified:** root environment/production Compose templates and this
+  handoff; backend configuration/error/auth/tenant/pages/router/service/RBAC
+  modules; frontend route guard/bootstrap/auth/page/API/store/types and API
+  tests; `docs/API.md`, `docs/ARCHITECTURE.md`, historical phase compatibility
+  notes, and current architecture diagrams/inventories; current OKF
+  authentication, session, preview, API, architecture, frontend, domain, risk,
+  and diagram documents. `git status` is the authoritative exact path list.
+- **No migration:** preview ticket state is ephemeral in Redis; Phase 3 creates
+  no database migration.
+- **Compatibility:** legacy persisted tokens are deleted/ignored; reload
+  requires a valid refresh cookie; body refresh tokens remain unsupported;
+  generic `401` and all `403` responses do not trigger refresh; safe automatic
+  refresh requires Web Locks or BroadcastChannel; legacy preview query/bearer
+  clients stop working; every connection/reconnect needs a fresh ticket; exact
+  frontend origins must be configured; Redis 7 `GETDEL` is required.
+- **Validation:**
+  - `cargo fmt --manifest-path backend/Cargo.toml -- --check` passed.
+  - `cargo clippy --manifest-path backend/Cargo.toml --all-targets
+    --all-features -- -D warnings` passed.
+  - `cargo test --manifest-path backend/Cargo.toml --all-features` passed:
+    159 library tests, conditional integration harnesses, and doc tests.
+  - focused access-claim error mapping, cookie-Origin, and preview fail-closed
+    revalidation tests passed.
+  - focused preview-ticket tests passed 6 tests.
+  - the same 6 preview-ticket tests passed against isolated disposable Redis
+    7, including hash-only/TTL, concurrent one-success consumption, reuse,
+    expiry, rate limiting, and unavailable-store failure.
+  - `npm --prefix frontend run lint` and `npm --prefix frontend run typecheck`
+    passed.
+  - `npm --prefix frontend test` passed 8 files and 32 tests.
+  - `npm --prefix frontend run build` passed with the existing non-fatal
+    large-chunk advisory.
+  - `docker compose config --quiet` passed with the existing obsolete-version
+    warning. Production Compose interpolation/config validation passed with a
+    temporary placeholder env file that was deleted immediately afterward.
+  - `git diff --check`, the exact Phase 3 heading/5-diagram checks, the
+    changed-file Persian scan, the active token/ticket URL/logging scan, and
+    the production-shaped secret-pattern scan passed.
+- **Browser verification:** isolated local PostgreSQL/Redis/backend/frontend
+  confirmed no protected-content flash, preserved-target login,
+  refresh-cookie reload bootstrap, an actual connected one-time-ticket preview
+  WebSocket, logout redirect, and no browser console warning/error. An initial
+  mixed `localhost`/`127.0.0.1` attempt correctly failed SameSite delivery and
+  was repeated successfully with one canonical local origin.
+- **Failed/unavailable checks:** no installed pinned dependency advisory
+  scanner; no real two-tab browser race harness; no live mid-socket database
+  authorization mutation. Unit/focused/live normal-path evidence is recorded
+  without treating these unexecuted exhaustive cases as passed.
+- **Operational actions:** disposable PostgreSQL/Redis projects used only
+  generated local data and were removed with networks/volumes. Temporary
+  validation configuration was deleted. No real provider, staging, or
+  production service was contacted.
+- **Git state:** the Phase 3 tree is uncommitted and unstaged. No commit, push,
+  reset, stash, clean, history rewrite, or deployment occurred.
+- **Exact Next Action:** begin Phase 4 with tests-first CSP/Trusted Types and
+  rich-text browser mutation-corpus hardening while preserving the Phase 2–3
+  session, Origin, and one-time preview-ticket boundaries.
+
+### Phase 3 Implementation Checkpoint (Superseded)
+
+- **Branch and starting commit:** `security/security-audit-fixes` at
+  `ff148ff9 fix(security): complete phase 2 session and RLS hardening`.
+- **Implemented browser model:** access tokens start empty and remain in module
+  memory only; both legacy browser token keys are removed. Bootstrap rotates the
+  HttpOnly refresh cookie before protected rendering. The store exposes
+  `unknown`, `refreshing`, `authenticated`, and `unauthenticated` states and
+  preserves the requested route.
+- **Refresh coordination:** one promise single-flights a tab. Web Locks provide
+  the primary cross-tab critical section; BroadcastChannel carries transient
+  session/logout events and supplies a bounded election fallback. Tokens are not
+  written to localStorage, sessionStorage, URLs, or storage events.
+- **API retry policy:** only a `401` with stable code
+  `access_token_invalid` triggers one refresh and one replay. Generic `401`,
+  every `403`, refresh itself, and second failures are not retried. Bearer
+  credentials are attached only to the configured API origin.
+- **Cookie boundary:** refresh and logout allow a missing Origin for non-browser
+  clients but reject null, malformed, duplicate, or non-configured browser
+  origins. Logout is cookie-authenticated and deterministically clears the
+  narrow `/api/auth` cookie.
+- **Preview ticket design:** `POST /api/pages/{id}/preview-ticket` requires a
+  current tenant-authenticated user and preview-reader permission. It issues a
+  random 32-byte base64url ticket with a 30-second default/max-60-second
+  lifetime. Redis stores only the SHA-256-derived key and scoped JSON record,
+  applies a per-user issuance limit, fails closed, and consumes with `GETDEL`.
+- **WebSocket handshake:** `/api/preview/{page_id}` is outside bearer/tenant
+  middleware, rejects all query parameters, requires one exact allowed Origin,
+  one `zinhar.preview.v1` protocol, and one `zinhar.ticket.<opaque>` protocol.
+  Only the stable application protocol is offered back. Consumed records are
+  audience/user/organization/page/version/time scoped and rechecked against
+  current database state.
+- **Open-connection freshness:** every configured 30–60 seconds, the connection
+  rechecks active user/authentication version, active organization membership,
+  preview permission, and page access. A failed check closes with policy code
+  and a generic reason.
+- **Frontend preview lifecycle:** each connection and reconnect requests a new
+  ticket; URLs never contain credentials or organization IDs. Reconnect uses
+  bounded exponential backoff and stops on logout, protocol/payload errors,
+  policy rejection, or definitive ticket API rejection.
+- **Focused results so far:** frontend auth/preview/page/auth-page test selection
+  passed 12 tests; `cargo test preview_tickets` passed 4 unit tests; `cargo check
+  --all-targets --all-features` passed. A Redis integration test exists but has
+  not yet run with `PHASE3_TEST_REDIS_URL`.
+- **Files created so far:**
+  `backend/src/services/preview_tickets.rs`,
+  `frontend/src/components/SessionBootstrap.tsx`,
+  `frontend/src/services/authSession.ts`,
+  `frontend/src/services/authSession.test.ts`,
+  `frontend/src/services/previewSocket.ts`, and
+  `frontend/src/services/previewSocket.test.ts`.
+- **No migration:** Phase 3 preview-ticket state is ephemeral in Redis; no
+  database schema change is required.
+- **Unverified/in progress:** expanded Redis concurrency/expiry evidence,
+  cookie/route focused tests, full frontend suite, lint/build, backend
+  fmt/clippy/all tests, both Compose configs, browser verification, scans,
+  Phase 3 report, API/architecture/security-document updates, final diff review,
+  and resource cleanup.
+- **Superseded Exact Next Action:** run formatting and focused backend tests, correct any
+  failures, then execute the conditional Redis single-use test against an
+  isolated disposable Redis 7 container before writing the Phase 3 report and
+  completing full validation.
 
 > **Security Audit Phase 2 override (2026-07-26):** This current checkpoint
 > supersedes the Phase 1 exact-next-action text for the uncommitted working tree.

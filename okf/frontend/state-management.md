@@ -38,10 +38,11 @@ uncertainty_markers:
 | Domain | Owner | Lifetime | Persistence | Main consumers | Status |
 |---|---|---|---|---|---|
 | Sidebar collapse | Zustand `useAppStore` | SPA session | None | `AppShell` | `VERIFIED` |
-| Access and refresh tokens | Zustand plus API module variables | Browser session across reloads | `localStorage` | Guard, shell logout, API request | `VERIFIED`; `SOU-01` |
+| Access token | Zustand plus API module variable | Current document only | None; volatile memory | Guard and API request | `VERIFIED`; `SOU-01` |
+| Refresh token | Backend-managed cookie | Session-family lifetime | `HttpOnly` cookie | Refresh and logout endpoints | `VERIFIED` |
 | Current user | Zustand | Browser session across reloads | JSON in `localStorage` | Shell, Beta, Marketplace | `VERIFIED` |
 | Organization memberships | Zustand | Browser session across reloads | JSON in `localStorage` | Shell, Organization, Billing, Beta, Marketplace | `VERIFIED` |
-| Active organization ID | Zustand plus API module variable | Browser session across reloads | `localStorage` | Shell, request header, Pages preview URL | `VERIFIED`; `SOU-01` |
+| Active organization ID | Zustand plus API module variable | Browser session across reloads | `localStorage` | Shell, request header, preview-ticket request | `VERIFIED`; `SOU-01` |
 | Locale and direction | `I18nProvider` context | Browser session across reloads | `localStorage` | Entire UI | `VERIFIED` |
 | Server responses | Individual pages/hooks | Route component lifetime | None | Owning page | `VERIFIED`; `SOU-02` |
 | Form and editor drafts | Individual pages | Route component lifetime | None, except saved backend records | Owning page | `VERIFIED` |
@@ -49,15 +50,28 @@ uncertainty_markers:
 
 ## Zustand Store
 
-`useAppStore.ts` defines one store. It owns `sidebarCollapsed`, `accessToken`, `refreshToken`, `user`, `organizations`, and `activeOrganizationId`, with actions to toggle the sidebar, establish/clear a session, replace organizations, and select an organization.
+`useAppStore.ts` defines one store. It owns `sidebarCollapsed`, the volatile
+`accessToken`, explicit `authStatus`, `user`, `organizations`, and
+`activeOrganizationId`, with actions to toggle the sidebar, bootstrap,
+establish/clear a session, replace organizations, and select an organization.
 
-At module load it reads browser storage, validates the saved active organization against saved memberships, and initializes the API module's organization variable. Session and organization actions call imperative API setters before updating Zustand.
+At module load it reads only non-secret cached identity/organization state,
+validates the saved active organization against saved memberships, initializes
+the API module's organization variable, and starts authentication as `unknown`.
+`SessionBootstrap` restores authority from the `HttpOnly` refresh cookie before
+protected rendering.
 
 ## Persistence Keys
 
-The implementation uses separate `localStorage` entries for access token, refresh token, user, organizations, active organization ID, and locale. The key names are implementation details and should not be treated as a stable external contract without a compatibility decision.
+The implementation uses separate `localStorage` entries only for non-secret
+user projection, organizations, active organization ID, and locale. Legacy
+access/refresh token keys are deleted on startup and are never authentication
+inputs.
 
-Invalid JSON for user or organizations is removed and replaced with a fallback. Token strings and active organization are read directly. There is no schema version, migration, expiry metadata, encryption layer, or session-storage alternative.
+Invalid JSON for user or organizations is removed and replaced with a fallback.
+There is no schema version or migration for the non-secret cached projections.
+The access token and its lifetime are volatile; the refresh credential is not
+available to JavaScript.
 
 ## State Synchronization
 
@@ -65,7 +79,7 @@ Invalid JSON for user or organizations is removed and replaced with a fallback. 
 
 1. `AuthPage` receives an auth response.
 2. `setSession` selects an active organization.
-3. API setters update module variables and token/organization storage.
+3. API setters update the volatile token and organization state.
 4. The store writes user and organizations and updates Zustand state.
 5. Protected routing reacts to the access token.
 
@@ -80,13 +94,20 @@ Invalid JSON for user or organizations is removed and replaced with a fallback. 
 
 ### Logout
 
-The shell attempts backend logout with the stored refresh token and clears local state even if the request fails. API setters remove token and organization storage; the store removes user and organization JSON and clears Zustand state. The route guard then redirects.
+The shell calls the cookie-authenticated backend logout endpoint and clears
+volatile access state and cached identity even if the request fails. A transient
+BroadcastChannel logout event clears listening tabs and stops preview
+reconnects. The route guard then redirects after state becomes unauthenticated.
 
 ## Ownership Ambiguities
 
 ### SOU-01: Session and Organization State
 
-Zustand is the reactive owner, the API module holds transport-facing copies, and `localStorage` is the reload source. Correctness depends on all changes using the provided imperative setters. Browser storage mutations from another tab have no verified listener, and no single typed persistence adapter owns migration or validation.
+Zustand is the reactive owner, the API module holds the transport-facing
+volatile access token, and the refresh cookie is the authoritative reload
+source. Correctness depends on all session changes using the coordinator and
+store actions. Web Locks and BroadcastChannel coordinate refresh/logout without
+using storage events or persisting credentials.
 
 ### SOU-02: Server State
 
@@ -97,14 +118,16 @@ Pages own server data independently with `useState`, `useEffect`, and callback l
 - `useHealth` suppresses state updates after unmount but does not abort fetches.
 - Page loaders generally use loading flags but no shared request identity or cancellation policy.
 - Organization switching remounts the active page to reduce stale tenant state, but background work initiated outside the remounted subtree can still finish independently.
-- No multi-tab synchronization, optimistic-update framework, offline queue, or cache reconciliation was found.
+- Authentication refresh/logout has bounded cross-tab coordination. Other
+  client state has no general multi-tab reconciliation.
 - Page Builder autosave uses a 10-second timeout for existing dirty pages and can overlap conceptual user actions; it uses a `saving` flag but has no explicit revision/conflict token in the UI.
 
 ## State Rules for Changes
 
 - Use store actions for session and organization changes so transport and persistence copies remain synchronized.
 - Treat all page-local API data as disposable on organization change.
-- Do not add another token or organization owner without documenting synchronization and failure semantics.
+- Do not persist authentication tokens or add another token/organization owner
+  without documenting synchronization and failure semantics.
 - When introducing shared server state, define tenant-keying, invalidation, cancellation, and logout clearing before moving data.
 - Keep localization separate unless a deliberate state-composition decision changes the current provider boundary.
 

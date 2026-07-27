@@ -84,36 +84,31 @@ rect rgb(238, 255, 242)
 end
 
 rect rgb(250, 248, 255)
-    Note over Client,DB: Refresh-token rotation [IMPLEMENTED, NON-ATOMIC]
+    Note over Client,DB: Refresh-family rotation [IMPLEMENTED, TRANSACTIONAL]
     Client->>Auth: POST /api/auth/refresh with credentialed refresh cookie
+    Auth->>Auth: Validate Origin when present
     Auth->>Security: Hash presented refresh token
-    Auth->>DB: Find unrevoked, unexpired token for active user
+    Auth->>DB: Lock token, family, and active user
     alt Token missing, expired, revoked, or replayed
-        Auth-->>Client: 401 invalid refresh token
+        Auth->>DB: Compromise/revoke family when rotated token is reused
+        Auth-->>Client: 401 generic invalid refresh response
     else Valid refresh record
-        Auth->>DB: UPDATE old token revoked_at = now()
         Auth->>Security: Sign new access JWT and generate new refresh token
-        Auth->>DB: INSERT new hashed refresh token
-        alt New token insertion succeeds
-            Auth-->>Client: New access token and replacement refresh cookie
-        else New token insertion fails after revocation
-            Note over Auth,DB: No transaction or replacement linkage restores the old token [DECISION REQUIRED]
-            Auth-->>Client: Mapped database error
-        end
+        Auth->>DB: Revoke old token, insert/link successor, commit transaction
+        Auth-->>Client: New access token and replacement refresh cookie
     end
 end
 
 rect rgb(255, 248, 238)
     Note over Client,DB: Logout [IMPLEMENTED]
-    Client->>AuthMW: POST /api/auth/logout with Bearer access token and optional refresh cookie/body
-    AuthMW->>Security: Verify access JWT
-    AuthMW->>Auth: Add Claims and continue
-    opt Refresh token is supplied
+    Client->>Auth: POST /api/auth/logout with credentialed refresh cookie
+    Auth->>Auth: Validate Origin when present
+    opt Refresh cookie is supplied
         Auth->>Security: Hash refresh token
-        Auth->>DB: Revoke matching unrevoked refresh_tokens row
+        Auth->>DB: Revoke matching refresh family
     end
     Auth-->>Client: Clear refresh cookie with Max-Age=0
-    Note over Client,Auth: Access JWT is not persisted or server-revoked; the client discards it [IMPLEMENTED LIMITATION]
+    Note over Client,Auth: Frontend clears volatile access state and broadcasts logout
 end
 
 rect rgb(255, 252, 238)

@@ -35,7 +35,7 @@ related_diagrams:
 | Public to protected router | Unauthenticated request | Verified access-token claims | `middleware/auth.rs` |
 | Protected to tenant router | Claimed organization ID | Active organization membership and `TenantContext` | `middleware/tenant.rs` |
 | Application to PostgreSQL | Handler/service parameters | Tenant-aware SQL session or explicit bypass transaction | `services/rls.rs`, migrations |
-| Application to Redis | Organization/user identifiers and counters | Rate-limit/cache operations | `services/rate_limit.rs`, `services/cache.rs` |
+| Application to Redis | Organization/user identifiers, counters, and hashed preview-ticket keys | Rate-limit/cache and atomic one-time ticket operations | `services/rate_limit.rs`, `services/cache.rs`, `services/preview_tickets.rs` |
 | API to filesystem | Multipart/package bytes and paths | Validated upload/package paths | media and Marketplace services |
 | Application to providers | Billing, email, or webhook requests | Provider-specific validation/signature rules | Stripe, email, webhook services |
 | Marketplace package to host API | Declared operation and payload | Approved permission, safe entry point, runtime state, kill switches | `services/marketplace_runtime.rs` |
@@ -46,7 +46,14 @@ System probes, OpenAPI, public authentication, delivery endpoints, Stripe webhoo
 
 ## Identity and Tenant Boundaries
 
-The access-token claim carries a global role. Organization identity is separately supplied by `X-Organization-Id`; preview clients may use query parameters for both token and organization. Tenant middleware ignores a client-supplied organization role and loads the active membership role from PostgreSQL.
+The access-token claim carries a global role and authentication version.
+Organization identity is separately supplied by `X-Organization-Id`; tenant
+middleware ignores a client-supplied organization role and loads the active
+membership role from PostgreSQL. Preview clients cannot use query credentials.
+They obtain a page-scoped Redis ticket through the tenant boundary and present
+it with the stable WebSocket protocol. The public handshake independently
+validates Origin, atomic consumption, ticket scope, current user/version,
+membership, permission, and page access.
 
 ## Persistence Boundary
 

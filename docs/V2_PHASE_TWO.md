@@ -73,13 +73,19 @@ Global auth and system/plugin routes remain protected by authentication without 
 
 ## Preview WebSocket
 
-Browsers cannot attach custom headers to a native WebSocket request. For the preview endpoint only, the tenant middleware also accepts:
+Browsers cannot attach custom headers to a native WebSocket request. The
+historical query-token compatibility described by the original V2 phase is no
+longer supported.
 
 ```text
-/api/preview/{page_id}?access_token=<token>&organization_id=<organization-uuid>
+POST /api/pages/{page_id}/preview-ticket
+GET /api/preview/{page_id}
+Sec-WebSocket-Protocol: zinhar.preview.v1, zinhar.ticket.<opaque-ticket>
 ```
 
-Regular HTTP admin requests should continue to use the `Authorization` and `X-Organization-Id` headers.
+The ticket endpoint uses the regular `Authorization` and `X-Organization-Id`
+headers. The WebSocket handshake has no query string, requires an exact allowed
+Origin, and consumes the ticket once.
 
 ## Delivery Compatibility
 

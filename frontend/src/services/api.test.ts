@@ -24,19 +24,39 @@ function successfulResponse(payload: unknown) {
   };
 }
 
-describe("auth refresh cookie contract", () => {
+function failedResponse(status: number, error: string) {
+  return {
+    ok: false,
+    status,
+    statusText: status === 401 ? "Unauthorized" : "Forbidden",
+    json: vi.fn().mockResolvedValue({ error, message: error }),
+  };
+}
+
+describe("browser authentication contract", () => {
   beforeEach(() => {
     vi.resetModules();
     window.localStorage.clear();
     vi.stubGlobal("fetch", vi.fn());
   });
 
-  it("removes the legacy browser-readable refresh token", async () => {
+  it("removes legacy browser-readable access and refresh tokens", async () => {
+    window.localStorage.setItem("zinhar.access_token", "legacy-access-token");
     window.localStorage.setItem("zinhar.refresh_token", "legacy-refresh-token");
 
     await import("./api");
 
+    expect(window.localStorage.getItem("zinhar.access_token")).toBeNull();
     expect(window.localStorage.getItem("zinhar.refresh_token")).toBeNull();
+  });
+
+  it("keeps the access token in memory only", async () => {
+    const { setApiAccessToken } = await import("./api");
+
+    setApiAccessToken("memory-only-access-token");
+
+    expect(window.localStorage.getItem("zinhar.access_token")).toBeNull();
+    expect(window.sessionStorage.getItem("zinhar.access_token")).toBeNull();
   });
 
   it("never sends a refresh token in refresh or logout request bodies", async () => {
@@ -59,5 +79,54 @@ describe("auth refresh cookie contract", () => {
     expect(fetchMock.mock.calls[1]?.[1]?.body).toBeUndefined();
     expect(fetchMock.mock.calls[0]?.[1]?.credentials).toBe("include");
     expect(fetchMock.mock.calls[1]?.[1]?.credentials).toBe("include");
+  });
+
+  it("single-flights concurrent refreshes and retries each request only once", async () => {
+    const fetchMock = vi.mocked(fetch);
+    let refreshCount = 0;
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/api/auth/refresh")) {
+        refreshCount += 1;
+        return successfulResponse(authResponse) as unknown as Response;
+      }
+      const authorization = new Headers(init?.headers).get("Authorization");
+      if (authorization === "Bearer access-token") {
+        return successfulResponse({ user: authResponse.user, organizations: [] }) as unknown as Response;
+      }
+      return failedResponse(401, "access_token_invalid") as unknown as Response;
+    });
+    const { api, setApiAccessToken } = await import("./api");
+    setApiAccessToken("expired-access-token");
+
+    await Promise.all([api.auth.me(), api.auth.me()]);
+
+    expect(refreshCount).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+  });
+
+  it("does not refresh for authorization failures or generic unauthorized responses", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock
+      .mockResolvedValueOnce(failedResponse(403, "forbidden") as unknown as Response)
+      .mockResolvedValueOnce(failedResponse(401, "unauthorized") as unknown as Response);
+    const { api, setApiAccessToken } = await import("./api");
+    setApiAccessToken("access-token");
+
+    await expect(api.auth.me()).rejects.toMatchObject({ status: 403 });
+    await expect(api.auth.me()).rejects.toMatchObject({ status: 401 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("never attaches Authorization to an absolute untrusted origin", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(successfulResponse({ ok: true }) as unknown as Response);
+    const { requestForTest, setApiAccessToken } = await import("./api");
+    setApiAccessToken("access-token");
+
+    await requestForTest("https://untrusted.example.invalid/resource", { auth: true });
+
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).has("Authorization")).toBe(false);
   });
 });

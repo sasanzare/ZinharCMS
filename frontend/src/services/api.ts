@@ -84,6 +84,7 @@ import type {
   PageListResponse,
   PageResponse,
   PageVersionResponse,
+  PreviewTicketResponse,
   TemplateImportRequest,
   TemplatePreviewResponse,
   PlanResponse,
@@ -102,23 +103,26 @@ import type {
   WebhookRequest,
   WebhookDeliveryResponse,
 } from "../types/api";
+import {
+  clearBrowserSession,
+  coordinatedRefresh,
+  subscribeBrowserSession,
+} from "./authSession";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 const ACCESS_TOKEN_KEY = "zinhar.access_token";
 const ACTIVE_ORGANIZATION_KEY = "zinhar.active_organization_id";
 
+window.localStorage.removeItem(ACCESS_TOKEN_KEY);
 window.localStorage.removeItem("zinhar.refresh_token");
 
-let accessToken = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+let accessToken: string | null = null;
 let activeOrganizationId = window.localStorage.getItem(ACTIVE_ORGANIZATION_KEY);
 
 export function setApiAccessToken(token: string | null) {
   accessToken = token;
-  if (token) {
-    window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
-  } else {
-    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-  }
+  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
 }
 
 export function setApiOrganizationId(organizationId: string | null) {
@@ -132,10 +136,12 @@ export function setApiOrganizationId(organizationId: string | null) {
 
 export class ApiError extends Error {
   status: number;
+  code: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code = "request_failed") {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -143,11 +149,14 @@ type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   formData?: FormData;
   auth?: boolean;
+  retryAuth?: boolean;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
   const needsAuth = options.auth ?? false;
+  const requestUrl = new URL(path, `${API_BASE_URL.replace(/\/$/, "")}/`);
+  const trustedApiOrigin = requestUrl.origin === new URL(API_BASE_URL).origin;
 
   if (options.formData) {
     // Let the browser set multipart boundaries.
@@ -155,33 +164,61 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.set("Content-Type", "application/json");
   }
 
-  if (needsAuth && accessToken) {
+  if (needsAuth && trustedApiOrigin && accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
     if (activeOrganizationId) {
       headers.set("X-Organization-Id", activeOrganizationId);
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(requestUrl.toString(), {
     ...options,
-    credentials: "include",
+    credentials: trustedApiOrigin ? "include" : "omit",
     headers,
     body: options.formData ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
   });
 
   if (!response.ok) {
     let message = `${response.status} ${response.statusText}`;
+    let code = "request_failed";
     try {
       const payload = (await response.json()) as { message?: string; error?: string };
       message = payload.message ?? payload.error ?? message;
+      code = payload.error ?? code;
     } catch {
       // Preserve the status text when the backend returns an empty body.
     }
-    throw new ApiError(response.status, message);
+    if (
+      needsAuth &&
+      trustedApiOrigin &&
+      options.retryAuth !== false &&
+      response.status === 401 &&
+      code === "access_token_invalid" &&
+      path !== "/api/auth/refresh"
+    ) {
+      await refreshBrowserSession();
+      return request<T>(path, { ...options, retryAuth: false });
+    }
+    throw new ApiError(response.status, message, code);
   }
 
   return response.json() as Promise<T>;
 }
+
+async function refreshBrowserSession() {
+  return coordinatedRefresh(() =>
+    request<AuthResponse>("/api/auth/refresh", {
+      method: "POST",
+      retryAuth: false,
+    }),
+  );
+}
+
+subscribeBrowserSession((event) => {
+  setApiAccessToken(event.type === "session" ? event.session.access_token : null);
+});
+
+export const requestForTest = request;
 
 function query(params: Record<string, string | number | boolean | undefined>) {
   const search = new URLSearchParams();
@@ -203,15 +240,17 @@ export const api = {
       request<AuthResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
     register: (email: string, password: string, name: string) =>
       request<AuthResponse>("/api/auth/register", { method: "POST", body: { email, password, name } }),
-    refresh: () =>
-      request<AuthResponse>("/api/auth/refresh", {
-        method: "POST",
-      }),
-    logout: () =>
-      request<{ revoked: boolean }>("/api/auth/logout", {
-        method: "POST",
-        auth: true,
-      }),
+    refresh: refreshBrowserSession,
+    logout: async () => {
+      try {
+        return await request<{ revoked: boolean }>("/api/auth/logout", {
+          method: "POST",
+          retryAuth: false,
+        });
+      } finally {
+        clearBrowserSession();
+      }
+    },
     me: () => request<MeResponse>("/api/auth/me", { auth: true }),
   },
   billing: {
@@ -523,6 +562,11 @@ changePlan: (payload: ChangePlanRequest) =>
     versions: (id: string) => request<PageVersionResponse[]>(`/api/pages/${id}/versions`, { auth: true }),
     restore: (id: string, version: number) =>
       request<PageResponse>(`/api/pages/${id}/versions/${version}/restore`, { method: "POST", auth: true }),
+    previewTicket: (id: string) =>
+      request<PreviewTicketResponse>(`/api/pages/${id}/preview-ticket`, {
+        method: "POST",
+        auth: true,
+      }),
   },
 
   components: {

@@ -30,7 +30,8 @@ subgraph public_auth["Public authentication routes - auth::public_router"]
     auth_status["GET /api/auth [IMPLEMENTED]\nAuth module status"]
     auth_register["POST /api/auth/register [IMPLEMENTED]\nCreate account"]
     auth_login["POST /api/auth/login [IMPLEMENTED]\nPassword login and refresh cookie issue"]
-    auth_refresh["POST /api/auth/refresh [IMPLEMENTED]\nRefresh token rotation from cookie/body"]
+    auth_refresh["POST /api/auth/refresh [IMPLEMENTED]\nRefresh-family rotation from HttpOnly cookie"]
+    auth_logout["POST /api/auth/logout [IMPLEMENTED]\nCookie family revocation and deterministic clearing"]
 end
 
 subgraph public_billing["Public billing integration route - billing::public_router"]
@@ -51,8 +52,8 @@ subgraph public_delivery["Public Delivery API routes - delivery::router"]
 end
 
 subgraph auth_only_stack["Authentication-protected routes - route_layer auth_middleware, no tenant_middleware"]
-    auth_only_boundary["Boundary [IMPLEMENTED]\nRequires Authorization bearer token or preview query token where route supports it"]
-    auth_me_logout["/api/auth/me, /api/auth/logout [IMPLEMENTED]\nCurrent user and logout"]
+    auth_only_boundary["Boundary [IMPLEMENTED]\nRequires Authorization bearer token"]
+    auth_me["GET /api/auth/me [IMPLEMENTED]\nCurrent user"]
     beta_product["/api/beta/product-dashboard [IMPLEMENTED]\nGlobal product beta dashboard"]
     beta_participant["/api/beta/participants/{organization_id} [IMPLEMENTED]\nProduct-level participant update"]
     org_workspace["/api/organizations [IMPLEMENTED]\nList and create organizations"]
@@ -61,7 +62,7 @@ subgraph auth_only_stack["Authentication-protected routes - route_layer auth_mid
 end
 
 subgraph tenant_stack["Tenant-protected routes - DefaultBodyLimit plus tenant_middleware"]
-    tenant_boundary["Boundary [IMPLEMENTED]\nRequires bearer token plus X-Organization-Id; preview can pass token and organization_id query values"]
+    tenant_boundary["Boundary [IMPLEMENTED]\nRequires bearer token plus X-Organization-Id"]
     content_boundary["Content types and entries [IMPLEMENTED]\n/api/content-types, /api/content-types/{id}, /api/entries/{type_slug}, /api/entries/{type_slug}/{id}, submit-review, publish, reject, archive, restore, unpublish"]
     beta_tenant["Tenant beta routes [IMPLEMENTED]\n/api/beta/dashboard, feedback, ga-blockers"]
     billing_tenant["Tenant billing routes [IMPLEMENTED]\n/api/billing/plans, subscription, checkout, portal, usage, usage/rebuild"]
@@ -72,9 +73,14 @@ subgraph tenant_stack["Tenant-protected routes - DefaultBodyLimit plus tenant_mi
     marketplace_review["Marketplace review/moderation routes [IMPLEMENTED]\n/api/marketplace/review/queue, events, reports, submissions/{submission_id}, listings/{listing_id}/moderation"]
     org_tenant["Tenant organization routes [IMPLEMENTED]\n/api/organizations/current, members, invitations, workspace, domains, rate-limit, audit-logs, email-deliveries, alerts, leave, transfer-ownership"]
     page_tenant["Page and builder routes [IMPLEMENTED]\n/api/pages, /api/pages/slug/{slug}, /api/pages/{id}, versions, component-registry"]
-    preview_tenant["GET /api/preview/{page_id} [IMPLEMENTED]\nWebSocket live preview inside tenant-protected pages router"]
+    preview_ticket["POST /api/pages/{id}/preview-ticket [IMPLEMENTED]\nTenant-protected one-time ticket issuance"]
     comment_tenant["Comment routes [IMPLEMENTED]\n/api/comments, /api/comments/{id}, /api/comments/{id}/resolve"]
     webhook_tenant["Webhook management routes [IMPLEMENTED]\n/api/webhooks, /api/webhooks/{id}, deliveries, test"]
+end
+
+subgraph preview_handshake["Special preview WebSocket route"]
+    preview_boundary["Boundary [IMPLEMENTED]\nExact Origin, no query, stable plus ticket subprotocol"]
+    preview_socket["GET /api/preview/{page_id} [IMPLEMENTED]\nAtomic ticket consume and current authorization"]
 end
 
 root_router --> public_system_boundary
@@ -94,6 +100,7 @@ public_auth_boundary --> auth_status
 public_auth_boundary --> auth_register
 public_auth_boundary --> auth_login
 public_auth_boundary --> auth_refresh
+public_auth_boundary --> auth_logout
 public_billing_boundary --> stripe_webhook
 
 public_delivery_boundary --> delivery_entries
@@ -105,7 +112,7 @@ public_delivery_boundary --> delivery_navigation
 public_delivery_boundary --> delivery_sitemap
 public_delivery_boundary --> delivery_robots
 
-auth_only_boundary --> auth_me_logout
+auth_only_boundary --> auth_me
 auth_only_boundary --> beta_product
 auth_only_boundary --> beta_participant
 auth_only_boundary --> org_workspace
@@ -122,15 +129,17 @@ tenant_boundary --> marketplace_creator
 tenant_boundary --> marketplace_review
 tenant_boundary --> org_tenant
 tenant_boundary --> page_tenant
-tenant_boundary --> preview_tenant
+tenant_boundary --> preview_ticket
 tenant_boundary --> comment_tenant
 tenant_boundary --> webhook_tenant
+root_router --> preview_boundary
+preview_boundary --> preview_socket
 
 classDef implemented fill:#e8f5ee,stroke:#17745b,stroke-width:2px,color:#111
 classDef partial fill:#fff8e8,stroke:#9a6500,stroke-width:2px,stroke-dasharray: 6 3,color:#111
 classDef backend fill:#f7f7ff,stroke:#4b4b8f,stroke-width:2px,color:#111
 classDef conflict fill:#ffecec,stroke:#b3261e,stroke-width:3px,stroke-dasharray: 8 3,color:#111
 
-class root_router,public_system_boundary,route_root,route_health,route_ready,route_openapi,public_auth_boundary,auth_status,auth_register,auth_login,auth_refresh,public_billing_boundary,stripe_webhook,public_delivery_boundary,delivery_entries,delivery_entry,delivery_pages,delivery_page,delivery_settings,delivery_navigation,delivery_sitemap,delivery_robots,auth_only_boundary,auth_me_logout,beta_product,beta_participant,org_workspace,org_invite_accept,plugin_admin,tenant_boundary,content_boundary,beta_tenant,billing_tenant,media_tenant,marketplace_installations,marketplace_creator,marketplace_review,org_tenant,page_tenant,preview_tenant,comment_tenant,webhook_tenant implemented
+class root_router,public_system_boundary,route_root,route_health,route_ready,route_openapi,public_auth_boundary,auth_status,auth_register,auth_login,auth_refresh,auth_logout,public_billing_boundary,stripe_webhook,public_delivery_boundary,delivery_entries,delivery_entry,delivery_pages,delivery_page,delivery_settings,delivery_navigation,delivery_sitemap,delivery_robots,auth_only_boundary,auth_me,beta_product,beta_participant,org_workspace,org_invite_accept,plugin_admin,tenant_boundary,content_boundary,beta_tenant,billing_tenant,media_tenant,marketplace_installations,marketplace_creator,marketplace_review,org_tenant,page_tenant,preview_ticket,comment_tenant,webhook_tenant,preview_boundary,preview_socket implemented
 class route_uploads partial
 class marketplace_tenant conflict

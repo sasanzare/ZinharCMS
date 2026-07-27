@@ -57,7 +57,10 @@ uncertainty_markers:
 
 ## Responsibility
 
-Provides login and registration UI, stores the returned browser session, admits token-bearing users to the protected shell, restores persisted client state, and clears session state on logout.
+Provides login and registration UI, keeps the access token in volatile memory,
+restores authority through the `HttpOnly` refresh cookie, admits authenticated
+bootstrap state to the protected shell, and clears/broadcasts session state on
+logout.
 
 It does not own authoritative credential verification, token validity, tenant membership, or permission enforcement. Those are backend responsibilities.
 
@@ -66,7 +69,8 @@ It does not own authoritative credential verification, token validity, tenant me
 - Primary UI: `frontend/src/pages/AuthPage.tsx`.
 - Client route admission: `frontend/src/components/RequireAuth.tsx`.
 - Session actions and reactive state: `frontend/src/stores/useAppStore.ts`.
-- Token persistence and auth requests: `frontend/src/services/api.ts`.
+- In-memory token transport and auth requests: `frontend/src/services/api.ts`.
+- Cross-tab refresh/logout coordination: `frontend/src/services/authSession.ts`.
 - Logout integration: `frontend/src/components/AppShell.tsx`.
 
 Ownership is shared, which is why the boundary is `OVERLAPPING`.
@@ -77,11 +81,16 @@ Ownership is shared, which is why the boundary is `OVERLAPPING`.
 - Login and registration form submissions.
 - Protected parent render through `RequireAuth`.
 - Shell logout button.
-- Module-load restoration from browser storage.
+- Module-load restoration from the refresh cookie.
 
 ## Internal Structure
 
-`AuthPage` switches mode, owns controlled fields, calls auth methods, and passes successful responses to `setSession`. `RequireAuth` chooses between `AppShell` and login redirect. The store synchronizes API setters, persistent data, and Zustand. The shell calls backend logout and then clears client state.
+`AuthPage` switches mode, owns controlled fields, calls auth methods, and passes
+successful responses to `setSession`. `SessionBootstrap` performs coordinated
+cookie refresh. `RequireAuth` waits for a definitive bootstrap result before
+choosing `AppShell` or login redirect. The store synchronizes volatile access
+state, non-secret cached identity, and Zustand. The shell calls cookie logout,
+then clears and broadcasts client state.
 
 ## State
 

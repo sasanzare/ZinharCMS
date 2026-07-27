@@ -1,8 +1,9 @@
 flowchart LR
     User["User interaction"]
-    Storage["localStorage<br/>tokens, user, organizations, active organization, locale"]
-    Store["Zustand useAppStore<br/>session, organization, sidebar"]
-    ApiState["API module variables<br/>access token and organization"]
+    Storage["localStorage<br/>non-secret user, organizations, active organization, locale"]
+    RefreshCookie["HttpOnly refresh cookie"]
+    Store["Zustand useAppStore<br/>volatile session, bootstrap, organization, sidebar"]
+    ApiState["API module variables<br/>volatile access token and organization"]
     I18n["I18n React context<br/>locale and direction"]
     Shell["AppShell and RequireAuth"]
     Page["Route page local state<br/>server data, forms, loading, errors"]
@@ -13,6 +14,7 @@ flowchart LR
     Storage --> Store
     Storage --> ApiState
     Storage --> I18n
+    RefreshCookie --> API
     User --> Store
     User --> I18n
     User --> Page
@@ -27,6 +29,7 @@ flowchart LR
     Builder --> API
     ApiState --> API
     API --> Backend
+    Backend --> RefreshCookie
     Backend --> API
     API --> Page
     API --> Builder

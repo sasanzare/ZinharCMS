@@ -8,7 +8,7 @@ flowchart TD
     Token -- "No" --> Unauthorized["401 or middleware rejection"]
     Token -- "Yes" --> Zone{"Tenant route?"}
     Zone -- "No" --> GlobalRole["Evaluate handler global-role or identity rule"]
-    Zone -- "Yes" --> TenantHeader["Resolve X-Organization-Id or preview query fallback"]
+    Zone -- "Yes" --> TenantHeader["Resolve X-Organization-Id"]
     TenantHeader --> Membership{"Active membership?"}
     Membership -- "No" --> Forbidden["Reject tenant access"]
     Membership -- "Yes" --> Gates["Rate limit and quota gates"]

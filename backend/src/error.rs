@@ -11,6 +11,8 @@ pub struct ErrorBody {
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
+    #[error("access token is invalid")]
+    InvalidAccessToken,
     #[error("unauthorized: {0}")]
     Unauthorized(String),
     #[error("forbidden: {0}")]
@@ -35,6 +37,7 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let message = self.client_message();
         let (status, error) = match self {
+            Self::InvalidAccessToken => (StatusCode::UNAUTHORIZED, "access_token_invalid"),
             Self::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "unauthorized"),
             Self::Forbidden(_) => (StatusCode::FORBIDDEN, "forbidden"),
             Self::NotFound(_) => (StatusCode::NOT_FOUND, "not_found"),

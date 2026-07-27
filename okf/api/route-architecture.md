@@ -62,11 +62,19 @@ The application applies a 30-second timeout, security headers, response compress
 
 ## Authenticated Subtree
 
-`auth_middleware` expects an `Authorization: Bearer <JWT>` header, validates the access token, and inserts `Claims`. The page-preview path is a special case that may accept the access token from `access_token` or `token` query parameters to support browser WebSocket clients.
+`auth_middleware` expects an `Authorization: Bearer <JWT>` header, validates
+the access token, and inserts `Claims`. It has no query-token compatibility.
+The separate page-preview handshake consumes a one-time ticket carried through
+`Sec-WebSocket-Protocol`.
 
 ## Tenant-Protected Subtree
 
-`tenant_middleware` validates the access token, requires an active organization membership, applies organization rate limiting, applies quota checks except to paths under `/api/billing`, and inserts both `Claims` and `TenantContext`. Standard HTTP requests select the organization with `X-Organization-Id`; preview may use `organization_id` in the query string.
+`tenant_middleware` validates the access token, requires an active organization
+membership, applies organization rate limiting, applies quota checks except to
+paths under `/api/billing`, and inserts both `Claims` and `TenantContext`.
+Tenant HTTP requests, including preview-ticket issuance, select the
+organization with `X-Organization-Id`. The special WebSocket handshake accepts
+no organization query value.
 
 The tenant subtree has `DefaultBodyLimit` set to configured `MAX_UPLOAD_SIZE + 1 MiB`. The extra allowance covers multipart framing; the media handler separately enforces the configured file-byte maximum.
 

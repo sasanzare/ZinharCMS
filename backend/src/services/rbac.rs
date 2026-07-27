@@ -115,6 +115,10 @@ pub fn require_org_page_writer(role: &str) -> Result<(), AppError> {
     require_org_any(role, &[ORG_ADMIN, ORG_EDITOR, ORG_AUTHOR])
 }
 
+pub fn require_org_preview_reader(role: &str) -> Result<(), AppError> {
+    require_org_any(role, &[ORG_ADMIN, ORG_EDITOR, ORG_AUTHOR, ORG_VIEWER])
+}
+
 pub fn require_org_page_publisher(role: &str) -> Result<(), AppError> {
     require_org_any(role, &[ORG_ADMIN, ORG_EDITOR])
 }
@@ -195,6 +199,11 @@ mod tests {
                 "media_writer",
                 require_org_media_writer,
                 &[ORG_OWNER, ORG_ADMIN, ORG_EDITOR, ORG_AUTHOR],
+            ),
+            (
+                "preview_reader",
+                require_org_preview_reader,
+                &[ORG_OWNER, ORG_ADMIN, ORG_EDITOR, ORG_AUTHOR, ORG_VIEWER],
             ),
             (
                 "page_manager",

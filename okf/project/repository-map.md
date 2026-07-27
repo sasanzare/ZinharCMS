@@ -211,7 +211,7 @@ Use the Phase 5 catalog first, then verify every change against current migratio
 | Public API versioning | ../../backend/src/routes/delivery.rs | Public delivery uses /api/v1; administrative APIs use /api; policy is NEEDS_OWNER_CONFIRMATION NOC-08 |
 | Request/response types | Route modules; ../../frontend/src/types/api.ts | Backend types are authoritative; frontend types are manually synchronized |
 | Errors | ../../backend/src/error.rs | AppError and the error/message JSON envelope |
-| Authentication middleware | ../../backend/src/middleware/auth.rs | JWT extraction/verification; preview supports query-token paths |
+| Authentication middleware | ../../backend/src/middleware/auth.rs | Bearer JWT extraction/verification with stable invalid-token responses |
 | Tenant/authorization middleware | ../../backend/src/middleware/tenant.rs; ../../backend/src/services/rbac.rs; ../../backend/src/services/rls.rs | Tenant selection, membership, role helpers, and database context |
 | OpenAPI | ../../backend/src/routes/mod.rs and route annotations | Generated endpoint is /openapi.json; coverage is partial |
 | Manual API guide | ../../docs/API.md | Broad behavior reference with DOCUMENTATION_CODE_CONFLICT DCC-09 |

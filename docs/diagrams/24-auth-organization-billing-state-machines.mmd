@@ -27,7 +27,7 @@ state "Authentication Session [IMPLEMENTED]" as AuthenticationSession {
   state "Refresh Token Stored\nrefresh_tokens row" as AuthRefreshStored
   state "Refresh Cookie Issued\nHttpOnly SameSite=Lax" as AuthRefreshCookie
   state "Refresh Rotation Requested" as AuthRefreshRequested
-  state "Old Refresh Revoked\nrevoked_at set" as AuthOldRefreshRevoked
+  state "Refresh Rotated\nsuccessor linked" as AuthOldRefreshRevoked
   state "Invalid Refresh\nnot found or revoked" as AuthInvalidRefresh
   state "Expired Refresh\nexpires_at <= now" as AuthExpiredRefresh
   state "Replay Handling\nold token reused" as AuthReplay
@@ -44,20 +44,20 @@ state "Authentication Session [IMPLEMENTED]" as AuthenticationSession {
   AuthAccessTokenIssued --> AuthRefreshStored : INSERT refresh_tokens token_hash, expires_at; refresh lifetime stored in database
   AuthRefreshStored --> AuthRefreshCookie : Set-Cookie zinhar_refresh_token; response body omits refresh_token
   AuthAccessTokenIssued --> AuthAccessTokenExpired : JWT exp reached; backend rejects bearer token as token expired
-  AuthRefreshStored --> AuthRefreshRequested : POST /api/auth/refresh; cookie or JSON refresh token
-  AuthRefreshRequested --> AuthOldRefreshRevoked : token_hash found, revoked_at is null, refresh not expired, user active; UPDATE revoked_at=now
-  AuthOldRefreshRevoked --> AuthAccessTokenIssued : issue replacement access token and new refresh_tokens row
+  AuthRefreshStored --> AuthRefreshRequested : POST /api/auth/refresh; HttpOnly cookie only; Origin checked when present
+  AuthRefreshRequested --> AuthOldRefreshRevoked : lock token/family/user; rotate and link successor in one transaction
+  AuthOldRefreshRevoked --> AuthAccessTokenIssued : commit replacement access token and refresh row
   AuthOldRefreshRevoked --> AuthReplay : old token submitted again after rotation
-  AuthReplay --> AuthInvalidRefresh : WHERE revoked_at IS NULL fails; 401 invalid refresh token
+  AuthReplay --> AuthInvalidRefresh : mark family compromised and revoke all family tokens
   AuthRefreshRequested --> AuthInvalidRefresh : missing, unknown, revoked, or inactive-user token; 401 invalid refresh token
   AuthRefreshRequested --> AuthExpiredRefresh : existing token is past expires_at; 401 invalid refresh token
-  AuthRefreshStored --> AuthLogout : POST /api/auth/logout; requires bearer token, optional refresh token from cookie/body
-  AuthLogout --> AuthUnauthenticated : revoke matching refresh row if present and clear refresh cookie
+  AuthRefreshStored --> AuthLogout : POST /api/auth/logout; HttpOnly cookie only; Origin checked when present
+  AuthLogout --> AuthUnauthenticated : revoke matching family if present and clear refresh cookie
 
   note right of AuthAccessTokenIssued
     Access tokens are signed JWTs and are not database rows.
-    Refresh tokens are hashed database rows with expires_at and optional revoked_at.
-    There is no token family or replacement pointer column.
+    Refresh tokens are hashed rows with family and replacement linkage.
+    Reuse compromises and revokes the entire family.
   end note
 }
 

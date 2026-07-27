@@ -28,15 +28,20 @@ uncertainty_markers:
 
 ## Family Boundary
 
-This family contains 15 registered handler-method endpoints. Access is **Tenant protected; preview has query-token/query-tenant transport exceptions**.
+This family contains 16 registered handler-method endpoints. Page HTTP and
+ticket issuance are **Tenant protected**; the WebSocket handshake uses an exact
+Origin plus a one-time scope-bound ticket.
 
-Page list/create/detail/by-slug/update/delete, workflow transitions, version list/restore, and WebSocket preview.
+Page list/create/detail/by-slug/update/delete, workflow transitions, version
+list/restore, preview-ticket issuance, and WebSocket preview.
 
 Exact method/path, stable endpoint ID, handler, access zone, input extractor, return type, OpenAPI status, and frontend coverage are recorded in the [Endpoint Catalog](../endpoint-catalog.md).
 
 ## Request Contract
 
-Page JSON is validated against component keys. Lists support page/per-page/status/sort. Delete requires confirmation. Preview uses page UUID plus bearer/header or preview query alternatives.
+Page JSON is validated against component keys. Lists support
+page/per-page/status/sort. Delete requires confirmation. Ticket issuance uses
+the page UUID plus bearer/tenant headers; the WebSocket URL has no query string.
 
 ## Response Contract
 
@@ -54,7 +59,8 @@ Twelve JSON operations have wrappers; page detail/by-slug and WebSocket preview 
 
 ## OpenAPI and Verification
 
-All handlers are listed, but the WebSocket protocol and preview query credentials are incomplete.
+Handlers, ticket protocol, Origin checks, atomic consumption, and periodic
+authorization revalidation are documented in the Phase 3 security report.
 
 Page/domain/frontend builder tests exist; no full router-plus-WebSocket lifecycle suite was found.
 

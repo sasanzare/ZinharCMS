@@ -1,7 +1,10 @@
 use std::collections::HashSet;
+use std::time::Duration;
 
-use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::ws::{CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code};
+use axum::extract::{Extension, OriginalUri, Path, Query, State};
+use axum::http::HeaderMap;
+use axum::http::header::{ORIGIN, SEC_WEBSOCKET_PROTOCOL};
 use axum::response::Response;
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -17,7 +20,7 @@ use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::delivery;
 use crate::services::entry_validation::is_valid_slug;
-use crate::services::{audit, quota, rbac, rls, webhooks, workflow};
+use crate::services::{audit, preview_tickets, quota, rbac, rls, sessions, webhooks, workflow};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -52,7 +55,11 @@ pub fn router() -> Router<AppState> {
                 .put(update_component)
                 .delete(delete_component),
         )
-        .route("/api/preview/{page_id}", get(preview_page))
+        .route("/api/pages/{id}/preview-ticket", post(issue_preview_ticket))
+}
+
+pub fn preview_router() -> Router<AppState> {
+    Router::new().route("/api/preview/{page_id}", get(preview_page))
 }
 
 #[derive(Debug, Deserialize)]
@@ -99,6 +106,21 @@ pub struct PageVersionResponse {
     pub page_json: Value,
     pub snapshot_at: DateTime<Utc>,
     pub created_by: Option<Uuid>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PreviewTicketResponse {
+    pub ticket: String,
+    pub expires_in: u64,
+    pub protocol: String,
+}
+
+#[derive(Debug, FromRow)]
+struct PreviewMembershipRow {
+    organization_id: Uuid,
+    organization_slug: String,
+    organization_name: String,
+    role: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -891,6 +913,42 @@ pub async fn delete_component(
 }
 
 #[utoipa::path(
+    post,
+    path = "/api/pages/{id}/preview-ticket",
+    tag = "preview",
+    params(("id" = Uuid, Path, description = "Page id")),
+    responses((status = 200, description = "Short-lived one-time preview ticket", body = PreviewTicketResponse))
+)]
+pub async fn issue_preview_ticket(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Extension(tenant): Extension<TenantContext>,
+    Path(page_id): Path<Uuid>,
+) -> Result<Json<PreviewTicketResponse>, AppError> {
+    rbac::require_org_preview_reader(&tenant.role)?;
+    load_page_by_id(&state, &tenant, page_id).await?;
+    let record = preview_tickets::new_ticket_record(
+        claims.sub,
+        tenant.organization_id,
+        page_id,
+        claims.ver,
+        state.config.preview_ticket_ttl_seconds,
+    )?;
+    let issued = preview_tickets::issue_ticket(
+        &state.redis,
+        record,
+        state.config.preview_ticket_ttl_seconds,
+        state.config.preview_ticket_rate_limit_per_minute,
+    )
+    .await?;
+    Ok(Json(PreviewTicketResponse {
+        ticket: issued.raw_ticket,
+        expires_in: state.config.preview_ticket_ttl_seconds,
+        protocol: preview_tickets::PREVIEW_APPLICATION_PROTOCOL.to_owned(),
+    }))
+}
+
+#[utoipa::path(
     get,
     path = "/api/preview/{page_id}",
     tag = "preview",
@@ -899,16 +957,33 @@ pub async fn delete_component(
 )]
 pub async fn preview_page(
     ws: WebSocketUpgrade,
+    OriginalUri(uri): OriginalUri,
+    headers: HeaderMap,
     State(state): State<AppState>,
-    Extension(tenant): Extension<TenantContext>,
     Path(page_id): Path<Uuid>,
-) -> Response {
-    ws.on_upgrade(move |socket| handle_preview_socket(socket, page_id, tenant, state))
+) -> Result<Response, AppError> {
+    if uri.query().is_some() {
+        return Err(AppError::BadRequest(
+            "preview WebSocket query parameters are not supported".to_owned(),
+        ));
+    }
+    validate_preview_origin(&headers, &state)?;
+    let raw_ticket = preview_ticket_from_headers(&headers)?;
+    let record = preview_tickets::consume_ticket(&state.redis, &raw_ticket)
+        .await?
+        .ok_or_else(|| AppError::Unauthorized("preview ticket is invalid".to_owned()))?;
+    record.validate_scope(page_id, Utc::now().timestamp())?;
+    let tenant = load_preview_context(&state, &record).await?;
+    load_page_by_id(&state, &tenant, page_id).await?;
+    Ok(ws
+        .protocols([preview_tickets::PREVIEW_APPLICATION_PROTOCOL])
+        .on_upgrade(move |socket| handle_preview_socket(socket, page_id, record, tenant, state)))
 }
 
 async fn handle_preview_socket(
     mut socket: WebSocket,
     page_id: Uuid,
+    ticket: preview_tickets::TicketRecord,
     tenant: TenantContext,
     state: AppState,
 ) {
@@ -924,11 +999,131 @@ async fn handle_preview_socket(
         }
     }
 
-    while let Ok(update) = rx.recv().await {
-        if socket.send(Message::Text(update.into())).await.is_err() {
-            break;
+    let mut revalidation = tokio::time::interval(Duration::from_secs(
+        state.config.preview_revalidation_interval_seconds,
+    ));
+    revalidation.tick().await;
+    loop {
+        tokio::select! {
+            update = rx.recv() => {
+                match update {
+                    Ok(update) => {
+                        if socket.send(Message::Text(update.into())).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                }
+            }
+            incoming = socket.recv() => {
+                if incoming.is_none()
+                    || matches!(incoming, Some(Ok(Message::Close(_))) | Some(Err(_)))
+                {
+                    break;
+                }
+            }
+            _ = revalidation.tick() => {
+                if !preview_authorization_is_current(&state, &ticket, page_id).await {
+                    let _ = socket.send(Message::Close(Some(CloseFrame {
+                        code: close_code::POLICY,
+                        reason: "preview authorization changed".into(),
+                    }))).await;
+                    break;
+                }
+            }
         }
     }
+}
+
+async fn preview_authorization_is_current(
+    state: &AppState,
+    ticket: &preview_tickets::TicketRecord,
+    page_id: Uuid,
+) -> bool {
+    let Ok(current_tenant) = load_preview_context(state, ticket).await else {
+        return false;
+    };
+    load_page_by_id(state, &current_tenant, page_id)
+        .await
+        .is_ok()
+}
+
+fn validate_preview_origin(headers: &HeaderMap, state: &AppState) -> Result<(), AppError> {
+    let mut values = headers.get_all(ORIGIN).iter();
+    let origin = values
+        .next()
+        .ok_or_else(|| AppError::Forbidden("preview origin is not allowed".to_owned()))?
+        .to_str()
+        .map_err(|_| AppError::Forbidden("preview origin is not allowed".to_owned()))?;
+    if values.next().is_some() {
+        return Err(AppError::Forbidden(
+            "preview origin is not allowed".to_owned(),
+        ));
+    }
+    let allowed = preview_tickets::parse_allowed_origins(&state.config.preview_ws_allowed_origins)
+        .map_err(AppError::Internal)?;
+    if !preview_tickets::request_origin_is_allowed(Some(origin), &allowed, false) {
+        return Err(AppError::Forbidden(
+            "preview origin is not allowed".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn preview_ticket_from_headers(headers: &HeaderMap) -> Result<String, AppError> {
+    let values = headers
+        .get_all(SEC_WEBSOCKET_PROTOCOL)
+        .iter()
+        .map(|value| {
+            value
+                .to_str()
+                .map(str::to_owned)
+                .map_err(|_| AppError::Unauthorized("preview protocols are invalid".to_owned()))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    preview_tickets::parse_preview_protocols(&values)
+}
+
+async fn load_preview_context(
+    state: &AppState,
+    ticket: &preview_tickets::TicketRecord,
+) -> Result<TenantContext, AppError> {
+    let identity = sessions::load_current_auth_identity(&state.db, ticket.user_id)
+        .await?
+        .ok_or_else(|| AppError::Unauthorized("preview authorization is invalid".to_owned()))?;
+    if identity.auth_version != ticket.auth_version {
+        return Err(AppError::Unauthorized(
+            "preview authorization is invalid".to_owned(),
+        ));
+    }
+    let membership = sqlx::query_as::<_, PreviewMembershipRow>(
+        r#"
+        SELECT o.id AS organization_id,
+               o.slug AS organization_slug,
+               o.name AS organization_name,
+               om.role::text AS role
+        FROM organizations o
+        JOIN organization_members om ON om.organization_id = o.id
+        WHERE o.id = $1
+          AND om.user_id = $2
+          AND o.status = 'active'::organization_status
+          AND om.status = 'active'::organization_member_status
+        "#,
+    )
+    .bind(ticket.organization_id)
+    .bind(ticket.user_id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::Forbidden("preview authorization is invalid".to_owned()))?;
+    rbac::require_org_preview_reader(&membership.role)?;
+    Ok(TenantContext {
+        organization_id: membership.organization_id,
+        organization_slug: membership.organization_slug,
+        organization_name: membership.organization_name,
+        role: membership.role,
+        user_id: ticket.user_id,
+    })
 }
 
 fn page_webhook_payload(event: &str, tenant: &TenantContext, page: &PageResponse) -> Value {
@@ -1397,4 +1592,25 @@ fn default_page_json() -> Value {
 
 fn empty_object() -> Value {
     Value::Object(Map::new())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+
+    #[tokio::test]
+    async fn preview_revalidation_fails_closed_without_authoritative_state() {
+        let mut config = Config::test_with_stripe_secret("test-webhook-secret");
+        config.database_url = "postgresql://127.0.0.1:0/phase3_unavailable".to_owned();
+        let db = crate::db::connect_lazy(&config.database_url).unwrap();
+        let redis = redis::Client::open(config.redis_url.clone()).unwrap();
+        let state = AppState::new(config, db, redis).unwrap();
+        let page_id = Uuid::now_v7();
+        let ticket =
+            preview_tickets::new_ticket_record(Uuid::now_v7(), Uuid::now_v7(), page_id, 1, 30)
+                .unwrap();
+
+        assert!(!preview_authorization_is_current(&state, &ticket, page_id).await);
+    }
 }

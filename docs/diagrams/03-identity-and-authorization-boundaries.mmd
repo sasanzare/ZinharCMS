@@ -50,8 +50,8 @@ flowchart TD
     auth_routes["Auth routes [IMPLEMENTED]<br/>register, login, refresh, logout, me"]
     password_service["Password service [SERVICE]<br/>hash_password and verify_password"]
     jwt_service["JWT service [SERVICE]<br/>sign and verify access tokens, hash refresh tokens"]
-    auth_middleware["Auth middleware [MIDDLEWARE]<br/>Authorization Bearer or preview query token"]
-    protected_routes["Protected backend routes [MIDDLEWARE]<br/>/api/auth/me, logout, plugins, org list, beta product APIs"]
+    auth_middleware["Auth middleware [MIDDLEWARE]<br/>Authorization Bearer for protected HTTP routes"]
+    protected_routes["Protected backend routes [MIDDLEWARE]<br/>/api/auth/me, plugins, org list, beta product APIs"]
   end
 
   subgraph org_identity["Organization identity"]

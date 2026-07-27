@@ -27,7 +27,8 @@ uncertainty_markers:
 
 ## Family Boundary
 
-This family contains 6 registered handler-method endpoints. Access is **Four public endpoints and two bearer-authenticated endpoints**.
+This family contains 6 registered handler-method endpoints. Access is **Five
+public/cookie-boundary endpoints and one bearer-authenticated endpoint**.
 
 Module discovery, registration, login, refresh-token rotation, logout/revocation, and current-user/session context.
 
@@ -35,7 +36,9 @@ Exact method/path, stable endpoint ID, handler, access zone, input extractor, re
 
 ## Request Contract
 
-Registration and login use JSON. Refresh/logout accept the `zinhar_refresh_token` cookie or JSON token body; logout and `me` require bearer access tokens.
+Registration and login use JSON. Refresh/logout accept only the
+`zinhar_refresh_token` cookie and validate browser Origin when present. Logout
+requires no bearer token; `me` does.
 
 ## Response Contract
 
@@ -55,7 +58,9 @@ Five operations are wrapped under `api.auth`; module discovery is backend-only.
 
 All handlers are listed, but the bearer and cookie security model is absent.
 
-JWT/password/security helpers have tests; full cookie rotation through the router is unverified.
+JWT/password/session helpers have unit and live transactional tests. Phase 3
+adds cookie Origin tests and authenticated browser bootstrap/logout evidence;
+an exhaustive router-level cookie matrix remains deferred.
 
 ## Change Checklist
 

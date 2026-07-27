@@ -87,7 +87,9 @@ Uses pages, component registry, Marketplace adapter, and Marketplace installatio
 
 ## Access Control
 
-The route has no specific client role gate. Backend page mutation, workflow, component, template, and preview authorization remains authoritative. The copied preview URL carries client session context and is security-sensitive follow-up.
+The route has no specific client role gate. Backend page mutation, workflow,
+component, template, ticket issuance, and WebSocket handshake authorization
+remain authoritative. Preview URLs carry no client session context.
 
 ## UI Composition
 

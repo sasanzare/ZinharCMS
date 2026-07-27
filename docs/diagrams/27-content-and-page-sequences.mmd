@@ -28,6 +28,7 @@ participant DB as PostgreSQL
 participant Cache as Redis delivery cache
 participant Hook as Webhook dispatcher
 participant Preview as In-memory preview channel
+participant Redis as Redis ticket store
 participant WS as WebSocket preview client
 
 rect rgb(238, 247, 255)
@@ -208,20 +209,25 @@ rect rgb(255, 244, 238)
 end
 
 rect rgb(238, 250, 255)
-    Note over UI,WS: WebSocket live preview [IMPLEMENTED, IN-MEMORY]
-    UI->>UI: Build ws(s) URL with access_token and organization_id query values
-    UI-->>WS: Share/copy preview URL
-    WS->>Tenant: GET /api/preview/{page_id}?access_token=...&organization_id=...
-    Tenant->>Tenant: Verify JWT, active organization, and active membership
-    Tenant->>Page: WebSocket upgrade with TenantContext
+    Note over UI,WS: One-time-ticket WebSocket live preview [IMPLEMENTED, IN-MEMORY]
+    UI->>Tenant: POST /api/pages/{page_id}/preview-ticket with bearer and organization header
+    Tenant->>Page: Current Claims and TenantContext
+    Page->>DB: Verify current user, membership, permission, and page access
+    Page->>Redis: Store hash-keyed scoped ticket with short TTL
+    Page-->>UI: Return opaque ticket once
+    UI->>WS: Open /api/preview/{page_id} with Origin and two subprotocols
+    WS->>Page: Credential-free URL and ticket subprotocol
+    Page->>Redis: Atomically GETDEL ticket record
+    Page->>DB: Revalidate current authorization
+    Page-->>WS: Upgrade selecting zinhar.preview.v1 only
     Page->>Preview: Get/create page-specific broadcast sender
-    Page->>DB: Load initial tenant-owned page
     Page-->>WS: Initial page_json message
     loop While socket and process-local channel remain active
         UI->>Tenant: Manual save, autosave, restore, or workflow transition
         Tenant->>Page: Authorized tenant request
         Page->>Preview: Broadcast page_json after mutation
         Preview-->>WS: Updated page_json message
+        Page->>DB: Periodically revalidate user, version, membership, permission, and page
     end
     Note over Preview,WS: Channels are process-local and not durable across backend replicas/restarts [PARTIAL]
 end

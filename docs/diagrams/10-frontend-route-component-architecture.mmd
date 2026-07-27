@@ -34,7 +34,7 @@ flowchart TD
     main_tsx["main.tsx [IMPLEMENTED]<br/>StrictMode, I18nProvider, RouterProvider<br/>imports global index.css"]
     i18n_provider["I18nProvider [IMPLEMENTED]<br/>localStorage locale, browser locale fallback<br/>sets document lang and dir"]
     router_tsx["router.tsx [IMPLEMENTED]<br/>createBrowserRouter route table"]
-    require_auth["RequireAuth [PARTIAL]<br/>checks useAppStore.accessToken<br/>frontend UX guard only"]
+    require_auth["RequireAuth [IMPLEMENTED]<br/>waits for bootstrap state<br/>redirects only after definitive unauthenticated state"]
     app_shell["AppShell [IMPLEMENTED]<br/>sidebar, topbar, organization switcher<br/>LanguageSelect, StatusBadge, Outlet"]
     fallback_route["Fallback route * [IMPLEMENTED]<br/>Navigate to /"]
   end
@@ -49,7 +49,7 @@ flowchart TD
   router_tsx --> fallback_route
 
   subgraph routes["Exact React Route Hierarchy"]
-    login_route["/login AuthPage [IMPLEMENTED]<br/>public route<br/>redirects to / when accessToken exists"]
+    login_route["/login AuthPage [IMPLEMENTED]<br/>public route<br/>redirects after authenticated bootstrap"]
     route_outlet["/ authenticated root layout [IMPLEMENTED]<br/>RequireAuth wraps AppShell and child Outlet"]
     dashboard_route["index / DashboardPage [IMPLEMENTED]"]
     content_types_route["/content-types ContentTypesPage [IMPLEMENTED]"]
@@ -80,8 +80,8 @@ flowchart TD
   fallback_route --> dashboard_route
 
   subgraph shared_frontend["Shared Frontend State, API Client, and UI"]
-    zustand_store["useAppStore [IMPLEMENTED]<br/>accessToken, refreshToken, user<br/>organizations, activeOrganizationId<br/>sidebarCollapsed"]
-    local_storage["Browser localStorage [EXTERNAL]<br/>zinhar.access_token, refresh_token, user<br/>organizations, active_organization_id, locale"]
+    zustand_store["useAppStore [IMPLEMENTED]<br/>volatile accessToken and bootstrap state<br/>user, organizations, activeOrganizationId<br/>sidebarCollapsed"]
+    local_storage["Browser localStorage [EXTERNAL]<br/>non-secret user, organizations<br/>active_organization_id, locale<br/>legacy token keys deleted"]
     api_client["services/api.ts [IMPLEMENTED]<br/>fetch wrapper with credentials include<br/>Bearer token when auth true<br/>X-Organization-Id when active organization exists"]
     health_hook["useHealth [IMPLEMENTED]<br/>polls /health and /ready every 15s by default"]
     status_badge["StatusBadge [IMPLEMENTED]<br/>neutral, success, warning, danger tones"]
@@ -109,7 +109,7 @@ flowchart TD
     entries_page["EntriesPage [IMPLEMENTED]<br/>Children: DynamicForm, StatusBadge, status controls<br/>Hooks: useState, useEffect<br/>API: contentTypes.list, entries list create update delete workflow transitions<br/>State: selectedSlug, entries, status, editingId, entryData, loading, saving, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
     media_page["MediaPage [IMPLEMENTED]<br/>Children: StatusBadge, upload form, media grid, detail editor<br/>Hooks: useState, useEffect, useCallback, useRef<br/>API: media list upload update delete<br/>State: items, selected, file, altText, caption, query, loading, working, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
     marketplace_page["MarketplacePage [IMPLEMENTED]<br/>Children: catalog/install dialog, Installed Apps, creator/listing/upload, reports and review events<br/>Hooks: useState, useEffect, useMemo, useCallback, useAppStore<br/>API: catalog/detail, installations, install, update-check, enable/disable/uninstall/update/rollback, creator/review/moderation<br/>State: catalog detail, permission approvals, installations, update checks, confirmation and creator/review state<br/>Org context: authenticated requests include active organization header<br/>Role controls: owner/admin manage installs; global admin/super_admin review<br/>Test: MarketplacePage.test.tsx"]
-    pages_page["PagesPage [IMPLEMENTED]<br/>Children: internal builder helpers, StatusBadge<br/>Hooks: useState, useEffect, useCallback, useRef, useAppStore<br/>API: pages list create update delete workflow versions restore, component registry list<br/>State: pages, components, versions, draft, selectedNodeId, selectedPage, dirty, autoSaveState<br/>Org context: implicit header plus copied preview URL query organization_id<br/>Role controls: none in page<br/>Test: PagesPage.test.tsx"]
+    pages_page["PagesPage [IMPLEMENTED]<br/>Children: internal builder helpers, StatusBadge<br/>Hooks: useState, useEffect, useCallback, useRef, useAppStore<br/>API: pages CRUD, workflow, versions, restore, preview ticket, component registry<br/>State: pages, components, versions, draft, selected node/page, autosave, preview status<br/>Org context: implicit header for ticket issuance<br/>Role controls: none in page<br/>Test: PagesPage.test.tsx"]
     workflow_page["WorkflowPage [IMPLEMENTED]<br/>Children: StatusBadge, pending review list, comments, plugin toggles<br/>Hooks: useState, useEffect, useMemo, useCallback<br/>API: contentTypes.list, entries.list, pages.list, comments, plugins enable disable<br/>State: items, selectedKey, comments, commentBody, includeResolved, plugins, loading, message, error<br/>Org context: implicit X-Organization-Id<br/>Role controls: none in page<br/>Test: none found"]
     organization_page["OrganizationPage [IMPLEMENTED]<br/>Children: StatusBadge, settings, workspace, domains, rate limits, audit, email, alerts, invite and members tables<br/>Hooks: useState, useEffect, useMemo, useCallback, useAppStore<br/>API: organizations list current create update members invitations domains rateLimit audit email alerts<br/>State: detail, members, invitations, workspace, domains, rateLimit, auditLogs, emailDeliveries, alerts, drafts<br/>Org context: activeOrganizationId drives load and API header<br/>Role controls: manager owner/admin and owner-only ownership controls<br/>Test: none found"]
     workspace_redirect_page["WorkspaceRedirectPage [IMPLEMENTED]<br/>Children: StatusBadge during redirect<br/>Hooks: useEffect, useParams, useNavigate, useAppStore<br/>API: organizations.list on local slug miss<br/>State: redirect side effect only<br/>Org context: selects active organization by workspace slug<br/>Role controls: none in page<br/>Test: none found"]
@@ -163,7 +163,7 @@ flowchart TD
     canvas["BuilderCanvas [IMPLEMENTED]<br/>droppable desktop canvas<br/>sortable canvas nodes and remove controls"]
     props_editor["Props editor [IMPLEMENTED]<br/>PropControl from component props_schema<br/>metadata editor when no block selected"]
     local_preview["LivePreview [IMPLEMENTED]<br/>local render from draft.pageJson layout children<br/>not a WebSocket client"]
-    preview_url["Preview WebSocket URL copy [PARTIAL]<br/>copies ws URL /api/preview/:pageId with access_token and organization_id query<br/>does not open socket in React page"]
+    preview_url["Preview WebSocket client [IMPLEMENTED]<br/>requests a fresh ticket per connection/reconnect<br/>opens credential-free URL with two subprotocols"]
     autosave["Autosave behavior [PARTIAL]<br/>existing pages autosave after dirty changes with 10 second timeout<br/>new pages require first manual save before autosave"]
     versions["Page versions [IMPLEMENTED]<br/>versions table shown for selected page<br/>restore calls page version restore API"]
   end
@@ -179,7 +179,7 @@ flowchart TD
   builder_embedded --> versions
 
   subgraph access_controls["Frontend Visibility and Role Controls"]
-    frontend_guard_note["Frontend route guard [PARTIAL]<br/>RequireAuth redirects without local accessToken<br/>not authoritative backend authorization"]
+    frontend_guard_note["Frontend route guard [IMPLEMENTED]<br/>RequireAuth blocks during refresh-cookie bootstrap<br/>backend authorization remains authoritative"]
     nav_visibility["Navigation visibility [PARTIAL]<br/>AppShell renders all nav items for authenticated users<br/>no role-based nav filtering found"]
     org_context_note["Organization context [IMPLEMENTED]<br/>organization switcher updates activeOrganizationId<br/>API client adds X-Organization-Id for authenticated requests"]
     org_role_controls["Organization role controls [IMPLEMENTED]<br/>OrganizationPage owner/admin manager checks<br/>BillingPage owner/admin/billing_manager checks<br/>BetaPage owner/admin/editor checks"]
@@ -236,6 +236,7 @@ flowchart TD
   classDef data fill:#edf7ff,stroke:#24577a,stroke-width:2px,color:#111;
 
   class main_tsx,i18n_provider,router_tsx,app_shell,fallback_route,login_route,route_outlet,dashboard_route,content_types_route,entries_route,media_route,marketplace_route,pages_route,workflow_route,organization_route,workspace_route,billing_route,beta_route,settings_route,zustand_store,api_client,health_hook,status_badge,language_select,dynamic_form,type_defs,styles_css,auth_page,dashboard_page,content_types_page,entries_page,media_page,marketplace_page,pages_page,workflow_page,organization_page,workspace_redirect_page,billing_page,beta_page,settings_page,builder_embedded,dnd_stack,palette,canvas,props_editor,local_preview,versions,org_context_note,org_role_controls,global_role_controls,marketplace_role_controls,dashboard_test,pages_test,marketplace_test implemented;
-  class require_auth,preview_url,autosave,frontend_guard_note,nav_visibility,missing_page_tests,pages_overloaded,marketplace_overloaded,organization_overloaded partial;
+  class require_auth,preview_url,frontend_guard_note implemented;
+  class autosave,nav_visibility,missing_page_tests,pages_overloaded,marketplace_overloaded,organization_overloaded partial;
   class browser,local_storage external;
   class entry,routes,shared_frontend,pages,builder,access_controls,tests,overloaded frontend;

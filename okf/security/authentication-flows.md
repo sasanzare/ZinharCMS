@@ -47,15 +47,25 @@ The error text is the same for missing users and incorrect passwords. `RATE_LIMI
 
 ## Refresh
 
-The server prefers a non-empty JSON refresh token over the cookie. It hashes the token, requires an unrevoked/unexpired row and active user, selects the highest-priority global role, revokes the old row, and issues a new access/refresh pair. Rotation is not one database transaction, so concurrent refresh semantics and failure between revocation and issue remain `TOKEN_LIFECYCLE_UNCLEAR TLU-01`.
+The server accepts the refresh credential only from the scoped `HttpOnly`
+cookie and validates browser Origin when present. It hashes the token, locks
+the token/family/user rows, verifies active/current identity, revokes and links
+the successor in one transaction, then issues the replacement cookie. Reuse of
+a rotated token marks and revokes the entire family.
 
 ## Logout
 
-Logout requires a valid access token. If a refresh token is supplied, its row is revoked; the refresh cookie is cleared regardless. Other refresh tokens for the user and already-issued access tokens remain valid.
+Logout requires no access token. It validates browser Origin, revokes the
+cookie-selected family when present, and clears the refresh cookie regardless.
+Other independent families remain valid. The frontend clears its volatile
+access token and broadcasts logout to listening tabs.
 
 ## Current User and Frontend Entry
 
-`GET /api/auth/me` loads the active user and current active organization memberships. `RequireAuth` admits the application shell whenever an access-token string exists locally; it does not validate token signature or expiry. Backend middleware remains authoritative.
+`GET /api/auth/me` loads the active user and current active organization
+memberships. `RequireAuth` waits for refresh-cookie bootstrap and admits the
+application shell only after authenticated state. Backend middleware remains
+authoritative.
 
 ## Absent or Unclear Flows
 

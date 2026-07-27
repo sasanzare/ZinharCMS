@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::middleware::auth::Claims;
+use crate::middleware::auth::{Claims, map_access_claim_validation_error};
 use crate::services::{jwt, quota, rate_limit};
 use crate::state::AppState;
 
@@ -64,16 +64,16 @@ fn bearer_token(req: &Request) -> Result<String, AppError> {
         .get("Authorization")
         .and_then(|header| header.to_str().ok())
         .and_then(|value| value.strip_prefix("Bearer "))
-        .or_else(|| preview_query_value(req, "access_token"))
-        .or_else(|| preview_query_value(req, "token"))
         .map(str::to_owned)
         .ok_or_else(|| AppError::Unauthorized("missing bearer token".to_owned()))
 }
 
 async fn verify_claims(state: &AppState, token: &str) -> Result<Claims, AppError> {
-    let claims = jwt::verify_access_token(token, &state.config)
-        .map_err(|_| AppError::Unauthorized("invalid bearer token".to_owned()))?;
-    crate::services::sessions::validate_access_claims(&state.db, claims).await
+    let claims =
+        jwt::verify_access_token(token, &state.config).map_err(|_| AppError::InvalidAccessToken)?;
+    crate::services::sessions::validate_access_claims(&state.db, claims)
+        .await
+        .map_err(map_access_claim_validation_error)
 }
 
 fn organization_id_from_request(req: &Request) -> Result<Uuid, AppError> {
@@ -81,25 +81,10 @@ fn organization_id_from_request(req: &Request) -> Result<Uuid, AppError> {
         .headers()
         .get(ORGANIZATION_HEADER)
         .and_then(|header| header.to_str().ok())
-        .or_else(|| preview_query_value(req, "organization_id"))
         .ok_or_else(|| AppError::BadRequest(format!("missing {ORGANIZATION_HEADER} header")))?;
 
     Uuid::parse_str(value)
         .map_err(|_| AppError::BadRequest("organization id is invalid".to_owned()))
-}
-
-fn preview_query_value<'a>(req: &'a Request, key: &str) -> Option<&'a str> {
-    req.uri()
-        .path()
-        .starts_with("/api/preview/")
-        .then(|| req.uri().query().and_then(|query| query_value(query, key)))?
-}
-
-fn query_value<'a>(query: &'a str, key: &str) -> Option<&'a str> {
-    query.split('&').find_map(|pair| {
-        let (candidate, value) = pair.split_once('=').unwrap_or((pair, ""));
-        (candidate == key && !value.is_empty()).then_some(value)
-    })
 }
 
 async fn load_tenant_context(

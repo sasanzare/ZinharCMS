@@ -41,9 +41,14 @@ uncertainty_markers:
 
 ## Phase 6 Transport Contract
 
-The frontend stores access token, refresh token, and selected organization ID in local storage. Shared calls marked `auth: true` attach `Authorization: Bearer` and, when selected, `X-Organization-Id`; requests include credentials for the `HttpOnly` refresh cookie. There is explicit refresh support but no automatic refresh/replay interceptor.
+The frontend keeps the access token only in volatile module/store memory and
+keeps no JavaScript-readable refresh token. Shared calls marked `auth: true`
+attach `Authorization: Bearer` only to the configured API origin and, when
+selected, `X-Organization-Id`; requests include credentials for the `HttpOnly`
+refresh cookie. A stable invalid-access-token response can trigger one
+coordinated refresh and one replay.
 
-Backend details and boundaries are in [API Authentication](../api/authentication.md), [API Authorization](../api/authorization.md), and [API Tenant Context](../api/tenant-context.md). Page-preview WebSocket construction is the special case: browser limitations permit access token and organization ID in query parameters.
+Backend details and boundaries are in [API Authentication](../api/authentication.md), [API Authorization](../api/authorization.md), and [API Tenant Context](../api/tenant-context.md). Page-preview WebSockets use a short-lived one-time ticket in `Sec-WebSocket-Protocol`; their URLs contain no credentials or organization context.
 
 ## Scope Boundary
 
@@ -54,25 +59,34 @@ This document records browser behavior: authentication forms, session persistenc
 1. `/login` displays login or registration mode.
 2. Controlled form state is submitted through `api.auth.login` or `api.auth.register`.
 3. A successful response is passed to `useAppStore.setSession`.
-4. Tokens, user, organization memberships, and active organization are stored in reactive/browser state.
+4. The access token enters volatile memory; non-secret identity projections and
+   active organization state may be cached separately.
 5. Navigation moves to `/`.
-6. `RequireAuth` sees the token and renders `AppShell`.
+6. `RequireAuth` sees authenticated bootstrap state and renders `AppShell`.
 7. Authenticated API methods add bearer and organization headers.
 
 The authentication form source contains pre-populated development credential values. They are not reproduced in OKF. This behavior is recorded as a frontend risk because a production-like bundle could display them.
 
 ## Session Restoration and Expiry
 
-On module load, the store and API client read saved browser state. No bootstrap request validates the token before the shell renders. The auth API exposes refresh, but no automatic expiry detection, refresh-and-retry interceptor, scheduled refresh, or global `401` logout/redirect was found.
+On module load, authentication starts as `unknown`. `SessionBootstrap` performs
+a coordinated refresh using the `HttpOnly` cookie. Protected routes show a
+neutral restoring state until bootstrap becomes authenticated or
+unauthenticated. Only a `401 access_token_invalid` response is refreshable, and
+the original request is replayed at most once.
 
-The shell logout calls the backend with the stored refresh token and clears local state whether that call succeeds or fails.
+One promise coordinates refresh inside a tab. Web Locks provide the primary
+cross-tab critical section, while BroadcastChannel carries transient session
+and logout events and provides the bounded fallback election. Logout calls the
+cookie endpoint and clears local state in every listening tab whether that call
+succeeds or fails.
 
 ## Route Admission
 
 | Boundary | Browser rule | Limitation |
 |---|---|---|
 | Public authentication | `/login` has no route guard | An already authenticated user is not globally redirected away by router configuration. |
-| Protected application | Truthy access token renders `AppShell` | Token validity and expiration are not checked by the guard. |
+| Protected application | Authenticated bootstrap state renders `AppShell` | Backend authentication remains authoritative. |
 | Feature routes | Every protected route shares the same guard | No route metadata declares roles or permissions. |
 | Unknown protected route | Redirect to `/` | No not-found or denied distinction. |
 
@@ -100,14 +114,20 @@ Role checks are visible source behavior but can be bypassed by direct requests o
 
 ## Browser Storage and URL Exposure
 
-Tokens are persisted in `localStorage`. `PagesPage` can place access token and organization ID into a copied WebSocket preview query string. These facts are documented without declaring an exploit or acceptable policy. Security assessment, threat model, token transport policy, and remediation belong to Phase 7.
+Legacy access/refresh storage keys are deleted and ignored. Access tokens remain
+in volatile memory; refresh tokens remain only in the `HttpOnly` cookie.
+`PagesPage` requests a new one-time preview ticket for every connection or
+reconnect and never places credentials or organization IDs in the WebSocket
+URL. A same-origin script compromise can still read a live in-memory access
+token or transient same-origin session message.
 
 ## Access Failure Behavior
 
 - Auth form errors render inline through `StatusBadge`.
 - Protected-page authorization errors normally surface as page-local API errors.
 - No central access-denied page or status-specific error renderer exists.
-- No verified global `401` session clear or `403` explanation exists.
+- Stable invalid-access-token `401` responses receive one coordinated refresh;
+  generic `401` and every `403` are returned without recursive retry.
 - Disabled UI controls may provide no reason except nearby copy in selected Marketplace flows.
 
 ## Related Documents
@@ -125,4 +145,8 @@ Tokens are persisted in `localStorage`. `PagesPage` can place access token and o
 
 ## Phase 7 Security Interpretation
 
-The access token, user projection, memberships, and active organization use `localStorage`; the refresh credential normally remains in an `HttpOnly` cookie. `RequireAuth` checks only local token presence, and role-based UI cues are `FRONTEND_ONLY_SECURITY_CHECK FOSC-01`. Backend middleware and handler/RLS decisions remain authoritative.
+The access token remains in volatile memory, while non-secret user,
+membership, and active-organization projections may use `localStorage`; the
+refresh credential remains in an `HttpOnly` cookie. `RequireAuth` waits for
+bootstrap state, and role-based UI cues are `FRONTEND_ONLY_SECURITY_CHECK
+FOSC-01`. Backend middleware and handler/RLS decisions remain authoritative.

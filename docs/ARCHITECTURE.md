@@ -24,8 +24,9 @@ storage provider, CDN, durable queue, or background worker.
 The root Axum router exposes four distinct boundaries:
 
 1. Public system routes: `/`, `/health`, `/ready`, and `/openapi.json`.
-2. Public integration/auth routes: registration, login, refresh, Stripe webhook,
-   and the Delivery API.
+2. Public integration/auth routes: registration, login, cookie-authenticated
+   refresh/logout, ticket-authenticated preview WebSocket, Stripe webhook, and
+   the Delivery API.
 3. Authentication-only routes: current user, organization list/create/invitation
    acceptance, global plugin management, and product-level beta operations.
 4. Tenant-aware routes: CMS management, pages, media, webhooks, organization
@@ -103,6 +104,47 @@ The backend validates page JSON against registered component keys, stores comple
 page snapshots in `page_versions`, supports restore-to-new-draft behavior, and
 publishes process-local WebSocket preview updates. Preview channels are in-memory,
 so multiple backend replicas require an explicit shared-broadcast design.
+
+### Browser Session Boundary
+
+The refresh credential is an HttpOnly, SameSite=Lax cookie scoped to
+`/api/auth`; production configuration sets Secure. The browser never persists
+an access token. It starts in an `unknown` state, performs a cookie refresh, and
+renders protected routes only after reaching `authenticated`. Failed bootstrap
+clears cached user/organization projections and reaches `unauthenticated`.
+
+One in-tab promise serializes refresh. Tabs use Web Locks as the primary
+critical section and BroadcastChannel for transient session/logout delivery.
+A bounded BroadcastChannel election is the fallback when Web Locks are absent;
+if neither coordination primitive exists, refresh fails closed. Storage events
+are not an authentication channel. The API attaches bearer credentials only to
+the configured API origin and retries one request once only for the stable
+`access_token_invalid` code.
+
+Cookie-authenticated refresh/logout endpoints compare browser Origin with the
+explicit CORS origin. Missing Origin is reserved for non-browser clients;
+`null`, malformed, duplicate, or untrusted values are denied.
+
+### Preview WebSocket Boundary
+
+Tenant-authenticated preview readers request an ephemeral Redis ticket for one
+page. The ticket contains 256 random bits, has a default 30-second and maximum
+60-second lifetime, is rate-limited, and is stored only under a SHA-256-derived
+key. Redis `GETDEL` makes consumption atomic and single-use. Redis failure denies
+issuance and connection.
+
+The browser opens `/api/preview/{page_id}` without query parameters and offers
+`zinhar.preview.v1` plus `zinhar.ticket.<opaque-ticket>` in
+`Sec-WebSocket-Protocol`. The server requires one exact allowed Origin, rejects
+missing/unknown/duplicate protocols, consumes the ticket, validates its
+audience/user/organization/page/version/time scope, and selects only
+`zinhar.preview.v1`.
+
+The handshake and each 30–60-second revalidation load current user activity,
+authentication version, organization/member activity, preview permission, and
+page access. A failed check closes the connection with a generic policy reason.
+Frontend reconnects use bounded backoff and obtain a new ticket every time;
+logout or definitive policy/protocol rejection stops reconnecting.
 
 Entries and pages share workflow states but route actions have distinct side
 effects. Publishing may invalidate Redis cache, run built-in plugin hooks, and

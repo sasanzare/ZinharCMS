@@ -46,7 +46,8 @@ The API is not one uniform surface. It has three access zones:
 ## Protocol and Representation Inventory
 
 - JSON is the default request and response representation.
-- Authentication refresh/logout handlers accept raw bytes because they support cookie and body token input.
+- Authentication refresh/logout handlers accept the scoped `HttpOnly` cookie
+  and validate browser Origin when present; body refresh tokens are unsupported.
 - The Stripe webhook accepts raw bytes plus headers for signature verification.
 - Media and Marketplace version upload handlers accept `multipart/form-data`.
 - `/api/v1/sitemap.xml` returns XML and `/api/v1/robots.txt` returns plain text.

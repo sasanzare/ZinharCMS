@@ -80,9 +80,9 @@ only mirroring the directory tree.
 
 | Path | Responsibility | Domain | Kind | Main symbols, checks, or assumptions | Related future diagrams |
 | --- | --- | --- | --- | --- | --- |
-| `backend/src/middleware/auth.rs` | Verifies bearer/preview access tokens and injects claims. | Authentication | Executable code | `auth_middleware`, preview token query support | Auth request flow |
+| `backend/src/middleware/auth.rs` | Verifies bearer access tokens and injects claims for protected HTTP routes. | Authentication | Executable code | `auth_middleware`, stable invalid-token code | Auth request flow |
 | `backend/src/middleware/security.rs` | Adds HTTP security headers. | Security hardening | Executable code | CSP, frame, content type, referrer and permission headers | Security controls diagram |
-| `backend/src/middleware/tenant.rs` | Enforces active organization membership, tenant header, rate limits, and API quota. | Tenancy, quota | Executable code | `TenantContext`, `X-Organization-Id`, `tenant_middleware`, preview query fallback | Tenant request flow |
+| `backend/src/middleware/tenant.rs` | Enforces active organization membership, tenant header, rate limits, and API quota. | Tenancy, quota | Executable code | `TenantContext`, `X-Organization-Id`, `tenant_middleware` | Tenant request flow |
 | `backend/src/middleware/mod.rs` | Middleware module export. | Backend composition | Executable code | module exports | Backend module map |
 
 ## Backend Routes

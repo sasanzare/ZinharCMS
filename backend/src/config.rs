@@ -16,6 +16,10 @@ pub struct Config {
     pub max_upload_size: u64,
     pub cors_origin: String,
     pub cookie_secure: bool,
+    pub preview_ws_allowed_origins: String,
+    pub preview_ticket_ttl_seconds: u64,
+    pub preview_ticket_rate_limit_per_minute: i64,
+    pub preview_revalidation_interval_seconds: u64,
     pub login_rate_limit_max_failures: i64,
     pub login_rate_limit_window_seconds: i64,
     pub trusted_proxy_cidrs: Vec<IpNet>,
@@ -68,6 +72,30 @@ impl Config {
             bootstrap_admin_email.as_deref(),
             bootstrap_admin_password.as_deref(),
         )?;
+        let cors_origin = get("CORS_ORIGIN", Some("http://localhost:5173"))?;
+        let preview_revalidation_interval_seconds =
+            parse_u64("PREVIEW_REVALIDATION_INTERVAL_SECONDS", 30)?;
+        if !(30..=60).contains(&preview_revalidation_interval_seconds) {
+            return Err(ConfigError::Invalid {
+                name: "PREVIEW_REVALIDATION_INTERVAL_SECONDS",
+                value: preview_revalidation_interval_seconds.to_string(),
+            });
+        }
+        let preview_ticket_ttl_seconds = parse_u64("PREVIEW_TICKET_TTL_SECONDS", 30)?;
+        if !(1..=60).contains(&preview_ticket_ttl_seconds) {
+            return Err(ConfigError::Invalid {
+                name: "PREVIEW_TICKET_TTL_SECONDS",
+                value: preview_ticket_ttl_seconds.to_string(),
+            });
+        }
+        let preview_ticket_rate_limit_per_minute =
+            parse_i64("PREVIEW_TICKET_RATE_LIMIT_PER_MINUTE", 30)?;
+        if preview_ticket_rate_limit_per_minute < 1 {
+            return Err(ConfigError::Invalid {
+                name: "PREVIEW_TICKET_RATE_LIMIT_PER_MINUTE",
+                value: preview_ticket_rate_limit_per_minute.to_string(),
+            });
+        }
 
         Ok(Self {
             database_url: get("DATABASE_URL", None)?,
@@ -79,8 +107,12 @@ impl Config {
             jwt_refresh_expiry: parse_u64("JWT_REFRESH_EXPIRY", 604_800)?,
             upload_dir: get("UPLOAD_DIR", Some("./uploads"))?,
             max_upload_size: parse_u64("MAX_UPLOAD_SIZE", 52_428_800)?,
-            cors_origin: get("CORS_ORIGIN", Some("http://localhost:5173"))?,
+            preview_ws_allowed_origins: get("PREVIEW_WS_ALLOWED_ORIGINS", Some(&cors_origin))?,
+            cors_origin,
             cookie_secure: parse_bool("COOKIE_SECURE", false)?,
+            preview_ticket_ttl_seconds,
+            preview_ticket_rate_limit_per_minute,
+            preview_revalidation_interval_seconds,
             login_rate_limit_max_failures: parse_i64("LOGIN_RATE_LIMIT_MAX_FAILURES", 5)?,
             login_rate_limit_window_seconds: parse_i64("LOGIN_RATE_LIMIT_WINDOW_SECONDS", 900)?,
             trusted_proxy_cidrs: parse_trusted_proxy_cidrs(
@@ -245,6 +277,10 @@ impl Config {
             max_upload_size: 52_428_800,
             cors_origin: "http://localhost:5173".to_owned(),
             cookie_secure: false,
+            preview_ws_allowed_origins: "http://localhost:5173".to_owned(),
+            preview_ticket_ttl_seconds: 30,
+            preview_ticket_rate_limit_per_minute: 30,
+            preview_revalidation_interval_seconds: 30,
             login_rate_limit_max_failures: 5,
             login_rate_limit_window_seconds: 900,
             trusted_proxy_cidrs: Vec::new(),

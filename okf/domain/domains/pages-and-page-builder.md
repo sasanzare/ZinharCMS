@@ -75,7 +75,10 @@ Pages share the editorial state machine. Create/update/restore create snapshots;
 
 ## Access Rules
 
-Tenant role capabilities guard writes. System components are read-only through tenant paths. Page `author_id` is attribution, not a resource owner ACL. Preview has separate token/organization query handling.
+Tenant role capabilities guard writes. System components are read-only through
+tenant paths. Page `author_id` is attribution, not a resource owner ACL.
+Preview ticket issuance requires current tenant reader permission; the special
+handshake consumes the bound scope and periodically revalidates authority.
 
 ## Validation Rules
 

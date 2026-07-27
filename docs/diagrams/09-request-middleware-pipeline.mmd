@@ -159,23 +159,21 @@ end
 
 rect rgb(238, 250, 255)
     Note over Client,ErrorMap: Variant 7 - WebSocket live preview
-    Client->>Router: GET /api/preview/{page_id}?access_token=...&organization_id=...
-    Router->>Trace: matched tenant pages preview route
+    Client->>Router: GET /api/preview/{page_id} with Origin and ticket subprotocol
+    Router->>Trace: matched public preview handshake route
     Trace->>SetReq: trace request
     SetReq->>PropReq: request id
     PropReq->>Cors: CORS layer for upgrade request
     Cors->>Compress: compression wrapper
     Compress->>SecHeaders: security headers wrapper
     SecHeaders->>Timeout: timeout applies to upgrade request
-    Timeout->>BodyLimit: tenant stack body-limit configuration
-    BodyLimit->>TenantMW: tenant_middleware
-    TenantMW->>Service: jwt::verify_access_token from query token when bearer is absent
-    TenantMW->>Pg: load active organization membership from query organization_id
-    TenantMW-->>Handler: TenantContext extension
+    Timeout->>Handler: Reject query strings and validate exact Origin and protocols
+    Handler->>Service: Atomically consume hash-keyed Redis ticket
+    Handler->>Pg: Revalidate user, auth version, membership, permission, and page
     Handler-->>Client: 101 Switching Protocols
     Handler->>Service: in-memory page preview broadcast channel
-    Handler->>Pg: load initial page JSON for tenant
     Service-->>Client: WebSocket preview messages
+    Handler->>Pg: Periodically revalidate open-connection authorization
 end
 
 rect rgb(255, 238, 245)

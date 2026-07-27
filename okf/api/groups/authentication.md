@@ -28,9 +28,13 @@ uncertainty_markers:
 
 ## Boundary
 
-This group contains 6 registered handler-method endpoints from `backend/src/routes/auth.rs`. Its access zone is **Four public; two authenticated**, and its principal path surface is `/api/auth`.
+This group contains 6 registered handler-method endpoints from
+`backend/src/routes/auth.rs`. Its access zone is **Five public/cookie-boundary;
+one bearer-authenticated**, and its principal path surface is `/api/auth`.
 
-Refresh and logout can obtain the refresh token from the scoped cookie or JSON body. Logout additionally requires a valid access token.
+Refresh and logout obtain the refresh credential only from the scoped
+`HttpOnly` cookie and validate browser Origin when present. Logout does not
+require a bearer token.
 
 ## Endpoint Families
 
@@ -48,7 +52,8 @@ Five session operations have frontend wrappers; the module-status discovery endp
 
 ## OpenAPI and Tests
 
-All six handlers are included, but no bearer security scheme is declared for logout or current-user lookup.
+All six handlers are included, but OpenAPI does not fully model cookie/Origin
+security for refresh/logout or bearer security for current-user lookup.
 
 Password, JWT, and security helpers have tests; a complete cookie/header/router lifecycle test was not found.
 

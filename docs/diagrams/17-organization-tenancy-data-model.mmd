@@ -20,7 +20,7 @@
 %% Evidence: frontend/src/stores/useAppStore.ts
 %% Evidence: frontend/src/types/api.ts
 %% [IMPLEMENTED] Organization identity is separated from global user roles.
-%% [IMPLEMENTED] Tenant selection uses X-Organization-Id or preview query parameters, then loads an active organization_members row.
+%% [IMPLEMENTED] Tenant HTTP selection uses X-Organization-Id, then loads an active organization_members row; preview handshakes use scope-bound tickets.
 %% [IMPLEMENTED] Workspace identity is organizations.slug and a computed /workspace/{slug} URL. There is no workspace_urls table.
 %% [IMPLEMENTED] Most CMS records store organization_id directly after migration 0008; some child rows also derive it from parent rows through triggers.
 %% [PARTIAL] organization_status and organization_member_status include suspended/deleted/invited values, but current organization routes mostly create, update, delete, revoke, accept, leave, and transfer ownership.

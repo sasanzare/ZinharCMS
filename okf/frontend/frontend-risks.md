@@ -82,16 +82,16 @@ Likelihood and impact use Low, Medium, or High. Severity is the combined documen
 
 | Field | Value |
 |---|---|
-| Description | Tokens persist in `localStorage`; Page Builder copies a preview WebSocket URL containing access and organization context in its query. |
-| Evidence | `useAppStore.ts`; `api.ts`; `PagesPage.tsx` |
+| Description | Historical access-token persistence and preview query credentials exposed bearer material to same-origin storage/URL paths. |
+| Evidence | Phase 1 `SEC-P01-003`/`SEC-P01-009`; Phase 3 report; `authSession.ts`; `previewSocket.ts` |
 | Affected features | FE-FEAT-001, FE-FEAT-007 |
-| Likelihood | High |
-| Impact | High if browser or copied URL context is exposed |
+| Likelihood | Residual exposure requires same-origin script execution against the live in-memory token |
+| Impact | A live access token can still be read by compromised same-origin script |
 | Severity | High |
-| Mitigation | Define token storage and preview authorization policy; consider short-lived purpose-bound preview credentials. |
-| Follow-up phase | Phase 7 security |
-| Owner confirmation | Required for accepted session/preview threat model |
-| Status | `STATE_OWNERSHIP_UNCLEAR SOU-01`; open |
+| Mitigation | Access tokens are volatile; refresh is `HttpOnly`; preview uses one-time ticket subprotocols and exact Origin. Continue CSP/XSS hardening. |
+| Follow-up phase | Phase 4 browser content execution hardening |
+| Owner confirmation | Required for final CSP/deployment policy |
+| Status | Original persistence/query paths closed in Phase 3; live-memory XSS risk remains |
 
 ### FE-RISK-004: Manual Frontend and Backend Contract Duplication
 
@@ -262,4 +262,8 @@ Likelihood and impact use Low, Medium, or High. Severity is the combined documen
 
 ## Phase 7 Security Correlation
 
-Script-readable access tokens, stale local roles, query-string preview credentials, frontend-only route/action checks, and missing automatic session-expiry handling are tracked in [Frontend Security Boundaries](../security/frontend-security-boundaries.md) and security risks `SEC-02`, `SEC-04`, and `SEC-11`.
+Live-memory access-token exposure, frontend-only route/action checks, and
+browser content-execution risks remain tracked in [Frontend Security
+Boundaries](../security/frontend-security-boundaries.md) and the security risk
+register. Persistent access-token storage, stale access-token identity, missing
+coordinated refresh, and preview query credentials were closed in Phases 2–3.

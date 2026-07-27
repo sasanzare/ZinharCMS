@@ -33,7 +33,7 @@ related_diagrams:
 | ID | Risk | Evidence | Priority | Recommended treatment direction |
 | --- | --- | --- | --- | --- |
 | SEC-01 | Deterministic development administrator can survive an empty production bootstrap | Startup and login-page defaults | Critical | Replace with explicit installation/bootstrap ceremony and production fail-closed mode |
-| SEC-02 | Script-readable access token amplifies XSS impact | Frontend `localStorage` | High | Evaluate in-memory or hardened cookie/session design with CSRF model |
+| SEC-02 | Same-origin script execution can still read the current in-memory access token | Frontend memory session | Residual | Maintain XSS prevention/CSP; browser persistence was removed in Phase 3 |
 | SEC-03 | Public registration grants first user global super-admin | Registration count logic | Critical | Require explicit installation state, one-time secret, or operator provisioning |
 | SEC-04 | Global role in JWT can remain effective after role/activity change | Claims-only middleware | High | Add token version/session validation or shorter/revocable authorization state |
 | SEC-05 | Refresh lifecycle lacks family/reuse detection and atomic rotation | Auth refresh flow | High | Model token families, reuse response, transactional rotation, logout-all, cleanup |
@@ -42,7 +42,7 @@ related_diagrams:
 | SEC-08 | Tenant isolation assurance is primarily static | Middleware, migrations, static tests | High | Add live cross-tenant integration matrix with real RLS role and all major resources |
 | SEC-09 | Authentication/security event audit is incomplete | Audit/login-attempt call map | Medium | Define required event taxonomy, retention, redaction, export, and denial coverage |
 | SEC-10 | Proxy trust can weaken IP-based login limiting | first valid `X-Forwarded-For` | Medium | Configure trusted proxies and derive client IP only through trusted hops |
-| SEC-11 | Preview query tokens may leak | Preview query compatibility | Medium | Use short-lived scoped preview credentials and mandatory log redaction |
+| SEC-11 | Preview ticket misuse or origin/configuration drift | Redis ticket and WebSocket boundary | Residual | Monitor issuance/rejection, preserve exact origins, short TTL, atomic consumption, and log redaction |
 | SEC-12 | Cookie/TLS/HSTS behavior depends on unverified deployment | Configurable Secure, no app HSTS | High | Make production Secure fail-closed and verify ingress TLS/header policy |
 | SEC-13 | Custom rich-text sanitizer has limited coverage | `services/security.rs` | Medium | Use a maintained sanitizer and context-specific output tests |
 | SEC-14 | Public static upload behavior is delegated and under-tested | `/uploads` `ServeDir` | Medium | Verify cache, type, download, range, indexing, and untrusted-content origin policy |

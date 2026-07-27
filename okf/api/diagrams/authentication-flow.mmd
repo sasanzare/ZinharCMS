@@ -22,11 +22,11 @@ sequenceDiagram
     Tokens-->>Protected: Claims
     Protected-->>Browser: Protected response
 
-    Browser->>AuthRoutes: Refresh cookie or JSON refresh token
-    AuthRoutes->>Database: Validate and revoke prior refresh record
+    Browser->>AuthRoutes: Refresh with HttpOnly cookie and browser Origin
+    AuthRoutes->>Database: Lock and rotate refresh family transactionally
     AuthRoutes->>Tokens: Rotate token pair
     AuthRoutes-->>Browser: New AuthResponse and refresh cookie
 
-    Browser->>Protected: Logout with bearer token and refresh token source
-    Protected->>Database: Revoke refresh token when supplied
-    Protected-->>Browser: LogoutResponse and cleared cookie
+    Browser->>AuthRoutes: Logout with HttpOnly cookie and browser Origin
+    AuthRoutes->>Database: Revoke refresh family when supplied
+    AuthRoutes-->>Browser: LogoutResponse and cleared cookie

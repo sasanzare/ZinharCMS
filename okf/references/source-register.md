@@ -122,8 +122,8 @@ uncertainty_markers:
 | --- | --- | --- |
 | `backend/src/routes/mod.rs` | Authoritative router composition and Utoipa root | 168 handlers across public, authenticated, and tenant subtrees; 149 listed in OpenAPI |
 | `backend/src/routes/*.rs` | Authoritative registered handler paths, extractors, DTOs, statuses, validation, and route-level policy | 17 significant route modules and 21 endpoint families |
-| `backend/src/middleware/auth.rs` | Bearer authentication contract | Standard header plus preview query-token exception |
-| `backend/src/middleware/tenant.rs` | Tenant selection, membership, rate, and quota contract | `X-Organization-Id` plus preview query-organization exception |
+| `backend/src/middleware/auth.rs` | Bearer authentication contract | Standard header for protected HTTP routes; no query-token exception |
+| `backend/src/middleware/tenant.rs` | Tenant selection, membership, rate, and quota contract | `X-Organization-Id`; preview ticket issuance follows the same boundary |
 | `backend/src/services/rbac.rs` | Reusable global and organization capability checks | Role matrix documented in `api/authorization.md` |
 | `backend/src/error.rs` | Application error status and body mapping | Nine `AppError` variants; framework responses remain non-uniform |
 | `frontend/src/services/api.ts` | Authoritative shared frontend request construction | 141 current request functions, all matching registered method/path pairs |

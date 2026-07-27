@@ -52,7 +52,10 @@ All application routes receive a 30-second timeout, request IDs, tracing, compre
 
 ## Preview Query Credentials
 
-Preview WebSocket compatibility allows access-token and organization values in the URL query. URLs can be logged or retained more widely than headers. Treat this as a constrained exception and redact it at proxies/logging systems.
+Preview WebSocket URLs contain no credentials or organization values. The
+browser obtains a short-lived one-time ticket and offers it as a credential
+subprotocol; the server validates exact Origin, consumes the ticket atomically,
+and selects only the stable application protocol.
 
 ## Status Markers
 

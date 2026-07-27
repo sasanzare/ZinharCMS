@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { LockKeyhole, LogIn, UserPlus } from "lucide-react";
-import { Navigate, useNavigate } from "react-router";
+import { Navigate, useLocation, useNavigate } from "react-router";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { LanguageSelect, useI18n } from "../i18n";
@@ -11,8 +11,9 @@ type AuthMode = "login" | "register";
 
 export function AuthPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useI18n();
-  const accessToken = useAppStore((state) => state.accessToken);
+  const authStatus = useAppStore((state) => state.authStatus);
   const setSession = useAppStore((state) => state.setSession);
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -21,7 +22,18 @@ export function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (accessToken) return <Navigate to="/" replace />;
+  const returnTo =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    "from" in location.state &&
+    typeof location.state.from === "string"
+      ? location.state.from
+      : "/";
+
+  if (authStatus === "unknown" || authStatus === "refreshing") {
+    return <main className="auth-screen" aria-busy="true">Restoring session…</main>;
+  }
+  if (authStatus === "authenticated") return <Navigate to={returnTo} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,7 +49,7 @@ export function AuthPage() {
         organizations: response.organizations,
         defaultOrganizationId: response.default_organization_id,
       });
-      navigate("/", { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t("auth.error.failed"));
     } finally {

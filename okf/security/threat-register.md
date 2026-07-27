@@ -34,14 +34,14 @@ related_diagrams:
 | --- | --- | --- | --- | --- |
 | THR-01 | Credential stuffing or brute force | Public login, accounts | Generic error, Argon2, failed-IP window | Medium; proxy trust and distributed attacks remain |
 | THR-02 | Bootstrap account takeover | Empty database/startup | Password hashing, first-user logic | High; deterministic development credentials and public first registration |
-| THR-03 | Access-token theft through XSS | Browser/local storage | CSP, React escaping, sanitization in selected rich-text path | High impact; access token is script-readable |
-| THR-04 | Refresh-token replay | Cookie/body, refresh table | Random token, hash storage, expiry, rotation | Medium; no family/reuse detection or transaction guarantee |
-| THR-05 | Stale authorization after role/activity change | Access token | Short configurable expiry; refresh checks active user | Medium; middleware trusts embedded role until expiry |
+| THR-03 | Access-token theft through XSS | Browser volatile memory | No persistence, CSP, React escaping, selected sanitization | High impact remains while a live token is script-readable |
+| THR-04 | Refresh-token replay | HttpOnly cookie, refresh families | Random token, hash storage, transactional rotation, family reuse response | Residual availability impact if browser coordination fails |
+| THR-05 | Stale authorization after role/activity change | Access token | Current user/global role/auth-version database check | Residual organization-role freshness follows request/preview revalidation boundaries |
 | THR-06 | Cross-tenant data access/IDOR | Tenant header, handlers, PostgreSQL | Active membership, RBAC, tenant SQL context, forced RLS | High impact; live exhaustive verification absent |
 | THR-07 | Privilege escalation through role ambiguity | Global/org namespaces, legacy permissions | Separate claims/context and helper families | Medium; overlapping names and unused permission arrays |
 | THR-08 | Administrative bypass misuse | RLS bypass helper | Explicit opt-in and caller checks | High impact; helper itself is not authorization-aware |
-| THR-09 | CSRF on cookie-backed auth action | Refresh/logout | SameSite=Lax, CORS; logout also bearer protected | Low-to-medium; refresh has no explicit CSRF token |
-| THR-10 | Query credential disclosure | Preview URL | Preview-only path restriction | Medium; URLs can enter logs/history |
+| THR-09 | CSRF on cookie-backed auth action | Refresh/logout | SameSite=Lax, exact Origin when present, explicit credentialed CORS | Residual deployment-origin/cookie configuration risk |
+| THR-10 | Preview credential disclosure or replay | Ticket protocol/Redis | Credential-free URL, short TTL, hash-only store, exact Origin, atomic consume | Residual protocol-header logging/configuration risk |
 | THR-11 | Stored or reflected XSS | Rich text, page JSON, Marketplace data | CSP, React escaping, targeted sanitizer | Medium; sanitizer/rendering coverage is incomplete |
 | THR-12 | Malicious file/package or path traversal | Upload/package/filesystem | Body limit, signature/MIME and package/path validation | Medium; public serving/deployed scanner posture unverified |
 | THR-13 | SSRF or unsafe outbound request | Webhooks, provider/webhook URLs, Marketplace runtime | URL restrictions, signed webhooks, allowlisted runtime operations | High impact; egress network enforcement unverified |

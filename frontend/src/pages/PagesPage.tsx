@@ -11,12 +11,16 @@ import {
 } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Copy, Edit3, Eye, GripVertical, History, Layers3, Plus, Save, Trash2, X } from "lucide-react";
+import { Edit3, Eye, GripVertical, History, Layers3, Plus, Radio, Save, Trash2, X } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n, workflowActionKey, workflowStatusKey, type MessageKey } from "../i18n";
 import { ApiError, api } from "../services/api";
-import { useAppStore } from "../stores/useAppStore";
+import {
+  connectPreviewSocket,
+  type PreviewSocketController,
+  type PreviewSocketStatus,
+} from "../services/previewSocket";
 import type { ComponentRegistryResponse, JsonRecord, JsonValue, MarketplaceInstallationResponse, PageJson, PageNode, PageResponse, PageVersionResponse, TemplatePreviewResponse } from "../types/api";
 
 const CANVAS_DROP_ID = "page-builder-canvas";
@@ -423,8 +427,6 @@ function PropControl({
 
 export function PagesPage() {
   const { t } = useI18n();
-  const accessToken = useAppStore((state) => state.accessToken);
-  const activeOrganizationId = useAppStore((state) => state.activeOrganizationId);
   const [pages, setPages] = useState<PageResponse[]>([]);
   const [components, setComponents] = useState<ComponentRegistryResponse[]>([]);
   const [templates, setTemplates] = useState<MarketplaceInstallationResponse[]>([]);
@@ -441,7 +443,9 @@ export function PagesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewStatus, setPreviewStatus] = useState<PreviewSocketStatus>("closed");
   const autoSaveRef = useRef<() => void>(() => undefined);
+  const previewSocketRef = useRef<PreviewSocketController | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -703,13 +707,19 @@ export function PagesPage() {
     }
   }
 
-  async function copyPreviewUrl(pageId: string) {
-    const params = new URLSearchParams();
-    if (accessToken) params.set("access_token", accessToken);
-    if (activeOrganizationId) params.set("organization_id", activeOrganizationId);
-    const query = params.toString() ? `?${params.toString()}` : "";
-    await navigator.clipboard.writeText(`${api.baseUrl.replace(/^http/, "ws")}/api/preview/${pageId}${query}`);
+  function connectPreview(pageId: string) {
+    previewSocketRef.current?.close();
+    previewSocketRef.current = connectPreviewSocket(pageId, {
+      onStatus: setPreviewStatus,
+    });
   }
+
+  useEffect(
+    () => () => {
+      previewSocketRef.current?.close();
+    },
+    [],
+  );
 
   const filteredComponents = components.filter((component) =>
     `${component.name} ${component.component_key} ${component.category}`.toLowerCase().includes(componentQuery.toLowerCase()),
@@ -734,9 +744,9 @@ export function PagesPage() {
               <Plus size={16} aria-hidden="true" />
               New
             </button>
-            <button className="secondary-button" type="button" onClick={() => draft.id && void copyPreviewUrl(draft.id)} disabled={!draft.id}>
-              <Copy size={16} aria-hidden="true" />
-              {t("pages.previewSocket")}
+            <button className="secondary-button" type="button" onClick={() => draft.id && connectPreview(draft.id)} disabled={!draft.id}>
+              <Radio size={16} aria-hidden="true" />
+              {t("pages.previewSocket")} ({previewStatus})
             </button>
           </div>
         </div>
@@ -907,7 +917,7 @@ export function PagesPage() {
                     <button className="icon-button" type="button" onClick={() => void loadVersions(page)} aria-label={t("pages.showVersions")}>
                       <History size={16} aria-hidden="true" />
                     </button>
-                    <button className="icon-button" type="button" onClick={() => void copyPreviewUrl(page.id)} aria-label={t("pages.copyPreview")}>
+                    <button className="icon-button" type="button" onClick={() => connectPreview(page.id)} aria-label={t("pages.previewSocket")}>
                       <Eye size={16} aria-hidden="true" />
                     </button>
                     <button className="secondary-button" type="button" onClick={() => void transitionPage(page)}>

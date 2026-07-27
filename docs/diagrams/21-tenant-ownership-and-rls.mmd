@@ -16,7 +16,7 @@ flowchart TD
 subgraph tenant_request_path["Tenant Request Path [IMPLEMENTED]"]
   client["Admin/API client [IMPLEMENTED]<br/>Bearer access token"]
   claims["User resolution [IMPLEMENTED]<br/>JWT claims from auth middleware or tenant middleware"]
-  org_header["Organization selector [IMPLEMENTED]<br/>X-Organization-Id header<br/>preview sockets may use organization_id query"]
+  org_header["Organization selector [IMPLEMENTED]<br/>X-Organization-Id header<br/>preview ticket carries server-bound organization scope"]
   membership["Membership lookup [IMPLEMENTED]<br/>organizations join organization_members"]
   active_check["Active tenant check [IMPLEMENTED]<br/>organization status active<br/>membership status active"]
   tenant_context["TenantContext extension [IMPLEMENTED]<br/>organization_id, user_id, org role"]

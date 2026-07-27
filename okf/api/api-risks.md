@@ -41,7 +41,7 @@ uncertainty_markers:
 | API-RISK-06 | Medium | Unversioned administrative API has no compatibility/deprecation policy | Breaking changes lack an agreed migration path (`VBU-01`) | Architecture decision before a breaking change |
 | API-RISK-07 | Medium | Many lists have inconsistent or absent pagination | Large tenants can face performance and UX instability | Inventory cardinality and establish family-specific limits |
 | API-RISK-08 | Medium | Public `/uploads` bypasses application authorization and `AppError` | Files are accessible by object path and behavior is not contract-tested | Phase 7 exposure review and static-service tests |
-| API-RISK-09 | Medium | Preview sends tokens and tenant IDs in query parameters | URLs may be logged or retained | Constrain lifetime/logging and test upgrade authorization |
+| API-RISK-09 | Medium | Historical preview query credentials | Closed in Phase 3 with one-time tickets, exact Origin, atomic consumption, and credential-free URLs | Preserve focused handshake and leakage regression tests |
 | API-RISK-10 | Medium | Multipart bodies are buffered and have layered size limits | Memory pressure and rejection behavior vary by route/framework | Load tests and explicit per-part limits |
 | API-RISK-11 | Medium | No comprehensive router-level API suite | Route, middleware, serialization, and side-effect regressions can escape unit tests | Add representative integration harness |
 | API-RISK-12 | Low | Manual `docs/API.md` uses obsolete billing webhook path | Human consumers may call the wrong endpoint (`DCC-09`) | Correct the source document in its owning phase/change scope |
@@ -56,4 +56,10 @@ Use a named uncertainty or conflict marker only when the relevant evidence is in
 
 ## Phase 7 Security Follow-Up
 
-The recommended security review is complete and documented in [Security Risks](../security/security-risks.md) and [Threat Register](../security/threat-register.md). Highest-priority API-adjacent findings include bootstrap privilege, script-readable access tokens, stale JWT roles, refresh lifecycle, RLS bypass, tenant-isolation assurance, preview query credentials, cookie/deployment posture, and incomplete security regression coverage.
+The security review is documented in [Security Risks](../security/security-risks.md)
+and [Threat Register](../security/threat-register.md). Phases 2–3 closed stale
+access identity, refresh-family, browser persistence, and preview query
+credential paths. Remaining API-adjacent work includes the owner-side bootstrap
+credential response, exhaustive authorization/isolation coverage, OpenAPI
+security contracts, deployment posture, and broader integration regression
+coverage.

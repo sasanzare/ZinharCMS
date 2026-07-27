@@ -82,7 +82,7 @@ The handler inventory is 17 public, 12 authenticated non-tenant, and 139 tenant-
 | Frontend-to-backend request | Page calls `frontend/src/services/api.ts` | Typed request data, tokens, organization header, JSON/multipart response | Client guards are advisory; backend enforces auth/tenant; error JSON becomes client error; no automatic refresh retry verified | `frontend/src/services/api.ts`; `frontend/src/stores/useAppStore.ts`; `frontend/src/types/api.ts`; `backend/src/routes/mod.rs` | High; [Frontend-Backend Flow](diagrams/frontend-backend-flow.mmd) |
 | Frontend navigation | Browser router matches login or protected child | Stored token, AppShell, eager page, optional workspace context | Missing token redirects to login; unmatched protected path redirects home; no route error boundary | `frontend/src/router.tsx`; `components/RequireAuth.tsx`; `components/AppShell.tsx` | High; [Frontend Routing Flow](../frontend/diagrams/frontend-routing-flow.mmd) |
 | Frontend organization switch | Shell or workspace redirect selects membership | Zustand, API module organization ID, browser storage, remounted route page | Unknown ID is ignored; page refetch depends on remount/effects; backend validates header membership | `useAppStore.ts`; `AppShell.tsx`; `WorkspaceRedirectPage.tsx` | High; [Frontend State Flow](../frontend/diagrams/frontend-state-flow.mmd) |
-| Frontend Page Builder | User changes palette/canvas/props or page actions | Local page JSON draft, dnd-kit, component registry, page/Marketplace APIs, versions | Save/template/workflow errors are page-local; preview URL carries session query context | `frontend/src/pages/PagesPage.tsx`; page/API types | High; [Page Builder Flow](../frontend/diagrams/page-builder-flow.mmd) |
+| Frontend Page Builder | User changes palette/canvas/props or page actions | Local page JSON draft, dnd-kit, component registry, page/Marketplace APIs, versions, one-time preview ticket | Save/template/workflow errors are page-local; preview reconnect obtains a fresh ticket | `frontend/src/pages/PagesPage.tsx`; page/API types | High; [Page Builder Flow](../frontend/diagrams/page-builder-flow.mmd) |
 | Database access | Handler/service issues SQLx call or requests RLS-scoped connection/transaction | SQL parameters, organization/user session context, rows and transaction results | Ownership checks and RLS context where used; SQL/connection failure maps through `AppError` | Route/service queries; `backend/src/services/rls.rs`; migrations | High for mechanisms, medium for complete coverage; [Backend Request Flow](diagrams/backend-request-flow.mmd) |
 | Error propagation | Handler, service, database, cache, file, or provider operation returns error | `AppError`, status, stable JSON error/message | Error mapping prevents raw internal response by default; exact source error handling varies | `backend/src/error.rs`; route/service call sites | High; [Backend Request Flow](diagrams/backend-request-flow.mmd) |
 | Configuration loading | Backend process constructs `Config` from environment | Server, DB, Redis, JWT, CORS, upload, email, Stripe, and related settings | Missing/invalid required values fail configuration or later integration use; secrets are not documented here | `backend/src/config.rs`; environment templates | High for repository capability, unknown for production values; [Container View](diagrams/container-view.mmd) |
@@ -142,7 +142,8 @@ The presence of tenant middleware does not prove every downstream query uses the
 1. The router renders a public authentication page.
 2. The page calls the central API client.
 3. The backend authenticates the user and returns token and user data.
-4. The API client and Zustand store persist session and organization-related state; tokens are also stored in `localStorage`.
+4. The API client and Zustand store keep the access token only in volatile
+   memory; non-secret identity and organization projections may be cached.
 5. Route guards and workspace redirection select an authenticated or organization-scoped page.
 6. Subsequent API calls attach bearer and organization headers.
 
@@ -191,8 +192,10 @@ No automatic refresh/replay, abort, timeout, retry, query cache, or runtime resp
 3. The user creates or selects a page draft, then adds, selects, edits, removes, or reorders component nodes.
 4. Every mutation normalizes page JSON, marks the draft dirty, and updates a local React preview.
 5. New pages require manual first save; existing dirty pages schedule save after ten seconds.
-6. Page actions can transition workflow, load/restore versions, preview/import templates, or copy a backend preview WebSocket URL.
-7. The in-page local preview does not open that WebSocket and does not prove public-renderer parity.
+6. Page actions can transition workflow, load/restore versions, preview/import
+   templates, or start a one-time-ticket backend preview WebSocket.
+7. The in-page local preview remains separate and does not prove
+   public-renderer parity.
 
 See [Frontend Page Builder](../frontend/page-builder.md) for implemented and unverified capabilities.
 
@@ -237,9 +240,14 @@ No durable queue, independent worker, or automatic retry scheduler was found. Pr
 
 ## Page Preview Flow
 
-1. `PagesPage` can construct and copy a WebSocket URL containing preview authorization and organization parameters; an external preview client opens it.
-2. The backend authorizes access to the page and locates or creates a broadcast channel in `AppState`.
-3. Editor changes publish messages to the process-local channel.
+1. `PagesPage` requests a page-scoped one-time ticket through authenticated
+   tenant HTTP.
+2. It opens the credential-free WebSocket URL with exact Origin and the stable
+   application plus ticket subprotocols.
+3. The backend atomically consumes the ticket, revalidates current database
+   authorization, and locates or creates a broadcast channel in `AppState`.
+4. Editor changes publish messages to the process-local channel while the open
+   connection periodically revalidates authorization.
 4. Connected preview clients receive broadcast messages.
 
 Channels are neither persisted nor shared through Redis. A connection to a different backend instance cannot be assumed to observe the same channel.

@@ -633,6 +633,12 @@ export type MarketplaceCreatorRequest = {
   support_email?: string;
 };
 
+export type PreviewTicketResponse = {
+  ticket: string;
+  expires_in: number;
+  protocol: string;
+};
+
 export type MarketplaceCreatorResponse = {
   id: string;
   user_id: string;

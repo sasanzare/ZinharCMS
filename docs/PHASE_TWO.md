@@ -63,6 +63,10 @@ Phase two goal: a Postman-testable backend engine for the visual page builder.
 | `POST` | `/api/pages/{id}/unpublish` | Return page to draft; editor/admin |
 | `GET` | `/api/pages/{id}/versions` | List page snapshots |
 | `POST` | `/api/pages/{id}/versions/{version}/restore` | Restore snapshot as a new draft version |
-| `GET` | `/api/preview/{page_id}` | Authenticated WebSocket stream for live preview |
+| `POST` | `/api/pages/{id}/preview-ticket` | Issue a short-lived, single-use preview ticket |
+| `GET` | `/api/preview/{page_id}` | Ticket-authenticated WebSocket stream for live preview |
 
-Use the same `Authorization: Bearer <access_token>` header as phase-one protected endpoints. Browser WebSocket clients may pass the access token as `?access_token=...` or `?token=...` because native WebSocket APIs cannot set custom headers.
+The historical bearer/query-token preview contract is no longer supported.
+Clients first call the authenticated ticket endpoint, then open the credential-free
+WebSocket URL while offering `zinhar.preview.v1` and
+`zinhar.ticket.<opaque-ticket>` through `Sec-WebSocket-Protocol`.

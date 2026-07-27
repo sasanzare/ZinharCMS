@@ -46,20 +46,30 @@ The implemented interactive factor is email plus password. Email is normalized t
 
 ## Access Token Contract
 
-Access tokens are application-built compact JWTs using HS256 and one `JWT_SECRET`. Claims are `sub`, `role`, `iat`, and `exp`. Verification checks three token parts, recomputes the HMAC, deserializes claims, and rejects an expired token. No issuer, audience, JWT ID, key ID, nonce, or token-version claim is present.
+Access tokens are application-built compact JWTs using HS256 and one
+`JWT_SECRET`. Claims are `sub`, `role`, `ver`, `iat`, and `exp`. Verification
+checks signature/time, then protected middleware reloads active-user,
+global-role, and authentication-version state.
 
-The global role is captured at issuance. A role change or account deactivation is not reloaded on every access-token request; account activity is checked during login/refresh and `/me`, while generic middleware validates only the token. This creates a bounded stale-authorization window until token expiry.
+Global role, active state, and `auth_version` are authoritative database state.
+Role/security-sensitive identity changes invalidate prior access tokens through
+the version check. Preview handshakes and open sockets apply the same freshness
+boundary.
 
 ## Refresh Credential Contract
 
-Refresh tokens are opaque random values. Only their SHA-256 representation is persisted. The token is accepted from the request JSON body first and otherwise from the refresh cookie. A valid refresh revokes the prior database row before issuing another token pair.
+Refresh tokens are opaque random values. Only their SHA-256 representation is
+persisted in transactional session families. Browser refresh/logout accept the
+credential only from the `HttpOnly` cookie; request-body refresh tokens are
+unsupported. Rotation is one-time, and reuse compromises/revokes the family.
 
 ## Router Placement
 
-- Public: module status, registration, login, refresh.
-- Bearer protected: logout and current user.
+- Public/cookie boundary: module status, registration, login, refresh, logout.
+- Bearer protected: current user.
 - Tenant protected: CMS and organization-scoped operations; tenant middleware also verifies the bearer token.
-- Preview compatibility: access token and organization ID may be in the query string.
+- Preview handshake: exact Origin plus a short-lived one-time ticket; query
+  parameters are rejected.
 
 ## Uncertainties
 

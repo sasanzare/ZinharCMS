@@ -31,9 +31,14 @@ related_diagrams:
 
 The React client collects credentials, persists the local session projection, selects an organization, attaches bearer and tenant headers, includes cookies, renders API errors, and conditionally exposes controls based on stored roles and lifecycle state.
 
-## Local Storage
+## Browser Authentication Storage
 
-The access token, user projection, organization memberships, selected organization, and legacy refresh-token state use `localStorage`. Any script executing in the application origin can read non-`HttpOnly` values. The current backend places the refresh credential in an `HttpOnly` cookie and returns no JSON refresh token during normal flow, but client support for a JSON/local-storage refresh token remains.
+The access token exists only in volatile module/store memory. Legacy
+access/refresh keys are deleted and ignored. User projection, organization
+memberships, selected organization, and locale may use `localStorage`; any
+same-origin script can read those non-secret projections and the currently live
+in-memory access token. The refresh credential remains in an `HttpOnly` cookie
+and is never returned to frontend JavaScript.
 
 ## Route Guard
 

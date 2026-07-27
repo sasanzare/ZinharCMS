@@ -19,10 +19,10 @@ review, moderation, and catalog behavior.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/auth` | Auth module status and endpoint list |
-| `POST` | `/api/auth/register` | Create user; first user becomes `super_admin` |
+| `POST` | `/api/auth/register` | Create a standard user session |
 | `POST` | `/api/auth/login` | Issue access token and HttpOnly refresh cookie; rate-limited by failed IP attempts |
 | `POST` | `/api/auth/refresh` | Rotate refresh cookie and issue a new access token |
-| `POST` | `/api/auth/logout` | Revoke refresh token and clear refresh cookie |
+| `POST` | `/api/auth/logout` | Revoke the cookie-selected refresh family and clear the refresh cookie |
 | `GET` | `/api/auth/me` | Current authenticated user |
 
 Use the access token as `Authorization: Bearer <token>` for protected endpoints.
@@ -31,6 +31,19 @@ Refresh and logout consume that cookie and do not accept or return refresh
 tokens in JSON. Refresh-token rotation is one-time and family-based; detected
 reuse revokes the complete family.
 
+Browser access tokens are held in memory only. On startup the frontend calls
+refresh once with the cookie before rendering protected content. Concurrent
+requests share one refresh operation, and tabs coordinate through Web Locks
+with a bounded BroadcastChannel fallback. A protected request is replayed at
+most once and only when the API returns `401` with
+`error: "access_token_invalid"`. Generic `401` responses and all `403`
+responses do not trigger refresh.
+
+Browser requests to refresh and logout must carry the exact configured Origin.
+`null`, malformed, duplicate, and untrusted origins are rejected. A missing
+Origin is accepted for non-browser clients. Credentialed CORS uses one explicit
+origin and never a wildcard.
+
 ## Authentication And Tenant Boundaries
 
 - Authentication-only routes require `Authorization: Bearer <token>`.
@@ -38,8 +51,9 @@ reuse revokes the complete family.
 - Protected requests verify the user's current active state, global role, and
   authentication version against PostgreSQL. Organization membership roles
   remain separate and are verified by tenant middleware.
-- Preview WebSocket clients may send `access_token` and `organization_id` query
-  parameters because browser WebSocket APIs cannot set arbitrary headers.
+- Preview WebSocket query parameters are rejected. Clients first obtain a
+  short-lived, one-time ticket from the tenant-authenticated page endpoint and
+  carry it in `Sec-WebSocket-Protocol`.
 - Tenant middleware requires an active organization and active membership, then
   applies organization/user rate limits and API quota checks.
 - All current `/api/marketplace/*` routes are tenant-aware. The catalog is not an
@@ -122,7 +136,25 @@ registered `component_key` such as `hero-banner`.
 | `POST` | `/api/pages/{id}/restore` | Restore archived page to draft; editor/admin |
 | `GET` | `/api/pages/{id}/versions` | List page JSON snapshots |
 | `POST` | `/api/pages/{id}/versions/{version}/restore` | Restore snapshot as a new draft version |
-| `GET` | `/api/preview/{page_id}` | Authenticated WebSocket live preview stream; use `Authorization` header or `?access_token=` |
+| `POST` | `/api/pages/{id}/preview-ticket` | Issue a scoped one-time preview WebSocket ticket; preview-reader role required |
+| `GET` | `/api/preview/{page_id}` | Ticket-authenticated WebSocket live preview stream; query parameters are rejected |
+
+Preview ticket responses contain an opaque ticket with a default 30-second
+lifetime. The server stores only a hash-derived Redis key and atomically consumes
+the ticket with `GETDEL`. The ticket is bound to the preview audience, user,
+organization, page, authentication version, issue time, and expiry. Issuance is
+rate-limited and fails closed when Redis is unavailable.
+
+WebSocket clients offer exactly these protocols:
+
+- stable application protocol: `zinhar.preview.v1`;
+- credential protocol: `zinhar.ticket.<opaque-ticket>`.
+
+The server selects and echoes only `zinhar.preview.v1`. The handshake requires
+an exact origin from `PREVIEW_WS_ALLOWED_ORIGINS`, consumes the ticket once, and
+revalidates current user, authentication version, organization membership,
+preview permission, and page access. Open connections repeat that authorization
+check every 30–60 seconds. Reconnects must request a fresh ticket.
 
 Supported page sort fields: `created_at`, `updated_at`, `published_at`, `title`.
 Example: `sort=updated_at:desc`.

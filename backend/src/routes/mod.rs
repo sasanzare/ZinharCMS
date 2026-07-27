@@ -79,6 +79,7 @@ pub fn router(state: AppState) -> Router {
         .merge(auth::public_router())
         .merge(billing::public_router())
         .merge(delivery::router())
+        .merge(pages::preview_router())
         .merge(protected)
         .merge(tenant_protected)
         .merge(uploads)
@@ -215,6 +216,7 @@ fn is_safe_public_filename(filename: &str) -> bool {
         pages::get_component,
         pages::update_component,
         pages::delete_component,
+        pages::issue_preview_ticket,
         pages::preview_page,
         delivery::list_public_entries,
         delivery::get_public_entry,
@@ -348,6 +350,7 @@ fn is_safe_public_filename(filename: &str) -> bool {
         pages::PageVersionResponse,
         pages::ComponentRegistryRequest,
         pages::ComponentRegistryResponse,
+        pages::PreviewTicketResponse,
         delivery::PublicEntryResponse,
         delivery::PublicEntryListResponse,
         delivery::PublicPageResponse,

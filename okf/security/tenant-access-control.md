@@ -29,7 +29,12 @@ related_diagrams:
 
 ## Tenant Selection
 
-Normal tenant requests provide `X-Organization-Id`; preview requests may provide `organization_id` in the query string. The middleware parses the UUID and loads the organization and membership using the authenticated user ID. Only active organizations with active memberships succeed.
+Tenant HTTP requests, including preview-ticket issuance, provide
+`X-Organization-Id`. The middleware parses the UUID and loads the organization
+and membership using the authenticated user ID. Only active organizations with
+active memberships succeed. The separate WebSocket handshake accepts no tenant
+query value and instead consumes the organization scope bound into a one-time
+ticket.
 
 The client cannot select its organization role directly. `TenantContext` contains the organization identity, slug, name, database-loaded role, and authenticated user ID.
 

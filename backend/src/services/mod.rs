@@ -28,6 +28,7 @@ pub mod marketplace_validation;
 pub mod media_processing;
 pub mod outbound_http;
 pub mod password;
+pub mod preview_tickets;
 pub mod quota;
 pub mod rate_limit;
 pub mod rbac;

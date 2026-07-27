@@ -79,7 +79,7 @@ The boundary is repository-defined, not deployment-certified. Whether PostgreSQL
 | Public HTTP | No application identity required | Public router group and handler validation | Health, readiness, login/refresh, Stripe webhook, public delivery, uploaded files |
 | Authenticated HTTP | Valid access token | Authentication middleware | Protected auth, beta, organization, and plugin endpoints |
 | Tenant HTTP | Valid identity plus organization membership | Tenant middleware, route checks, services, and RLS helpers | CMS, pages, media, billing, webhooks, and Marketplace operations |
-| WebSocket preview | Token and organization supplied for preview request | Preview route and tenant resolution | Process-local page broadcast channel |
+| WebSocket preview | Exact allowed Origin plus short-lived scope-bound ticket | Atomic Redis consume and current database authorization | Process-local page broadcast channel |
 | External provider callback | Provider-specific validation | Stripe signature verification or webhook receiver contract | Billing and integration state changes |
 | Public file boundary | URL under `/uploads` | Static directory service | Files present below configured upload directory |
 
@@ -103,11 +103,22 @@ These observations are registered as:
 
 ## Frontend Boundary
 
-The SPA owns browser presentation, route selection, local state, and request construction. The backend owns authorization and durable state. `frontend/src/services/api.ts` is the observed HTTP boundary, but its TypeScript models are maintained separately from Rust request and response types. `localStorage` holds access and refresh tokens and current organization state, while requests also opt into browser credentials.
+The SPA owns browser presentation, route selection, local state, and request
+construction. The backend owns authorization and durable state.
+`frontend/src/services/api.ts` is the observed HTTP boundary, but its
+TypeScript models are maintained separately from Rust request and response
+types. The access token is volatile, the refresh token remains in the
+`HttpOnly` cookie, and `localStorage` contains only non-secret identity,
+organization, and UI state.
 
 No shared code package, generated API client, or generated schema contract joins the frontend and backend.
 
-The frontend route guard checks only for a stored access token. Static navigation is visible to all client-authenticated users, while selected pages hide or disable actions using membership/global roles. These are experience boundaries, not security boundaries, and remain `AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01` until the Phase 7 route/action matrix is verified against backend enforcement.
+The frontend route guard waits for explicit authentication bootstrap state.
+Static navigation is visible to all client-authenticated users, while selected
+pages hide or disable actions using membership/global roles. These are
+experience boundaries, not security boundaries, and remain
+`AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01` until a route/action matrix is
+verified against backend enforcement.
 
 ## Plugin and Marketplace Boundaries
 

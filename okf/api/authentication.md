@@ -30,9 +30,18 @@ uncertainty_markers:
 
 ## Token Model
 
-Login and registration issue a JWT access token and a rotating opaque refresh token. The JSON `AuthResponse` includes `access_token`, optional `refresh_token`, `token_type`, `expires_in`, the user, organization memberships, and a default organization ID. The refresh token is also set as the `zinhar_refresh_token` cookie.
+Login and registration issue a JWT access token and an opaque refresh token.
+The JSON `AuthResponse` includes `access_token`, `token_type`, `expires_in`,
+the user, organization memberships, and a default organization ID; it never
+contains the refresh token. The refresh credential is set only as the
+`zinhar_refresh_token` cookie.
 
-The cookie is `HttpOnly`, `SameSite=Lax`, scoped to `/api/auth`, uses the configured refresh lifetime as `Max-Age`, and adds `Secure` when `COOKIE_SECURE` is enabled. Refresh revokes the prior stored token and issues a new pair. Logout requires an access token, revokes the supplied refresh token when present, and clears the cookie.
+The cookie is `HttpOnly`, `SameSite=Lax`, scoped to `/api/auth`, uses the
+configured refresh lifetime as `Max-Age`, and adds `Secure` when
+`COOKIE_SECURE` is enabled. Refresh rotates a transactional token family.
+Logout requires no access token, revokes the cookie-selected family when
+present, and deterministically clears the cookie. Refresh/logout validate
+browser Origin when present.
 
 ## Access Token Transport
 
@@ -42,15 +51,26 @@ Standard protected calls use:
 Authorization: Bearer <access-token>
 ```
 
-`auth_middleware` validates the token and inserts `Claims`. `tenant_middleware` performs equivalent token validation while also establishing organization context. The preview WebSocket path may receive the token through `access_token` or `token` query parameters because browser WebSocket construction cannot set arbitrary headers.
+`auth_middleware` validates a bearer token and inserts `Claims`.
+`tenant_middleware` performs equivalent token validation while also
+establishing organization context. Neither middleware accepts token query
+parameters. The special preview WebSocket path instead consumes a short-lived
+one-time ticket from `Sec-WebSocket-Protocol`.
 
 ## Public Authentication Endpoints
 
-`GET /api/auth`, registration, login, and refresh are public. Logout and current-user lookup are in the authenticated subtree. Registration validates a basic email shape, password length of at least eight characters, and non-empty name. Login is subject to IP-based failure limiting.
+`GET /api/auth`, registration, login, refresh, and cookie logout are outside
+bearer middleware. Current-user lookup is in the authenticated subtree.
+Registration validates a basic email shape, password length of at least eight
+characters, and non-empty name. Login is subject to IP-based failure limiting.
 
 ## Frontend Session Behavior
 
-The frontend stores the access token, refresh token, and selected organization ID in local storage and sends credentials with requests. It attaches bearer and tenant headers only when a call is marked `auth: true`. It exposes explicit refresh but has no shared automatic refresh or retry interceptor.
+The frontend keeps the access token in volatile memory, stores no
+JavaScript-readable refresh token, and caches only non-secret identity and
+organization state. It attaches bearer and tenant headers only to the trusted
+API origin. Refresh is single-flight per tab and coordinated across tabs; only
+stable invalid-access-token responses receive one refresh and one replay.
 
 ## Boundary Notes
 

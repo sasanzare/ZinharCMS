@@ -62,7 +62,10 @@ ZinharCMS uses layered controls:
 - A global `super_admin` override applies to global RBAC helpers, but it does not bypass tenant middleware or grant organization membership.
 - Organization `owner` overrides organization RBAC helper allowlists.
 - Database `roles.permissions` arrays are not read by runtime authorization; current enforcement uses role names in `rbac.rs`. This is `RBAC_MAPPING_UNCLEAR RMU-01` and `PERMISSION_SEMANTICS_UNCLEAR PSU-01`.
-- The browser stores access tokens and organization state in `localStorage`; the backend sends refresh tokens only as an `HttpOnly` cookie, although the frontend retains legacy refresh-token storage support.
+- The browser keeps access tokens in volatile memory, deletes legacy token
+  storage keys, and keeps refresh credentials only in the backend-managed
+  `HttpOnly` cookie. Non-secret identity and organization projections may
+  remain cached in `localStorage`.
 - `POTENTIAL_SECRET_EXPOSURE PSE-01`: deterministic development credentials are embedded in startup/UI source. No secret value is reproduced in OKF.
 
 ## Assurance Limits

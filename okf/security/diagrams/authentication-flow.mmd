@@ -19,12 +19,12 @@ sequenceDiagram
     Auth->>Security: Verify Argon2 password
     Auth->>DB: Record login result
   else Refresh
-    Browser->>Auth: POST /api/auth/refresh with cookie or JSON token
-    Auth->>DB: Require valid hash, active user, unexpired/unrevoked row
-    Auth->>DB: Revoke presented refresh row
+    Browser->>Auth: POST /api/auth/refresh with HttpOnly cookie and Origin
+    Auth->>DB: Lock valid token family and current active user
+    Auth->>DB: Rotate and link successor transactionally
   end
 
   Auth->>JWT: Sign access token and generate refresh token
   Auth->>DB: Store refresh-token hash and expiry
   Auth-->>Browser: Access token, account/memberships, HttpOnly refresh cookie
-  Note over Browser,Auth: Recovery, MFA, email verification, and atomic refresh rotation are not verified
+  Note over Browser,Auth: Recovery, MFA, email verification, and signing-key rotation are not implemented

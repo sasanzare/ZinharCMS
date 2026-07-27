@@ -40,9 +40,9 @@ For a reachable endpoint, combine the registered method/path with its handler ex
 | Authentication | `Authorization: Bearer <token>` | Required by authenticated and tenant-protected routers |
 | Tenant selection | `X-Organization-Id: <uuid>` | Required by normal tenant-protected HTTP requests |
 | Cookie | `zinhar_refresh_token` | Accepted by refresh/logout; scoped to `/api/auth` |
-| Raw body | `Bytes` | Used by refresh/logout token parsing and Stripe signature verification |
+| Raw body | `Bytes` | Used by Stripe signature verification |
 | Multipart | `Multipart` | Used by media upload and Marketplace package-version upload |
-| WebSocket query fallback | `access_token` or `token`, plus `organization_id` | Preview-only alternative to headers |
+| WebSocket subprotocol ticket | `zinhar.preview.v1` plus one `zinhar.ticket.<opaque-ticket>` | Preview handshake only; query strings are rejected |
 
 ## JSON Naming and Optionality
 

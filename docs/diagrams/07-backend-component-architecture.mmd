@@ -91,8 +91,8 @@ subgraph routing["Route modules and root composition"]
 end
 
 subgraph middleware_layers["Middleware and HTTP layers"]
-    auth_mw["Authentication middleware [IMPLEMENTED]\nBearer token or preview query token -> Claims"]
-    tenant_mw["Tenant middleware [IMPLEMENTED]\nX-Organization-Id or preview query organization_id -> TenantContext"]
+    auth_mw["Authentication middleware [IMPLEMENTED]\nBearer token -> Claims"]
+    tenant_mw["Tenant middleware [IMPLEMENTED]\nX-Organization-Id -> TenantContext"]
     security_headers["Security headers [IMPLEMENTED]\nsecurity_headers middleware"]
     cors_layer["CORS layer [IMPLEMENTED]\nConfigured origin, credentials, auth/content/org headers"]
     request_id_layer["Request ID layer [IMPLEMENTED]\nSet and propagate x-request-id"]

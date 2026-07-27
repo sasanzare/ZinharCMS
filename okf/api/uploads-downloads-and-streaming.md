@@ -47,7 +47,11 @@ There is no signed URL, per-file authorization, application-level download handl
 
 ## WebSocket Preview
 
-`GET /api/preview/{page_id}` upgrades to WebSocket. Because browsers cannot add the standard authentication and tenant headers to the WebSocket constructor, preview may use `access_token` or `token` and `organization_id` query parameters. The server broadcasts text messages containing serialized page JSON on a per-page channel.
+`GET /api/preview/{page_id}` upgrades to WebSocket after rejecting query
+parameters, validating exact Origin/subprotocols, atomically consuming a
+short-lived ticket, and revalidating current database authorization. The server
+selects only `zinhar.preview.v1` and broadcasts text messages containing
+serialized page JSON on a per-page channel.
 
 Connection establishment, upgrade failures, close codes, reconnection, heartbeat, ordering, and message-version guarantees are not defined as a public protocol. This is an internal editor-preview channel.
 

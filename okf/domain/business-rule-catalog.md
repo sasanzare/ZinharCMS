@@ -68,7 +68,9 @@ This catalog contains 50 evidence-backed rules. A status describes the strongest
 - Evidence: `backend/src/middleware/tenant.rs`; `backend/src/services/rls.rs`; `backend/migrations/0009_v2_phase_three_rls.sql`.
 - Relations: organizations and members; tenant/RLS modules.
 - Surface: protected tenant route tree; workspace selector; all tenant workflows; live cross-tenant test not found.
-- Exceptions/confidence/owner: bypass callers and preview query context are separate paths; High; applied-database confirmation remains `TENANT_BEHAVIOR_UNCLEAR`.
+- Exceptions/confidence/owner: administrative bypass callers and the
+  ticket-authenticated preview handshake are separate paths; High;
+  applied-database confirmation remains `TENANT_BEHAVIOR_UNCLEAR`.
 
 ### `BR-TENANT-003` — Pending invitations are unique per organization and email
 

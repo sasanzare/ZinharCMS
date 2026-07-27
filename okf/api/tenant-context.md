@@ -36,7 +36,11 @@ Normal tenant-protected HTTP requests require:
 X-Organization-Id: <organization-uuid>
 ```
 
-The middleware validates the header as a UUID and verifies that the authenticated user has an active membership. It then inserts `TenantContext`, including the organization, user, and organization role. Browser preview WebSockets may use the `organization_id` query parameter instead.
+The middleware validates the header as a UUID and verifies that the
+authenticated user has an active membership. It then inserts `TenantContext`,
+including the organization, user, and organization role. Preview-ticket
+issuance uses this same header contract; the subsequent WebSocket handshake
+uses ticket-bound organization scope and rejects query parameters.
 
 ## Middleware Responsibilities
 

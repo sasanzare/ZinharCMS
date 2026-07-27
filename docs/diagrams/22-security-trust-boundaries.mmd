@@ -24,7 +24,7 @@ flowchart TD
 %% Evidence: backend/migrations/0019_v3_phase_six_installation_lifecycle.sql
 
 subgraph browser_zone["Browser Boundary"]
-  browser_storage["Browser localStorage [IMPLEMENTED]<br/>access token, optional refresh fallback, user, organizations, active organization"]
+  browser_storage["Browser runtime and localStorage [IMPLEMENTED]<br/>volatile access token; non-secret cached identity and organization state<br/>legacy token keys deleted"]
   refresh_cookie["Refresh cookie [IMPLEMENTED]<br/>zinhar_refresh_token; HttpOnly; SameSite=Lax; Path=/api/auth; Secure when configured"]
   untrusted_inputs["Untrusted browser input [IMPLEMENTED]<br/>JSON forms, rich text, multipart files, ZIP packages, webhook URLs"]
   frontend_guards["Frontend guards and navigation hiding [PARTIAL]<br/>RequireAuth and role-visible controls are UX only"]

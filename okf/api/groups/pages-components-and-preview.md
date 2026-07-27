@@ -28,9 +28,15 @@ uncertainty_markers:
 
 ## Boundary
 
-This group contains 20 registered handler-method endpoints from `backend/src/routes/pages.rs`. Its access zone is **Tenant protected**, and its principal path surface is `/api/pages`, `/api/component-registry`, and `/api/preview`.
+This group contains 21 registered handler-method endpoints from
+`backend/src/routes/pages.rs`. Page/component HTTP and preview-ticket issuance
+are **Tenant protected**; the preview handshake is a special
+ticket-authenticated route. Its principal path surface is `/api/pages`,
+`/api/component-registry`, and `/api/preview`.
 
-The preview route is in the tenant subtree but has query-parameter exceptions in authentication and tenant middleware. Component keys are referenced inside page JSON.
+The preview handshake is outside bearer/tenant middleware, rejects query
+parameters, validates exact Origin and protocols, and atomically consumes a
+server-scoped ticket. Component keys are referenced inside page JSON.
 
 ## Endpoint Families
 
@@ -48,7 +54,8 @@ Twelve page operations and component listing have JSON wrappers. Page detail/by-
 
 ## OpenAPI and Tests
 
-All 20 handlers are included. WebSocket protocol, preview query authentication, and role requirements are not fully modeled.
+All 21 handlers are included. The Phase 3 report models the WebSocket protocol,
+ticket lifecycle, Origin boundary, and preview-reader role requirement.
 
 Page validation/workflow and frontend builder tests exist; no complete HTTP plus WebSocket lifecycle suite was found.
 

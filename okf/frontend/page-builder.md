@@ -53,7 +53,7 @@ uncertainty_markers:
 | Versions | Load snapshot list and restore selected version | Page API |
 | Workflow | Submit review, publish, archive, or restore based on current status | Page API |
 | Marketplace templates | Preview required assets and import a template into a new page | Marketplace adapter API |
-| Preview connection handoff | Build and copy a backend WebSocket URL | Clipboard operation |
+| Preview connection | Request one-time ticket and open/reconnect backend WebSocket | `previewSocket.ts` controller |
 
 ## Load Flow
 
@@ -79,7 +79,11 @@ No explicit optimistic concurrency token, client-side revision comparison, confl
 
 ## Preview Boundaries
 
-The in-page `LivePreview` is a local React interpretation of page JSON. It does not open the backend WebSocket. Separately, the copy-preview action creates a WebSocket URL by changing the API URL scheme and adding page, access-token, and organization context. An external preview client can use that URL; backend preview channels are documented in [Pages, Builder, and Preview](../backend/modules/pages-builder-preview.md).
+The in-page `LivePreview` is a local React interpretation of page JSON.
+Separately, the preview action requests a short-lived one-time ticket and opens
+the backend WebSocket with a credential-free URL plus two subprotocols. Each
+reconnect obtains a new ticket; backend preview channels are documented in
+[Pages, Builder, and Preview](../backend/modules/pages-builder-preview.md).
 
 The local preview does not establish parity with a public renderer or installed component runtime. Exact rendering compatibility is unverified.
 
