@@ -28,19 +28,30 @@ related_diagrams:
 
 ## Password Storage
 
-`hash_password` uses `Argon2::default()` with a fresh OS-random salt and stores the encoded password hash. Verification parses the stored hash and uses the Argon2 verifier. Plaintext user passwords are not written to the user table by the inspected route code.
-
-The repository does not pin explicit Argon2 memory, iteration, or parallelism parameters in application code, and no password rehash-on-login policy was found. The effective defaults therefore depend on the crate version locked by the build.
+`hash_password` uses Argon2id version 19 with explicit parameters
+(`m=19456 KiB`, `t=2`, `p=1`, 32-byte output), a fresh OS-random salt, and the
+standard encoded hash. Verification parses the stored hash and uses the Argon2
+verifier. Plaintext user passwords are not written to the user table by the
+inspected route code. No password rehash-on-login policy was found.
 
 ## Password Policy
 
-Registration enforces only a minimum length of eight characters. No maximum length, breached-password screening, composition rule, password history, expiration, password change, recovery, or MFA policy was found. `INPUT_VALIDATION_UNCLEAR IVU-01` and `NEEDS_OWNER_CONFIRMATION` apply to the intended account-security policy.
+Registration enforces a minimum length of eight characters. Hashing and
+verification reject passwords over 1,024 UTF-8 bytes and embedded NUL
+characters before expensive processing. No breached-password screening,
+composition rule, password history, expiration, password change, public
+recovery route, or MFA policy was found. `INPUT_VALIDATION_UNCLEAR IVU-01` and
+`NEEDS_OWNER_CONFIRMATION` still apply to the broader account-security policy.
 
 ## Other Credentials
 
-- Access tokens are bearer credentials signed with `JWT_SECRET`.
+- Access tokens are bearer credentials signed by the active key in `JWT_KEY_RING`.
 - Refresh tokens are random bearer credentials; only hashes are stored server-side.
-- Organization invitation tokens are random values stored as hashes.
+- Organization invitation tokens are random values stored as hashes and cleared
+  after acceptance, revocation, or expiry.
+- The internal recovery/verification foundation stores only hashes of random,
+  purpose-bound, user-bound, optionally binding-bound, single-use tokens. No
+  public password-reset or email-verification route is implemented.
 - Stripe and provider secrets are configuration values, not user credentials.
 - Webhook secret handling is documented separately from account passwords.
 

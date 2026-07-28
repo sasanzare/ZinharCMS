@@ -51,11 +51,14 @@ Global roles and organization membership roles are separate:
 Frontend route guards and hidden controls are user-experience controls. Backend
 middleware and handler/service role checks remain authoritative.
 
-Access tokens are signed JWTs and are not stored as database entities. They
-carry an authentication version, and protected middleware performs one indexed
-authoritative identity lookup so deactivation, sensitive identity changes, and
-global-role changes invalidate existing tokens. Global roles remain separate
-from organization membership roles.
+Access tokens are signed HS256 JWTs and are not stored as database entities.
+The protected header contains an exact algorithm, type, and key identifier.
+Verification selects one configured active or time-bounded previous key by
+identifier and never tries every key. Tokens carry an authentication version,
+and protected middleware performs one indexed authoritative identity lookup so
+deactivation, sensitive identity changes, global-role changes, and logout-all
+invalidate existing tokens. Global roles remain separate from organization
+membership roles.
 
 Refresh tokens are random values sent only as `HttpOnly`, `SameSite=Lax`
 cookies scoped to `/api/auth`. Only hashes are stored. Each login creates a
@@ -63,13 +66,19 @@ token family with an absolute expiry. Rotation locks and updates the family in
 one database transaction, creates exactly one linked successor, and marks the
 predecessor rotated. Reuse of a rotated token revokes the complete family.
 Logout revokes the current family rather than every family for the user.
+Authenticated users can list non-expired logical families by opaque public ID,
+revoke one owned family, or revoke every family. A privileged bulk revocation
+path rechecks the caller's current database role and accepts only
+`super_admin`. These mutations use a per-user PostgreSQL advisory transaction
+lock so refresh rotation and bulk revocation serialize.
 
 ## Data And Tenant Isolation
 
-The final schema is migration-authoritative through migration `0027`.
+The final schema is migration-authoritative through migration `0028`.
 
 - Core identity: users with authentication versions, roles, user roles, refresh
-  token families and hashed tokens, and login attempts.
+  token families and hashed tokens, account-bound hashed security-token
+  foundations, global security audit events, and login attempts.
 - Core CMS: content types, entries, pages, page versions, components, media,
   settings, navigation, comments, plugins, and webhooks.
 - Organizations: memberships, invitations, domains, rate limits, subscriptions,

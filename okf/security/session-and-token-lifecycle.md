@@ -32,6 +32,8 @@ related_diagrams:
 | --- | --- | --- | --- | --- |
 | Access token | Register, login, refresh | Browser memory only; not persisted server-side | 3,600 seconds | Expiry plus current user/role/auth-version rejection |
 | Refresh token | Register, login, refresh | HttpOnly browser cookie; hash in PostgreSQL | 604,800 seconds absolute family lifetime | Atomic rotation; reuse compromises/revokes family; logout revokes selected family |
+| Logical session | Login/registration family | PostgreSQL with opaque public ID; no raw token or client fingerprint | Refresh-family lifetime | Owned revoke, logout-all, privileged bulk revoke, expiry, or reuse compromise |
+| Recovery/verification token foundation | Internal service call | SHA-256 hash only in PostgreSQL | Purpose-specific maximum: 1 or 24 hours | Atomic single-use consume, supersession, revocation, or expiry |
 | Claims | Access-token payload | Request extension after current database verification | Same as access token | Recreated per authenticated request |
 | Frontend identity projection | Successful auth response | Zustand plus non-secret user/organization cache | No independent timeout | Failed bootstrap, logout, or remote logout clears it |
 
@@ -42,16 +44,21 @@ The listed lifetimes are parser defaults and may be overridden by environment va
 Issued access tokens carry `auth_version`. Authentication and tenant middleware
 reload current active user, global role, and authentication version. Deactivation,
 reactivation, credential changes, and global-role changes invalidate earlier
-claims without a token denylist. JWT signing-key rotation remains an operational
-area.
+claims without a token denylist. JWT signing uses exactly one active key;
+verification accepts that key plus explicitly time-bounded previous keys by
+`kid`. Legacy no-`kid`, unknown-key, retired-key, and non-HS256 tokens are
+rejected.
 
 ## Refresh Rotation
 
 Every login/registration creates a refresh family with absolute expiry. Refresh
 locks the token, family, and user, creates exactly one linked successor, and
 commits atomically. Concurrent/replayed use marks the family compromised and
-revokes it. Logout revokes the cookie-selected family. A retention cleanup job
-for expired rows remains deferred.
+revokes it. Logout revokes the cookie-selected family. Inventory returns
+non-expired logical families by opaque public ID. Owned revoke, logout-all, and
+super-admin bulk revocation serialize with refresh by a per-user PostgreSQL
+advisory transaction lock. A bounded cleanup service can remove eligible old
+rows, but repository code does not schedule it.
 
 ## Cookie Attributes
 
@@ -71,6 +78,8 @@ Logout is broadcast; storage events and browser storage never carry tokens.
 - `SESSION_LIFECYCLE_UNCLEAR SLU-01`: bootstrap, expiry retry, cross-tab logout,
   and current authorization invalidation are implemented; compatibility without
   Web Locks/BroadcastChannel and deployed browser behavior require monitoring.
-- `TOKEN_LIFECYCLE_UNCLEAR TLU-01`: family rotation/reuse/concurrency are
-  implemented; cleanup retention and signing-key rotation remain open.
+- `TOKEN_LIFECYCLE_UNCLEAR TLU-01`: family
+  rotation/reuse/concurrency/inventory/revocation, bounded cleanup, and
+  key-identified signing-key rotation are implemented. Deployment scheduling,
+  recent reauthentication, and rotation ownership remain open.
 - `COOKIE_SECURITY_UNVERIFIED CSU-01`: deployed cookie security cannot be inferred from a configurable flag.

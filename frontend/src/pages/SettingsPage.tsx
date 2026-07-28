@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { PlugZap, Plus, RefreshCw, Send, Shield, Trash2, UserRound } from "lucide-react";
+import { LogOut, PlugZap, Plus, RefreshCw, Send, Shield, Trash2, UserRound } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useHealth } from "../hooks/useHealth";
 import { useI18n } from "../i18n";
 import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
-import type { AuthUser, WebhookEvent, WebhookResponse } from "../types/api";
+import type { AuthUser, SessionSummary, WebhookEvent, WebhookResponse } from "../types/api";
 
 const WEBHOOK_EVENTS: WebhookEvent[] = ["entry.publish", "entry.unpublish", "page.publish", "page.unpublish"];
 
@@ -52,6 +52,12 @@ export function SettingsPage() {
   const [user, setUser] = useState<AuthUser | null>(storedUser);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionMessage, setSessionMessage] = useState<string | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
+  const [logoutAllLoading, setLogoutAllLoading] = useState(false);
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
   const [webhookDraft, setWebhookDraft] = useState<WebhookDraft>(() => createWebhookDraft());
   const [webhookError, setWebhookError] = useState<string | null>(null);
@@ -83,10 +89,24 @@ export function SettingsPage() {
     }
   }, [t]);
 
+  const loadSessions = useCallback(async function loadSessions() {
+    setSessionLoading(true);
+    setSessionError(null);
+    try {
+      const response = await api.auth.sessions();
+      setSessions(response.sessions);
+    } catch (caught) {
+      setSessionError(apiMessage(caught, "Unable to load active sessions."));
+    } finally {
+      setSessionLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadMe();
+    void loadSessions();
     void loadWebhooks();
-  }, [loadMe, loadWebhooks]);
+  }, [loadMe, loadSessions, loadWebhooks]);
 
   async function logout() {
     try {
@@ -95,6 +115,45 @@ export function SettingsPage() {
       // Local logout remains valid when the refresh token is already revoked.
     }
     clearSession();
+  }
+
+  async function revokeSession(session: SessionSummary) {
+    const prompt = session.current
+      ? "Revoke this current session and log out this browser?"
+      : "Revoke this session?";
+    if (!window.confirm(prompt)) return;
+    if (revokingSessionId || logoutAllLoading) return;
+    setRevokingSessionId(session.session_id);
+    setSessionError(null);
+    setSessionMessage(null);
+    try {
+      const result = await api.auth.revokeSession(session.session_id);
+      if (result.current_session) {
+        clearSession();
+        return;
+      }
+      setSessionMessage(result.revoked ? "Session revoked." : "Session was already unavailable.");
+      await loadSessions();
+    } catch (caught) {
+      setSessionError(apiMessage(caught, "Unable to revoke the session."));
+    } finally {
+      setRevokingSessionId(null);
+    }
+  }
+
+  async function logoutAllSessions() {
+    if (!window.confirm("Log out every session, including this browser?")) return;
+    if (logoutAllLoading || revokingSessionId) return;
+    setLogoutAllLoading(true);
+    setSessionError(null);
+    setSessionMessage(null);
+    try {
+      await api.auth.logoutAll();
+      clearSession();
+    } catch (caught) {
+      setSessionError(apiMessage(caught, "Unable to log out all sessions."));
+      setLogoutAllLoading(false);
+    }
   }
 
   function toggleDraftEvent(event: WebhookEvent) {
@@ -241,6 +300,106 @@ export function SettingsPage() {
             {t("settings.deliveryApi")}
             <input value="/api/v1" readOnly />
           </label>
+        </div>
+      </section>
+
+      <section
+        className="panel list-panel full-width-panel"
+        role="region"
+        aria-label="Active sessions"
+      >
+        <div className="panel-header">
+          <div>
+            <h2>Active sessions</h2>
+            <span>Logical browser sessions. No credential or device fingerprint is stored.</span>
+          </div>
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => void loadSessions()}
+            aria-label="Refresh sessions"
+            disabled={sessionLoading || logoutAllLoading}
+          >
+            <RefreshCw size={16} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>Created</th>
+                <th>Last used</th>
+                <th>Expires</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>{sessionLoading ? "Loading sessions..." : "No active sessions."}</td>
+                </tr>
+              ) : (
+                sessions.map((session) => (
+                  <tr key={session.session_id} data-testid={`session-${session.session_id}`}>
+                    <td>{session.current ? "Current session" : "Other session"}</td>
+                    <td>{session.created_at}</td>
+                    <td>{session.last_used_at}</td>
+                    <td>{session.expires_at}</td>
+                    <td>
+                      <StatusBadge
+                        label={
+                          session.compromised
+                            ? "Compromised"
+                            : session.revoked
+                              ? "Revoked"
+                              : "Active"
+                        }
+                        tone={
+                          session.compromised
+                            ? "danger"
+                            : session.revoked
+                              ? "warning"
+                              : "success"
+                        }
+                      />
+                    </td>
+                    <td>
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        aria-label="Revoke session"
+                        onClick={() => void revokeSession(session)}
+                        disabled={Boolean(revokingSessionId) || logoutAllLoading}
+                      >
+                        <Shield size={16} aria-hidden="true" />
+                        {revokingSessionId === session.session_id ? "Revoking..." : "Revoke"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="panel-actions padded">
+          <div className="status-stack" aria-live="polite">
+            {sessionError && <StatusBadge label={sessionError} tone="danger" />}
+            {sessionMessage && <StatusBadge label={sessionMessage} tone="success" />}
+          </div>
+          <button
+            className="primary-button"
+            type="button"
+            aria-label="Log out all sessions"
+            onClick={() => void logoutAllSessions()}
+            disabled={logoutAllLoading || Boolean(revokingSessionId)}
+          >
+            <LogOut size={16} aria-hidden="true" />
+            {logoutAllLoading ? "Logging out..." : "Log out all sessions"}
+          </button>
         </div>
       </section>
 

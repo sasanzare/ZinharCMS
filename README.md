@@ -120,8 +120,9 @@ Set-Location ZinharCMS
 Copy-Item .env.example .env
 ```
 
-Review `.env` before starting services. Replace the `JWT_SECRET` placeholder
-with a unique random value. On a new empty database, set both
+Review `.env` before starting services. Replace the `JWT_KEY_RING` example with
+a JSON key ring containing one active HS256 key with a unique identifier and a
+unique random secret of at least 32 bytes. On a new empty database, set both
 `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` to provision the first
 administrator, then remove both values after the successful first startup.
 Public registration never grants an administrative role. The template is for

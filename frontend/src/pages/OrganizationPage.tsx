@@ -7,7 +7,6 @@ import { useI18n, type MessageKey } from "../i18n";
 import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import type {
-  CreatedInvitationResponse,
   EmailDeliveryResponse,
   AuditLogResponse,
   JsonRecord,
@@ -120,7 +119,6 @@ export function OrganizationPage() {
   const [rateLimitDraft, setRateLimitDraft] = useState<RateLimitDraft>(toRateLimitDraft(null));
   const [acceptToken, setAcceptToken] = useState("");
   const [roleDrafts, setRoleDrafts] = useState<Record<string, OrganizationRole>>({});
-  const [createdInvitation, setCreatedInvitation] = useState<CreatedInvitationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -130,7 +128,6 @@ export function OrganizationPage() {
   const canManage = membershipRole ? MANAGER_ROLES.has(membershipRole) : false;
   const isOwner = membershipRole === "owner";
   const ownerCount = members.filter((member) => member.role === "owner" && member.status === "active").length;
-  const inviteLink = createdInvitation ? `${window.location.origin}${createdInvitation.accept_path}` : "";
 
   const visibleRoleOptions = useMemo(() => {
     return isOwner ? ROLE_OPTIONS : ROLE_OPTIONS.filter((role) => role !== "owner");
@@ -212,9 +209,19 @@ export function OrganizationPage() {
   );
 
   useEffect(() => {
-    const token = new URLSearchParams(location.search).get("invite");
-    if (token) setAcceptToken(token);
-  }, [location.search]);
+    const search = new URLSearchParams(location.search);
+    const token = search.get("invite");
+    if (!token) return;
+
+    setAcceptToken(token);
+    search.delete("invite");
+    const remainingQuery = search.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${location.pathname}${remainingQuery ? `?${remainingQuery}` : ""}${location.hash}`,
+    );
+  }, [location.hash, location.pathname, location.search]);
 
   useEffect(() => {
     void loadWorkspace();
@@ -273,7 +280,7 @@ export function OrganizationPage() {
     setMessage(null);
     try {
       const invitation = await api.organizations.invite(inviteDraft);
-      setCreatedInvitation(invitation);
+      setInvitations((current) => [invitation, ...current.filter((item) => item.id !== invitation.id)]);
       setInviteDraft({ email: "", role: "editor" });
       setInvitations(await api.organizations.invitations());
       setMessage(t("organization.message.invited"));
@@ -381,11 +388,6 @@ export function OrganizationPage() {
     } finally {
       setActionLoading(false);
     }
-  }
-
-  async function copyInviteLink() {
-    await window.navigator.clipboard.writeText(inviteLink);
-    setMessage(t("organization.message.copied"));
   }
 
   async function copyWorkspaceUrl() {
@@ -881,16 +883,6 @@ export function OrganizationPage() {
               {t("organization.invite.submit")}
             </button>
           </div>
-          {createdInvitation && (
-            <div className="invite-link-box padded">
-              <span>{t("organization.invite.link")}</span>
-              <code>{inviteLink}</code>
-              <button className="secondary-button" type="button" onClick={() => void copyInviteLink()}>
-                <Copy size={16} aria-hidden="true" />
-                {t("organization.copyLink")}
-              </button>
-            </div>
-          )}
         </section>
       )}
 

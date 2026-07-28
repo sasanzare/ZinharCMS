@@ -19,7 +19,6 @@ import type {
   CustomerPortalResponse,
   AcceptInvitationRequest,
   CreateOrganizationRequest,
-  CreatedInvitationResponse,
   InviteMemberRequest,
   CommentEntityType,
   CommentRequest,
@@ -35,6 +34,9 @@ import type {
   HealthResponse,
   JsonRecord,
   MeResponse,
+  LogoutAllResult,
+  RevokeSessionResult,
+  SessionPage,
   EmailDeliveryResponse,
   OrganizationDetailResponse,
   OrganizationDomainRequest,
@@ -252,6 +254,21 @@ export const api = {
       }
     },
     me: () => request<MeResponse>("/api/auth/me", { auth: true }),
+    sessions: (page = 1, perPage = 20) =>
+      request<SessionPage>(
+        `/api/auth/sessions${query({ page, per_page: perPage })}`,
+        { auth: true },
+      ),
+    revokeSession: (sessionId: string) =>
+      request<RevokeSessionResult>(
+        `/api/auth/sessions/${encodeURIComponent(sessionId)}`,
+        { method: "DELETE", auth: true },
+      ),
+    logoutAll: () =>
+      request<LogoutAllResult>("/api/auth/logout-all", {
+        method: "POST",
+        auth: true,
+      }),
   },
   billing: {
     plans: () => request<PlanResponse[]>("/api/billing/plans", { auth: true }),
@@ -302,7 +319,7 @@ changePlan: (payload: ChangePlanRequest) =>
       }),
     invitations: () => request<OrganizationInvitationResponse[]>("/api/organizations/current/invitations", { auth: true }),
     invite: (payload: InviteMemberRequest) =>
-      request<CreatedInvitationResponse>("/api/organizations/current/invitations", {
+      request<OrganizationInvitationResponse>("/api/organizations/current/invitations", {
         method: "POST",
         auth: true,
         body: payload,

@@ -36,24 +36,37 @@ The backend optionally loads a local dotenv file and then reads environment vari
 | Category | Variable names | Observed behavior |
 | --- | --- | --- |
 | Persistence | `DATABASE_URL`, `REDIS_URL` | Database is required; Redis has a local default |
-| Token | `JWT_SECRET`, `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY` | Secret required and minimum 32 characters; lifetimes configurable |
+| Token | `JWT_KEY_RING`, `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY` | JSON key ring required; exactly one active HS256 key; unique `kid`; every secret at least 32 bytes; lifetimes configurable |
 | Browser | `CORS_ORIGIN`, `COOKIE_SECURE` | Single CORS origin; cookie Secure flag configurable |
 | Login limiting | `LOGIN_RATE_LIMIT_MAX_FAILURES`, `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Configurable failed-attempt threshold/window |
 | Tenant limiting | `ORG_RATE_LIMIT_PER_MINUTE`, `ORG_USER_RATE_LIMIT_PER_MINUTE`, `ORG_RATE_LIMIT_BURST` | Redis-backed organization/user limits |
 | Files | `UPLOAD_DIR`, `MAX_UPLOAD_SIZE` | Storage path and request/upload limit inputs |
 | Billing/provider | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price and redirect variables | Optional provider credentials and URLs |
 | Email | `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_WEBHOOK_URL`, `EMAIL_FAILURE_MODE` | Provider mode, sender, optional webhook, failure policy |
+| Retention | `SECURITY_CLEANUP_BATCH_SIZE`, `EXPIRED_SESSION_RETENTION_DAYS`, `REVOKED_SESSION_RETENTION_DAYS`, `COMPROMISED_SESSION_RETENTION_DAYS`, `SECURITY_TOKEN_RETENTION_DAYS`, `SECURITY_AUDIT_RETENTION_DAYS`, `LOGIN_ATTEMPT_RETENTION_DAYS` | Bounded cleanup batch and minimum-validated retention windows |
 | Runtime | `APP_BASE_URL`, `PORT`, `RUST_LOG`, `VITE_API_URL` | URL, listening, logging, and client API base |
 
 No secret values are included in this document.
 
 ## Validation and Failure
 
-The backend rejects a missing/short JWT secret and invalid typed values. Several high-impact settings have development-oriented defaults. Optional provider credentials can disable or change provider behavior depending on the calling service.
+The backend rejects a missing or malformed key ring, duplicate/invalid key
+identifiers, unsupported algorithms, weak or placeholder key material, more
+than one active key, an unbounded previous key, and invalid typed values.
+Previous keys must have a verification cutoff bounded by the configured access
+token lifetime. Several high-impact settings have development-oriented
+defaults. Optional provider credentials can disable or change provider behavior
+depending on the calling service.
 
 ## Unverified Secret Lifecycle
 
-`SECRET_HANDLING_UNVERIFIED SHU-01`: no repository evidence proves a production secret manager, encryption at rest, access policy, rotation process, dual-key JWT rotation, incident revocation, or log redaction. Tracked examples and ignored local files are hygiene controls, not production secret governance.
+`SECRET_HANDLING_UNVERIFIED SHU-01`: the repository now supports a bounded
+active/previous JWT rotation window, strict key identifiers, and payload
+redaction for stored invitation deliveries. No repository evidence proves a
+production secret manager, encryption at rest, access policy, rotation
+ownership, incident revocation, or comprehensive log redaction. Tracked
+examples and ignored local files are hygiene controls, not production secret
+governance.
 
 ## Exposure Finding
 

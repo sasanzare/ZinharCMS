@@ -36,14 +36,19 @@ uncertainty_markers:
 
 `backend/src/main.rs` optionally loads a local `.env` file and then calls `Config::from_env`. Configuration is captured once at startup and stored in `Arc<Config>` inside `AppState`; no runtime reload mechanism was found.
 
-Required variables are `DATABASE_URL` and `JWT_SECRET`. The JWT secret must be at least 32 characters. Optional values and defaults are parsed by explicit helper functions. Invalid numeric, boolean, port, origin, URL parsing at consumers, or weak-secret values can stop startup.
+Required variables are `DATABASE_URL` and `JWT_KEY_RING`. The key-ring JSON must
+contain exactly one active HS256 key, unique restricted identifiers, and key
+material of at least 32 bytes; previous keys require a bounded verification
+cutoff. Optional values and defaults are parsed by explicit helper functions.
+Invalid numeric, boolean, port, origin, key-ring, URL parsing at consumers, or
+weak-secret values can stop startup.
 
 ## Environment Variable Catalog
 
 | Area | Variables | Required/default behavior |
 |---|---|---|
 | Persistence | `DATABASE_URL`, `REDIS_URL` | Database URL required; Redis defaults to local Redis |
-| Tokens | `JWT_SECRET`, `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY` | Secret required and length-checked; expiries default in source |
+| Tokens | `JWT_KEY_RING`, `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY` | Strict key ring required; expiries default in source |
 | Media | `UPLOAD_DIR`, `MAX_UPLOAD_SIZE` | Local directory and maximum size have source defaults |
 | HTTP | `CORS_ORIGIN`, `COOKIE_SECURE`, `PORT` | Local-development-oriented defaults are present |
 | Login protection | `LOGIN_RATE_LIMIT_MAX_FAILURES`, `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Integer defaults are present |
@@ -51,6 +56,7 @@ Required variables are `DATABASE_URL` and `JWT_SECRET`. The JWT secret must be a
 | Application links | `APP_BASE_URL` | Defaults to the local frontend URL |
 | Email | `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_WEBHOOK_URL`, `EMAIL_FAILURE_MODE` | Log-oriented defaults; webhook URL optional |
 | Tenant limits | `ORG_RATE_LIMIT_PER_MINUTE`, `ORG_USER_RATE_LIMIT_PER_MINUTE`, `ORG_RATE_LIMIT_BURST` | Integer defaults are present |
+| Security cleanup | `SECURITY_CLEANUP_BATCH_SIZE`, `EXPIRED_SESSION_RETENTION_DAYS`, `REVOKED_SESSION_RETENTION_DAYS`, `COMPROMISED_SESSION_RETENTION_DAYS`, `SECURITY_TOKEN_RETENTION_DAYS`, `SECURITY_AUDIT_RETENTION_DAYS`, `LOGIN_ATTEMPT_RETENTION_DAYS` | Bounded/default retention policy with validation |
 
 Secret values are deliberately not reproduced in OKF. `.env.example`, container configuration, CI, and deployment configuration must be checked together before changing environment contracts.
 
@@ -105,7 +111,13 @@ See the [state composition diagram](diagrams/application-state-composition.mmd),
 
 ## Phase 7 Security Configuration
 
-[Secrets and Security Configuration](../security/secrets-and-configuration.md) inventories security-relevant variable names without exposing values. JWT secret length is validated, while token lifetimes, cookie `Secure`, CORS origin, login limits, tenant rate limits, upload limits, and provider modes are configurable. Deployment secret storage, rotation, TLS, and redaction remain `SECRET_HANDLING_UNVERIFIED SHU-01`.
+[Secrets and Security Configuration](../security/secrets-and-configuration.md)
+inventories security-relevant variable names without exposing values. JWT
+key-ring structure and rotation bounds are validated, while token lifetimes,
+cookie `Secure`, CORS origin, login limits, tenant rate limits, upload limits,
+retention, and provider modes are configurable. Deployment secret storage,
+rotation execution, TLS, and complete redaction remain
+`SECRET_HANDLING_UNVERIFIED SHU-01`.
 
 ## Plugin and Marketplace State
 

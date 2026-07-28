@@ -1,10 +1,10 @@
 use std::net::SocketAddr;
 
-use axum::extract::{ConnectInfo, Extension, State};
+use axum::extract::{ConnectInfo, Extension, Path, Query, State};
 use axum::http::header::{COOKIE, ORIGIN, SET_COOKIE};
 use axum::http::{HeaderMap, HeaderValue};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Postgres, Transaction};
@@ -30,7 +30,15 @@ pub fn public_router() -> Router<AppState> {
 }
 
 pub fn protected_router() -> Router<AppState> {
-    Router::new().route("/api/auth/me", get(me))
+    Router::new()
+        .route("/api/auth/me", get(me))
+        .route("/api/auth/sessions", get(list_sessions))
+        .route("/api/auth/sessions/{session_id}", delete(revoke_session))
+        .route("/api/auth/logout-all", post(logout_all))
+        .route(
+            "/api/auth/admin/users/{user_id}/revoke-sessions",
+            post(privileged_revoke_sessions),
+        )
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -55,6 +63,22 @@ pub struct LoginRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct LogoutResponse {
     pub revoked: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SessionListQuery {
+    #[serde(default = "default_page")]
+    pub page: i64,
+    #[serde(default = "default_per_page")]
+    pub per_page: i64,
+}
+
+fn default_page() -> i64 {
+    1
+}
+
+fn default_per_page() -> i64 {
+    20
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -122,6 +146,10 @@ pub async fn module_status() -> Json<AuthModuleStatus> {
             "POST /api/auth/refresh",
             "POST /api/auth/logout",
             "GET /api/auth/me",
+            "GET /api/auth/sessions",
+            "DELETE /api/auth/sessions/{session_id}",
+            "POST /api/auth/logout-all",
+            "POST /api/auth/admin/users/{user_id}/revoke-sessions",
         ]
         .into_iter()
         .map(str::to_owned)
@@ -322,6 +350,103 @@ pub async fn me(
         organizations,
         default_organization_id,
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/auth/sessions",
+    tag = "auth",
+    params(
+        ("page" = Option<i64>, Query, description = "One-based page"),
+        ("per_page" = Option<i64>, Query, description = "Page size, maximum 100")
+    ),
+    responses((status = 200, description = "Current user's logical sessions", body = sessions::SessionPage))
+)]
+pub async fn list_sessions(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(query): Query<SessionListQuery>,
+    headers: HeaderMap,
+) -> Result<Json<sessions::SessionPage>, AppError> {
+    let current_refresh_token = refresh_token_from_request(&headers);
+    let sessions = sessions::list_sessions(
+        &state.db,
+        claims.sub,
+        current_refresh_token.as_deref(),
+        query.page,
+        query.per_page,
+    )
+    .await?;
+    Ok(Json(sessions))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/auth/sessions/{session_id}",
+    tag = "auth",
+    params(("session_id" = Uuid, Path, description = "Opaque session identifier")),
+    responses((status = 200, description = "Idempotent session revocation result", body = sessions::RevokeSessionResult))
+)]
+pub async fn revoke_session(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(session_id): Path<Uuid>,
+    headers: HeaderMap,
+) -> Result<(HeaderMap, Json<sessions::RevokeSessionResult>), AppError> {
+    validate_cookie_request_origin(&headers, &state)?;
+    let current_refresh_token = refresh_token_from_request(&headers);
+    let result = sessions::revoke_user_session(
+        &state.db,
+        claims.sub,
+        session_id,
+        current_refresh_token.as_deref(),
+    )
+    .await?;
+    let mut response_headers = HeaderMap::new();
+    if result.current_session {
+        response_headers.insert(SET_COOKIE, clear_refresh_cookie(&state)?);
+    }
+    Ok((response_headers, Json(result)))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/logout-all",
+    tag = "auth",
+    responses((status = 200, description = "Revoked every user session and incremented auth version", body = sessions::LogoutAllResult))
+)]
+pub async fn logout_all(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    headers: HeaderMap,
+) -> Result<(HeaderMap, Json<sessions::LogoutAllResult>), AppError> {
+    validate_cookie_request_origin(&headers, &state)?;
+    let result = sessions::logout_all_sessions(&state.db, claims.sub, claims.sub).await?;
+    let mut response_headers = HeaderMap::new();
+    response_headers.insert(SET_COOKIE, clear_refresh_cookie(&state)?);
+    Ok((response_headers, Json(result)))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/admin/users/{user_id}/revoke-sessions",
+    tag = "auth",
+    params(("user_id" = Uuid, Path, description = "Target user identifier")),
+    responses((status = 200, description = "Privileged account-session revocation", body = sessions::LogoutAllResult))
+)]
+pub async fn privileged_revoke_sessions(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(user_id): Path<Uuid>,
+    headers: HeaderMap,
+) -> Result<(HeaderMap, Json<sessions::LogoutAllResult>), AppError> {
+    validate_cookie_request_origin(&headers, &state)?;
+    let result = sessions::privileged_revoke_sessions(&state.db, claims.sub, user_id).await?;
+    let mut response_headers = HeaderMap::new();
+    if user_id == claims.sub {
+        response_headers.insert(SET_COOKIE, clear_refresh_cookie(&state)?);
+    }
+    Ok((response_headers, Json(result)))
 }
 
 async fn attach_default_organization_membership(

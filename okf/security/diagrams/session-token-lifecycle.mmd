@@ -1,27 +1,27 @@
 flowchart LR
-  %% Evidence: backend/src/routes/auth.rs, backend/src/services/jwt.rs, frontend/src/stores/useAppStore.ts
+  %% Evidence: backend/src/routes/auth.rs, backend/src/services/jwt.rs, backend/src/services/sessions.rs
   issue["Register / login / refresh\nIssue access and refresh tokens"]
-  access["Access token valid"]
-  refresh["Refresh token valid"]
-  stale["Access claims stale\nUser deactivated or role changed"]
+  access["Access token\nActive or bounded previous kid"]
+  refresh["Refresh family and current token valid"]
+  stale["Authoritative identity changed\nVersion or role mismatch"]
   accessExpired["Access token expired"]
-  rotate["Refresh request\nValidate hash and account"]
-  revoked["Presented refresh row revoked"]
+  rotate["Refresh request\nAdvisory lock and row lock"]
+  revoked["Family revoked or compromised"]
   refreshExpired["Refresh token expired"]
-  logout["Logout\nOptional refresh row revocation"]
+  one["Revoke one opaque session ID"]
+  all["Logout all / privileged revoke\nRevoke families and increment auth_version"]
 
   issue --> access
   issue --> refresh
   access -->|exp reached| accessExpired
-  access -.->|Account or role changes are not reloaded by generic middleware| stale
-  stale -->|exp reached| accessExpired
+  access -->|Middleware reloads current identity| stale
+  stale -->|Reject immediately| accessExpired
   refresh --> rotate
-  rotate --> revoked
-  revoked -->|New pair successfully created| issue
+  rotate -->|One-time predecessor update| issue
+  rotate -->|Reuse detected| revoked
   refresh -->|expires_at reached| refreshExpired
-  refresh --> logout
-  logout --> revoked
-  revoked -.->|No token family, reuse detection, or atomic rotation / TLU-01| uncertain["Unverified lifecycle behavior"]
-
-  classDef unclear stroke-dasharray: 5 5,fill:#fff8e1,stroke:#a66a00;
-  class stale,uncertain unclear;
+  refresh --> one
+  refresh --> all
+  one --> revoked
+  all --> revoked
+  all -->|Version mismatch| stale

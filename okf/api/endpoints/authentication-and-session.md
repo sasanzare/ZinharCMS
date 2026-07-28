@@ -27,22 +27,29 @@ uncertainty_markers:
 
 ## Family Boundary
 
-This family contains 6 registered handler-method endpoints. Access is **Five
-public/cookie-boundary endpoints and one bearer-authenticated endpoint**.
+This family contains 10 registered handler-method endpoints. Access is **Five
+public/cookie-boundary endpoints and five bearer-authenticated endpoints**.
 
-Module discovery, registration, login, refresh-token rotation, logout/revocation, and current-user/session context.
+Module discovery, registration, login, refresh-token rotation, current-family
+logout, session inventory, owned-session revocation, logout-all,
+super-admin-targeted bulk revocation, and current-user context.
 
 Exact method/path, stable endpoint ID, handler, access zone, input extractor, return type, OpenAPI status, and frontend coverage are recorded in the [Endpoint Catalog](../endpoint-catalog.md).
 
 ## Request Contract
 
 Registration and login use JSON. Refresh/logout accept only the
-`zinhar_refresh_token` cookie and validate browser Origin when present. Logout
-requires no bearer token; `me` does.
+`zinhar_refresh_token` cookie and validate browser Origin when present. Session
+inventory uses bearer authentication and pagination. Owned revoke and
+logout-all use bearer authentication and also validate browser Origin because
+they can clear or invalidate cookie-backed sessions. Privileged bulk revocation
+uses bearer authentication and an authoritative current `super_admin` role.
 
 ## Response Contract
 
-`AuthResponse`, `LogoutResponse`, `MeResponse`, and module status; auth issuance sets the refresh cookie.
+`AuthResponse`, `LogoutResponse`, `MeResponse`, `SessionPage`,
+`RevokeSessionResponse`, `LogoutAllResponse`, and module status; auth issuance
+sets the refresh cookie.
 
 ## Ownership and Persistence
 
@@ -52,7 +59,9 @@ requires no bearer token; `me` does.
 
 ## Frontend Contract
 
-Five operations are wrapped under `api.auth`; module discovery is backend-only.
+Login, registration, refresh, logout, current-user, session inventory,
+owned-session revoke, and logout-all are wrapped under `api.auth`; module
+discovery and privileged bulk revocation are backend-only.
 
 ## OpenAPI and Verification
 

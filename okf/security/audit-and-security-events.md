@@ -28,7 +28,11 @@ related_diagrams:
 
 ## Audit Stores
 
-`audit_logs` stores organization, optional actor, action, entity type, optional entity ID, JSON metadata, and timestamp. It is tenant-scoped and protected by forced RLS. `login_attempts` separately stores email, IP, success state, and attempt time and is not part of tenant audit logs.
+`audit_logs` stores organization, optional actor, action, entity type, optional
+entity ID, JSON metadata, and timestamp. It is tenant-scoped and protected by
+forced RLS. `security_audit_events` stores selected global identity/session
+security events with actor, target, controlled metadata, and timestamp.
+`login_attempts` separately stores email, IP, success state, and attempt time.
 
 ## Observed Event Coverage
 
@@ -36,16 +40,33 @@ Audit calls exist for selected organization/member/invitation/domain/rate-limit 
 
 Marketplace runtime authorization attempts record both allowed and rejected decisions. Provider events and domain-specific review-event tables add separate operational histories.
 
+Global security events cover individual and bulk session revocation,
+logout-all, recovery/verification token issuance/consumption/reuse/revocation,
+invitation acceptance, and bounded cleanup counts. The writer rejects metadata
+field names associated with credentials, hashes, passwords, secrets, and
+tokens.
+
 ## Reader Access
 
 Organization audit-log endpoints require organization admin-level access, with owner override through the RBAC helper. RLS constrains returned organization rows. Global platform histories and domain-specific event tables have separate authorization paths.
 
 ## Gaps
 
-No tenant audit event was found for registration, login, refresh, logout, failed bearer verification, generic RBAC denial, global-role assignment, JWT-secret changes, or every RLS bypass entry. Login-attempt records capture authentication outcomes but not refresh/logout and have no documented retention policy.
+No tenant/global security audit event is emitted for every registration, login,
+refresh, failed bearer verification, generic RBAC denial, global-role
+assignment, JWT key-ring change, or RLS bypass entry. Login-attempt records
+capture authentication outcomes. Default retention is now explicit for global
+security events and login attempts, but cleanup requires an external scheduler.
 
-`AUDIT_COVERAGE_UNCLEAR ACU-01`: there is no central security-event taxonomy, required-event matrix, tamper-evidence control, export/SIEM contract, retention schedule, or proof that every privileged mutation records an event.
+`AUDIT_COVERAGE_UNCLEAR ACU-01`: a controlled security-event writer and
+retention defaults now exist, but there is no complete required-event matrix,
+tamper-evidence control, export/SIEM contract, scheduler ownership, or proof that
+every privileged mutation records an event.
 
 ## Sensitive Data Guidance
 
-Audit metadata is flexible JSON. New writers should avoid secrets, raw tokens, passwords, private certificates, and unnecessary personal/provider data. This is a documentation expectation; no central metadata redactor was found.
+Tenant audit metadata remains flexible JSON. The new global security-event
+writer validates controlled top-level fields, but it is not a recursive general
+redactor. No writer may include raw tokens, hashes, passwords, authorization or
+cookie values, private certificates, secrets, or unnecessary personal/provider
+data.

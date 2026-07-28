@@ -143,7 +143,7 @@ Before beta:
 
 ## Production Readiness Checklist
 
-- `DATABASE_URL`, `JWT_SECRET`, CORS origin, and public URLs are environment-specific.
+- `DATABASE_URL`, `JWT_KEY_RING`, CORS origin, and public URLs are environment-specific.
 - Stripe secrets and webhook signing secret are configured outside source control.
 - Redis is available for cache/rate-limit paths.
 - Backups and restore drills are verified.

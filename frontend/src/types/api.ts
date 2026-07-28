@@ -52,6 +52,33 @@ export type AuthResponse = MeResponse & {
   token_type: string;
   expires_in: number;
 };
+
+export type SessionSummary = {
+  session_id: string;
+  created_at: string;
+  last_used_at: string;
+  expires_at: string;
+  current: boolean;
+  revoked: boolean;
+  compromised: boolean;
+};
+
+export type SessionPage = {
+  sessions: SessionSummary[];
+  total: number;
+  page: number;
+  per_page: number;
+};
+
+export type RevokeSessionResult = {
+  revoked: boolean;
+  current_session: boolean;
+};
+
+export type LogoutAllResult = {
+  revoked_sessions: number;
+  auth_version: number;
+};
 export type OrganizationRole = "owner" | "admin" | "editor" | "author" | "viewer" | "billing_manager";
 
 export type OrganizationResponse = {
@@ -103,11 +130,6 @@ export type OrganizationInvitationResponse = {
   accepted_at: string | null;
   created_at: string;
   updated_at: string;
-};
-
-export type CreatedInvitationResponse = OrganizationInvitationResponse & {
-  token: string;
-  accept_path: string;
 };
 
 export type CreateOrganizationRequest = {

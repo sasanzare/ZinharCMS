@@ -23,6 +23,10 @@ review, moderation, and catalog behavior.
 | `POST` | `/api/auth/login` | Issue access token and HttpOnly refresh cookie; rate-limited by failed IP attempts |
 | `POST` | `/api/auth/refresh` | Rotate refresh cookie and issue a new access token |
 | `POST` | `/api/auth/logout` | Revoke the cookie-selected refresh family and clear the refresh cookie |
+| `GET` | `/api/auth/sessions` | List the caller's non-expired logical refresh-token families |
+| `DELETE` | `/api/auth/sessions/{session_id}` | Revoke one caller-owned logical session |
+| `POST` | `/api/auth/logout-all` | Revoke all caller sessions and increment the authentication version |
+| `POST` | `/api/auth/admin/users/{user_id}/revoke-sessions` | Super-admin-only bulk revocation for one user |
 | `GET` | `/api/auth/me` | Current authenticated user |
 
 Use the access token as `Authorization: Bearer <token>` for protected endpoints.
@@ -43,6 +47,14 @@ Browser requests to refresh and logout must carry the exact configured Origin.
 `null`, malformed, duplicate, and untrusted origins are rejected. A missing
 Origin is accepted for non-browser clients. Credentialed CORS uses one explicit
 origin and never a wildcard.
+
+Session identifiers returned by the inventory are opaque public UUIDs, not
+refresh-token values or token hashes. Revoke-one and logout-all are
+cookie-affecting destructive actions and apply the same browser Origin check.
+Logout-all also increments `auth_version`, invalidating already-issued access
+tokens after the next authoritative identity check. The administrative bulk
+revocation route requires the caller's current database role to be
+`super_admin`.
 
 ## Authentication And Tenant Boundaries
 

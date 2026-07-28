@@ -61,7 +61,7 @@ end
 
 subgraph env_categories["Production environment categories"]
     env_database["Database and cache env [IMPLEMENTED]\nDATABASE_URL, REDIS_URL"]
-    env_auth["Auth and security env [IMPLEMENTED]\nJWT_SECRET, token expiry, CORS_ORIGIN"]
+    env_auth["Auth and security env [IMPLEMENTED]\nJWT_KEY_RING, token expiry, CORS_ORIGIN"]
     env_storage["Upload env [IMPLEMENTED]\nUPLOAD_DIR=/app/uploads, MAX_UPLOAD_SIZE"]
     env_billing["Billing env [PARTIAL]\nStripe secret, webhook secret, price ids, success/cancel/portal URLs"]
     env_email["Email env [IMPLEMENTED]\nEMAIL_PROVIDER log/disabled/webhook, EMAIL_FROM, EMAIL_WEBHOOK_URL"]

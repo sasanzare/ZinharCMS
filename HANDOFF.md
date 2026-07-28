@@ -2474,3 +2474,116 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   obtain approval for external advisory metadata transmission, and add the AST
   sink policy, shared malicious corpus, and production CSP/Trusted Types
   browser checks to CI without weakening the completed Phase 1-4 boundaries.
+
+### 2026-07-28 - Security Audit and Hardening Phase 5 completed
+
+- Verified `security/security-audit-fixes` at clean starting commit
+  `5c3f4d110f807e66239fec8bbf37c56f9cbb92aa`, read the Phase 1-4 reports, and
+  preserved the earlier finding IDs and closed boundaries.
+- Replaced the single no-`kid` JWT secret with a strict HS256 key ring:
+  exactly one active signer, deterministic `kid` selection, bounded previous
+  verification, retired/unknown/legacy rejection, exact protected headers,
+  clock-skew/lifetime limits, and fail-closed configuration.
+- Added migration `0028` and implemented opaque logical-session inventory,
+  owned/current-session revocation, logout-all with `auth_version` invalidation,
+  exact-super-admin privileged revocation, and advisory-lock serialization
+  against refresh/revocation races.
+- Added a hash-only, purpose/user/binding-bound internal recovery and
+  verification token foundation with bounded issue rate/TTL, supersession,
+  revocation, atomic single-use consumption, reuse handling, and controlled
+  security events. No public password-reset, email-verification, or email-change
+  product flow is claimed.
+- Pinned Argon2id v19 parameters, random salt and output length, and rejected
+  passwords containing NUL or exceeding 1,024 UTF-8 bytes before expensive
+  work.
+- Removed raw organization invitation links from administrative responses and
+  stored delivery payloads, redacted history in migration `0028`, erased
+  finalized hashes, serialized acceptance and shared organization capacity,
+  enforced recipient/active organization/server role boundaries, and removed
+  the invitation query from browser history after capture.
+- Added configurable stable-ID/`SKIP LOCKED` cleanup for sessions, security
+  tokens/events, invitation hashes, and login attempts. It is bounded,
+  idempotent, concurrent-safe, and transactionally rolls back on failure. The
+  callable service has no repository-owned scheduler.
+- Added Settings session management with current-session labeling,
+  per-session revoke, logout-all confirmation, duplicate-submit prevention,
+  plain-text rendering, and no browser persistence.
+- Confirmed `SEC-P05-001`, `SEC-P05-002`, `SEC-P05-003`, and `SEC-P05-007`
+  (High); `SEC-P05-004`, `SEC-P05-005`, and `SEC-P05-006` (Medium);
+  `SEC-P05-008` (Low); and `SEC-P05-009` (Informational). No Critical finding
+  was confirmed. The existing local `cms_user` role remains an open owner action
+  because read-only inspection showed `SUPERUSER BYPASSRLS`.
+- Final backend validation passed:
+  `cargo fmt --all -- --check`;
+  `cargo clippy --all-targets --all-features -- -D warnings`; and
+  `PHASE2_TEST_DATABASE_URL=<LOCAL_TEST_DATABASE_URL>
+  PHASE2_UPGRADE_TEST_DATABASE_URL=<LOCAL_UPGRADE_TEST_DATABASE_URL>
+  PHASE5_UPGRADE_TEST_DATABASE_URL=<LOCAL_PHASE5_UPGRADE_TEST_DATABASE_URL>
+  cargo test --all-features`. Results were 180 unit tests, two live Phase 2
+  integration tests, one Phase 5 migration integration test, and no doc-test
+  failure, all through a verified `NOSUPERUSER NOBYPASSRLS` application role.
+- Final frontend validation passed: `npm run lint`, `npm run typecheck`,
+  `npm run check:sinks`, `npm test` (47 tests in 12 files), and
+  `npm run build`. The build retained only the known non-blocking chunk-size
+  warning.
+- Local and production `docker compose config --quiet` passed. Production-bundle
+  browser checks passed for registration, invitation URL removal, bounded
+  previous-key access, A-to-B key rotation/refresh bootstrap, two-session
+  inventory without browser persistence, individual revoke, and logout-all.
+  The Browser plugin runtime was unavailable, so the equivalent disposable
+  headless Edge/CDP fallback was used. Vite's development React-refresh
+  bootstrap remains incompatible with the strict Phase 4 CSP; the production
+  bundle passed without weakening the policy.
+- Final static closure passed: the report contains exactly 34 required headings
+  and six English Mermaid diagrams; 42 changed/untracked files contain no
+  Persian-script text; the production-shaped credential/secret and persisted
+  test-value scans found no match; the report has no mojibake; and
+  `git diff --check` passed.
+- `cargo audit` was unavailable because the subcommand is not installed.
+  `npm audit --omit=dev` was not run because external advisory-metadata
+  transmission was not authorized. No production/staging environment was
+  accessed and no live credential/key was rotated.
+- Temporary browser scripts/profiles were removed; services/listeners on ports
+  8080, 5173, and 9333 were stopped. Disposable databases
+  `cms_phase5_fresh_20260728` and `cms_phase5_upgrade_20260728` plus roles
+  `cms_phase5_app_20260728` and `cms_phase5_bootstrap_20260728` were dropped and
+  verified absent. The PostgreSQL service was returned to its stopped state.
+- **Created files:** `backend/migrations/0028_security_phase_five_key_session_recovery.sql`,
+  `backend/src/services/invitations.rs`,
+  `backend/src/services/security_audit.rs`,
+  `backend/src/services/security_cleanup.rs`,
+  `backend/src/services/security_tokens.rs`,
+  `backend/tests/security_phase5_migration.rs`,
+  `docs/security/PHASE_05_KEY_SESSION_RECOVERY_HARDENING.md`, and
+  `frontend/src/pages/SettingsPage.test.tsx`.
+- **Modified files:** `.env.example`, `.github/workflows/backend-ci.yml`,
+  `HANDOFF.md`, `README.md`, `backend/src/config.rs`,
+  `backend/src/routes/auth.rs`, `backend/src/routes/mod.rs`,
+  `backend/src/routes/organizations.rs`, `backend/src/services/email.rs`,
+  `backend/src/services/jwt.rs`, `backend/src/services/mod.rs`,
+  `backend/src/services/password.rs`, `backend/src/services/sessions.rs`,
+  `backend/tests/security_phase2_rls.rs`, `docker-compose.prod.yml`,
+  `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/V2_PHASE_EIGHT.md`,
+  `docs/diagrams/06-production-deployment.mmd`, `env.example`,
+  `frontend/src/pages/OrganizationPage.tsx`,
+  `frontend/src/pages/SettingsPage.tsx`, `frontend/src/services/api.ts`,
+  `frontend/src/types/api.ts`,
+  `okf/api/endpoints/authentication-and-session.md`,
+  `okf/backend/configuration-and-state.md`,
+  `okf/frontend/features/authentication-and-session.md`,
+  `okf/operations/environment-configuration.md`,
+  `okf/security/audit-and-security-events.md`,
+  `okf/security/authentication-architecture.md`,
+  `okf/security/diagrams/session-token-lifecycle.mmd`,
+  `okf/security/password-and-credential-handling.md`,
+  `okf/security/secrets-and-configuration.md`, and
+  `okf/security/session-and-token-lifecycle.md`.
+- No file is staged or committed; no push, migration on an owner environment,
+  deployment, external message, or production/staging mutation was performed.
+- **Exact Next Action:** the owner must back up each existing environment,
+  inspect and correct the application database role to
+  `NOSUPERUSER NOBYPASSRLS` through an approved change procedure, provision a
+  real `JWT_KEY_RING` through the deployment secret path, and assign cleanup
+  scheduling/retention ownership. Then review the complete Phase 5 diff and
+  explicitly authorize any stage/commit/push before beginning Phase 6 with the
+  highest-priority remaining inherited finding.

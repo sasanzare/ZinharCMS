@@ -34,7 +34,7 @@ Defaults below appear only when explicit in `Config::from_env` or tracked contai
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Database | `DATABASE_URL` | PostgreSQL connection | Required | Backend | Secret connection material | `config.rs` | Missing/invalid URL prevents startup or migration |
 | Cache | `REDIS_URL` | Redis connection | Optional; `redis://localhost:6379` | Backend | Usually sensitive by deployment | `config.rs` | Invalid URL prevents client creation; unreachable makes readiness fail |
-| Authentication | `JWT_SECRET` | HMAC token signing | Required; no default | Backend | **Secret** | `config.rs` | Missing or fewer than 32 characters prevents startup |
+| Authentication | `JWT_KEY_RING` | HMAC signing/verification key ring | Required; no default | Backend | **Secret** | `config.rs` | Malformed JSON, invalid/duplicate `kid`, non-HS256 algorithm, weak/placeholder material, invalid active-key count, or unbounded previous key prevents startup |
 | Authentication | `JWT_ACCESS_EXPIRY` | Access-token lifetime seconds | `3600` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |
 | Authentication | `JWT_REFRESH_EXPIRY` | Refresh-token lifetime seconds | `604800` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |
 | Authentication | `COOKIE_SECURE` | Secure refresh-cookie flag | `false` | Backend/browser boundary | Non-secret; security-critical | `config.rs` | Invalid boolean prevents startup |
@@ -60,6 +60,13 @@ Defaults below appear only when explicit in `Config::from_env` or tracked contai
 | Application | `ORG_RATE_LIMIT_PER_MINUTE` | Organization request rate | `600` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |
 | Application | `ORG_USER_RATE_LIMIT_PER_MINUTE` | Per-user organization rate | `120` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |
 | Application | `ORG_RATE_LIMIT_BURST` | Organization burst allowance | `120` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |
+| Cleanup | `SECURITY_CLEANUP_BATCH_SIZE` | Maximum candidates per security table per run | `500` | Backend/operations | Non-secret | `config.rs` | Must be within validated bounds |
+| Cleanup | `EXPIRED_SESSION_RETENTION_DAYS` | Expired session-family retention | `30` | Backend/operations | Non-secret | `config.rs` | Invalid value prevents startup |
+| Cleanup | `REVOKED_SESSION_RETENTION_DAYS` | Revoked session-family retention | `30` | Backend/operations | Non-secret | `config.rs` | Invalid value prevents startup |
+| Cleanup | `COMPROMISED_SESSION_RETENTION_DAYS` | Compromised session-family retention | `180` | Backend/operations | Non-secret | `config.rs` | Invalid value prevents startup |
+| Cleanup | `SECURITY_TOKEN_RETENTION_DAYS` | Finalized/expired security-token retention | `7` | Backend/operations | Non-secret | `config.rs` | Invalid value prevents startup |
+| Cleanup | `SECURITY_AUDIT_RETENTION_DAYS` | Global security-event retention | `365` | Backend/operations | Non-secret | `config.rs` | Values below the enforced minimum prevent startup |
+| Cleanup | `LOGIN_ATTEMPT_RETENTION_DAYS` | Login-attempt retention | `30` | Backend/operations | Non-secret | `config.rs` | Invalid value prevents startup |
 | Frontend | `VITE_API_URL` | Browser API base URL | Required build arg in production Dockerfile; frontend code has its own handling | Build/browser | Public by design | Dockerfile/frontend source | Missing production build arg fails Compose expansion |
 | Deployment | `POSTGRES_DB` | PostgreSQL database name | `cms_prod` in production-like Compose | Container | Non-secret | Compose | Used by image initialization/health |
 | Deployment | `POSTGRES_USER` | PostgreSQL user | `cms_user` in production-like Compose | Container | Identifier | Compose | Used by image initialization/health |

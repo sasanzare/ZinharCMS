@@ -59,8 +59,9 @@ uncertainty_markers:
 
 Provides login and registration UI, keeps the access token in volatile memory,
 restores authority through the `HttpOnly` refresh cookie, admits authenticated
-bootstrap state to the protected shell, and clears/broadcasts session state on
-logout.
+bootstrap state to the protected shell, lists/revokes logical sessions in
+Settings, and clears/broadcasts session state on current-session revocation or
+logout-all.
 
 It does not own authoritative credential verification, token validity, tenant membership, or permission enforcement. Those are backend responsibilities.
 
@@ -96,16 +97,23 @@ then clears and broadcasts client state.
 
 - Local: form mode, credential/profile inputs, pending state, and error.
 - Global: access token, refresh token, user, organization memberships, active organization.
-- Persistent: token strings, user JSON, memberships JSON, and active organization in `localStorage`.
-- No verified token expiry timer, cross-tab synchronization, or persistent schema version.
+- Persistent: non-secret user/membership/active-organization projections in
+  `localStorage`; no token strings or session inventory.
+- Access credentials remain in memory and cross-tab authentication messages are
+  transient.
 
 ## Backend Interactions
 
-Uses auth register, login, refresh, logout, and current-user client methods. Refresh exists as a callable method but is not part of an automatic interceptor. Detailed endpoint contracts are deferred to Phase 6.
+Uses auth register, login, refresh, logout, current-user, session-list,
+session-revoke, and logout-all client methods. One stable invalid-access-token
+response can trigger a coordinated refresh and single replay.
 
 ## Access Control
 
-The browser guard checks only token presence. It is not a security boundary and is marked `AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01`. Backend authentication and authorization must reject invalid or insufficient requests independently.
+The browser guard waits for explicit bootstrap state. It is not a security
+boundary and is marked `AUTHORIZATION_BEHAVIOR_UNVERIFIED ABV-01`. Backend
+authentication and authorization reject invalid or insufficient requests
+independently.
 
 ## UI Composition
 
@@ -117,13 +125,16 @@ Submission disables or changes the submit experience through local pending state
 
 ## Tests
 
-No dedicated authentication, session-store, guard, persistence, expiry, refresh, or logout frontend test was found. Backend auth tests do not substitute for browser behavior coverage.
+Dedicated frontend tests cover volatile credential storage, coordinated
+bootstrap/refresh/logout, plaintext session rendering, individual/current
+session revocation, and logout-all. Backend tests still remain authoritative
+for token and revocation semantics.
 
 ## Known Risks and Unknowns
 
 - `SOU-01`: reactive, transport, and persistent session ownership is distributed.
-- No global session-expiry recovery is implemented.
-- Tokens persist in browser storage.
+- Deployed-browser compatibility and monitoring for Web Locks/BroadcastChannel
+  remain operational concerns.
 - Development credential defaults can appear in built UI.
 - Intended browser session recovery policy requires `NOC-12`.
 

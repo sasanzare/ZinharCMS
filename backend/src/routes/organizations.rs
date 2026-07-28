@@ -12,7 +12,7 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::auth::OrganizationMembershipResponse;
-use crate::services::{audit, email, jwt, quota, rbac, rls};
+use crate::services::{audit, email, invitations, jwt, quota, rbac, rls};
 use crate::state::AppState;
 
 const INVITATION_TTL_DAYS: i64 = 7;
@@ -269,23 +269,8 @@ pub struct SaasAlertRuleResponse {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
-pub struct CreatedInvitationResponse {
-    #[serde(flatten)]
-    pub invitation: OrganizationInvitationResponse,
-    pub token: String,
-    pub accept_path: String,
-}
-
 #[derive(Debug, FromRow)]
 struct MemberRoleRow {
-    role: String,
-}
-
-#[derive(Debug, FromRow)]
-struct AcceptedInvitationRow {
-    id: Uuid,
-    organization_id: Uuid,
     role: String,
 }
 
@@ -979,13 +964,13 @@ pub async fn list_organization_invitations(
     path = "/api/organizations/current/invitations",
     tag = "organizations",
     request_body = InviteMemberRequest,
-    responses((status = 200, description = "Created organization invitation", body = CreatedInvitationResponse))
+    responses((status = 200, description = "Created organization invitation", body = OrganizationInvitationResponse))
 )]
 pub async fn create_organization_invitation(
     State(state): State<AppState>,
     Extension(tenant): Extension<TenantContext>,
     Json(payload): Json<InviteMemberRequest>,
-) -> Result<Json<CreatedInvitationResponse>, AppError> {
+) -> Result<Json<OrganizationInvitationResponse>, AppError> {
     let role = validate_member_role(&payload.role)?;
     if role == rbac::ORG_OWNER {
         require_org_owner(&tenant.role)?;
@@ -1070,11 +1055,7 @@ pub async fn create_organization_invitation(
         serde_json::json!({ "email": &invitation.email, "role": &invitation.role }),
     )
     .await?;
-    Ok(Json(CreatedInvitationResponse {
-        invitation,
-        token,
-        accept_path,
-    }))
+    Ok(Json(invitation))
 }
 
 #[utoipa::path(
@@ -1095,6 +1076,7 @@ pub async fn revoke_organization_invitation(
         r#"
         UPDATE organization_invitations invitation
         SET status = 'revoked'::organization_invitation_status,
+            token_hash = NULL,
             updated_at = now()
         WHERE invitation.id = $1
           AND invitation.organization_id = $2
@@ -1146,67 +1128,13 @@ pub async fn accept_invitation(
     Json(payload): Json<AcceptInvitationRequest>,
 ) -> Result<Json<OrganizationMembershipResponse>, AppError> {
     let token = payload.token.trim();
-    if token.is_empty() {
-        return Err(AppError::Validation(
-            "invitation token is required".to_owned(),
-        ));
+    if token.len() != 43 {
+        return Err(AppError::NotFound("valid invitation not found".to_owned()));
     }
 
-    let token_hash = jwt::hash_refresh_token(token);
-    let mut tx = state.db.begin().await?;
-
-    let invitation = sqlx::query_as::<_, AcceptedInvitationRow>(
-        r#"
-        SELECT invitation.id,
-               invitation.organization_id,
-               invitation.role::text as role
-        FROM organization_invitations invitation
-        JOIN users u ON lower(u.email::text) = lower(invitation.email::text)
-        WHERE invitation.token_hash = $1
-          AND invitation.status = 'pending'::organization_invitation_status
-          AND invitation.expires_at > now()
-          AND u.id = $2
-        "#,
-    )
-    .bind(token_hash)
-    .bind(claims.sub)
-    .fetch_optional(&mut *tx)
-    .await?
-    .ok_or_else(|| AppError::NotFound("valid invitation not found".to_owned()))?;
-    quota::ensure_member_capacity_for_org(&state.db, invitation.organization_id, claims.sub, false)
-        .await?;
-
-    sqlx::query(
-        r#"
-        INSERT INTO organization_members (organization_id, user_id, role, status, joined_at)
-        VALUES ($1, $2, $3::organization_member_role, 'active'::organization_member_status, now())
-        ON CONFLICT (organization_id, user_id) DO UPDATE
-        SET role = EXCLUDED.role,
-            status = 'active'::organization_member_status,
-            joined_at = COALESCE(organization_members.joined_at, now()),
-            updated_at = now()
-        "#,
-    )
-    .bind(invitation.organization_id)
-    .bind(claims.sub)
-    .bind(&invitation.role)
-    .execute(&mut *tx)
-    .await?;
-
-    sqlx::query(
-        r#"
-        UPDATE organization_invitations
-        SET status = 'accepted'::organization_invitation_status,
-            accepted_at = now(),
-            updated_at = now()
-        WHERE id = $1
-        "#,
-    )
-    .bind(invitation.id)
-    .execute(&mut *tx)
-    .await?;
-
-    tx.commit().await?;
+    let invitation = invitations::accept_invitation(&state.db, claims.sub, token)
+        .await?
+        .ok_or_else(|| AppError::NotFound("valid invitation not found".to_owned()))?;
     audit::record_for_organization(
         &state.db,
         invitation.organization_id,
@@ -1592,6 +1520,7 @@ async fn expire_pending_invitations(
         r#"
         UPDATE organization_invitations
         SET status = 'expired'::organization_invitation_status,
+            token_hash = NULL,
             updated_at = now()
         WHERE organization_id = $1
           AND status = 'pending'::organization_invitation_status

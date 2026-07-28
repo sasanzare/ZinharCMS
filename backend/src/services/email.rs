@@ -120,11 +120,12 @@ async fn send_transactional_email(
     .bind(template)
     .bind(subject)
     .bind(&provider)
-    .bind(json!({
-        "from": &config.email_from,
-        "body": body,
-        "data": payload,
-    }))
+    .bind(stored_delivery_payload(
+        template,
+        &config.email_from,
+        body,
+        payload.clone(),
+    ))
     .fetch_one(db.as_mut())
     .await?;
 
@@ -143,6 +144,23 @@ async fn send_transactional_email(
     }
 
     Ok(())
+}
+
+fn stored_delivery_payload(template: &str, from: &str, body: &str, payload: Value) -> Value {
+    if template == "organization_invitation" {
+        json!({
+            "from": from,
+            "sensitive_delivery": true,
+            "organization_id": payload.get("organization_id"),
+            "organization_name": payload.get("organization_name"),
+        })
+    } else {
+        json!({
+            "from": from,
+            "body": body,
+            "data": payload,
+        })
+    }
 }
 
 async fn send_webhook(
@@ -259,7 +277,9 @@ impl DeliveryResult {
 
 #[cfg(test)]
 mod tests {
-    use super::absolute_url;
+    use serde_json::json;
+
+    use super::{absolute_url, stored_delivery_payload};
 
     #[test]
     fn absolute_url_joins_base_and_path() {
@@ -267,5 +287,19 @@ mod tests {
             absolute_url("http://localhost:5173/", "/organization?invite=abc"),
             "http://localhost:5173/organization?invite=abc"
         );
+    }
+
+    #[test]
+    fn stored_invitation_delivery_omits_the_bearer_link_and_body() {
+        let stored = stored_delivery_payload(
+            "organization_invitation",
+            "ZinharCMS <noreply@example.invalid>",
+            "contains <RECOVERY_TOKEN>",
+            json!({ "accept_url": "https://example.invalid/?invite=<RECOVERY_TOKEN>" }),
+        );
+        let serialized = serde_json::to_string(&stored).unwrap();
+        assert!(!serialized.contains("RECOVERY_TOKEN"));
+        assert!(!serialized.contains("accept_url"));
+        assert_eq!(stored["sensitive_delivery"], true);
     }
 }
