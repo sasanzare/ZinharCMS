@@ -4,6 +4,7 @@ import { CreditCard, ExternalLink, Gauge, RefreshCw, RotateCcw, ShieldCheck } fr
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
 import { ApiError, api } from "../services/api";
+import { navigateToTrustedExternalUrl } from "../security/richContent";
 import { useAppStore } from "../stores/useAppStore";
 import type { BillingUsageResponse, PlanResponse, UsageMetricResponse } from "../types/api";
 
@@ -103,7 +104,7 @@ export function BillingPage() {
     setMessage(null);
     try {
       const session = await api.billing.checkout({ plan_slug: plan.slug });
-      window.location.assign(session.url);
+      navigateToTrustedExternalUrl(session.url);
     } catch (caught) {
       setError(apiMessage(caught, t("billing.error.checkout")));
       setActionLoading(false);
@@ -116,7 +117,7 @@ export function BillingPage() {
     setMessage(null);
     try {
       const session = await api.billing.portal();
-      window.location.assign(session.url);
+      navigateToTrustedExternalUrl(session.url);
     } catch (caught) {
       setError(apiMessage(caught, t("billing.error.portal")));
       setActionLoading(false);

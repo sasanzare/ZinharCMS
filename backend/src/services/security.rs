@@ -8,6 +8,7 @@ use sqlx::PgPool;
 
 use crate::error::AppError;
 use crate::services::entry_validation::FieldSchemaDocument;
+use crate::services::rich_content;
 
 pub const LOGIN_RATE_LIMIT_MAX_FAILURES: i64 = 5;
 pub const LOGIN_RATE_LIMIT_WINDOW_SECONDS: i64 = 15 * 60;
@@ -197,121 +198,12 @@ fn parse_x_real_ip(headers: &HeaderMap) -> Result<IpAddr, ()> {
     value.trim().parse::<IpAddr>().map_err(|_| ())
 }
 
-pub fn sanitize_entry_data(fields: &FieldSchemaDocument, data: Value) -> Value {
-    let Some(mut object) = data.as_object().cloned() else {
-        return data;
-    };
-
-    for field in fields
-        .fields
-        .iter()
-        .filter(|field| field.field_type == "richtext")
-    {
-        if let Some(value) = object.get(&field.name).and_then(Value::as_str) {
-            object.insert(field.name.clone(), Value::String(sanitize_richtext(value)));
-        }
-    }
-
-    Value::Object(object)
+pub fn sanitize_entry_data(fields: &FieldSchemaDocument, data: Value) -> Result<Value, AppError> {
+    rich_content::sanitize_entry_data(fields, data)
 }
 
-pub fn sanitize_richtext(value: &str) -> String {
-    let without_blocks = ["script", "style", "iframe", "object", "embed"]
-        .into_iter()
-        .fold(value.to_owned(), remove_tag_block);
-    sanitize_tags(&without_blocks)
-}
-
-fn remove_tag_block(input: String, tag: &str) -> String {
-    let mut output = String::with_capacity(input.len());
-    let lower = input.to_ascii_lowercase();
-    let mut cursor = 0;
-    let start_pattern = format!("<{tag}");
-    let end_pattern = format!("</{tag}>");
-
-    while let Some(relative_start) = lower[cursor..].find(&start_pattern) {
-        let start = cursor + relative_start;
-        output.push_str(&input[cursor..start]);
-        let search_from = start + start_pattern.len();
-        if let Some(relative_end) = lower[search_from..].find(&end_pattern) {
-            cursor = search_from + relative_end + end_pattern.len();
-        } else {
-            cursor = input.len();
-            break;
-        }
-    }
-
-    output.push_str(&input[cursor..]);
-    output
-}
-
-fn sanitize_tags(input: &str) -> String {
-    let mut output = String::with_capacity(input.len());
-    let mut cursor = 0;
-    while let Some(relative_start) = input[cursor..].find('<') {
-        let start = cursor + relative_start;
-        output.push_str(&input[cursor..start]);
-        let Some(relative_end) = input[start..].find('>') else {
-            output.push_str("&lt;");
-            cursor = start + 1;
-            continue;
-        };
-        let end = start + relative_end;
-        if let Some(tag) = sanitize_html_tag(&input[start + 1..end]) {
-            output.push_str(&tag);
-        }
-        cursor = end + 1;
-    }
-    output.push_str(&input[cursor..]);
-    output
-}
-
-fn sanitize_html_tag(raw: &str) -> Option<String> {
-    let trimmed = raw.trim();
-    if trimmed.is_empty() || trimmed.starts_with('!') || trimmed.starts_with('?') {
-        return None;
-    }
-
-    let closing = trimmed.starts_with('/');
-    let tag_body = trimmed.trim_start_matches('/').trim_start();
-    let tag_name = tag_body
-        .split(|ch: char| ch.is_ascii_whitespace() || ch == '/')
-        .next()
-        .unwrap_or_default()
-        .to_ascii_lowercase();
-    let allowed = matches!(
-        tag_name.as_str(),
-        "a" | "b"
-            | "blockquote"
-            | "br"
-            | "code"
-            | "em"
-            | "h1"
-            | "h2"
-            | "h3"
-            | "h4"
-            | "h5"
-            | "h6"
-            | "i"
-            | "img"
-            | "li"
-            | "ol"
-            | "p"
-            | "pre"
-            | "span"
-            | "strong"
-            | "u"
-            | "ul"
-    );
-    if !allowed {
-        return None;
-    }
-
-    if closing {
-        Some(format!("</{tag_name}>"))
-    } else {
-        Some(format!("<{tag_name}>"))
-    }
+pub fn sanitize_richtext(value: &str) -> Result<String, AppError> {
+    rich_content::sanitize_rich_text(value)
 }
 
 #[cfg(test)]
@@ -324,7 +216,7 @@ mod tests {
     #[test]
     fn richtext_removes_script_blocks() {
         assert_eq!(
-            sanitize_richtext("<p>safe</p><script>alert(1)</script>"),
+            sanitize_richtext("<p>safe</p><script>alert(1)</script>").unwrap(),
             "<p>safe</p>"
         );
     }
@@ -332,8 +224,9 @@ mod tests {
     #[test]
     fn richtext_strips_attributes() {
         assert_eq!(
-            sanitize_richtext("<img src=x onerror=alert(1)><a href=\"javascript:alert(1)\">x</a>"),
-            "<img><a>x</a>"
+            sanitize_richtext("<img src=x onerror=alert(1)><a href=\"javascript:alert(1)\">x</a>")
+                .unwrap(),
+            "<img><a rel=\"noopener noreferrer\">x</a>"
         );
     }
 

@@ -15,7 +15,7 @@ primary_sources:
   - "backend/Dockerfile.prod"
   - "frontend/Dockerfile"
   - "frontend/Dockerfile.prod"
-  - "frontend/nginx.conf"
+  - "frontend/nginx.conf.template"
   - "docker-compose.yml"
   - "docker-compose.prod.yml"
 related_documents:
@@ -35,7 +35,7 @@ related_diagrams:
 | `backend/Dockerfile` | Single stage; copies manifest, lock, migrations, source; debug build | `rust:1.96-bookworm` | Root/default | `8080`; `cargo run` | Runtime environment external; source/migrations inside image | None | Not defined; build cache follows Docker layers |
 | `backend/Dockerfile.prod` | Rust builder then Debian runtime | `rust:1.96-bookworm`, `debian:bookworm-slim` | System user `cms` UID 10001 | `8080`; `/app/cms-backend` | `/app/uploads` created; Compose mounts volume; migrations copied | None | Not defined; target platform not declared |
 | `frontend/Dockerfile` | Single Node development stage | `node:24-alpine` | Root/default | `5173`; Vite dev server | Installs with `npm ci`; source copied | None | Not defined |
-| `frontend/Dockerfile.prod` | Node builder then Nginx runtime | `node:24-alpine`, `nginx:1.27-alpine` | Image default | `80`; `nginx -g daemon off;` | `VITE_API_URL` build argument; static bundle; SPA fallback | None | Not defined; no registry/push |
+| `frontend/Dockerfile.prod` | Node builder then Nginx runtime | `node:24-alpine`, `nginx:1.27-alpine` | Image default | `80`; `nginx -g daemon off;` | `VITE_API_URL` build argument; exact CSP API/WebSocket runtime origins; Nginx template; static bundle; SPA fallback | None | Not defined; no registry/push |
 
 ## Compose Relationships
 
@@ -47,7 +47,10 @@ Local Compose uses PostgreSQL, Redis, and pgAdmin only. Production-like Compose 
 - Base images use mutable tags rather than digests.
 - Frontend dependency installation uses `npm ci`; backend uses the tracked Cargo lock.
 - No image scan, SBOM, signature, provenance, registry credentials, push step, target architecture, resource limit, read-only filesystem, capability drop, or application container health check is defined.
-- Secret values are injected at runtime/build invocation, not baked by these tracked files; `VITE_API_URL` is intentionally browser-visible.
+- Secret values are injected at runtime/build invocation, not baked by these tracked files; `VITE_API_URL`, `CSP_API_ORIGIN`, and `CSP_WEBSOCKET_ORIGIN` are intentionally browser-visible origins.
+- The Nginx entrypoint expands the production CSP template and serves HSTS,
+  COOP, CORP, Referrer Policy, Permissions Policy, frame denial, and `nosniff`.
+  Bypassing the entrypoint leaves the template unexpanded.
 
 These images are buildable definitions, not evidence of production hardening or deployment. See [Deployment Workflow](deployment-workflow.md), [Runtime Topology](../operations/runtime-topology.md), and [Secrets](../security/secrets-and-configuration.md).
 

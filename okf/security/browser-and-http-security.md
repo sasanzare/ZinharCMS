@@ -30,13 +30,21 @@ related_diagrams:
 
 Application middleware adds:
 
-- Content Security Policy: default self; images self/data/blob; media self; objects none; frame ancestors none; base URI self; form action self.
+- API Content Security Policy: deny all sources, base changes, objects, frames,
+  forms, scripts, styles, images, media, connections, and unapproved Trusted
+  Types policies.
 - `X-Content-Type-Options: nosniff`.
-- `Referrer-Policy: same-origin`.
+- `Referrer-Policy: strict-origin-when-cross-origin`.
 - `X-Frame-Options: DENY`.
+- `Cross-Origin-Opener-Policy: same-origin`.
+- `Cross-Origin-Resource-Policy: same-site`.
 - permissions policy disabling camera, microphone, and geolocation.
 
-No application HSTS, COOP, COEP, CORP, cache-control policy for authentication responses, or content-disposition policy was found. HSTS may be owned by an external TLS proxy, but that was not verified.
+The frontend Nginx template adds the enforced production CSP, HSTS, COOP,
+same-origin CORP, frame denial, `nosniff`, Referrer Policy, and Permissions
+Policy to static and SPA responses. Vite development and preview provide
+development and production policy validation respectively. TLS termination is
+still external to the repository.
 
 ## CORS
 
@@ -59,10 +67,20 @@ and selects only the stable application protocol.
 
 ## Status Markers
 
-- `SECURITY_HEADER_STATUS_UNCLEAR SHSU-01`: direct middleware behavior is tested, but deployed proxy overrides, error/static responses, TLS, and HSTS are unverified.
+- `SECURITY_HEADER_STATUS_UNCLEAR SHSU-01`: API middleware, Vite preview, and
+  Nginx template behavior are tested, but a real deployed proxy can still
+  override headers; target-environment TLS and HSTS remain unverified.
 - `COOKIE_SECURITY_UNVERIFIED CSU-01`: production Secure/TLS behavior is configuration-dependent.
 - `RATE_LIMITING_STATUS_UNCLEAR RLSU-01`: proxy trust for client IP and live Redis behavior are unverified.
 
 ## Deployment Boundary
 
-The frontend Nginx image serves static SPA files and immutable asset cache headers; it does not terminate configured TLS or proxy API traffic. Production ingress, TLS/HSTS enforcement, trusted proxy behavior, public origins, traffic switching, and application health probes are not present in tracked deployment configuration. See [Container Builds](../delivery/container-builds.md), [Deployment Workflow](../delivery/deployment-workflow.md), and [Health and Readiness](../operations/health-and-readiness.md).
+The frontend Nginx image serves static SPA files, long-lived asset caching, and
+security headers; it does not terminate configured TLS or proxy API traffic.
+Operators must set exact `CSP_API_ORIGIN` and `CSP_WEBSOCKET_ORIGIN` values and
+align them with CORS, preview Origin validation, and the built
+`VITE_API_URL`. Production ingress, TLS, trusted proxy behavior, traffic
+switching, and application health probes remain outside tracked deployment
+configuration. See [Container Builds](../delivery/container-builds.md),
+[Deployment Workflow](../delivery/deployment-workflow.md), and
+[Health and Readiness](../operations/health-and-readiness.md).

@@ -14,7 +14,9 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { Edit3, Eye, GripVertical, History, Layers3, Plus, Radio, Save, Trash2, X } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
+import { SafeRichText } from "../components/SafeRichText";
 import { useI18n, workflowActionKey, workflowStatusKey, type MessageKey } from "../i18n";
+import { createSanitizedRichHtml } from "../security/richContent";
 import { ApiError, api } from "../services/api";
 import {
   connectPreviewSocket,
@@ -102,8 +104,17 @@ function pageStatusTone(status: PageResponse["status"]) {
   return "neutral";
 }
 
-function isJsonRecord(value: JsonValue | undefined): value is JsonRecord {
+function isJsonRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPageJsonPayload(value: unknown): value is PageJson {
+  if (!isJsonRecord(value) || !isJsonRecord(value.layout)) return false;
+  return (
+    typeof value.layout.id === "string" &&
+    typeof value.layout.type === "string" &&
+    (value.layout.children === undefined || Array.isArray(value.layout.children))
+  );
 }
 
 function toStringArray(value: JsonValue | undefined) {
@@ -113,16 +124,55 @@ function toStringArray(value: JsonValue | undefined) {
 function getPropDefinitions(component: ComponentRegistryResponse | undefined): PropDefinition[] {
   if (!component) return [];
 
-  return Object.entries(component.props_schema)
+  const rootSchema = component.props_schema;
+  const nestedProperties = isJsonRecord(rootSchema.properties)
+    ? rootSchema.properties
+    : undefined;
+  const properties = nestedProperties ?? rootSchema;
+  const requiredProperties = new Set(toStringArray(rootSchema.required));
+
+  return Object.entries(properties)
     .filter((entry): entry is [string, JsonRecord] => isJsonRecord(entry[1]))
     .map(([name, schema]) => ({
       name,
       label: typeof schema.label === "string" ? schema.label : name.replaceAll("_", " "),
-      type: typeof schema.type === "string" ? schema.type : "text",
-      required: schema.required === true,
-      options: toStringArray(schema.options),
+      type: normalizePropType(component.component_key, name, schema),
+      required: schema.required === true || requiredProperties.has(name),
+      options: toStringArray(schema.options ?? schema.enum),
       defaultValue: schema.default,
     }));
+}
+
+function normalizePropType(
+  componentKey: string,
+  name: string,
+  schema: JsonRecord,
+): string {
+  if (
+    schema.type === "richtext" ||
+    (componentKey === "rich-text" && (name === "html" || name === "body"))
+  ) {
+    return "richtext";
+  }
+  if (
+    schema.type === "url" ||
+    schema.format === "uri" ||
+    schema.format === "uri-reference" ||
+    schema.format === "url"
+  ) {
+    return "url";
+  }
+  if (schema.type === "integer" || schema.type === "number") return "number";
+  if (schema.type === "object") return "json";
+  if (
+    schema.type === "array" ||
+    schema.type === "boolean" ||
+    schema.type === "email" ||
+    schema.type === "select"
+  ) {
+    return schema.type;
+  }
+  return "text";
 }
 
 function defaultValueForDefinition(definition: PropDefinition): JsonValue {
@@ -328,6 +378,15 @@ function PreviewNode({ node, component }: { node: PageNode; component: Component
   const subtitle = typeof props.subtitle === "string" ? props.subtitle : undefined;
   const body = typeof props.body === "string" ? props.body : undefined;
   const quote = typeof props.quote === "string" ? props.quote : undefined;
+  const richTextValues = getPropDefinitions(component)
+    .filter((definition) => definition.type === "richtext")
+    .flatMap((definition) => {
+      const value = props[definition.name];
+      return typeof value === "string" && value
+        ? [{ name: definition.name, value }]
+        : [];
+    });
+  const bodyIsRichText = richTextValues.some((property) => property.name === "body");
 
   if (node.type === "divider") return <hr className="preview-divider" />;
   if (node.type === "spacer") return <div className="preview-spacer" style={{ height: typeof props.height === "number" ? props.height : 32 }} />;
@@ -337,7 +396,13 @@ function PreviewNode({ node, component }: { node: PageNode; component: Component
       <small>{component?.name ?? node.type}</small>
       <h3>{title}</h3>
       {subtitle && <p>{subtitle}</p>}
-      {body && <p>{body}</p>}
+      {body && !bodyIsRichText && <p>{body}</p>}
+      {richTextValues.map((property) => (
+        <SafeRichText
+          key={property.name}
+          value={createSanitizedRichHtml(property.value)}
+        />
+      ))}
       {quote && <blockquote>{quote}</blockquote>}
     </article>
   );
@@ -710,6 +775,18 @@ export function PagesPage() {
   function connectPreview(pageId: string) {
     previewSocketRef.current?.close();
     previewSocketRef.current = connectPreviewSocket(pageId, {
+      onMessage: (payload) => {
+        if (!isPageJsonPayload(payload)) {
+          previewSocketRef.current?.close();
+          setPreviewStatus("rejected");
+          return;
+        }
+        setDraft((current) =>
+          current.id === pageId
+            ? { ...current, pageJson: normalizePageJson(payload) }
+            : current,
+        );
+      },
       onStatus: setPreviewStatus,
     });
   }

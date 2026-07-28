@@ -6,6 +6,7 @@ rust-version = "1.96"
 license = "GPL-3.0-only"
 
 [dependencies]
+ammonia = "4.1.4"
 anyhow = "1.0"
 argon2 = { version = "0.5", features = ["std"] }
 axum = { version = "0.8", features = ["macros", "multipart", "ws"] }

@@ -32,7 +32,17 @@ related_diagrams:
 
 ## Verified Configuration
 
-`docker-compose.prod.yml` can build and assemble PostgreSQL, Redis, backend, and frontend containers with named persistent volumes. The backend loads configuration, runs migrations, seeds bootstrap data when applicable, initializes Redis state, binds HTTP, and exposes health/readiness routes. The frontend is a static Nginx SPA image.
+`docker-compose.prod.yml` can build and assemble PostgreSQL, Redis, backend, and
+frontend containers with named persistent volumes. The backend loads
+configuration, runs migrations, seeds bootstrap data when applicable,
+initializes Redis state, binds HTTP, and exposes health/readiness routes. The
+frontend is a static Nginx SPA image whose entrypoint expands exact CSP API and
+Preview WebSocket origins into the tracked security-header template.
+
+Operators must align `VITE_API_URL`, `CSP_API_ORIGIN`,
+`CSP_WEBSOCKET_ORIGIN`, `CORS_ORIGIN`, and
+`PREVIEW_WS_ALLOWED_ORIGINS`. Production HTTPS termination remains external,
+but it is required before relying on HSTS and `upgrade-insecure-requests`.
 
 ## Unverified Production Behavior
 
@@ -41,7 +51,7 @@ related_diagrams:
 | Deployment target/provider/cluster | `DEPLOYMENT_TARGET_UNCLEAR` |
 | Trigger and approval | No deployment workflow or command; `DEPLOYMENT_TARGET_UNCLEAR` |
 | Artifact source | Compose builds from source locally; production artifact registry is unknown |
-| Configuration injection | Compose environment names/defaults are verified |
+| Configuration injection | Compose requires exact browser API/WebSocket origins; target values are not verified |
 | Secret injection | Variable structure is verified; production secret manager/source is `SECRET_INJECTION_UNCLEAR` |
 | Database migration | Backend startup automatically runs all pending embedded migrations |
 | Service startup | Compose dependency health for PostgreSQL/Redis; app health gates absent |

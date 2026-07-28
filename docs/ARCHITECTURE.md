@@ -242,6 +242,30 @@ TLS termination, or public reverse proxy is configured by this repository.
 Operational gaps and owner decisions are recorded in
 `docs/diagrams/AMBIGUITIES.md`.
 
+## Browser Content Security Boundary
+
+Phase 4 establishes a two-layer rich-content boundary. The backend uses Ammonia
+to sanitize declared entry and Page Builder rich text before storage and again
+for historical, preview, version, template, and delivery paths. The frontend
+uses DOMPurify to create a branded `SanitizedRichHtml` value; only
+`SafeRichText` can pass that value to the single approved HTML sink. Flat Page
+Builder schemas and legacy JSON Schema `properties` use one normalized property
+classification.
+
+The production frontend image serves a strict CSP from an Nginx entrypoint
+template. Operators supply exact API and Preview WebSocket origins. Production
+requires Trusted Types for script sinks and permits only the
+`zinhar-rich-content` and `dompurify` policies. Vite development serves an
+explicit development CSP; production preview serves the production policy for
+local validation. The backend owns a separate deny-all CSP appropriate for JSON
+responses.
+
+Public content remains a headless JSON API; this repository does not include a
+public HTML renderer. Downstream renderers remain responsible for their own
+typed sink and CSP even though declared rich text is sanitized by the API.
+Unsupported Page Builder custom style objects are cleared because the
+repository has no safe CSS grammar or isolated style renderer.
+
 ## Detailed Evidence
 
 The complete diagram set and source traceability are available in:
@@ -250,3 +274,4 @@ The complete diagram set and source traceability are available in:
 - `docs/diagrams/ARCHITECTURE_AUDIT.md`
 - `docs/diagrams/TRACEABILITY.md`
 - `docs/diagrams/32-end-to-end-traceability.mmd`
+- `docs/security/PHASE_04_CSP_TRUSTED_TYPES_RICH_TEXT_HARDENING.md`

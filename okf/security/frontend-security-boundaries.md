@@ -12,9 +12,12 @@ last_verified_commit: "8b8c091bdcbba340287d7d31dbae31544ff21d59"
 last_verified_date: "2026-07-19"
 primary_sources:
   - "frontend/src/components/RequireAuth.tsx"
+  - "frontend/src/components/SafeRichText.tsx"
   - "frontend/src/components/AppShell.tsx"
   - "frontend/src/pages/AuthPage.tsx"
   - "frontend/src/pages/MarketplacePage.tsx"
+  - "frontend/src/security/richContent.ts"
+  - "frontend/securityHeaders.ts"
   - "frontend/src/services/api.ts"
   - "frontend/src/stores/useAppStore.ts"
 related_documents:
@@ -58,9 +61,33 @@ Only requests marked `auth: true` receive the access token and selected organiza
 
 HTML input constraints and local enable/disable conditions provide early feedback. They are bypassable and are not security controls. Backend validation remains authoritative.
 
+## Rich-Content Rendering
+
+React text interpolation remains the default. Declared Page Builder rich text is
+sanitized by DOMPurify and converted to a branded `SanitizedRichHtml` value.
+`SafeRichText` is the only approved HTML-capable sink and its prop type rejects
+arbitrary strings. An AST policy check rejects runtime `innerHTML`,
+`outerHTML`, `insertAdjacentHTML`, `document.write`, `eval`, `Function`,
+`srcDoc`, and `dangerouslySetInnerHTML` outside that component.
+
+Flat Page Builder schemas and legacy JSON Schema `properties` are normalized.
+Preview WebSocket messages are shape-checked and pass through the same renderer.
+Marketplace support, screenshot, checkout, and billing destinations use the
+central URL policy rather than feature-local direct navigation.
+
+## CSP and Trusted Types
+
+The production frontend policy uses exact API and WebSocket origins, no
+`unsafe-eval`, no inline scripts, no wildcard script source, and no frame/object
+surface. Production requires Trusted Types and permits exactly
+`zinhar-rich-content` and `dompurify`. Development permits inline styles only
+for Vite style injection and does not enforce Trusted Types.
+
 ## Risk Notes
 
 - XSS could expose the access token and role/session projection.
 - Stale local roles can expose controls that the backend must reject.
-- Query-string preview tokens may enter browser history or intermediary logs.
+- Downstream headless clients can create an unsafe sink if they ignore the API
+  rich-content contract.
+- Remote HTTPS Marketplace images can disclose client IP and request timing.
 - `SESSION_LIFECYCLE_UNCLEAR SLU-01` covers expiry, cross-tab logout, and invalid-session behavior.

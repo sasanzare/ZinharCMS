@@ -12,8 +12,12 @@ flowchart LR
   redis["Redis\nRate limit and cache"]
   files["Filesystem\nUploads and packages"]
   providers["External providers\nStripe, email, webhooks"]
+  contentPolicy["Rich-content policy\nAmmonia, URL rules, size limits"]
+  browserPolicy["Browser content boundary\nDOMPurify, SafeRichText, CSP, Trusted Types"]
 
   browser -.->|HTTPS and proxy policy / SHSU-01 / CSU-01| ingress
+  browser --> browserPolicy
+  browserPolicy --> http
   ingress --> http
   http --> public
   http --> auth
@@ -21,7 +25,8 @@ flowchart LR
   auth --> handler
   tenant --> handler
   tenant --> redis
-  handler --> rls
+  handler --> contentPolicy
+  contentPolicy --> rls
   handler --> files
   handler --> providers
   handler --> bypass

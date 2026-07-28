@@ -44,7 +44,18 @@ Registration checks only basic email shape, minimum password length, and name pr
 
 ## Rich Text
 
-Entry rich-text values remove blocks for `script`, `style`, `iframe`, `object`, and `embed`, retain an allowlist of tags, and strip all attributes. This blocks common active-markup vectors in that specific field type. It is a custom sanitizer and does not cover arbitrary JSON or every rendering path.
+Entry and Page Builder rich text uses Ammonia's HTML5 parser and an explicit
+allowlist. The boundary applies before storage and again to historical
+authenticated/public reads, versions, Marketplace template imports, and Preview
+WebSocket payloads. The frontend applies the aligned DOMPurify policy before the
+single approved HTML sink. IDs, names, classes, styles, `data-*`, event
+attributes, forms, frames, SVG, MathML, objects, embeds, and unknown elements
+are denied. Rich-text input is limited to 128 KiB, URLs to 2,048 bytes, parser
+complexity to 4,096 tags/attributes and 128 nesting levels, and page documents
+to 1 MiB.
+
+Markdown is not accepted by a runtime renderer. Raw HTML inside Markdown is
+therefore unavailable rather than conditionally trusted.
 
 ## Uploads and Packages
 
@@ -52,7 +63,13 @@ Tenant routes apply a configured request-body ceiling. Media logic performs cont
 
 ## URLs and External Effects
 
-Webhook validation rejects unsafe URL categories and delivery uses signed requests. Marketplace runtime external-network operations are bounded by declared permissions and host operations rather than executing arbitrary package code in this phase.
+Rich links allow only HTTPS, mail, telephone, constrained relative, and fragment
+destinations. Rich-text images are same-origin. External navigation requires
+canonical HTTPS. Control characters, credentials, protocol-relative forms,
+backslashes, encoded unsafe schemes, and dangerous schemes are rejected.
+Webhook validation and pinned outbound delivery remain separate SSRF controls.
+Marketplace runtime external-network operations are bounded by declared
+permissions and host operations rather than executing arbitrary package code.
 
 ## SQL and Output Handling
 
@@ -60,4 +77,7 @@ Inspected database access uses SQLx parameter binding for values. Dynamic SQL ex
 
 ## Uncertainty
 
-`INPUT_VALIDATION_UNCLEAR IVU-01`: validation is distributed, no complete input-to-sink inventory exists, maximum lengths are inconsistent, and no repository-wide validation contract or fuzz suite was found.
+`INPUT_VALIDATION_UNCLEAR IVU-01` remains for non-rich-content validation:
+maximum lengths and schemas are still distributed and no repository-wide fuzz
+suite exists. The Phase 4 report now supplies the content source-to-sink
+inventory and canonical rich-content contract.

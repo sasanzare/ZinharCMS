@@ -69,6 +69,9 @@ services:
         VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
     ports:
       - "5173:80"
+    environment:
+      CSP_API_ORIGIN: ${CSP_API_ORIGIN:?CSP_API_ORIGIN is required}
+      CSP_WEBSOCKET_ORIGIN: ${CSP_WEBSOCKET_ORIGIN:?CSP_WEBSOCKET_ORIGIN is required}
     depends_on:
       - backend
 

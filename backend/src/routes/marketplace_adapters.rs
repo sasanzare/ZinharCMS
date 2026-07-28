@@ -252,7 +252,8 @@ pub async fn import_template(
     let mut resolved = page_json;
     apply_asset_mapping(&mut resolved, &mapped).map_err(AppError::Validation)?;
     sync_component_registry(&mut tx, tenant.organization_id).await?;
-    crate::routes::pages::validate_page_json_for_tenant(&state, &tenant, &resolved).await?;
+    resolved =
+        crate::routes::pages::validate_page_json_for_tenant(&state, &tenant, &resolved).await?;
     let page = sqlx::query_as::<_, PageResponse>(
         r#"INSERT INTO pages (organization_id, title, slug, page_json, author_id)
            VALUES ($1, $2, $3, $4, $5)

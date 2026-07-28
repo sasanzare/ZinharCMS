@@ -1,0 +1,111 @@
+{
+  "malicious": [
+    {
+      "name": "script element",
+      "html": "<p>before</p><script>window.__xssExecuted=true</script><p>after</p>"
+    },
+    {
+      "name": "image error handler",
+      "html": "<img src=\"/uploads/example.png\" onerror=\"window.__xssExecuted=true\">"
+    },
+    {
+      "name": "mixed-case event handler",
+      "html": "<IMG SRC=\"/uploads/example.png\" oNeRrOr=\"window.__xssExecuted=true\">"
+    },
+    {
+      "name": "animation event handler",
+      "html": "<div onanimationstart=\"window.__xssExecuted=true\">content</div>"
+    },
+    {
+      "name": "javascript link",
+      "html": "<a href=\"javascript:window.__xssExecuted=true\">link</a>"
+    },
+    {
+      "name": "mixed-case javascript link",
+      "html": "<a href=\"JaVaScRiPt:window.__xssExecuted=true\">link</a>"
+    },
+    {
+      "name": "entity-obfuscated javascript link",
+      "html": "<a href=\"&#106;avascript:window.__xssExecuted=true\">link</a>"
+    },
+    {
+      "name": "control-character javascript link",
+      "html": "<a href=\"java&#x0A;script:window.__xssExecuted=true\">link</a>"
+    },
+    {
+      "name": "svg script",
+      "html": "<svg><script>window.__xssExecuted=true</script></svg>"
+    },
+    {
+      "name": "svg namespaced link",
+      "html": "<svg><a xlink:href=\"javascript:window.__xssExecuted=true\">link</a></svg>"
+    },
+    {
+      "name": "math foreign content",
+      "html": "<math><mtext><img src=\"x\" onerror=\"window.__xssExecuted=true\"></mtext></math>"
+    },
+    {
+      "name": "dom clobbering identifiers",
+      "html": "<form id=\"location\"><input name=\"attributes\"><a id=\"__proto__\">link</a></form>"
+    },
+    {
+      "name": "unsafe inline style",
+      "html": "<p style=\"background:url(javascript:window.__xssExecuted=true)\">content</p>"
+    },
+    {
+      "name": "iframe source document",
+      "html": "<iframe srcdoc=\"<script>window.__xssExecuted=true</script>\"></iframe>"
+    },
+    {
+      "name": "object navigation",
+      "html": "<object data=\"javascript:window.__xssExecuted=true\"></object>"
+    },
+    {
+      "name": "embedded data document",
+      "html": "<embed src=\"data:text/html,blocked\">"
+    },
+    {
+      "name": "meta refresh",
+      "html": "<meta http-equiv=\"refresh\" content=\"0;url=javascript:window.__xssExecuted=true\">"
+    },
+    {
+      "name": "base URL rewrite",
+      "html": "<base href=\"https://untrusted.invalid/\"><a href=\"relative\">link</a>"
+    },
+    {
+      "name": "duplicate dangerous attribute",
+      "html": "<a href=\"https://example.invalid/\" href=\"javascript:window.__xssExecuted=true\">link</a>"
+    },
+    {
+      "name": "malformed foreign-content nesting",
+      "html": "<math><mtext><table><mglyph><style><!--</style><img title=\"--><img src=x onerror=window.__xssExecuted=true>\">"
+    }
+  ],
+  "safe": [
+    {
+      "name": "basic formatting",
+      "html": "<h2>Heading</h2><p><strong>Bold</strong> and <em>emphasis</em></p>",
+      "fragments": ["<h2>Heading</h2>", "<strong>Bold</strong>", "<em>emphasis</em>"]
+    },
+    {
+      "name": "lists and blockquote",
+      "html": "<ul><li>One</li><li>Two</li></ul><blockquote>Quote</blockquote>",
+      "fragments": ["<ul>", "<li>One</li>", "<blockquote>Quote</blockquote>"]
+    },
+    {
+      "name": "table and code",
+      "html": "<table><thead><tr><th>Key</th></tr></thead><tbody><tr><td><code>value</code></td></tr></tbody></table>",
+      "fragments": ["<table>", "<th>Key</th>", "<code>value</code>"]
+    },
+    {
+      "name": "safe links",
+      "html": "<a href=\"/guide\">Guide</a><a href=\"https://example.invalid/docs\" target=\"_blank\">Docs</a>",
+      "fragments": ["href=\"/guide\"", "href=\"https://example.invalid/docs\"", "rel=\"noopener noreferrer\""]
+    },
+    {
+      "name": "same-origin media",
+      "html": "<img src=\"/uploads/00000000-0000-0000-0000-000000000000/example.webp\" alt=\"Example\">",
+      "fragments": ["src=\"/uploads/", "alt=\"Example\""]
+    }
+  ]
+}

@@ -441,3 +441,29 @@ and General Availability use existing `/health`, `/ready`, beta blocker,
 Marketplace installation/rollback, purchase, report, and admin analytics
 surfaces. `scripts/marketplace-phase15-ga-check.ps1` runs static and optional
 live checks for those existing endpoints before production enablement.
+
+## Phase 4 Rich-Content Response Contract
+
+Phase 4 does not add routes or change authentication requirements. It strengthens
+the representation returned by existing content, page, version, template, and
+public delivery routes:
+
+- declared `richtext` entry fields are sanitized before storage and on every
+  authenticated or public read;
+- Page Builder properties declared as `richtext` or legacy
+  `rich-text.properties.html` are sanitized before storage, preview, version
+  restoration, and public delivery;
+- declared URL properties use the centralized scheme policy;
+- unsupported page style objects are returned as empty objects;
+- historical database rows are sanitized at response time rather than assumed
+  safe;
+- public delivery cache keys include the rich-content policy version.
+
+The API remains headless JSON. Consumers must render ordinary strings as text and
+must use their own typed, sanitized HTML boundary and CSP when rendering declared
+rich text. API responses include a deny-all CSP and the repository security
+headers because API JSON is not an application script or document surface.
+
+See
+`docs/security/PHASE_04_CSP_TRUSTED_TYPES_RICH_TEXT_HARDENING.md` for the
+allowlist, URL contract, compatibility impact, and browser evidence.

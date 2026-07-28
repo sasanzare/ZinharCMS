@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Write as _;
 
 use axum::extract::{Path, Query, State};
@@ -14,9 +15,11 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::services::cache::{self, DEFAULT_TTL_SECONDS};
-use crate::services::entry_validation::is_valid_slug;
-use crate::services::rls;
+use crate::services::entry_validation::{is_valid_slug, parse_fields};
+use crate::services::{rich_content, rls};
 use crate::state::AppState;
+
+const CONTENT_POLICY_CACHE_VERSION: &str = "rich-content-v1";
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -153,7 +156,7 @@ pub async fn list_public_entries(
     let normalized = NormalizedListQuery::from(query)?;
     let organization = default_public_organization(&state.db).await?;
     let cache_key = format!(
-        "delivery:{}:content:{type_slug}:{}",
+        "delivery:{}:{CONTENT_POLICY_CACHE_VERSION}:content:{type_slug}:{}",
         organization.id,
         normalized.cache_suffix()
     );
@@ -201,7 +204,7 @@ pub async fn get_public_entry(
     let locale_key = locale.as_deref().unwrap_or("all");
     let organization = default_public_organization(&state.db).await?;
     let cache_key = format!(
-        "delivery:{}:content:{type_slug}:detail:{id_or_slug}:locale={locale_key}",
+        "delivery:{}:{CONTENT_POLICY_CACHE_VERSION}:content:{type_slug}:detail:{id_or_slug}:locale={locale_key}",
         organization.id
     );
     let db = state.db.clone();
@@ -240,7 +243,7 @@ pub async fn list_public_pages(
     let normalized = NormalizedListQuery::from(query)?;
     let organization = default_public_organization(&state.db).await?;
     let cache_key = format!(
-        "delivery:{}:pages:{}",
+        "delivery:{}:{CONTENT_POLICY_CACHE_VERSION}:pages:{}",
         organization.id,
         normalized.cache_suffix()
     );
@@ -273,7 +276,10 @@ pub async fn get_public_page(
     }
 
     let organization = default_public_organization(&state.db).await?;
-    let cache_key = format!("delivery:{}:page:{slug}", organization.id);
+    let cache_key = format!(
+        "delivery:{}:{CONTENT_POLICY_CACHE_VERSION}:page:{slug}",
+        organization.id
+    );
     let db = state.db.clone();
     let slug_for_fetch = slug.clone();
     let response = cache::get_or_set_json(
@@ -364,15 +370,23 @@ pub async fn robots(State(state): State<AppState>) -> Result<impl IntoResponse, 
 pub async fn invalidate_content_cache(state: &AppState, organization_id: Uuid, type_slug: &str) {
     cache::invalidate_prefix(
         &state.redis,
-        &format!("delivery:{organization_id}:content:{type_slug}:"),
+        &format!("delivery:{organization_id}:{CONTENT_POLICY_CACHE_VERSION}:content:{type_slug}:"),
     )
     .await;
     cache::invalidate(&state.redis, &format!("delivery:{organization_id}:sitemap")).await;
 }
 
 pub async fn invalidate_page_cache(state: &AppState, organization_id: Uuid) {
-    cache::invalidate_prefix(&state.redis, &format!("delivery:{organization_id}:page:")).await;
-    cache::invalidate_prefix(&state.redis, &format!("delivery:{organization_id}:pages:")).await;
+    cache::invalidate_prefix(
+        &state.redis,
+        &format!("delivery:{organization_id}:{CONTENT_POLICY_CACHE_VERSION}:page:"),
+    )
+    .await;
+    cache::invalidate_prefix(
+        &state.redis,
+        &format!("delivery:{organization_id}:{CONTENT_POLICY_CACHE_VERSION}:pages:"),
+    )
+    .await;
     cache::invalidate(&state.redis, &format!("delivery:{organization_id}:sitemap")).await;
     cache::invalidate(&state.redis, &format!("delivery:{organization_id}:robots")).await;
 }
@@ -434,6 +448,14 @@ async fn fetch_public_entries(
     query: &NormalizedListQuery,
 ) -> Result<PublicEntryListResponse, AppError> {
     let mut db = rls::organization_connection(db, organization_id, None).await?;
+    let field_schema = sqlx::query_scalar::<_, Value>(
+        "SELECT fields FROM content_types WHERE organization_id = $1 AND slug = $2",
+    )
+    .bind(organization_id)
+    .bind(type_slug)
+    .fetch_one(db.as_mut())
+    .await?;
+    let fields = parse_fields(&field_schema)?;
     let mut builder = QueryBuilder::<Postgres>::new(
         r#"
         SELECT e.id,
@@ -464,10 +486,13 @@ async fn fetch_public_entries(
         .push(" OFFSET ")
         .push_bind(query.offset());
 
-    let data = builder
+    let mut data = builder
         .build_query_as::<PublicEntryResponse>()
         .fetch_all(db.as_mut())
         .await?;
+    for entry in &mut data {
+        entry.data = rich_content::sanitize_entry_data(&fields, entry.data.clone())?;
+    }
 
     Ok(PublicEntryListResponse {
         data,
@@ -484,6 +509,14 @@ async fn fetch_public_entry(
     locale: Option<&str>,
 ) -> Result<PublicEntryResponse, AppError> {
     let mut db = rls::organization_connection(db, organization_id, None).await?;
+    let field_schema = sqlx::query_scalar::<_, Value>(
+        "SELECT fields FROM content_types WHERE organization_id = $1 AND slug = $2",
+    )
+    .bind(organization_id)
+    .bind(type_slug)
+    .fetch_one(db.as_mut())
+    .await?;
+    let fields = parse_fields(&field_schema)?;
     let uuid = Uuid::parse_str(id_or_slug).ok();
     let mut builder = QueryBuilder::<Postgres>::new(
         r#"
@@ -516,11 +549,12 @@ async fn fetch_public_entry(
         builder.push_bind(locale);
     }
 
-    builder
+    let mut entry = builder
         .build_query_as::<PublicEntryResponse>()
         .fetch_one(db.as_mut())
-        .await
-        .map_err(AppError::from)
+        .await?;
+    entry.data = rich_content::sanitize_entry_data(&fields, entry.data.clone())?;
+    Ok(entry)
 }
 
 async fn fetch_public_pages(
@@ -564,10 +598,26 @@ async fn fetch_public_pages(
         .push(" OFFSET ")
         .push_bind(query.offset());
 
-    let data = builder
+    let mut data = builder
         .build_query_as::<PublicPageResponse>()
         .fetch_all(db.as_mut())
         .await?;
+    let component_schemas = sqlx::query_as::<_, (String, Value)>(
+        "SELECT component_key, props_schema FROM component_registry WHERE is_system = TRUE OR organization_id = $1",
+    )
+    .bind(organization_id)
+    .fetch_all(db.as_mut())
+    .await?
+    .into_iter()
+    .collect::<HashMap<_, _>>();
+    for page in &mut data {
+        page.page_json = rich_content::sanitize_page_document(&page.page_json, &component_schemas)?;
+        page.metadata = page
+            .page_json
+            .get("metadata")
+            .cloned()
+            .unwrap_or_else(|| Value::Object(Default::default()));
+    }
 
     Ok(PublicPageListResponse {
         data,
@@ -582,7 +632,7 @@ async fn fetch_public_page(
     slug: &str,
 ) -> Result<PublicPageResponse, AppError> {
     let mut db = rls::organization_connection(db, organization_id, None).await?;
-    sqlx::query_as::<_, PublicPageResponse>(
+    let mut page = sqlx::query_as::<_, PublicPageResponse>(
         r#"
         SELECT id,
                title,
@@ -598,8 +648,22 @@ async fn fetch_public_page(
     .bind(organization_id)
     .bind(slug)
     .fetch_one(db.as_mut())
-    .await
-    .map_err(AppError::from)
+    .await?;
+    let component_schemas = sqlx::query_as::<_, (String, Value)>(
+        "SELECT component_key, props_schema FROM component_registry WHERE is_system = TRUE OR organization_id = $1",
+    )
+    .bind(organization_id)
+    .fetch_all(db.as_mut())
+    .await?
+    .into_iter()
+    .collect::<HashMap<_, _>>();
+    page.page_json = rich_content::sanitize_page_document(&page.page_json, &component_schemas)?;
+    page.metadata = page
+        .page_json
+        .get("metadata")
+        .cloned()
+        .unwrap_or_else(|| Value::Object(Default::default()));
+    Ok(page)
 }
 
 async fn fetch_public_settings(db: &PgPool, organization_id: Uuid) -> Result<Value, AppError> {
@@ -643,11 +707,14 @@ async fn fetch_navigation(
     }
     builder.push(" ORDER BY locale ASC, position ASC, label ASC");
 
-    builder
+    let mut items = builder
         .build_query_as::<NavigationItemResponse>()
         .fetch_all(db.as_mut())
-        .await
-        .map_err(AppError::from)
+        .await?;
+    for item in &mut items {
+        item.url = rich_content::sanitize_rich_text_url(&item.url).unwrap_or_default();
+    }
+    Ok(items)
 }
 
 fn push_entry_filters<'a>(

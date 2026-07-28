@@ -3,6 +3,11 @@ import { AlertTriangle, BadgeCheck, BarChart3, CheckCircle2, Eye, FileCheck, His
 
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n";
+import {
+  sanitizeImageUrl,
+  sanitizeInteractiveUrl,
+  navigateToTrustedExternalUrl,
+} from "../security/richContent";
 import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
 import type {
@@ -623,7 +628,7 @@ export function MarketplacePage() {
         await loadInstallations();
         setMessage(t("marketplace.purchase.completed"));
       } else if (checkout.checkout_url) {
-        window.location.assign(checkout.checkout_url);
+        navigateToTrustedExternalUrl(checkout.checkout_url);
       } else {
         setMessage(t("marketplace.purchase.pending"));
       }
@@ -1335,9 +1340,25 @@ export function MarketplacePage() {
                 <h3>{t("marketplace.catalog.screenshots")}</h3>
                 <div className="catalog-screenshot-grid">
                   {stringListFromValue(catalogDetail.screenshots).map((url) => (
-                    <a key={url} href={url} target="_blank" rel="noreferrer">
-                      <img src={url} alt="" />
-                    </a>
+                    (() => {
+                      const safeUrl = sanitizeImageUrl(url);
+                      return safeUrl ? (
+                        <a
+                          key={url}
+                          href={safeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          referrerPolicy="no-referrer"
+                        >
+                          <img
+                            src={safeUrl}
+                            alt=""
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
+                        </a>
+                      ) : null;
+                    })()
                   ))}
                   {stringListFromValue(catalogDetail.screenshots).length === 0 && <span>{t("marketplace.catalog.noScreenshots")}</span>}
                 </div>
@@ -1357,7 +1378,19 @@ export function MarketplacePage() {
                 <span>{t("marketplace.catalog.license")}</span>
                 <strong>{catalogDetail.license}</strong>
                 <span>{t("marketplace.catalog.support")}</span>
-                {catalogDetail.support_url ? <a href={catalogDetail.support_url} target="_blank" rel="noreferrer">{catalogDetail.support_url}</a> : <strong>-</strong>}
+                {catalogDetail.support_url &&
+                sanitizeInteractiveUrl(catalogDetail.support_url) ? (
+                  <a
+                    href={sanitizeInteractiveUrl(catalogDetail.support_url) ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    referrerPolicy="no-referrer"
+                  >
+                    {catalogDetail.support_url}
+                  </a>
+                ) : (
+                  <strong>-</strong>
+                )}
               </div>
               <div>
                 <h3>{t("marketplace.catalog.versions")}</h3>

@@ -132,9 +132,7 @@ pub fn normalize_optional_text(value: Option<String>) -> Option<String> {
 pub fn sanitize_screenshot_urls(values: &[String]) -> Vec<String> {
     values
         .iter()
-        .map(|value| value.trim())
-        .filter(|value| !value.is_empty())
-        .map(str::to_owned)
+        .filter_map(|value| crate::services::rich_content::sanitize_external_https_url(value))
         .collect()
 }
 
@@ -198,12 +196,8 @@ fn validate_slug(value: &str, label: &str, errors: &mut Vec<String>) {
 }
 
 fn validate_http_url(value: &str, label: &str, errors: &mut Vec<String>) {
-    let value = value.trim();
-    let valid = (value.starts_with("https://") || value.starts_with("http://"))
-        && value.len() <= 2_048
-        && !value.contains(char::is_whitespace);
-    if !valid {
-        errors.push(format!("{label} must be an http or https URL"));
+    if crate::services::rich_content::sanitize_external_https_url(value).is_none() {
+        errors.push(format!("{label} must be a canonical HTTPS URL"));
     }
 }
 

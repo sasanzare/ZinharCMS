@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use axum::extract::ws::{CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code};
@@ -20,7 +20,9 @@ use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::delivery;
 use crate::services::entry_validation::is_valid_slug;
-use crate::services::{audit, preview_tickets, quota, rbac, rls, sessions, webhooks, workflow};
+use crate::services::{
+    audit, preview_tickets, quota, rbac, rich_content, rls, sessions, webhooks, workflow,
+};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -171,7 +173,7 @@ pub async fn list_pages(
     let offset = (page - 1) * per_page;
     let (sort_column, sort_direction) = parse_sort(query.sort.as_deref())?;
 
-    let data = if let Some(status) = query.status.as_deref() {
+    let mut data = if let Some(status) = query.status.as_deref() {
         validate_page_status(status)?;
         let sql = format!(
             r#"
@@ -223,6 +225,12 @@ pub async fn list_pages(
             .await?
     };
 
+    drop(db);
+    let component_schemas = load_component_schemas(&state, &tenant).await?;
+    for page in &mut data {
+        page.page_json = rich_content::sanitize_page_document(&page.page_json, &component_schemas)?;
+    }
+
     Ok(Json(PageListResponse {
         data,
         page,
@@ -245,7 +253,7 @@ pub async fn create_page(
 ) -> Result<Json<PageResponse>, AppError> {
     rbac::require_org_page_writer(&tenant.role)?;
     quota::ensure_content_capacity(&state.db, &tenant).await?;
-    validate_page_request(&state, &tenant, &payload).await?;
+    let page_json = validate_page_request(&state, &tenant, &payload).await?;
 
     let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
     let page = sqlx::query_as::<_, PageResponse>(
@@ -266,7 +274,7 @@ pub async fn create_page(
     .bind(tenant.organization_id)
     .bind(payload.title.trim())
     .bind(payload.slug.trim())
-    .bind(&payload.page_json)
+    .bind(&page_json)
     .bind(claims.sub)
     .fetch_one(&mut *tx)
     .await?;
@@ -333,7 +341,7 @@ pub async fn update_page(
     Json(payload): Json<PageRequest>,
 ) -> Result<Json<PageResponse>, AppError> {
     rbac::require_org_page_writer(&tenant.role)?;
-    validate_page_request(&state, &tenant, &payload).await?;
+    let page_json = validate_page_request(&state, &tenant, &payload).await?;
 
     let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
     let page = sqlx::query_as::<_, PageResponse>(
@@ -358,7 +366,7 @@ pub async fn update_page(
     .bind(id)
     .bind(payload.title.trim())
     .bind(payload.slug.trim())
-    .bind(&payload.page_json)
+    .bind(&page_json)
     .bind(tenant.organization_id)
     .fetch_one(&mut *tx)
     .await?;
@@ -401,7 +409,7 @@ pub async fn delete_page(
         ));
     }
 
-    let page = sqlx::query_as::<_, PageResponse>(
+    let mut page = sqlx::query_as::<_, PageResponse>(
         r#"
         DELETE FROM pages
         WHERE id = $1 AND organization_id = $2
@@ -420,6 +428,8 @@ pub async fn delete_page(
     .bind(tenant.organization_id)
     .fetch_one(db.as_mut())
     .await?;
+    drop(db);
+    page.page_json = sanitize_page_json_for_tenant(&state, &tenant, &page.page_json).await?;
 
     if page.status == "published" {
         delivery::invalidate_page_cache(&state, tenant.organization_id).await;
@@ -590,7 +600,7 @@ pub async fn list_page_versions(
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<PageVersionResponse>>, AppError> {
     let mut db = rls::tenant_connection(&state.db, &tenant).await?;
-    let versions = sqlx::query_as::<_, PageVersionResponse>(
+    let mut versions = sqlx::query_as::<_, PageVersionResponse>(
         r#"
         SELECT id, page_id, version, page_json, snapshot_at, created_by
         FROM page_versions
@@ -602,6 +612,13 @@ pub async fn list_page_versions(
     .bind(tenant.organization_id)
     .fetch_all(db.as_mut())
     .await?;
+
+    drop(db);
+    let component_schemas = load_component_schemas(&state, &tenant).await?;
+    for version in &mut versions {
+        version.page_json =
+            rich_content::sanitize_page_document(&version.page_json, &component_schemas)?;
+    }
 
     Ok(Json(versions))
 }
@@ -641,8 +658,9 @@ pub async fn restore_page_version(
     .fetch_one(db.as_mut())
     .await?;
 
-    let component_keys = load_component_keys(&state, &tenant).await?;
-    validate_page_json(&version_row.page_json, &component_keys)?;
+    drop(db);
+    let page_json =
+        sanitize_and_validate_page_json(&state, &tenant, &version_row.page_json).await?;
 
     let mut tx = rls::begin_tenant_transaction(&state.db, &tenant).await?;
     let page = sqlx::query_as::<_, PageResponse>(
@@ -665,7 +683,7 @@ pub async fn restore_page_version(
         "#,
     )
     .bind(id)
-    .bind(&version_row.page_json)
+    .bind(&page_json)
     .bind(tenant.organization_id)
     .fetch_one(&mut *tx)
     .await?;
@@ -1170,12 +1188,14 @@ async fn transition_page(
         "#
     );
 
-    let page = sqlx::query_as::<_, PageResponse>(&sql)
+    let mut page = sqlx::query_as::<_, PageResponse>(&sql)
         .bind(id)
         .bind(next_status)
         .bind(tenant.organization_id)
         .fetch_one(db.as_mut())
         .await?;
+    drop(db);
+    page.page_json = sanitize_page_json_for_tenant(state, tenant, &page.page_json).await?;
     broadcast_page_json(state, page.id, &page.page_json).await;
 
     Ok(page)
@@ -1187,7 +1207,7 @@ async fn load_page_by_id(
     id: Uuid,
 ) -> Result<PageResponse, AppError> {
     let mut db = rls::tenant_connection(&state.db, tenant).await?;
-    sqlx::query_as::<_, PageResponse>(
+    let mut page = sqlx::query_as::<_, PageResponse>(
         r#"
         SELECT id,
                title,
@@ -1205,8 +1225,10 @@ async fn load_page_by_id(
     .bind(id)
     .bind(tenant.organization_id)
     .fetch_one(db.as_mut())
-    .await
-    .map_err(AppError::from)
+    .await?;
+    drop(db);
+    page.page_json = sanitize_page_json_for_tenant(state, tenant, &page.page_json).await?;
+    Ok(page)
 }
 
 async fn load_page_by_slug(
@@ -1215,7 +1237,7 @@ async fn load_page_by_slug(
     slug: &str,
 ) -> Result<PageResponse, AppError> {
     let mut db = rls::tenant_connection(&state.db, tenant).await?;
-    sqlx::query_as::<_, PageResponse>(
+    let mut page = sqlx::query_as::<_, PageResponse>(
         r#"
         SELECT id,
                title,
@@ -1233,8 +1255,10 @@ async fn load_page_by_slug(
     .bind(slug)
     .bind(tenant.organization_id)
     .fetch_one(db.as_mut())
-    .await
-    .map_err(AppError::from)
+    .await?;
+    drop(db);
+    page.page_json = sanitize_page_json_for_tenant(state, tenant, &page.page_json).await?;
+    Ok(page)
 }
 
 async fn load_component(
@@ -1293,13 +1317,13 @@ async fn create_version_snapshot(
     .map_err(AppError::from)
 }
 
-async fn load_component_keys(
+async fn load_component_schemas(
     state: &AppState,
     tenant: &TenantContext,
-) -> Result<HashSet<String>, AppError> {
+) -> Result<HashMap<String, Value>, AppError> {
     let mut db = rls::tenant_connection(&state.db, tenant).await?;
-    let rows = sqlx::query_scalar::<_, String>(
-        "SELECT component_key FROM component_registry WHERE is_system = TRUE OR organization_id = $1",
+    let rows = sqlx::query_as::<_, (String, Value)>(
+        "SELECT component_key, props_schema FROM component_registry WHERE is_system = TRUE OR organization_id = $1",
     )
     .bind(tenant.organization_id)
     .fetch_all(db.as_mut())
@@ -1311,7 +1335,7 @@ async fn validate_page_request(
     state: &AppState,
     tenant: &TenantContext,
     payload: &PageRequest,
-) -> Result<(), AppError> {
+) -> Result<Value, AppError> {
     if payload.title.trim().is_empty() {
         return Err(AppError::Validation("title is required".to_owned()));
     }
@@ -1319,17 +1343,35 @@ async fn validate_page_request(
         return Err(AppError::Validation("slug is invalid".to_owned()));
     }
 
-    let component_keys = load_component_keys(state, tenant).await?;
-    validate_page_json(&payload.page_json, &component_keys)
+    sanitize_and_validate_page_json(state, tenant, &payload.page_json).await
 }
 
 pub(crate) async fn validate_page_json_for_tenant(
     state: &AppState,
     tenant: &TenantContext,
     page_json: &Value,
-) -> Result<(), AppError> {
-    let component_keys = load_component_keys(state, tenant).await?;
-    validate_page_json(page_json, &component_keys)
+) -> Result<Value, AppError> {
+    sanitize_and_validate_page_json(state, tenant, page_json).await
+}
+
+async fn sanitize_and_validate_page_json(
+    state: &AppState,
+    tenant: &TenantContext,
+    page_json: &Value,
+) -> Result<Value, AppError> {
+    let component_schemas = load_component_schemas(state, tenant).await?;
+    let component_keys = component_schemas.keys().cloned().collect();
+    validate_page_json(page_json, &component_keys)?;
+    rich_content::sanitize_page_document(page_json, &component_schemas)
+}
+
+async fn sanitize_page_json_for_tenant(
+    state: &AppState,
+    tenant: &TenantContext,
+    page_json: &Value,
+) -> Result<Value, AppError> {
+    let component_schemas = load_component_schemas(state, tenant).await?;
+    rich_content::sanitize_page_document(page_json, &component_schemas)
 }
 
 fn validate_component_request(payload: &ComponentRegistryRequest) -> Result<(), AppError> {

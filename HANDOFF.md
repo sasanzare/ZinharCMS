@@ -5,17 +5,23 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-27 (Europe/London)
+- **Last updated:** 2026-07-28 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `security/security-audit-fixes`
 - **Base branch:** `main`; current branch tracks `origin/security/security-audit-fixes`
-- **Latest relevant commit:** `ff148ff9 fix(security): complete phase 2 session and RLS hardening`
-- **Working tree:** Phase 3 security changes are complete, validated, and uncommitted; the branch was clean when Phase 3 started
+- **Latest relevant commit:** `b2e34c37 fix(security): complete phase 3 browser auth and preview hardening`
+- **Working tree:** Phase 4 security changes are complete, validated, unstaged, and uncommitted; the branch was clean when Phase 4 started
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
-- **Current phase:** Security Audit and Hardening Phase 3
-- **Current subphase:** Phase 3 implementation, regression coverage, live Redis/browser verification, documentation synchronization, full validation, scans, and cleanup are complete.
-- **Overall status:** Phase 3 began from clean commit `ff148ff9` on `security/security-audit-fixes`. The uncommitted implementation removes browser access-token persistence, adds refresh-cookie bootstrap with single-tab and cross-tab coordination, retries only stable invalid-access-token responses once, validates Origin on refresh/logout, and replaces preview query credentials with Redis-backed one-time tickets carried in `Sec-WebSocket-Protocol`. Preview handshakes enforce an exact Origin allowlist, select only `zinhar.preview.v1`, atomically consume hash-only tickets, and periodically revalidate user, authentication version, membership, permission, and page access. Backend fmt/clippy/all tests, frontend lint/typecheck/all tests/build, both Compose configurations, live disposable Redis, authenticated local browser/WebSocket flows, leakage/language scans, report structure, Git whitespace, and cleanup checks passed. No commit, staging, push, history rewrite, or deployment was performed.
+- **Current phase:** Security Audit and Hardening Phase 4
+- **Current subphase:** Rich-content, CSP, security-header, Trusted Types, editor/preview/delivery parity, browser verification, documentation, scans, and cleanup are complete.
+- **Overall status:** Phase 4 began from clean commit `b2e34c37` on `security/security-audit-fixes`. The uncommitted implementation adds parser-based backend sanitization, a single typed frontend rich-HTML boundary, strict production CSP and security headers, Trusted Types enforcement, Page Builder schema parity, safe URL handling, Preview WebSocket content sanitation, a shared malicious corpus, and regression/browser evidence. Backend fmt/Clippy/tests, frontend lint/typecheck/tests/build, Compose configuration, AST sink policy, browser CSP/Trusted Types/stored/published/preview flows, report structure, language/secret scans, and Git whitespace passed. No migration, commit, staging, push, history rewrite, or deployment was performed.
+
+> **Security Audit Phase 4 override (2026-07-28):** This completed checkpoint
+> supersedes earlier Phase 1-3 and product-phase exact-next-action text for the
+> current working tree. Phase 3 is committed at `b2e34c37`. Preserve all Phase
+> 1-4 hardening. Do not commit, stage, push, reset, clean, or deploy without
+> explicit owner authorization.
 
 > **Security Audit Phase 3 override (2026-07-27):** This checkpoint
 > supersedes earlier exact-next-action text for the current uncommitted tree.
@@ -2398,3 +2404,73 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   account/credential/activity inventory and local/deployed placeholder
   replacement without putting values in Git, then explicitly authorize either
   review/stage/commit or Phase 2 SSRF/session/RLS work.
+
+### 2026-07-28 - Security Audit and Hardening Phase 4 completed
+
+- Resumed on `security/security-audit-fixes` at starting commit `b2e34c37`.
+  Preserved and completed the owner's pre-existing uncommitted Phase 4 work;
+  no reset, clean, stash, stage, commit, push, migration, or deployment was
+  performed.
+- Implemented the parser-based backend rich-content boundary with Ammonia,
+  write/read sanitation for current and historical entry/page/delivery paths,
+  legacy Page Builder schema support, bounded document/URL complexity, safe
+  Marketplace URLs, Preview WebSocket sanitation, and a versioned delivery
+  cache namespace.
+- Implemented the frontend DOMPurify boundary with the branded
+  `SanitizedRichHtml` type, one approved `SafeRichText` sink, element-specific
+  attribute enforcement, numeric attribute bounds, centralized URL handling,
+  strict CSP/security headers, production Trusted Types enforcement, legacy
+  editor parity, and an AST sink policy.
+- Added the shared 20-malicious/5-safe XSS corpus and Phase 4 security tests.
+  Confirmed and remediated `SEC-P04-001` (High), `SEC-P04-002` (Medium), and
+  `SEC-P04-003` (Medium), and closed inherited `SEC-P01-021`. No Critical
+  finding was confirmed.
+- Created
+  `docs/security/PHASE_04_CSP_TRUSTED_TYPES_RICH_TEXT_HARDENING.md` with all 30
+  required sections and five English Mermaid sequence diagrams. Updated API,
+  architecture, README, environment, deployment, and OKF documentation.
+- Final code validation completed successfully before this pause:
+  `cargo fmt --all -- --check`; Clippy offline with all targets/features and
+  warnings denied; 166 backend unit tests plus 2 integration tests; frontend
+  lint and typecheck; 44 frontend tests in 11 files; production frontend build;
+  one-approved-sink AST policy; local and production Compose interpolation; and
+  browser login/reload/navigation/logout, stored/published rich text, Preview
+  WebSocket, CSP, and Trusted Types enforcement checks.
+- The production build retained only the known non-blocking large-chunk warning.
+  `cargo audit` was unavailable because the subcommand is not installed.
+  `npm audit --omit=dev` was not run because external dependency-metadata
+  transmission was not authorized. A production Nginx container was not
+  rebuilt or started.
+- Browser-test services on ports 8080 and 5173 were stopped, Phase 4 temporary
+  artifacts were removed, the disposable `cms_phase4_20260727_2040` database
+  was dropped, and Redis database 15 reported zero keys. A next-day recheck
+  could not query PostgreSQL or Redis because Docker Desktop was no longer
+  running; it still confirmed no temporary files and no listeners on the test
+  ports. This unavailable redundant check is not represented as passed.
+- **Created files:** `backend/src/services/rich_content.rs`,
+  `docs/security/PHASE_04_CSP_TRUSTED_TYPES_RICH_TEXT_HARDENING.md`,
+  `frontend/nginx.conf.template`, `frontend/scripts/check-html-sinks.mjs`,
+  `frontend/securityHeaders.ts`, `frontend/src/components/SafeRichText.tsx`,
+  `frontend/src/security/richContent.ts`,
+  `frontend/src/security/richContent.test.tsx`,
+  `frontend/src/security/securityHeaders.test.ts`,
+  `frontend/src/security/trustedTypes.test.ts`, and
+  `security/phase4-xss-corpus.json`.
+- **Modified/deleted files:** `.env.example`, `README.md`, backend Cargo
+  manifests and security/content/delivery/page/Marketplace routes/services,
+  `docker-compose.prod.yml`, `docs/API.md`, `docs/ARCHITECTURE.md`,
+  `frontend/Dockerfile.prod`, deleted `frontend/nginx.conf`, frontend package
+  manifests, Billing/Marketplace/Page Builder sources and tests,
+  `frontend/vite.config.ts`, the Phase 4-related OKF delivery/development/
+  security documents, and this `HANDOFF.md`.
+- **Final static closure:** the report has the exact 30 required headings and
+  five English Mermaid sequence diagrams; changed/untracked files contain no
+  Persian-script text; the production-shaped token/private-key/live-provider
+  scan found no match; and `git diff --check` passed. The working tree remains
+  intentionally unstaged and uncommitted.
+- **Exact Next Action:** review the complete Phase 4 diff. Stage, commit, or
+  push it only after explicit owner authorization. If a later Phase 5 is
+  authorized, begin by inventorying CI and dependency-provenance controls,
+  obtain approval for external advisory metadata transmission, and add the AST
+  sink policy, shared malicious corpus, and production CSP/Trusted Types
+  browser checks to CI without weakening the completed Phase 1-4 boundaries.

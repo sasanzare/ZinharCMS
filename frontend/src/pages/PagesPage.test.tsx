@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { PagesPage } from "./PagesPage";
@@ -31,6 +31,22 @@ vi.mock("../services/api", () => ({
           props_schema: {
             title: { type: "text", label: "Title", required: true, default: "Welcome" },
             alignment: { type: "select", label: "Alignment", options: ["left", "center", "right"] },
+          },
+          is_system: true,
+          created_at: "2026-06-19T00:00:00Z",
+          updated_at: "2026-06-19T00:00:00Z",
+        },
+        {
+          id: "component-2",
+          component_key: "rich-text",
+          name: "Rich Text",
+          category: "content",
+          props_schema: {
+            type: "object",
+            required: ["html"],
+            properties: {
+              html: { type: "string" },
+            },
           },
           is_system: true,
           created_at: "2026-06-19T00:00:00Z",
@@ -71,5 +87,21 @@ describe("PagesPage", () => {
     expect(await screen.findByText("Marketplace Hero")).toBeInTheDocument();
     expect(screen.getByText("Drop components here")).toBeInTheDocument();
     expect(screen.getByText("Props editor")).toBeInTheDocument();
+  });
+
+  it("normalizes and safely previews legacy JSON Schema rich text", async () => {
+    const { container } = render(<PagesPage />);
+
+    fireEvent.doubleClick(await screen.findByText("Rich Text"));
+    fireEvent.change(screen.getByLabelText("html"), {
+      target: {
+        value:
+          '<p>visible marker</p><img src="x" onerror="window.__xssExecuted=true"><script>window.__xssExecuted=true</script>',
+      },
+    });
+
+    expect(await screen.findByText("visible marker")).toBeInTheDocument();
+    expect(container.querySelector("[onerror]")).toBeNull();
+    expect(container.querySelector("script")).toBeNull();
   });
 });

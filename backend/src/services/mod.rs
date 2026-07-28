@@ -32,6 +32,7 @@ pub mod preview_tickets;
 pub mod quota;
 pub mod rate_limit;
 pub mod rbac;
+pub mod rich_content;
 pub mod rls;
 pub mod security;
 pub mod sessions;

@@ -215,6 +215,7 @@ npm run audit:frontend
 npm --prefix frontend run lint
 npm --prefix frontend run typecheck
 npm run test:frontend
+npm --prefix frontend run security:sinks
 npm run build:frontend
 ```
 
@@ -267,6 +268,13 @@ does not define a production provider, deployment workflow, environment
 promotion system, automatic backup/restore process, or application
 metrics/alerting integration. Do not infer those guarantees from
 `docker-compose.prod.yml`.
+
+The production-like frontend requires exact `CSP_API_ORIGIN` and
+`CSP_WEBSOCKET_ORIGIN` values in addition to the built `VITE_API_URL`. Keep
+those values aligned with backend CORS and Preview WebSocket Origin
+configuration. The Nginx entrypoint expands the tracked security-header
+template; bypassing that entrypoint bypasses the configured production CSP.
+See the [Phase 4 security report](docs/security/PHASE_04_CSP_TRUSTED_TYPES_RICH_TEXT_HARDENING.md).
 
 ## Marketplace Runtime Boundaries
 

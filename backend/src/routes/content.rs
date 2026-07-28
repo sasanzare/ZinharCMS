@@ -282,6 +282,8 @@ pub async fn list_entries(
     Path(type_slug): Path<String>,
     Query(query): Query<EntryListQuery>,
 ) -> Result<Json<EntryListResponse>, AppError> {
+    let content_type = load_content_type_by_slug(&state, &tenant, &type_slug).await?;
+    let fields = parse_fields(&content_type.fields)?;
     let mut db = rls::tenant_connection(&state.db, &tenant).await?;
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
@@ -311,7 +313,7 @@ pub async fn list_entries(
             LIMIT $4 OFFSET $5
             "#
         );
-        let data = sqlx::query_as::<_, ContentEntryResponse>(&sql)
+        let mut data = sqlx::query_as::<_, ContentEntryResponse>(&sql)
             .bind(tenant.organization_id)
             .bind(&type_slug)
             .bind(status)
@@ -319,6 +321,9 @@ pub async fn list_entries(
             .bind(offset)
             .fetch_all(db.as_mut())
             .await?;
+        for entry in &mut data {
+            entry.data = security::sanitize_entry_data(&fields, entry.data.clone())?;
+        }
 
         return Ok(Json(EntryListResponse {
             data,
@@ -347,13 +352,16 @@ pub async fn list_entries(
         LIMIT $3 OFFSET $4
         "#
     );
-    let data = sqlx::query_as::<_, ContentEntryResponse>(&sql)
+    let mut data = sqlx::query_as::<_, ContentEntryResponse>(&sql)
         .bind(tenant.organization_id)
         .bind(&type_slug)
         .bind(per_page)
         .bind(offset)
         .fetch_all(db.as_mut())
         .await?;
+    for entry in &mut data {
+        entry.data = security::sanitize_entry_data(&fields, entry.data.clone())?;
+    }
 
     Ok(Json(EntryListResponse {
         data,
@@ -390,7 +398,7 @@ pub async fn create_entry(
         claims.sub,
     )
     .await?;
-    let data = security::sanitize_entry_data(&fields, data);
+    let data = security::sanitize_entry_data(&fields, data)?;
     validate_entry_data(&fields, &data)?;
 
     let row = sqlx::query_as::<_, ContentEntryResponse>(
@@ -466,7 +474,7 @@ pub async fn update_entry(
         claims.sub,
     )
     .await?;
-    let data = security::sanitize_entry_data(&fields, data);
+    let data = security::sanitize_entry_data(&fields, data)?;
     validate_entry_data(&fields, &data)?;
 
     let row = sqlx::query_as::<_, ContentEntryResponse>(
@@ -806,14 +814,16 @@ async fn transition_entry(
         "#
     );
 
-    sqlx::query_as::<_, ContentEntryResponse>(&sql)
+    let mut entry = sqlx::query_as::<_, ContentEntryResponse>(&sql)
         .bind(id)
         .bind(content_type.id)
         .bind(next_status)
         .bind(tenant.organization_id)
         .fetch_one(db.as_mut())
-        .await
-        .map_err(AppError::from)
+        .await?;
+    entry.data =
+        security::sanitize_entry_data(&parse_fields(&content_type.fields)?, entry.data.clone())?;
+    Ok(entry)
 }
 
 async fn load_content_type_by_id(
@@ -863,7 +873,7 @@ async fn load_entry(
     id: Uuid,
 ) -> Result<ContentEntryResponse, AppError> {
     let mut db = rls::tenant_connection(&state.db, tenant).await?;
-    sqlx::query_as::<_, ContentEntryResponse>(
+    let mut entry = sqlx::query_as::<_, ContentEntryResponse>(
         r#"
         SELECT e.id,
                e.type_id,
@@ -886,8 +896,12 @@ async fn load_entry(
     .bind(type_slug)
     .bind(id)
     .fetch_one(db.as_mut())
-    .await
-    .map_err(AppError::from)
+    .await?;
+    drop(db);
+    let content_type = load_content_type_by_slug(state, tenant, type_slug).await?;
+    entry.data =
+        security::sanitize_entry_data(&parse_fields(&content_type.fields)?, entry.data.clone())?;
+    Ok(entry)
 }
 
 fn validate_content_type_request(payload: &ContentTypeRequest) -> Result<(), AppError> {
