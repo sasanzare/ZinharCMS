@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
-import { LogOut, PlugZap, Plus, RefreshCw, Send, Shield, Trash2, UserRound } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { KeyRound, LogOut, PlugZap, Plus, RefreshCw, Send, Shield, Trash2, UserRound } from "lucide-react";
 
 import { StatusBadge } from "../components/StatusBadge";
+import { StepUpDialog } from "../components/StepUpDialog";
 import { useHealth } from "../hooks/useHealth";
 import { useI18n } from "../i18n";
 import { ApiError, api } from "../services/api";
 import { useAppStore } from "../stores/useAppStore";
-import type { AuthUser, SessionSummary, WebhookEvent, WebhookResponse } from "../types/api";
+import type {
+  AuthUser,
+  MfaEnrollmentResponse,
+  MfaStatusResponse,
+  SessionSummary,
+  StepUpScope,
+  WebhookEvent,
+  WebhookResponse,
+} from "../types/api";
 
 const WEBHOOK_EVENTS: WebhookEvent[] = ["entry.publish", "entry.unpublish", "page.publish", "page.unpublish"];
 
@@ -16,6 +25,12 @@ type WebhookDraft = {
   events: WebhookEvent[];
   secret: string;
   is_active: boolean;
+};
+
+type PendingStepUp = {
+  scope: StepUpScope;
+  title: string;
+  run: (stepUpToken: string) => Promise<void>;
 };
 
 function createWebhookDraft(): WebhookDraft {
@@ -58,6 +73,18 @@ export function SettingsPage() {
   const [sessionLoading, setSessionLoading] = useState(false);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
   const [logoutAllLoading, setLogoutAllLoading] = useState(false);
+  const [mfaStatus, setMfaStatus] = useState<MfaStatusResponse | null>(null);
+  const [mfaPassword, setMfaPassword] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaEnrollment, setMfaEnrollment] = useState<MfaEnrollmentResponse | null>(null);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [recoveryCodesSaved, setRecoveryCodesSaved] = useState(false);
+  const [recoveryRequiresRelogin, setRecoveryRequiresRelogin] = useState(false);
+  const [mfaError, setMfaError] = useState<string | null>(null);
+  const [mfaMessage, setMfaMessage] = useState<string | null>(null);
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [pendingStepUp, setPendingStepUp] = useState<PendingStepUp | null>(null);
+  const stepUpPendingRef = useRef(false);
   const [webhooks, setWebhooks] = useState<WebhookResponse[]>([]);
   const [webhookDraft, setWebhookDraft] = useState<WebhookDraft>(() => createWebhookDraft());
   const [webhookError, setWebhookError] = useState<string | null>(null);
@@ -102,13 +129,32 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadMfaStatus = useCallback(async function loadMfaStatus() {
+    setMfaError(null);
+    try {
+      setMfaStatus(await api.auth.mfaStatus());
+    } catch (caught) {
+      setMfaError(apiMessage(caught, "Unable to load MFA status."));
+    }
+  }, []);
+
   useEffect(() => {
     void loadMe();
     void loadSessions();
+    void loadMfaStatus();
     void loadWebhooks();
-  }, [loadMe, loadSessions, loadWebhooks]);
+  }, [loadMe, loadMfaStatus, loadSessions, loadWebhooks]);
+
+  useEffect(() => {
+    if (!pendingStepUp) stepUpPendingRef.current = false;
+  }, [pendingStepUp]);
 
   async function logout() {
+    setPendingStepUp(null);
+    setMfaEnrollment(null);
+    setRecoveryCodes([]);
+    setMfaPassword("");
+    setMfaCode("");
     try {
       await api.auth.logout();
     } catch {
@@ -117,43 +163,142 @@ export function SettingsPage() {
     clearSession();
   }
 
-  async function revokeSession(session: SessionSummary) {
+  function requireStepUp(
+    scope: StepUpScope,
+    title: string,
+    run: (stepUpToken: string) => Promise<void>,
+  ) {
+    if (stepUpPendingRef.current) return;
+    stepUpPendingRef.current = true;
+    setPendingStepUp({ scope, title, run });
+  }
+
+  async function startMfaEnrollment() {
+    if (mfaLoading) return;
+    setMfaLoading(true);
+    setMfaError(null);
+    setMfaMessage(null);
+    try {
+      const enrollment = await api.auth.startMfaEnrollment(mfaPassword);
+      setMfaEnrollment(enrollment);
+      setMfaPassword("");
+      setMfaCode("");
+    } catch (caught) {
+      setMfaError(apiMessage(caught, "Unable to start MFA enrollment."));
+    } finally {
+      setMfaLoading(false);
+    }
+  }
+
+  async function confirmMfaEnrollment() {
+    if (mfaLoading || !mfaEnrollment) return;
+    setMfaLoading(true);
+    setMfaError(null);
+    setMfaMessage(null);
+    try {
+      const response = await api.auth.confirmMfaEnrollment(mfaCode);
+      setRecoveryCodes(response.recovery_codes);
+      setRecoveryCodesSaved(false);
+      setRecoveryRequiresRelogin(true);
+      setMfaEnrollment(null);
+      setMfaCode("");
+      setMfaStatus((current) =>
+        current
+          ? {
+              ...current,
+              enabled: true,
+              enrollment_pending: false,
+              recovery_codes_remaining: response.recovery_codes.length,
+            }
+          : current,
+      );
+      setMfaMessage("MFA enabled. Save every recovery code before signing in again.");
+    } catch (caught) {
+      setMfaError(apiMessage(caught, "Unable to confirm MFA enrollment."));
+    } finally {
+      setMfaLoading(false);
+    }
+  }
+
+  function regenerateRecoveryCodes() {
+    requireStepUp(
+      "mfa_recovery_regenerate",
+      "Generate replacement recovery codes",
+      async (stepUpToken) => {
+        const response =
+          await api.auth.regenerateMfaRecoveryCodes(stepUpToken);
+        setRecoveryCodes(response.recovery_codes);
+        setRecoveryCodesSaved(false);
+        setRecoveryRequiresRelogin(false);
+        setMfaMessage("Previous recovery codes are invalid. Save the replacements now.");
+        setPendingStepUp(null);
+        await loadMfaStatus();
+      },
+    );
+  }
+
+  function disableMfa() {
+    if (!window.confirm("Disable MFA and revoke every active session?")) return;
+    requireStepUp("mfa_disable", "Disable MFA", async (stepUpToken) => {
+      await api.auth.disableMfa(stepUpToken);
+      setRecoveryCodes([]);
+      setRecoveryRequiresRelogin(false);
+      setPendingStepUp(null);
+      clearSession();
+    });
+  }
+
+  function revokeSession(session: SessionSummary) {
+    if (stepUpPendingRef.current) return;
     const prompt = session.current
       ? "Revoke this current session and log out this browser?"
       : "Revoke this session?";
     if (!window.confirm(prompt)) return;
     if (revokingSessionId || logoutAllLoading) return;
-    setRevokingSessionId(session.session_id);
-    setSessionError(null);
-    setSessionMessage(null);
-    try {
-      const result = await api.auth.revokeSession(session.session_id);
-      if (result.current_session) {
-        clearSession();
-        return;
+    requireStepUp("session_logout_all", "Revoke session", async (stepUpToken) => {
+      setRevokingSessionId(session.session_id);
+      setSessionError(null);
+      setSessionMessage(null);
+      try {
+        const result = await api.auth.revokeSession(session.session_id, stepUpToken);
+        setPendingStepUp(null);
+        if (result.current_session) {
+          clearSession();
+          return;
+        }
+        setSessionMessage(result.revoked ? "Session revoked." : "Session was already unavailable.");
+        await loadSessions();
+      } catch (caught) {
+        setSessionError(apiMessage(caught, "Unable to revoke the session."));
+        throw caught;
+      } finally {
+        setRevokingSessionId(null);
       }
-      setSessionMessage(result.revoked ? "Session revoked." : "Session was already unavailable.");
-      await loadSessions();
-    } catch (caught) {
-      setSessionError(apiMessage(caught, "Unable to revoke the session."));
-    } finally {
-      setRevokingSessionId(null);
-    }
+    });
   }
 
   async function logoutAllSessions() {
+    if (stepUpPendingRef.current) return;
     if (!window.confirm("Log out every session, including this browser?")) return;
     if (logoutAllLoading || revokingSessionId) return;
-    setLogoutAllLoading(true);
-    setSessionError(null);
-    setSessionMessage(null);
-    try {
-      await api.auth.logoutAll();
-      clearSession();
-    } catch (caught) {
-      setSessionError(apiMessage(caught, "Unable to log out all sessions."));
-      setLogoutAllLoading(false);
-    }
+    requireStepUp(
+      "session_logout_all",
+      "Log out all sessions",
+      async (stepUpToken) => {
+        setLogoutAllLoading(true);
+        setSessionError(null);
+        setSessionMessage(null);
+        try {
+          await api.auth.logoutAll(stepUpToken);
+          setPendingStepUp(null);
+          clearSession();
+        } catch (caught) {
+          setSessionError(apiMessage(caught, "Unable to log out all sessions."));
+          setLogoutAllLoading(false);
+          throw caught;
+        }
+      },
+    );
   }
 
   function toggleDraftEvent(event: WebhookEvent) {
@@ -165,68 +310,91 @@ export function SettingsPage() {
     }));
   }
 
-  async function saveWebhook() {
+  function saveWebhook() {
     setWebhookError(null);
     setWebhookMessage(null);
     if (webhookDraft.events.length === 0) {
       setWebhookError(t("settings.selectEvent"));
       return;
     }
-    try {
-      const saved = await api.webhooks.create({
-        name: webhookDraft.name,
-        url: webhookDraft.url,
-        events: webhookDraft.events,
-        secret: webhookDraft.secret,
-        is_active: webhookDraft.is_active,
-      });
-      setWebhooks((current) => [saved, ...current]);
-      setWebhookDraft(createWebhookDraft());
-      setWebhookMessage(t("settings.webhookSaved"));
-    } catch (caught) {
-      setWebhookError(apiMessage(caught, t("settings.error.saveWebhook")));
-    }
+    requireStepUp("webhook_administration", "Create webhook", async (stepUpToken) => {
+      try {
+        const saved = await api.webhooks.create(
+          {
+            name: webhookDraft.name,
+            url: webhookDraft.url,
+            events: webhookDraft.events,
+            secret: webhookDraft.secret,
+            is_active: webhookDraft.is_active,
+          },
+          stepUpToken,
+        );
+        setWebhooks((current) => [saved, ...current]);
+        setWebhookDraft(createWebhookDraft());
+        setWebhookMessage(t("settings.webhookSaved"));
+        setPendingStepUp(null);
+      } catch (caught) {
+        setWebhookError(apiMessage(caught, t("settings.error.saveWebhook")));
+        throw caught;
+      }
+    });
   }
 
-  async function toggleWebhook(webhook: WebhookResponse) {
+  function toggleWebhook(webhook: WebhookResponse) {
     setWebhookError(null);
     setWebhookMessage(null);
-    try {
-      const updated = await api.webhooks.update(webhook.id, {
-        name: webhook.name,
-        url: webhook.url,
-        events: webhook.events,
-        secret: webhook.secret,
-        is_active: !webhook.is_active,
-      });
-      setWebhooks((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-    } catch (caught) {
-      setWebhookError(apiMessage(caught, t("settings.error.updateWebhook")));
-    }
+    requireStepUp("webhook_administration", "Update webhook", async (stepUpToken) => {
+      try {
+        const updated = await api.webhooks.update(
+          webhook.id,
+          {
+            name: webhook.name,
+            url: webhook.url,
+            events: webhook.events,
+            secret: webhook.secret ?? undefined,
+            is_active: !webhook.is_active,
+          },
+          stepUpToken,
+        );
+        setWebhooks((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+        setPendingStepUp(null);
+      } catch (caught) {
+        setWebhookError(apiMessage(caught, t("settings.error.updateWebhook")));
+        throw caught;
+      }
+    });
   }
 
-  async function deleteWebhook(webhook: WebhookResponse) {
+  function deleteWebhook(webhook: WebhookResponse) {
     if (!window.confirm(t("settings.confirmDeleteWebhook", { name: webhook.name }))) return;
     setWebhookError(null);
     setWebhookMessage(null);
-    try {
-      const deleted = await api.webhooks.delete(webhook.id);
-      setWebhooks((current) => current.filter((item) => item.id !== deleted.id));
-      setWebhookMessage(t("settings.webhookDeleted"));
-    } catch (caught) {
-      setWebhookError(apiMessage(caught, t("settings.error.deleteWebhook")));
-    }
+    requireStepUp("webhook_administration", "Delete webhook", async (stepUpToken) => {
+      try {
+        const deleted = await api.webhooks.delete(webhook.id, stepUpToken);
+        setWebhooks((current) => current.filter((item) => item.id !== deleted.id));
+        setWebhookMessage(t("settings.webhookDeleted"));
+        setPendingStepUp(null);
+      } catch (caught) {
+        setWebhookError(apiMessage(caught, t("settings.error.deleteWebhook")));
+        throw caught;
+      }
+    });
   }
 
-  async function testWebhook(webhook: WebhookResponse) {
+  function testWebhook(webhook: WebhookResponse) {
     setWebhookError(null);
     setWebhookMessage(null);
-    try {
-      const result = await api.webhooks.test(webhook.id);
-      setWebhookMessage(t("settings.testSent", { event: result.event }));
-    } catch (caught) {
-      setWebhookError(apiMessage(caught, t("settings.error.testWebhook")));
-    }
+    requireStepUp("webhook_administration", "Send test webhook", async (stepUpToken) => {
+      try {
+        const result = await api.webhooks.test(webhook.id, stepUpToken);
+        setWebhookMessage(t("settings.testSent", { event: result.event }));
+        setPendingStepUp(null);
+      } catch (caught) {
+        setWebhookError(apiMessage(caught, t("settings.error.testWebhook")));
+        throw caught;
+      }
+    });
   }
 
   return (
@@ -300,6 +468,149 @@ export function SettingsPage() {
             {t("settings.deliveryApi")}
             <input value="/api/v1" readOnly />
           </label>
+        </div>
+      </section>
+
+      <section className="panel list-panel full-width-panel" aria-label="Multi-factor authentication">
+        <div className="panel-header">
+          <div>
+            <h2>Multi-factor authentication</h2>
+            <span>
+              TOTP is optional for normal access and required before privileged actions.
+            </span>
+          </div>
+          <StatusBadge
+            label={mfaStatus?.enabled ? "Enabled" : "Disabled"}
+            tone={mfaStatus?.enabled ? "success" : "warning"}
+          />
+        </div>
+
+        <div className="padded form-grid">
+          {mfaStatus?.required_for_privileged_actions && !mfaStatus.enabled && (
+            <StatusBadge
+              label="MFA enrollment is required for privileged actions."
+              tone="warning"
+            />
+          )}
+
+          {!mfaStatus?.enabled && !mfaEnrollment && recoveryCodes.length === 0 && (
+            <>
+              <label>
+                Confirm your password
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={mfaPassword}
+                  onChange={(event) => setMfaPassword(event.target.value)}
+                />
+              </label>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => void startMfaEnrollment()}
+                disabled={mfaLoading || !mfaPassword}
+              >
+                <KeyRound size={16} aria-hidden="true" />
+                {mfaLoading ? "Starting..." : "Set up authenticator"}
+              </button>
+            </>
+          )}
+
+          {mfaEnrollment && (
+            <>
+              <p>
+                Scan this QR code with your authenticator. If scanning is unavailable,
+                enter the manual key.
+              </p>
+              <img
+                src={`data:image/png;base64,${mfaEnrollment.qr_code_base64}`}
+                alt="TOTP enrollment QR code"
+                width={220}
+                height={220}
+              />
+              <label>
+                Manual setup key
+                <input value={mfaEnrollment.manual_secret} readOnly />
+              </label>
+              <label>
+                Six-digit confirmation code
+                <input
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  value={mfaCode}
+                  onChange={(event) => setMfaCode(event.target.value)}
+                />
+              </label>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => void confirmMfaEnrollment()}
+                disabled={mfaLoading || mfaCode.length !== 6}
+              >
+                <Shield size={16} aria-hidden="true" />
+                {mfaLoading ? "Confirming..." : "Enable MFA"}
+              </button>
+            </>
+          )}
+
+          {recoveryCodes.length > 0 && (
+            <div className="status-stack" aria-live="polite">
+              <StatusBadge
+                label="These recovery codes are shown once. Store them offline."
+                tone="warning"
+              />
+              <div className="settings-grid">
+                {recoveryCodes.map((code) => (
+                  <code key={code}>{code}</code>
+                ))}
+              </div>
+              <label className="checkbox-row compact-checkbox">
+                <input
+                  type="checkbox"
+                  checked={recoveryCodesSaved}
+                  onChange={(event) => setRecoveryCodesSaved(event.target.checked)}
+                />
+                I saved every recovery code in a secure place.
+              </label>
+              <button
+                className="primary-button"
+                type="button"
+                disabled={!recoveryCodesSaved}
+                onClick={() => {
+                  setRecoveryCodes([]);
+                  setRecoveryCodesSaved(false);
+                  if (recoveryRequiresRelogin) {
+                    clearSession();
+                  } else {
+                    setMfaMessage("Recovery codes saved.");
+                  }
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          )}
+
+          {mfaStatus?.enabled && recoveryCodes.length === 0 && (
+            <div className="panel-actions">
+              <span>
+                {mfaStatus.recovery_codes_remaining} unused recovery codes remain.
+              </span>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={regenerateRecoveryCodes}
+              >
+                Replace recovery codes
+              </button>
+              <button className="secondary-button" type="button" onClick={disableMfa}>
+                Disable MFA
+              </button>
+            </div>
+          )}
+
+          {mfaError && <StatusBadge label={mfaError} tone="danger" />}
+          {mfaMessage && <StatusBadge label={mfaMessage} tone="success" />}
         </div>
       </section>
 
@@ -521,6 +832,16 @@ export function SettingsPage() {
           </div>
         </div>
       </section>
+
+      {pendingStepUp && (
+        <StepUpDialog
+          open
+          scope={pendingStepUp.scope}
+          title={pendingStepUp.title}
+          onGranted={pendingStepUp.run}
+          onCancel={() => setPendingStepUp(null)}
+        />
+      )}
     </div>
   );
 }

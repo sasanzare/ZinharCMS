@@ -125,8 +125,30 @@ describe("browser authentication contract", () => {
     const { requestForTest, setApiAccessToken } = await import("./api");
     setApiAccessToken("access-token");
 
-    await requestForTest("https://untrusted.example.invalid/resource", { auth: true });
+    await requestForTest("https://untrusted.example.invalid/resource", {
+      auth: true,
+      stepUpToken: "one-time-step-up",
+    });
 
     expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).has("Authorization")).toBe(false);
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).has("X-Step-Up-Token")).toBe(false);
+  });
+
+  it("sends a one-time step-up grant only to the configured API origin", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(successfulResponse({ ok: true }) as unknown as Response);
+    const { requestForTest, setApiAccessToken } = await import("./api");
+    setApiAccessToken("access-token");
+
+    await requestForTest("/api/auth/logout-all", {
+      method: "POST",
+      auth: true,
+      stepUpToken: "one-time-step-up",
+    });
+
+    const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("X-Step-Up-Token")).toBe("one-time-step-up");
+    expect(window.localStorage.getItem("X-Step-Up-Token")).toBeNull();
+    expect(window.sessionStorage.getItem("X-Step-Up-Token")).toBeNull();
   });
 });

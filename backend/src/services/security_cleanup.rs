@@ -67,6 +67,7 @@ pub struct CleanupResult {
     pub session_families: u64,
     pub security_tokens: u64,
     pub invitation_tokens: u64,
+    pub mfa_enrollments: u64,
     pub login_attempts: u64,
     pub audit_events: u64,
 }
@@ -76,6 +77,7 @@ impl CleanupResult {
         self.session_families
             + self.security_tokens
             + self.invitation_tokens
+            + self.mfa_enrollments
             + self.login_attempts
             + self.audit_events
     }
@@ -191,6 +193,12 @@ pub async fn run_cleanup(
     .await?
     .rows_affected();
 
+    let mfa_enrollments = crate::services::mfa_accounts::delete_expired_pending_enrollments(
+        &mut tx,
+        policy.batch_size,
+    )
+    .await?;
+
     let login_attempts = sqlx::query(
         r#"
         WITH candidates AS (
@@ -237,6 +245,7 @@ pub async fn run_cleanup(
         session_families,
         security_tokens,
         invitation_tokens,
+        mfa_enrollments,
         login_attempts,
         audit_events,
     };
@@ -249,6 +258,7 @@ pub async fn run_cleanup(
             "session_families": result.session_families,
             "security_records": result.security_tokens,
             "invitation_records": result.invitation_tokens,
+            "mfa_enrollments": result.mfa_enrollments,
             "login_attempts": result.login_attempts,
             "audit_events": result.audit_events
         }),

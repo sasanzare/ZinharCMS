@@ -12,6 +12,12 @@ pub const TOKEN_CONSUMED: &str = "security.recovery_token.consumed";
 pub const TOKEN_REVOKED: &str = "security.recovery_token.revoked";
 pub const TOKEN_REUSE_REJECTED: &str = "security.recovery_token.reuse_rejected";
 pub const CLEANUP_COMPLETED: &str = "security.cleanup.completed";
+pub const MFA_ENROLLMENT_STARTED: &str = "security.mfa.enrollment_started";
+pub const MFA_ENABLED: &str = "security.mfa.enabled";
+pub const MFA_DISABLED: &str = "security.mfa.disabled";
+pub const MFA_RECOVERY_CODES_REGENERATED: &str = "security.mfa.recovery_codes_regenerated";
+pub const MFA_LOGIN_COMPLETED: &str = "security.mfa.login_completed";
+pub const STEP_UP_COMPLETED: &str = "security.mfa.step_up_completed";
 
 pub async fn record(
     pool: &PgPool,

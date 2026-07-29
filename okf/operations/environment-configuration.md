@@ -37,6 +37,12 @@ Defaults below appear only when explicit in `Config::from_env` or tracked contai
 | Authentication | `JWT_KEY_RING` | HMAC signing/verification key ring | Required; no default | Backend | **Secret** | `config.rs` | Malformed JSON, invalid/duplicate `kid`, non-HS256 algorithm, weak/placeholder material, invalid active-key count, or unbounded previous key prevents startup |
 | Authentication | `JWT_ACCESS_EXPIRY` | Access-token lifetime seconds | `3600` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |
 | Authentication | `JWT_REFRESH_EXPIRY` | Refresh-token lifetime seconds | `604800` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |
+| Authentication | `MFA_ENCRYPTION_KEY_RING` | Dedicated TOTP-secret AES-256-GCM key ring | Required; no default | Backend | **Secret** | `config.rs` | Missing/malformed ring, duplicate or placeholder material, invalid key length/status, or unbounded previous key prevents startup |
+| Authentication | `MFA_ISSUER` | TOTP provisioning issuer | `ZinharCMS` | Backend/client setup | Non-secret | `config.rs` | Empty, overlong, or colon-containing issuer prevents startup |
+| Authentication | `MFA_ENROLLMENT_TTL_SECONDS` | Pending enrollment lifetime | `600` | Backend | Non-secret | `config.rs` | Must be 60-900 |
+| Authentication | `MFA_PRE_AUTH_TTL_SECONDS` | Password-to-MFA transaction lifetime | `300` | Backend/Redis | Non-secret | `config.rs` | Must be 60-300 |
+| Authentication | `MFA_STEP_UP_TTL_SECONDS` | Step-Up challenge and grant lifetime | `300` | Backend/Redis | Non-secret | `config.rs` | Must be 60-600 |
+| Authentication | `MFA_RATE_LIMIT_MAX_ATTEMPTS` | MFA issuance/verification attempt ceiling | `5` | Backend/Redis | Non-secret | `config.rs` | Must be 1-20 |
 | Authentication | `COOKIE_SECURE` | Secure refresh-cookie flag | `false` | Backend/browser boundary | Non-secret; security-critical | `config.rs` | Invalid boolean prevents startup |
 | Authentication | `LOGIN_RATE_LIMIT_MAX_FAILURES` | Login failure threshold | `5` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |
 | Authentication | `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Login limiter window | `900` | Backend | Non-secret | `config.rs` | Invalid integer prevents startup |

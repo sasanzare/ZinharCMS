@@ -42,7 +42,8 @@ Marketplace runtime authorization attempts record both allowed and rejected deci
 
 Global security events cover individual and bulk session revocation,
 logout-all, recovery/verification token issuance/consumption/reuse/revocation,
-invitation acceptance, and bounded cleanup counts. The writer rejects metadata
+invitation acceptance, MFA enrollment/enable/disable, MFA-completed login,
+recovery-code replacement, completed Step-Up, and bounded cleanup counts. The writer rejects metadata
 field names associated with credentials, hashes, passwords, secrets, and
 tokens.
 
@@ -52,8 +53,8 @@ Organization audit-log endpoints require organization admin-level access, with o
 
 ## Gaps
 
-No tenant/global security audit event is emitted for every registration, login,
-refresh, failed bearer verification, generic RBAC denial, global-role
+No tenant/global security audit event is emitted for every registration, AAL1
+login, failed MFA proof, refresh, failed bearer verification, generic RBAC denial, global-role
 assignment, JWT key-ring change, or RLS bypass entry. Login-attempt records
 capture authentication outcomes. Default retention is now explicit for global
 security events and login attempts, but cleanup requires an external scheduler.

@@ -53,6 +53,61 @@ export type AuthResponse = MeResponse & {
   expires_in: number;
 };
 
+export type MfaProofKind = "totp" | "recovery";
+
+export type MfaLoginRequiredResponse = {
+  mfa_required: true;
+  pre_auth_token: string;
+  expires_in: number;
+  methods: MfaProofKind[];
+};
+
+export type LoginResponse = AuthResponse | MfaLoginRequiredResponse;
+
+export type MfaStatusResponse = {
+  enabled: boolean;
+  enrollment_pending: boolean;
+  recovery_codes_remaining: number;
+  required_for_privileged_actions: boolean;
+};
+
+export type MfaEnrollmentResponse = {
+  enrollment_id: string;
+  manual_secret: string;
+  provisioning_uri: string;
+  qr_code_base64: string;
+  expires_at: string;
+};
+
+export type RecoveryCodesResponse = {
+  recovery_codes: string[];
+  display_once: boolean;
+  sessions_revoked: boolean;
+};
+
+export type StepUpScope =
+  | "session_logout_all"
+  | "privileged_session_revocation"
+  | "mfa_disable"
+  | "mfa_recovery_regenerate"
+  | "organization_administration"
+  | "webhook_administration"
+  | "billing_administration"
+  | "marketplace_administration"
+  | "marketplace_payout";
+
+export type StepUpChallengeResponse = {
+  challenge: string;
+  expires_in: number;
+  scope: StepUpScope;
+};
+
+export type StepUpGrantResponse = {
+  step_up_token: string;
+  expires_in: number;
+  scope: StepUpScope;
+};
+
 export type SessionSummary = {
   session_id: string;
   created_at: string;
@@ -581,7 +636,7 @@ export type WebhookResponse = {
   name: string;
   url: string;
   events: WebhookEvent[];
-  secret: string;
+  secret: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

@@ -39,6 +39,7 @@ async fn main() -> anyhow::Result<()> {
 
     let cors_origin = HeaderValue::from_str(&config.cors_origin).context("invalid CORS_ORIGIN")?;
     let organization_header = HeaderName::from_static("x-organization-id");
+    let step_up_header = HeaderName::from_static("x-step-up-token");
     let app = cms_backend::app(state)
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
@@ -56,7 +57,12 @@ async fn main() -> anyhow::Result<()> {
                     Method::PATCH,
                     Method::DELETE,
                 ])
-                .allow_headers([AUTHORIZATION, CONTENT_TYPE, organization_header])
+                .allow_headers([
+                    AUTHORIZATION,
+                    CONTENT_TYPE,
+                    organization_header,
+                    step_up_header,
+                ])
                 .allow_credentials(true),
         )
         .layer(PropagateRequestIdLayer::x_request_id())

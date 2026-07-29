@@ -84,7 +84,7 @@ expectations, and rollback conditions are defined in the
 | Database | PostgreSQL 16 with embedded SQLx migrations and forced RLS |
 | Cache and limits | Redis 7 for delivery caching and rate-limit counters |
 | Storage | Local filesystem for CMS uploads and Marketplace artifacts |
-| Authentication | Argon2id passwords, HMAC-SHA256 access tokens, hashed refresh tokens |
+| Authentication | Argon2id passwords, TOTP MFA, one-time recovery codes, Step-Up, HMAC-SHA256 access tokens, hashed refresh tokens |
 | Local infrastructure | Docker Compose for PostgreSQL, Redis, and pgAdmin |
 | Production-like images | Rust backend image and Nginx-hosted frontend image |
 | CI | Separate GitHub Actions workflows for backend and frontend validation |
@@ -122,7 +122,9 @@ Copy-Item .env.example .env
 
 Review `.env` before starting services. Replace the `JWT_KEY_RING` example with
 a JSON key ring containing one active HS256 key with a unique identifier and a
-unique random secret of at least 32 bytes. On a new empty database, set both
+unique random secret of at least 32 bytes. Also provision a separate
+`MFA_ENCRYPTION_KEY_RING` with exactly one active AES-256-GCM key; never reuse
+JWT key material. On a new empty database, set both
 `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` to provision the first
 administrator, then remove both values after the successful first startup.
 Public registration never grants an administrative role. The template is for

@@ -1,12 +1,16 @@
 use std::collections::HashSet;
 use std::env;
 
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ipnet::IpNet;
 use serde::Deserialize;
 use thiserror::Error;
 
 pub const JWT_CLOCK_SKEW_SECONDS: i64 = 30;
 const MAX_JWT_KEY_COUNT: usize = 8;
+const MAX_MFA_ENCRYPTION_KEY_COUNT: usize = 8;
+const MAX_MFA_PREVIOUS_KEY_WINDOW_SECONDS: i64 = 7 * 24 * 60 * 60;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
@@ -53,11 +57,71 @@ impl JwtKeyRing {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum MfaEncryptionKeyStatus {
+    Active,
+    Previous,
+    Retired,
+}
+
+#[derive(Clone, Eq, PartialEq)]
+pub struct MfaEncryptionKeyConfig {
+    pub kid: String,
+    pub algorithm: String,
+    pub status: MfaEncryptionKeyStatus,
+    pub(crate) key: [u8; 32],
+    pub decrypt_until: Option<i64>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawMfaEncryptionKeyConfig {
+    kid: String,
+    algorithm: String,
+    status: MfaEncryptionKeyStatus,
+    key: String,
+    decrypt_until: Option<i64>,
+}
+
+#[derive(Clone, Eq, PartialEq)]
+pub struct MfaEncryptionKeyRing {
+    keys: Vec<MfaEncryptionKeyConfig>,
+}
+
+impl MfaEncryptionKeyRing {
+    pub fn active(&self) -> &MfaEncryptionKeyConfig {
+        self.keys
+            .iter()
+            .find(|key| key.status == MfaEncryptionKeyStatus::Active)
+            .expect("validated MFA encryption key rings always contain one active key")
+    }
+
+    pub fn decryption_key(&self, kid: &str, now: i64) -> Option<&MfaEncryptionKeyConfig> {
+        self.keys.iter().find(|key| {
+            key.kid == kid
+                && match key.status {
+                    MfaEncryptionKeyStatus::Active => true,
+                    MfaEncryptionKeyStatus::Previous => key
+                        .decrypt_until
+                        .is_some_and(|decrypt_until| decrypt_until >= now),
+                    MfaEncryptionKeyStatus::Retired => false,
+                }
+        })
+    }
+}
+
 #[derive(Clone, Eq, PartialEq)]
 pub struct Config {
     pub database_url: String,
     pub redis_url: String,
     pub jwt_key_ring: JwtKeyRing,
+    pub mfa_encryption_key_ring: MfaEncryptionKeyRing,
+    pub mfa_issuer: String,
+    pub mfa_enrollment_ttl_seconds: u64,
+    pub mfa_pre_auth_ttl_seconds: u64,
+    pub mfa_step_up_ttl_seconds: u64,
+    pub mfa_rate_limit_max_attempts: i64,
     pub bootstrap_admin_email: Option<String>,
     pub bootstrap_admin_password: Option<String>,
     pub jwt_access_expiry: u64,
@@ -106,6 +170,8 @@ pub enum ConfigError {
     Invalid { name: &'static str, value: String },
     #[error("invalid JWT_KEY_RING: {0}")]
     InvalidJwtKeyRing(&'static str),
+    #[error("invalid MFA_ENCRYPTION_KEY_RING: {0}")]
+    InvalidMfaEncryptionKeyRing(&'static str),
     #[error("BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD must be set together")]
     IncompleteBootstrapAdmin,
     #[error("BOOTSTRAP_ADMIN_EMAIL must be a valid email address")]
@@ -124,6 +190,31 @@ impl Config {
             jwt_access_expiry,
             chrono::Utc::now().timestamp(),
         )?;
+        let mfa_encryption_key_ring = parse_mfa_encryption_key_ring(
+            &get("MFA_ENCRYPTION_KEY_RING", None)?,
+            chrono::Utc::now().timestamp(),
+        )?;
+        let mfa_issuer = get("MFA_ISSUER", Some("ZinharCMS"))?;
+        if mfa_issuer.is_empty() || mfa_issuer.len() > 64 || mfa_issuer.contains(':') {
+            return Err(ConfigError::Invalid {
+                name: "MFA_ISSUER",
+                value: "must contain 1-64 characters without a colon".to_owned(),
+            });
+        }
+        let mfa_enrollment_ttl_seconds = parse_u64("MFA_ENROLLMENT_TTL_SECONDS", 600)?;
+        let mfa_pre_auth_ttl_seconds = parse_u64("MFA_PRE_AUTH_TTL_SECONDS", 300)?;
+        let mfa_step_up_ttl_seconds = parse_u64("MFA_STEP_UP_TTL_SECONDS", 300)?;
+        let mfa_rate_limit_max_attempts = parse_i64("MFA_RATE_LIMIT_MAX_ATTEMPTS", 5)?;
+        if !(60..=900).contains(&mfa_enrollment_ttl_seconds)
+            || !(60..=300).contains(&mfa_pre_auth_ttl_seconds)
+            || !(60..=600).contains(&mfa_step_up_ttl_seconds)
+            || !(1..=20).contains(&mfa_rate_limit_max_attempts)
+        {
+            return Err(ConfigError::Invalid {
+                name: "MFA_SECURITY_POLICY",
+                value: "outside allowed bounds".to_owned(),
+            });
+        }
         let bootstrap_admin_email =
             get_optional("BOOTSTRAP_ADMIN_EMAIL").map(|email| email.trim().to_ascii_lowercase());
         let bootstrap_admin_password = get_optional("BOOTSTRAP_ADMIN_PASSWORD");
@@ -181,6 +272,12 @@ impl Config {
             database_url: get("DATABASE_URL", None)?,
             redis_url: get("REDIS_URL", Some("redis://localhost:6379"))?,
             jwt_key_ring,
+            mfa_encryption_key_ring,
+            mfa_issuer,
+            mfa_enrollment_ttl_seconds,
+            mfa_pre_auth_ttl_seconds,
+            mfa_step_up_ttl_seconds,
+            mfa_rate_limit_max_attempts,
             bootstrap_admin_email,
             bootstrap_admin_password,
             jwt_access_expiry,
@@ -235,6 +332,117 @@ impl Config {
             port: parse_u16("PORT", 8080)?,
         })
     }
+}
+
+fn parse_mfa_encryption_key_ring(
+    value: &str,
+    now: i64,
+) -> Result<MfaEncryptionKeyRing, ConfigError> {
+    let raw_keys: Vec<RawMfaEncryptionKeyConfig> = serde_json::from_str(value)
+        .map_err(|_| ConfigError::InvalidMfaEncryptionKeyRing("must be a valid JSON array"))?;
+    if raw_keys.is_empty() || raw_keys.len() > MAX_MFA_ENCRYPTION_KEY_COUNT {
+        return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+            "must contain between one and eight keys",
+        ));
+    }
+
+    let maximum_previous_window = now.saturating_add(MAX_MFA_PREVIOUS_KEY_WINDOW_SECONDS);
+    let mut kids = HashSet::with_capacity(raw_keys.len());
+    let mut key_materials = HashSet::with_capacity(raw_keys.len());
+    let mut active_count = 0;
+    let mut keys = Vec::with_capacity(raw_keys.len());
+
+    for raw in raw_keys {
+        if raw.kid.is_empty()
+            || raw.kid.len() > 64
+            || !raw
+                .kid
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
+        {
+            return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                "kid must use 1-64 ASCII letters, digits, dots, underscores, or hyphens",
+            ));
+        }
+        if !kids.insert(raw.kid.clone()) {
+            return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                "kid values must be unique",
+            ));
+        }
+        if raw.algorithm != "AES-256-GCM" {
+            return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                "only the AES-256-GCM algorithm is supported",
+            ));
+        }
+        if is_placeholder_secret(&raw.key) {
+            return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                "key material must not be a placeholder",
+            ));
+        }
+        let decoded = URL_SAFE_NO_PAD.decode(raw.key.as_bytes()).map_err(|_| {
+            ConfigError::InvalidMfaEncryptionKeyRing(
+                "key material must be unpadded base64url encoding",
+            )
+        })?;
+        let key: [u8; 32] = decoded.try_into().map_err(|_| {
+            ConfigError::InvalidMfaEncryptionKeyRing("key material must decode to exactly 32 bytes")
+        })?;
+        if std::str::from_utf8(&key).is_ok_and(is_placeholder_secret) {
+            return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                "decoded key material must not be a placeholder",
+            ));
+        }
+        if !key_materials.insert(key) {
+            return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                "key material must be unique",
+            ));
+        }
+
+        match raw.status {
+            MfaEncryptionKeyStatus::Active => {
+                active_count += 1;
+                if raw.decrypt_until.is_some() {
+                    return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                        "the active key must not have decrypt_until",
+                    ));
+                }
+            }
+            MfaEncryptionKeyStatus::Previous => {
+                let decrypt_until =
+                    raw.decrypt_until
+                        .ok_or(ConfigError::InvalidMfaEncryptionKeyRing(
+                            "a previous key requires decrypt_until",
+                        ))?;
+                if decrypt_until <= now || decrypt_until > maximum_previous_window {
+                    return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                        "a previous-key window must be in the future and no longer than seven days",
+                    ));
+                }
+            }
+            MfaEncryptionKeyStatus::Retired => {
+                if raw.decrypt_until.is_some() {
+                    return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+                        "a retired key must not have decrypt_until",
+                    ));
+                }
+            }
+        }
+
+        keys.push(MfaEncryptionKeyConfig {
+            kid: raw.kid,
+            algorithm: raw.algorithm,
+            status: raw.status,
+            key,
+            decrypt_until: raw.decrypt_until,
+        });
+    }
+
+    if active_count != 1 {
+        return Err(ConfigError::InvalidMfaEncryptionKeyRing(
+            "exactly one active key is required",
+        ));
+    }
+    Ok(MfaEncryptionKeyRing { keys })
 }
 
 fn parse_jwt_key_ring(
@@ -443,6 +651,20 @@ impl Config {
                     verify_until: None,
                 }],
             },
+            mfa_encryption_key_ring: MfaEncryptionKeyRing {
+                keys: vec![MfaEncryptionKeyConfig {
+                    kid: "test-mfa-active".to_owned(),
+                    algorithm: "AES-256-GCM".to_owned(),
+                    status: MfaEncryptionKeyStatus::Active,
+                    key: [7_u8; 32],
+                    decrypt_until: None,
+                }],
+            },
+            mfa_issuer: "ZinharCMS Test".to_owned(),
+            mfa_enrollment_ttl_seconds: 600,
+            mfa_pre_auth_ttl_seconds: 300,
+            mfa_step_up_ttl_seconds: 300,
+            mfa_rate_limit_max_attempts: 5,
             bootstrap_admin_email: None,
             bootstrap_admin_password: None,
             jwt_access_expiry: 3600,
@@ -489,6 +711,12 @@ impl Config {
         config.jwt_key_ring = JwtKeyRing { keys };
         config
     }
+
+    pub fn test_with_mfa_keys(keys: Vec<MfaEncryptionKeyConfig>) -> Self {
+        let mut config = Self::test_with_stripe_secret("test-webhook-secret");
+        config.mfa_encryption_key_ring = MfaEncryptionKeyRing { keys };
+        config
+    }
 }
 
 #[cfg(test)]
@@ -505,9 +733,30 @@ impl JwtKeyConfig {
 }
 
 #[cfg(test)]
+impl MfaEncryptionKeyConfig {
+    pub fn test(
+        kid: &str,
+        status: MfaEncryptionKeyStatus,
+        key: [u8; 32],
+        decrypt_until: Option<i64>,
+    ) -> Self {
+        Self {
+            kid: kid.to_owned(),
+            algorithm: "AES-256-GCM".to_owned(),
+            status,
+            key,
+            decrypt_until,
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
+    use base64::Engine;
+
     use super::{
-        ConfigError, JwtKeyStatus, is_placeholder_secret, parse_jwt_key_ring,
+        ConfigError, JwtKeyStatus, MAX_MFA_PREVIOUS_KEY_WINDOW_SECONDS, MfaEncryptionKeyStatus,
+        is_placeholder_secret, parse_jwt_key_ring, parse_mfa_encryption_key_ring,
         parse_trusted_proxy_cidrs, validate_bootstrap_admin,
     };
 
@@ -628,5 +877,63 @@ mod tests {
             now + 3631
         );
         assert!(parse_jwt_key_ring(&unbounded, 3600, now).is_err());
+    }
+
+    #[test]
+    fn mfa_encryption_key_ring_requires_one_unique_strong_active_key() {
+        let now = 1_800_000_000;
+        let active = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([1_u8; 32]);
+        let previous = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([2_u8; 32]);
+        let valid = format!(
+            r#"[
+              {{"kid":"mfa-b","algorithm":"AES-256-GCM","status":"active","key":"{active}"}},
+              {{"kid":"mfa-a","algorithm":"AES-256-GCM","status":"previous","key":"{previous}","decrypt_until":{}}}
+            ]"#,
+            now + 600
+        );
+        let ring = parse_mfa_encryption_key_ring(&valid, now).unwrap();
+        assert_eq!(ring.active().kid, "mfa-b");
+        assert_eq!(ring.active().status, MfaEncryptionKeyStatus::Active);
+        assert!(ring.decryption_key("mfa-a", now + 300).is_some());
+        assert!(ring.decryption_key("mfa-a", now + 601).is_none());
+
+        for rejected in [
+            "[]".to_owned(),
+            format!(
+                r#"[
+                  {{"kid":"a","algorithm":"AES-256-GCM","status":"active","key":"{active}"}},
+                  {{"kid":"b","algorithm":"AES-256-GCM","status":"active","key":"{previous}"}}
+                ]"#
+            ),
+            r#"[{"kid":"weak","algorithm":"AES-256-GCM","status":"active","key":"c2hvcnQ"}]"#
+                .to_owned(),
+            r#"[{"kid":"placeholder","algorithm":"AES-256-GCM","status":"active","key":"CHANGE_ME_WITH_A_RANDOM_KEY"}]"#
+                .to_owned(),
+            format!(
+                r#"[{{"kid":"wrong","algorithm":"AES-128-GCM","status":"active","key":"{active}"}}]"#
+            ),
+            format!(
+                r#"[
+                  {{"kid":"duplicate","algorithm":"AES-256-GCM","status":"active","key":"{active}"}},
+                  {{"kid":"duplicate","algorithm":"AES-256-GCM","status":"retired","key":"{previous}"}}
+                ]"#
+            ),
+            format!(
+                r#"[
+                  {{"kid":"a","algorithm":"AES-256-GCM","status":"active","key":"{active}"}},
+                  {{"kid":"b","algorithm":"AES-256-GCM","status":"previous","key":"{active}","decrypt_until":{}}}
+                ]"#,
+                now + 600
+            ),
+            format!(
+                r#"[
+                  {{"kid":"a","algorithm":"AES-256-GCM","status":"active","key":"{active}"}},
+                  {{"kid":"b","algorithm":"AES-256-GCM","status":"previous","key":"{previous}","decrypt_until":{}}}
+                ]"#,
+                now + MAX_MFA_PREVIOUS_KEY_WINDOW_SECONDS + 1
+            ),
+        ] {
+            assert!(parse_mfa_encryption_key_ring(&rejected, now).is_err());
+        }
     }
 }

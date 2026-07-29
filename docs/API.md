@@ -20,13 +20,21 @@ review, moderation, and catalog behavior.
 | --- | --- | --- |
 | `GET` | `/api/auth` | Auth module status and endpoint list |
 | `POST` | `/api/auth/register` | Create a standard user session |
-| `POST` | `/api/auth/login` | Issue access token and HttpOnly refresh cookie; rate-limited by failed IP attempts |
+| `POST` | `/api/auth/login` | Issue AAL1 auth or an MFA pre-authentication response; rate-limited |
+| `POST` | `/api/auth/mfa/verify` | Complete TOTP or recovery-code login and issue an AAL2 session |
 | `POST` | `/api/auth/refresh` | Rotate refresh cookie and issue a new access token |
 | `POST` | `/api/auth/logout` | Revoke the cookie-selected refresh family and clear the refresh cookie |
+| `GET` | `/api/auth/mfa` | Read the caller's MFA status and remaining recovery-code count |
+| `POST` | `/api/auth/mfa/enrollment` | Start password-confirmed pending TOTP enrollment |
+| `POST` | `/api/auth/mfa/enrollment/confirm` | Verify TOTP, enable MFA, revoke sessions, and return recovery codes once |
+| `POST` | `/api/auth/mfa/recovery-codes` | Replace recovery codes; requires `mfa_recovery_regenerate` Step-Up |
+| `DELETE` | `/api/auth/mfa` | Disable MFA and revoke sessions; requires `mfa_disable` Step-Up |
+| `POST` | `/api/auth/step-up/challenge` | Start a session- and scope-bound Step-Up challenge |
+| `POST` | `/api/auth/step-up/verify` | Complete Step-Up and return a one-time assertion |
 | `GET` | `/api/auth/sessions` | List the caller's non-expired logical refresh-token families |
-| `DELETE` | `/api/auth/sessions/{session_id}` | Revoke one caller-owned logical session |
-| `POST` | `/api/auth/logout-all` | Revoke all caller sessions and increment the authentication version |
-| `POST` | `/api/auth/admin/users/{user_id}/revoke-sessions` | Super-admin-only bulk revocation for one user |
+| `DELETE` | `/api/auth/sessions/{session_id}` | Revoke one caller-owned logical session; requires session Step-Up |
+| `POST` | `/api/auth/logout-all` | Revoke all caller sessions; requires session Step-Up |
+| `POST` | `/api/auth/admin/users/{user_id}/revoke-sessions` | Super-admin incident revocation; requires privileged Step-Up |
 | `GET` | `/api/auth/me` | Current authenticated user |
 
 Use the access token as `Authorization: Bearer <token>` for protected endpoints.
@@ -34,6 +42,26 @@ Refresh tokens are issued only as the `zinhar_refresh_token` HttpOnly cookie.
 Refresh and logout consume that cookie and do not accept or return refresh
 tokens in JSON. Refresh-token rotation is one-time and family-based; detected
 reuse revokes the complete family.
+
+For an enabled-MFA user, password success returns `mfa_required`,
+`pre_auth_token`, `expires_in`, and `methods` without creating any session.
+Clients send that value and either a six-digit TOTP or one recovery code only to
+`POST /api/auth/mfa/verify`. Pre-authentication values are short-lived,
+single-use, failure-bounded, and never belong in URLs or browser storage.
+
+TOTP uses SHA-1, six digits, a 30-second period, a 160-bit secret, and one
+adjacent step of server-side clock tolerance. Accepted time steps cannot replay.
+Enrollment is pending until proof succeeds. Ten 120-bit recovery codes are
+returned once and stored only as a SHA-256 lookup plus Argon2id verifier.
+
+Step-Up initiation requires an AAL2 session. Its default five-minute challenge
+and grant are bound to the current user, logical session, authentication
+version, and exact scope. The resulting assertion is passed once in
+`X-Step-Up-Token`. Supported scopes are `session_logout_all`,
+`privileged_session_revocation`, `mfa_disable`,
+`mfa_recovery_regenerate`, `organization_administration`,
+`webhook_administration`, `billing_administration`,
+`marketplace_administration`, and `marketplace_payout`.
 
 Browser access tokens are held in memory only. On startup the frontend calls
 refresh once with the cookie before rendering protected content. Concurrent
@@ -234,6 +262,8 @@ The `seo-auto` plugin runs on `entry.before_save` and fills `data.slug` from `da
 | Area | Control |
 | --- | --- |
 | Auth | Failed login attempts are limited by IP address. Default: 5 failures per 15 minutes. |
+| Auth | MFA enrollment is pending until verified; TOTP secrets use a separate AES-256-GCM key ring and recovery codes are hash-only. |
+| Auth | Pre-authentication and Step-Up challenges are hash-keyed, short-lived, rate-limited, single-use Redis records. |
 | Auth | Refresh tokens are stored as hashes and issued only in `HttpOnly` cookies at `/api/auth`; rotation is transactional and token-family reuse revokes that family. |
 | API | CORS is restricted to `CORS_ORIGIN` and supports credentialed requests. |
 | API | Responses include CSP, frame, content-type, referrer, and permissions policy headers. |
@@ -260,6 +290,10 @@ is empty by default. Header precedence is `Forwarded`, `X-Forwarded-For`, then
 
 Supported events: `entry.publish`, `entry.unpublish`, `page.publish`, `page.unpublish`.
 Webhook requests include `X-CMS-Event` and `X-CMS-Signature` headers.
+Webhook list/get/delete responses redact the persisted signing secret. Create
+and explicit secret rotation return it once; the response field is otherwise
+`null`. Every webhook mutation and test requires `webhook_administration`
+Step-Up.
 
 Webhook delivery uses one transient asynchronous attempt per event/subscription.
 Delivery rows are persisted, but no durable retry queue or worker is implemented.

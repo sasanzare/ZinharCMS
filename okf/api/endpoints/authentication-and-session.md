@@ -27,12 +27,13 @@ uncertainty_markers:
 
 ## Family Boundary
 
-This family contains 10 registered handler-method endpoints. Access is **Five
-public/cookie-boundary endpoints and five bearer-authenticated endpoints**.
+This family contains 18 registered handler-method endpoints. Access is **six
+public/cookie-boundary endpoints and twelve bearer-authenticated endpoints**.
 
 Module discovery, registration, login, refresh-token rotation, current-family
 logout, session inventory, owned-session revocation, logout-all,
-super-admin-targeted bulk revocation, and current-user context.
+super-admin-targeted bulk revocation, current-user context, TOTP enrollment,
+MFA login completion, recovery-code replacement, MFA disable, and Step-Up.
 
 Exact method/path, stable endpoint ID, handler, access zone, input extractor, return type, OpenAPI status, and frontend coverage are recorded in the [Endpoint Catalog](../endpoint-catalog.md).
 
@@ -43,13 +44,17 @@ Registration and login use JSON. Refresh/logout accept only the
 inventory uses bearer authentication and pagination. Owned revoke and
 logout-all use bearer authentication and also validate browser Origin because
 they can clear or invalidate cookie-backed sessions. Privileged bulk revocation
-uses bearer authentication and an authoritative current `super_admin` role.
+uses bearer authentication, an authoritative current `super_admin` role, and
+Step-Up. MFA enrollment requires password confirmation. MFA disable,
+recovery-code replacement, session revocation, and logout-all require an exact
+scope-bound `X-Step-Up-Token`.
 
 ## Response Contract
 
-`AuthResponse`, `LogoutResponse`, `MeResponse`, `SessionPage`,
-`RevokeSessionResponse`, `LogoutAllResponse`, and module status; auth issuance
-sets the refresh cookie.
+`AuthResponse`, `MfaLoginRequiredResponse`, MFA status/enrollment/recovery
+responses, Step-Up challenge/grant responses, `LogoutResponse`, `MeResponse`,
+`SessionPage`, `RevokeSessionResponse`, `LogoutAllResponse`, and module status.
+Only completed AAL1 or AAL2 auth issuance sets the refresh cookie.
 
 ## Ownership and Persistence
 
@@ -60,16 +65,18 @@ sets the refresh cookie.
 ## Frontend Contract
 
 Login, registration, refresh, logout, current-user, session inventory,
-owned-session revoke, and logout-all are wrapped under `api.auth`; module
-discovery and privileged bulk revocation are backend-only.
+owned-session revoke, logout-all, MFA enrollment/management, MFA login
+completion, and Step-Up are wrapped under `api.auth`; module discovery and
+privileged bulk revocation are backend-only.
 
 ## OpenAPI and Verification
 
 All handlers are listed, but the bearer and cookie security model is absent.
 
-JWT/password/session helpers have unit and live transactional tests. Phase 3
-adds cookie Origin tests and authenticated browser bootstrap/logout evidence;
-an exhaustive router-level cookie matrix remains deferred.
+JWT/password/session/MFA helpers have unit and live transactional tests. Phase 6
+adds live PostgreSQL/Redis concurrency, replay, migration, browser enrollment,
+recovery, Step-Up, storage, and disable evidence. An exhaustive router-level
+cookie and every-sensitive-route matrix remains deferred.
 
 ## Change Checklist
 

@@ -48,6 +48,12 @@ jobs:
       DATABASE_URL: postgresql://cms_user:cms_pass@localhost:5432/cms_dev
       REDIS_URL: redis://localhost:6379
       JWT_KEY_RING: '[{"kid":"ci-active","algorithm":"HS256","status":"active","secret":"ci-only-jwt-signing-key-not-for-production"}]'
+      MFA_ENCRYPTION_KEY_RING: '[{"kid":"ci-mfa-active","algorithm":"AES-256-GCM","status":"active","key":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA"}]'
+      MFA_ISSUER: ZinharCMS CI
+      MFA_ENROLLMENT_TTL_SECONDS: "600"
+      MFA_PRE_AUTH_TTL_SECONDS: "300"
+      MFA_STEP_UP_TTL_SECONDS: "300"
+      MFA_RATE_LIMIT_MAX_ATTEMPTS: "5"
       JWT_ACCESS_EXPIRY: "3600"
       JWT_REFRESH_EXPIRY: "604800"
       UPLOAD_DIR: ./uploads

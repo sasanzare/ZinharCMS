@@ -2,6 +2,14 @@ import type {
   ApiInfo,
   AuditLogResponse,
   AuthResponse,
+  LoginResponse,
+  MfaEnrollmentResponse,
+  MfaProofKind,
+  MfaStatusResponse,
+  RecoveryCodesResponse,
+  StepUpChallengeResponse,
+  StepUpGrantResponse,
+  StepUpScope,
   BillingUsageResponse,
   BetaDashboardResponse,
   BetaFeedbackRequest,
@@ -152,6 +160,7 @@ type RequestOptions = Omit<RequestInit, "body"> & {
   formData?: FormData;
   auth?: boolean;
   retryAuth?: boolean;
+  stepUpToken?: string;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -171,6 +180,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     if (activeOrganizationId) {
       headers.set("X-Organization-Id", activeOrganizationId);
     }
+  }
+  if (needsAuth && trustedApiOrigin && options.stepUpToken) {
+    headers.set("X-Step-Up-Token", options.stepUpToken);
   }
 
   const response = await fetch(requestUrl.toString(), {
@@ -239,7 +251,12 @@ export const api = {
 
   auth: {
     login: (email: string, password: string) =>
-      request<AuthResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
+      request<LoginResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
+    verifyMfa: (preAuthToken: string, proofKind: MfaProofKind, code: string) =>
+      request<AuthResponse>("/api/auth/mfa/verify", {
+        method: "POST",
+        body: { pre_auth_token: preAuthToken, proof_kind: proofKind, code },
+      }),
     register: (email: string, password: string, name: string) =>
       request<AuthResponse>("/api/auth/register", { method: "POST", body: { email, password, name } }),
     refresh: refreshBrowserSession,
@@ -259,15 +276,53 @@ export const api = {
         `/api/auth/sessions${query({ page, per_page: perPage })}`,
         { auth: true },
       ),
-    revokeSession: (sessionId: string) =>
+    revokeSession: (sessionId: string, stepUpToken?: string) =>
       request<RevokeSessionResult>(
         `/api/auth/sessions/${encodeURIComponent(sessionId)}`,
-        { method: "DELETE", auth: true },
+        { method: "DELETE", auth: true, stepUpToken },
       ),
-    logoutAll: () =>
+    logoutAll: (stepUpToken?: string) =>
       request<LogoutAllResult>("/api/auth/logout-all", {
         method: "POST",
         auth: true,
+        stepUpToken,
+      }),
+    mfaStatus: () => request<MfaStatusResponse>("/api/auth/mfa", { auth: true }),
+    startMfaEnrollment: (password: string) =>
+      request<MfaEnrollmentResponse>("/api/auth/mfa/enrollment", {
+        method: "POST",
+        auth: true,
+        body: { password },
+      }),
+    confirmMfaEnrollment: (code: string) =>
+      request<RecoveryCodesResponse>("/api/auth/mfa/enrollment/confirm", {
+        method: "POST",
+        auth: true,
+        body: { code },
+      }),
+    regenerateMfaRecoveryCodes: (stepUpToken: string) =>
+      request<RecoveryCodesResponse>("/api/auth/mfa/recovery-codes", {
+        method: "POST",
+        auth: true,
+        stepUpToken,
+      }),
+    disableMfa: (stepUpToken: string) =>
+      request<{ disabled: boolean; sessions_revoked: boolean }>("/api/auth/mfa", {
+        method: "DELETE",
+        auth: true,
+        stepUpToken,
+      }),
+    createStepUp: (scope: StepUpScope) =>
+      request<StepUpChallengeResponse>("/api/auth/step-up/challenge", {
+        method: "POST",
+        auth: true,
+        body: { scope },
+      }),
+    verifyStepUp: (challenge: string, proofKind: MfaProofKind, code: string) =>
+      request<StepUpGrantResponse>("/api/auth/step-up/verify", {
+        method: "POST",
+        auth: true,
+        body: { challenge, proof_kind: proofKind, code },
       }),
   },
   billing: {
@@ -618,15 +673,33 @@ changePlan: (payload: ChangePlanRequest) =>
   },
   webhooks: {
     list: () => request<WebhookResponse[]>("/api/webhooks", { auth: true }),
-    create: (payload: WebhookRequest) =>
-      request<WebhookResponse>("/api/webhooks", { method: "POST", auth: true, body: payload }),
-    update: (id: string, payload: WebhookRequest) =>
-      request<WebhookResponse>(`/api/webhooks/${id}`, { method: "PUT", auth: true, body: payload }),
-    delete: (id: string) =>
-      request<WebhookResponse>(`/api/webhooks/${id}?confirm=true`, { method: "DELETE", auth: true }),
+    create: (payload: WebhookRequest, stepUpToken?: string) =>
+      request<WebhookResponse>("/api/webhooks", {
+        method: "POST",
+        auth: true,
+        body: payload,
+        stepUpToken,
+      }),
+    update: (id: string, payload: WebhookRequest, stepUpToken?: string) =>
+      request<WebhookResponse>(`/api/webhooks/${id}`, {
+        method: "PUT",
+        auth: true,
+        body: payload,
+        stepUpToken,
+      }),
+    delete: (id: string, stepUpToken?: string) =>
+      request<WebhookResponse>(`/api/webhooks/${id}?confirm=true`, {
+        method: "DELETE",
+        auth: true,
+        stepUpToken,
+      }),
     deliveries: (id: string, limit = 20) =>
       request<WebhookDeliveryResponse[]>(`/api/webhooks/${id}/deliveries${query({ limit })}`, { auth: true }),
-    test: (id: string) =>
-      request<WebhookTestResponse>(`/api/webhooks/${id}/test`, { method: "POST", auth: true }),
+    test: (id: string, stepUpToken?: string) =>
+      request<WebhookTestResponse>(`/api/webhooks/${id}/test`, {
+        method: "POST",
+        auth: true,
+        stepUpToken,
+      }),
   },
 };

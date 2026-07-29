@@ -12,8 +12,13 @@ use crate::state::AppState;
 #[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
 pub struct Claims {
     pub sub: Uuid,
+    pub sid: Uuid,
     pub role: String,
     pub ver: i64,
+    pub aal: i16,
+    pub amr: Vec<String>,
+    pub auth_time: i64,
+    pub mfa_time: Option<i64>,
     pub exp: i64,
     pub iat: i64,
 }
@@ -36,6 +41,15 @@ pub async fn auth_middleware(
     let claims = crate::services::sessions::validate_access_claims(&state.db, claims)
         .await
         .map_err(map_access_claim_validation_error)?;
+    if let Some(scope) = crate::middleware::step_up::required_scope(req.method(), req.uri().path())
+    {
+        let grant = req
+            .headers()
+            .get(crate::middleware::step_up::STEP_UP_HEADER)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_owned);
+        crate::middleware::step_up::enforce_scope(&state, &claims, scope, grant.as_deref()).await?;
+    }
     req.extensions_mut().insert(claims);
 
     Ok(next.run(req).await)

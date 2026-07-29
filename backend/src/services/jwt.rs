@@ -9,6 +9,7 @@ use sha2::{Digest, Sha256};
 use crate::config::{Config, JWT_CLOCK_SKEW_SECONDS};
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
+use crate::services::sessions::SessionAuthentication;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -37,14 +38,22 @@ pub fn sign_access_token(
     user_id: uuid::Uuid,
     role: &str,
     auth_version: i64,
+    authentication: &SessionAuthentication,
     config: &Config,
 ) -> Result<String, AppError> {
     let now = Utc::now().timestamp();
     let claims =
         Claims {
             sub: user_id,
+            sid: authentication.session_id,
             role: role.to_owned(),
             ver: auth_version,
+            aal: authentication.assurance_level,
+            amr: authentication.methods.clone(),
+            auth_time: authentication.authenticated_at.timestamp(),
+            mfa_time: authentication
+                .mfa_authenticated_at
+                .map(|value| value.timestamp()),
             exp: now
                 .checked_add(i64::try_from(config.jwt_access_expiry).map_err(|_| {
                     AppError::Internal("access-token lifetime is too large".to_owned())
@@ -103,8 +112,10 @@ pub fn verify_access_token(token: &str, config: &Config) -> Result<Claims, AppEr
     let claims: Claims = serde_json::from_slice(&payload_bytes).map_err(|_| invalid_token())?;
     let maximum_lifetime = i64::try_from(config.jwt_access_expiry).map_err(|_| invalid_token())?;
     if claims.ver <= 0
+        || claims.sid.is_nil()
         || claims.role.is_empty()
         || claims.role.len() > 64
+        || !valid_authentication_claims(&claims)
         || claims.iat <= 0
         || claims.exp <= claims.iat
         || claims.exp.saturating_sub(claims.iat) > maximum_lifetime
@@ -115,6 +126,27 @@ pub fn verify_access_token(token: &str, config: &Config) -> Result<Claims, AppEr
     }
 
     Ok(claims)
+}
+
+fn valid_authentication_claims(claims: &Claims) -> bool {
+    let time_bounds_are_valid = claims.auth_time > 0
+        && claims.auth_time <= claims.iat
+        && claims
+            .mfa_time
+            .is_none_or(|value| value >= claims.auth_time && value <= claims.iat);
+    if !time_bounds_are_valid {
+        return false;
+    }
+    match claims.aal {
+        1 => claims.amr == ["pwd"] && claims.mfa_time.is_none(),
+        2 => {
+            claims.amr.len() == 2
+                && claims.amr[0] == "pwd"
+                && matches!(claims.amr[1].as_str(), "totp" | "recovery")
+                && claims.mfa_time.is_some()
+        }
+        _ => false,
+    }
 }
 
 pub fn generate_refresh_token() -> String {
@@ -179,8 +211,13 @@ fn sign_claims_for_test(
 ) -> String {
     let claims = Claims {
         sub: user_id,
+        sid: uuid::Uuid::now_v7(),
         role: role.to_owned(),
         ver: auth_version,
+        aal: 1,
+        amr: vec!["pwd".to_owned()],
+        auth_time: issued_at,
+        mfa_time: None,
         exp: expires_at,
         iat: issued_at,
     };
@@ -205,11 +242,30 @@ mod tests {
 
     use super::{sign_access_token, sign_bytes, sign_claims_for_test, verify_access_token};
     use crate::config::{Config, JwtKeyConfig, JwtKeyStatus};
+    use crate::services::sessions::SessionAuthentication;
+
+    fn password_authentication() -> SessionAuthentication {
+        SessionAuthentication {
+            session_id: Uuid::now_v7(),
+            assurance_level: 1,
+            methods: vec!["pwd".to_owned()],
+            authenticated_at: chrono::Utc::now(),
+            mfa_authenticated_at: None,
+            auth_version_at_issue: 1,
+        }
+    }
 
     #[test]
     fn access_token_signature_verification_rejects_tampering() {
         let config = Config::test_with_stripe_secret("test-webhook-secret");
-        let token = sign_access_token(Uuid::now_v7(), "author", 1, &config).unwrap();
+        let token = sign_access_token(
+            Uuid::now_v7(),
+            "author",
+            1,
+            &password_authentication(),
+            &config,
+        )
+        .unwrap();
         assert!(verify_access_token(&token, &config).is_ok());
 
         let mut parts = token.split('.').collect::<Vec<_>>();
@@ -235,7 +291,14 @@ mod tests {
             ),
         ]);
 
-        let current = sign_access_token(Uuid::now_v7(), "author", 1, &config).unwrap();
+        let current = sign_access_token(
+            Uuid::now_v7(),
+            "author",
+            1,
+            &password_authentication(),
+            &config,
+        )
+        .unwrap();
         let header: serde_json::Value = serde_json::from_slice(
             &URL_SAFE_NO_PAD
                 .decode(current.split('.').next().unwrap())

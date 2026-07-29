@@ -1,30 +1,37 @@
 sequenceDiagram
-  %% Evidence: backend/src/routes/auth.rs, services/password.rs, services/jwt.rs, services/security.rs
+  %% Evidence: backend/src/routes/auth.rs, services/password.rs, services/jwt.rs, services/sessions.rs, services/mfa_accounts.rs, services/mfa_challenges.rs
   actor User
   participant Browser
   participant Auth as Auth routes
-  participant Security as Password / login limiter
+  participant Security as Password and MFA services
+  participant Redis
   participant DB as PostgreSQL
   participant JWT as JWT service
 
-  alt Register
-    User->>Browser: Submit email, password, name
-    Browser->>Auth: POST /api/auth/register
-    Auth->>Security: Validate and Argon2 hash
-    Auth->>DB: Insert user, global role, default membership
-  else Login
-    User->>Browser: Submit email and password
-    Browser->>Auth: POST /api/auth/login
-    Auth->>DB: Count recent failed attempts and load active user
-    Auth->>Security: Verify Argon2 password
-    Auth->>DB: Record login result
+  alt Register or password-only login
+    User->>Browser: Submit credentials
+    Browser->>Auth: Register or login request
+    Auth->>Security: Validate and verify or hash password
+    Auth->>DB: Load or create active identity
+    alt MFA enabled
+      Auth->>Redis: Store hash-keyed pre-authentication record
+      Auth-->>Browser: MFA required without a session
+      User->>Browser: Enter TOTP or recovery proof
+      Browser->>Auth: Complete MFA challenge
+      Auth->>Redis: Lock and consume pre-authentication record
+      Auth->>DB: Verify replay-safe MFA state
+      Auth->>JWT: Issue AAL2 access and refresh credentials
+    else MFA not enabled
+      Auth->>JWT: Issue AAL1 access and refresh credentials
+    end
+    Auth->>DB: Store logical session and refresh-token hash
+    Auth-->>Browser: Access token and HttpOnly refresh cookie
   else Refresh
-    Browser->>Auth: POST /api/auth/refresh with HttpOnly cookie and Origin
-    Auth->>DB: Lock valid token family and current active user
+    Browser->>Auth: Refresh with HttpOnly cookie and Origin
+    Auth->>DB: Lock family and validate AAL and AMR context
     Auth->>DB: Rotate and link successor transactionally
+    Auth->>JWT: Preserve assurance context in new access token
+    Auth-->>Browser: Access token and rotated HttpOnly cookie
   end
 
-  Auth->>JWT: Sign access token and generate refresh token
-  Auth->>DB: Store refresh-token hash and expiry
-  Auth-->>Browser: Access token, account/memberships, HttpOnly refresh cookie
-  Note over Browser,Auth: Recovery, MFA, email verification, and signing-key rotation are not implemented
+  Note over Browser,Auth: Public password reset, email verification, passkeys, and administrative MFA recovery remain deferred

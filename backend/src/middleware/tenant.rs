@@ -48,6 +48,15 @@ pub async fn tenant_middleware(
     if !is_quota_exempt_path(req.uri().path()) {
         quota::check_and_record_api_request(&state.db, &tenant).await?;
     }
+    if let Some(scope) = crate::middleware::step_up::required_scope(req.method(), req.uri().path())
+    {
+        let grant = req
+            .headers()
+            .get(crate::middleware::step_up::STEP_UP_HEADER)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_owned);
+        crate::middleware::step_up::enforce_scope(&state, &claims, scope, grant.as_deref()).await?;
+    }
 
     req.extensions_mut().insert(claims);
     req.extensions_mut().insert(tenant);

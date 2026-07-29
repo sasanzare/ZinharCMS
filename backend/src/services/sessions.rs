@@ -13,6 +13,32 @@ pub struct IssuedRefreshToken {
     pub raw_token: String,
     pub token_id: Uuid,
     pub family_id: Uuid,
+    pub authentication: SessionAuthentication,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct SessionAuthentication {
+    pub session_id: Uuid,
+    pub assurance_level: i16,
+    pub methods: Vec<String>,
+    pub authenticated_at: DateTime<Utc>,
+    pub mfa_authenticated_at: Option<DateTime<Utc>>,
+    pub auth_version_at_issue: i64,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum MfaAuthenticationMethod {
+    Totp,
+    Recovery,
+}
+
+impl MfaAuthenticationMethod {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Totp => "totp",
+            Self::Recovery => "recovery",
+        }
+    }
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -73,9 +99,24 @@ struct LockedRefreshToken {
     family_expires_at: DateTime<Utc>,
     family_revoked_at: Option<DateTime<Utc>>,
     compromised_at: Option<DateTime<Utc>>,
+    session_id: Uuid,
+    assurance_level: i16,
+    authentication_methods: Vec<String>,
+    authenticated_at: DateTime<Utc>,
+    mfa_authenticated_at: Option<DateTime<Utc>>,
+    auth_version_at_issue: i64,
     is_active: bool,
     auth_version: i64,
     role: Option<String>,
+}
+
+#[derive(Debug, FromRow)]
+struct StoredAuthenticationContext {
+    assurance_level: i16,
+    authentication_methods: Vec<String>,
+    authenticated_at: DateTime<Utc>,
+    mfa_authenticated_at: Option<DateTime<Utc>>,
+    auth_version_at_issue: i64,
 }
 
 pub async fn issue_refresh_family(
@@ -83,8 +124,26 @@ pub async fn issue_refresh_family(
     user_id: Uuid,
     ttl_seconds: i64,
 ) -> Result<IssuedRefreshToken, AppError> {
+    issue_refresh_family_with_assurance(pool, user_id, ttl_seconds, None).await
+}
+
+pub async fn issue_mfa_refresh_family(
+    pool: &PgPool,
+    user_id: Uuid,
+    ttl_seconds: i64,
+    second_factor: MfaAuthenticationMethod,
+) -> Result<IssuedRefreshToken, AppError> {
+    issue_refresh_family_with_assurance(pool, user_id, ttl_seconds, Some(second_factor)).await
+}
+
+async fn issue_refresh_family_with_assurance(
+    pool: &PgPool,
+    user_id: Uuid,
+    ttl_seconds: i64,
+    second_factor: Option<MfaAuthenticationMethod>,
+) -> Result<IssuedRefreshToken, AppError> {
     let raw_token = jwt::generate_refresh_token();
-    issue_refresh_family_with_token(pool, user_id, &raw_token, ttl_seconds).await
+    issue_refresh_family_with_token(pool, user_id, &raw_token, ttl_seconds, second_factor).await
 }
 
 async fn issue_refresh_family_with_token(
@@ -92,6 +151,7 @@ async fn issue_refresh_family_with_token(
     user_id: Uuid,
     raw_token: &str,
     ttl_seconds: i64,
+    second_factor: Option<MfaAuthenticationMethod>,
 ) -> Result<IssuedRefreshToken, AppError> {
     if ttl_seconds <= 0 {
         return Err(AppError::Internal(
@@ -99,21 +159,23 @@ async fn issue_refresh_family_with_token(
         ));
     }
     let mut tx = pool.begin().await?;
-    let is_active: Option<bool> =
-        sqlx::query_scalar("SELECT is_active FROM users WHERE id = $1 FOR UPDATE")
+    let identity: Option<(bool, i64)> =
+        sqlx::query_as("SELECT is_active, auth_version FROM users WHERE id = $1 FOR UPDATE")
             .bind(user_id)
             .fetch_optional(&mut *tx)
             .await?;
-    if is_active != Some(true) {
+    let Some((true, auth_version)) = identity else {
         tx.rollback().await?;
         return Err(AppError::Unauthorized("invalid credentials".to_owned()));
-    }
+    };
 
     let issued = insert_family_and_token(
         &mut tx,
         user_id,
         raw_token,
         Utc::now() + Duration::seconds(ttl_seconds),
+        auth_version,
+        second_factor,
     )
     .await?;
     tx.commit().await?;
@@ -125,18 +187,44 @@ async fn insert_family_and_token(
     user_id: Uuid,
     raw_token: &str,
     expires_at: DateTime<Utc>,
+    auth_version: i64,
+    second_factor: Option<MfaAuthenticationMethod>,
 ) -> Result<IssuedRefreshToken, AppError> {
     let family_id = Uuid::now_v7();
+    let session_id = Uuid::now_v7();
     let token_id = Uuid::now_v7();
+    let authenticated_at = Utc::now();
+    let mfa_authenticated_at = second_factor.map(|_| authenticated_at);
+    let assurance_level = if second_factor.is_some() { 2 } else { 1 };
+    let mut methods = vec!["pwd".to_owned()];
+    if let Some(second_factor) = second_factor {
+        methods.push(second_factor.as_str().to_owned());
+    }
     sqlx::query(
         r#"
-        INSERT INTO refresh_token_families (id, user_id, expires_at)
-        VALUES ($1, $2, $3)
+        INSERT INTO refresh_token_families (
+          id,
+          public_id,
+          user_id,
+          expires_at,
+          assurance_level,
+          authentication_methods,
+          authenticated_at,
+          mfa_authenticated_at,
+          auth_version_at_issue
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         "#,
     )
     .bind(family_id)
+    .bind(session_id)
     .bind(user_id)
     .bind(expires_at)
+    .bind(assurance_level)
+    .bind(&methods)
+    .bind(authenticated_at)
+    .bind(mfa_authenticated_at)
+    .bind(auth_version)
     .execute(&mut **tx)
     .await?;
     sqlx::query(
@@ -163,6 +251,14 @@ async fn insert_family_and_token(
         raw_token: raw_token.to_owned(),
         token_id,
         family_id,
+        authentication: SessionAuthentication {
+            session_id,
+            assurance_level,
+            methods,
+            authenticated_at,
+            mfa_authenticated_at,
+            auth_version_at_issue: auth_version,
+        },
     })
 }
 
@@ -207,7 +303,12 @@ async fn rotate_refresh_token_with_successor(
     if record.family_revoked_at.is_some()
         || record.compromised_at.is_some()
         || record.family_expires_at <= now
+        || record.auth_version_at_issue != record.auth_version
     {
+        if record.auth_version_at_issue != record.auth_version {
+            revoke_family_in_transaction(&mut tx, record.family_id, "authentication_context_stale")
+                .await?;
+        }
         tx.commit().await?;
         return Ok(RefreshRotation::Rejected);
     }
@@ -293,6 +394,14 @@ async fn rotate_refresh_token_with_successor(
             raw_token: successor_token.to_owned(),
             token_id: successor_id,
             family_id: record.family_id,
+            authentication: SessionAuthentication {
+                session_id: record.session_id,
+                assurance_level: record.assurance_level,
+                methods: record.authentication_methods,
+                authenticated_at: record.authenticated_at,
+                mfa_authenticated_at: record.mfa_authenticated_at,
+                auth_version_at_issue: record.auth_version_at_issue,
+            },
         },
         identity: CurrentAuthIdentity {
             user_id: record.user_id,
@@ -317,6 +426,12 @@ async fn lock_refresh_token(
                family.expires_at AS family_expires_at,
                family.revoked_at AS family_revoked_at,
                family.compromised_at,
+               family.public_id AS session_id,
+               family.assurance_level,
+               family.authentication_methods,
+               family.authenticated_at,
+               family.mfa_authenticated_at,
+               family.auth_version_at_issue,
                users.is_active,
                users.auth_version,
                global_role.role
@@ -720,6 +835,36 @@ pub async fn validate_access_claims(pool: &PgPool, mut claims: Claims) -> Result
     if claims.ver != identity.auth_version || claims.role != identity.role {
         return Err(AppError::Unauthorized("invalid bearer token".to_owned()));
     }
+    let session = sqlx::query_as::<_, StoredAuthenticationContext>(
+        r#"
+        SELECT assurance_level,
+               authentication_methods,
+               authenticated_at,
+               mfa_authenticated_at,
+               auth_version_at_issue
+        FROM refresh_token_families
+        WHERE public_id = $1
+          AND user_id = $2
+          AND revoked_at IS NULL
+          AND compromised_at IS NULL
+          AND expires_at > now()
+        "#,
+    )
+    .bind(claims.sid)
+    .bind(claims.sub)
+    .fetch_optional(pool)
+    .await?;
+    let Some(session) = session else {
+        return Err(AppError::Unauthorized("invalid bearer token".to_owned()));
+    };
+    if session.auth_version_at_issue != identity.auth_version
+        || claims.aal != session.assurance_level
+        || claims.amr != session.authentication_methods
+        || claims.auth_time != session.authenticated_at.timestamp()
+        || claims.mfa_time != session.mfa_authenticated_at.map(|value| value.timestamp())
+    {
+        return Err(AppError::Unauthorized("invalid bearer token".to_owned()));
+    }
     claims.role = identity.role;
     claims.ver = identity.auth_version;
     Ok(claims)
@@ -786,6 +931,29 @@ mod tests {
             .execute(pool)
             .await
             .unwrap();
+    }
+
+    fn access_claims(
+        user_id: Uuid,
+        identity: &super::CurrentAuthIdentity,
+        issued: &super::IssuedRefreshToken,
+    ) -> Claims {
+        let now = chrono::Utc::now().timestamp();
+        Claims {
+            sub: user_id,
+            sid: issued.authentication.session_id,
+            role: identity.role.clone(),
+            ver: identity.auth_version,
+            aal: issued.authentication.assurance_level,
+            amr: issued.authentication.methods.clone(),
+            auth_time: issued.authentication.authenticated_at.timestamp(),
+            mfa_time: issued
+                .authentication
+                .mfa_authenticated_at
+                .map(|value| value.timestamp()),
+            exp: now + 3600,
+            iat: now,
+        }
     }
 
     #[tokio::test]
@@ -960,13 +1128,8 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
-        let claims = Claims {
-            sub: user_id,
-            role: identity.role.clone(),
-            ver: identity.auth_version,
-            exp: chrono::Utc::now().timestamp() + 3600,
-            iat: chrono::Utc::now().timestamp(),
-        };
+        let issued = issue_refresh_family(&pool, user_id, 3600).await.unwrap();
+        let claims = access_claims(user_id, &identity, &issued);
         assert!(validate_access_claims(&pool, claims.clone()).await.is_ok());
 
         sqlx::query("UPDATE users SET is_active = false WHERE id = $1")
@@ -1012,13 +1175,8 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(updated.role, "viewer");
-        let updated_claims = Claims {
-            sub: user_id,
-            role: updated.role.clone(),
-            ver: updated.auth_version,
-            exp: chrono::Utc::now().timestamp() + 3600,
-            iat: chrono::Utc::now().timestamp(),
-        };
+        let updated_session = issue_refresh_family(&pool, user_id, 3600).await.unwrap();
+        let updated_claims = access_claims(user_id, &updated, &updated_session);
         let authoritative = validate_access_claims(&pool, updated_claims).await.unwrap();
         assert_eq!(authoritative.role, "viewer");
 

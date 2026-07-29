@@ -30,9 +30,12 @@ related_diagrams:
 
 | Artifact | Creation | Storage | Default lifetime | Revocation/expiry |
 | --- | --- | --- | --- | --- |
-| Access token | Register, login, refresh | Browser memory only; not persisted server-side | 3,600 seconds | Expiry plus current user/role/auth-version rejection |
-| Refresh token | Register, login, refresh | HttpOnly browser cookie; hash in PostgreSQL | 604,800 seconds absolute family lifetime | Atomic rotation; reuse compromises/revokes family; logout revokes selected family |
-| Logical session | Login/registration family | PostgreSQL with opaque public ID; no raw token or client fingerprint | Refresh-family lifetime | Owned revoke, logout-all, privileged bulk revoke, expiry, or reuse compromise |
+| Access token | Register, AAL1/AAL2 login, refresh | Browser memory only; not persisted server-side | 3,600 seconds | Expiry plus current user/role/auth-version/logical-session-context rejection |
+| Refresh token | Register, completed login, refresh | HttpOnly browser cookie; hash in PostgreSQL | 604,800 seconds absolute family lifetime | Atomic rotation; reuse compromises/revokes family; logout or MFA state change revokes family |
+| Logical session | Registration or completed login family | PostgreSQL with opaque public ID and AAL/AMR/times; no raw token or client fingerprint | Refresh-family lifetime | Owned revoke, logout-all, privileged bulk revoke, MFA state change, expiry, or reuse compromise |
+| Pre-authentication transaction | Password success for an enabled-MFA user | SHA-256-derived Redis key; opaque value in frontend memory | 300 seconds | Owner-locked bounded failures, successful consume, or expiry |
+| Step-Up challenge/grant | AAL2 session plus fresh MFA proof | SHA-256-derived Redis key; opaque value in component memory/header | 300 seconds | User/session/version/scope mismatch, one-time consume, or expiry |
+| TOTP/recovery credentials | Verified enrollment | AES-256-GCM TOTP record and hash-only recovery rows in PostgreSQL | Until replacement/disable | Step replay marker, atomic recovery use, regeneration, or transactional disable |
 | Recovery/verification token foundation | Internal service call | SHA-256 hash only in PostgreSQL | Purpose-specific maximum: 1 or 24 hours | Atomic single-use consume, supersession, revocation, or expiry |
 | Claims | Access-token payload | Request extension after current database verification | Same as access token | Recreated per authenticated request |
 | Frontend identity projection | Successful auth response | Zustand plus non-secret user/organization cache | No independent timeout | Failed bootstrap, logout, or remote logout clears it |
@@ -41,8 +44,10 @@ The listed lifetimes are parser defaults and may be overridden by environment va
 
 ## Access Token States
 
-Issued access tokens carry `auth_version`. Authentication and tenant middleware
-reload current active user, global role, and authentication version. Deactivation,
+Issued access tokens carry `auth_version`, `sid`, AAL, AMR, password
+authentication time, and optional MFA time. Authentication and tenant middleware
+reload current active user, global role, authentication version, and logical
+session context. Deactivation,
 reactivation, credential changes, and global-role changes invalidate earlier
 claims without a token denylist. JWT signing uses exactly one active key;
 verification accepts that key plus explicitly time-bounded previous keys by
@@ -80,6 +85,7 @@ Logout is broadcast; storage events and browser storage never carry tokens.
   Web Locks/BroadcastChannel and deployed browser behavior require monitoring.
 - `TOKEN_LIFECYCLE_UNCLEAR TLU-01`: family
   rotation/reuse/concurrency/inventory/revocation, bounded cleanup, and
-  key-identified signing-key rotation are implemented. Deployment scheduling,
-  recent reauthentication, and rotation ownership remain open.
+  key-identified signing-key rotation are implemented. Scope-bound MFA-backed
+  Step-Up covers selected sensitive actions. Deployment scheduling, stronger
+  device binding, and rotation ownership remain open.
 - `COOKIE_SECURITY_UNVERIFIED CSU-01`: deployed cookie security cannot be inferred from a configurable flag.

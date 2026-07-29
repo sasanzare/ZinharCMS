@@ -13,7 +13,10 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::Claims;
-use crate::services::{jwt, password, preview_tickets, rbac, security, sessions};
+use crate::services::{
+    jwt, mfa_accounts, mfa_challenges, password, preview_tickets, rbac, security, security_audit,
+    sessions,
+};
 use crate::state::AppState;
 
 const REFRESH_COOKIE_NAME: &str = "zinhar_refresh_token";
@@ -25,6 +28,7 @@ pub fn public_router() -> Router<AppState> {
         .route("/api/auth", get(module_status))
         .route("/api/auth/register", post(register))
         .route("/api/auth/login", post(login))
+        .route("/api/auth/mfa/verify", post(complete_mfa_login))
         .route("/api/auth/refresh", post(refresh))
         .route("/api/auth/logout", post(logout))
 }
@@ -35,6 +39,21 @@ pub fn protected_router() -> Router<AppState> {
         .route("/api/auth/sessions", get(list_sessions))
         .route("/api/auth/sessions/{session_id}", delete(revoke_session))
         .route("/api/auth/logout-all", post(logout_all))
+        .route("/api/auth/mfa", get(mfa_status).delete(disable_mfa))
+        .route("/api/auth/mfa/enrollment", post(start_mfa_enrollment))
+        .route(
+            "/api/auth/mfa/enrollment/confirm",
+            post(confirm_mfa_enrollment),
+        )
+        .route(
+            "/api/auth/mfa/recovery-codes",
+            post(regenerate_mfa_recovery_codes),
+        )
+        .route(
+            "/api/auth/step-up/challenge",
+            post(create_step_up_challenge),
+        )
+        .route("/api/auth/step-up/verify", post(complete_step_up))
         .route(
             "/api/auth/admin/users/{user_id}/revoke-sessions",
             post(privileged_revoke_sessions),
@@ -58,6 +77,103 @@ pub struct RegisterRequest {
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MfaLoginRequiredResponse {
+    pub mfa_required: bool,
+    pub pre_auth_token: String,
+    pub expires_in: u64,
+    pub methods: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MfaVerificationRequest {
+    pub pre_auth_token: String,
+    pub proof_kind: MfaProofKindRequest,
+    pub code: String,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MfaProofKindRequest {
+    Totp,
+    Recovery,
+}
+
+impl From<MfaProofKindRequest> for mfa_accounts::MfaProofKind {
+    fn from(value: MfaProofKindRequest) -> Self {
+        match value {
+            MfaProofKindRequest::Totp => Self::Totp,
+            MfaProofKindRequest::Recovery => Self::Recovery,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PasswordConfirmationRequest {
+    pub password: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MfaEnrollmentConfirmationRequest {
+    pub code: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MfaEnrollmentResponse {
+    pub enrollment_id: Uuid,
+    pub manual_secret: String,
+    pub provisioning_uri: String,
+    pub qr_code_base64: String,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct RecoveryCodesResponse {
+    pub recovery_codes: Vec<String>,
+    pub display_once: bool,
+    pub sessions_revoked: bool,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MfaStatusResponse {
+    pub enabled: bool,
+    pub enrollment_pending: bool,
+    pub recovery_codes_remaining: i64,
+    pub required_for_privileged_actions: bool,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct StepUpChallengeRequest {
+    pub scope: mfa_challenges::StepUpScope,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct StepUpChallengeResponse {
+    pub challenge: String,
+    pub expires_in: u64,
+    pub scope: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct StepUpVerificationRequest {
+    pub challenge: String,
+    pub proof_kind: MfaProofKindRequest,
+    pub code: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct StepUpGrantResponse {
+    pub step_up_token: String,
+    pub expires_in: u64,
+    pub scope: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MfaDisabledResponse {
+    pub disabled: bool,
+    pub sessions_revoked: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -124,6 +240,8 @@ struct LoginUser {
     avatar_url: Option<String>,
     password_hash: String,
     role: String,
+    auth_version: i64,
+    mfa_enabled: bool,
 }
 
 struct IssuedAuthResponse {
@@ -143,12 +261,20 @@ pub async fn module_status() -> Json<AuthModuleStatus> {
         endpoints: [
             "POST /api/auth/register",
             "POST /api/auth/login",
+            "POST /api/auth/mfa/verify",
             "POST /api/auth/refresh",
             "POST /api/auth/logout",
             "GET /api/auth/me",
             "GET /api/auth/sessions",
             "DELETE /api/auth/sessions/{session_id}",
             "POST /api/auth/logout-all",
+            "GET /api/auth/mfa",
+            "POST /api/auth/mfa/enrollment",
+            "POST /api/auth/mfa/enrollment/confirm",
+            "POST /api/auth/mfa/recovery-codes",
+            "DELETE /api/auth/mfa",
+            "POST /api/auth/step-up/challenge",
+            "POST /api/auth/step-up/verify",
             "POST /api/auth/admin/users/{user_id}/revoke-sessions",
         ]
         .into_iter()
@@ -219,7 +345,7 @@ pub async fn login(
     headers: HeaderMap,
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
-) -> Result<AuthResult, AppError> {
+) -> Result<Response, AppError> {
     let email = payload.email.trim().to_ascii_lowercase();
     let ip_address = security::client_ip(&headers, addr.ip(), &state.config.trusted_proxy_cidrs);
     security::require_login_allowed(
@@ -237,7 +363,14 @@ pub async fn login(
                u.name,
                u.avatar_url,
                u.password_hash,
-               r.name as role
+               r.name as role,
+               u.auth_version,
+               EXISTS (
+                 SELECT 1
+                 FROM user_mfa
+                 WHERE user_mfa.user_id = u.id
+                   AND user_mfa.status = 'enabled'
+               ) AS mfa_enabled
         FROM users u
         JOIN user_roles ur ON ur.user_id = u.id
         JOIN roles r ON r.id = ur.role_id
@@ -272,6 +405,30 @@ pub async fn login(
     }
 
     security::record_login_attempt(&state.db, &email, &ip_address, true).await?;
+    if user.mfa_enabled {
+        mfa_challenges::enforce_rate_limit(
+            &state.redis,
+            "pre-auth-issue",
+            &format!("{}:{ip_address}", user.id),
+            state.config.mfa_rate_limit_max_attempts,
+        )
+        .await?;
+        let issued = mfa_challenges::issue_pre_auth(
+            &state.redis,
+            user.id,
+            user.auth_version,
+            chrono::Utc::now().timestamp(),
+            state.config.mfa_pre_auth_ttl_seconds,
+        )
+        .await?;
+        return Ok(Json(MfaLoginRequiredResponse {
+            mfa_required: true,
+            pre_auth_token: issued.raw_value,
+            expires_in: state.config.mfa_pre_auth_ttl_seconds,
+            methods: vec!["totp".to_owned(), "recovery".to_owned()],
+        })
+        .into_response());
+    }
     let issued = issue_auth_response(
         &state,
         AuthUser {
@@ -283,7 +440,352 @@ pub async fn login(
         },
     )
     .await?;
-    auth_response_with_cookie(&state, issued)
+    auth_response_with_cookie(&state, issued).map(IntoResponse::into_response)
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/mfa/verify",
+    tag = "auth",
+    request_body = MfaVerificationRequest,
+    responses(
+        (status = 200, description = "MFA-completed token pair", body = AuthResponse),
+        (status = 401, description = "Invalid or expired MFA challenge")
+    )
+)]
+pub async fn complete_mfa_login(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Json(payload): Json<MfaVerificationRequest>,
+) -> Result<Response, AppError> {
+    let ip_address = security::client_ip(&headers, addr.ip(), &state.config.trusted_proxy_cidrs);
+    mfa_challenges::enforce_rate_limit(
+        &state.redis,
+        "pre-auth-verify",
+        &ip_address,
+        state.config.mfa_rate_limit_max_attempts,
+    )
+    .await?;
+    let attempt =
+        mfa_challenges::begin_pre_auth_attempt(&state.redis, &payload.pre_auth_token).await?;
+    let now = chrono::Utc::now().timestamp();
+    let record_valid = attempt.record.issued_at <= now
+        && attempt.record.expires_at >= now
+        && attempt
+            .record
+            .expires_at
+            .saturating_sub(attempt.record.issued_at)
+            <= i64::try_from(state.config.mfa_pre_auth_ttl_seconds).unwrap_or(i64::MAX);
+    let identity = sessions::load_current_auth_identity(&state.db, attempt.record.user_id).await?;
+    let identity_valid = identity
+        .as_ref()
+        .is_some_and(|value| value.auth_version == attempt.record.auth_version);
+    if !record_valid || !identity_valid {
+        mfa_challenges::reject_pre_auth_attempt(
+            &state.redis,
+            &payload.pre_auth_token,
+            &attempt,
+            state.config.mfa_rate_limit_max_attempts,
+            state.config.mfa_pre_auth_ttl_seconds,
+        )
+        .await?;
+        return Err(AppError::Unauthorized("MFA verification failed".to_owned()));
+    }
+    let method = match mfa_accounts::verify_enabled_mfa(
+        &state.db,
+        attempt.record.user_id,
+        payload.proof_kind.into(),
+        &payload.code,
+        &state.config.mfa_encryption_key_ring,
+    )
+    .await
+    {
+        Ok(method) => method,
+        Err(error) => {
+            mfa_challenges::reject_pre_auth_attempt(
+                &state.redis,
+                &payload.pre_auth_token,
+                &attempt,
+                state.config.mfa_rate_limit_max_attempts,
+                state.config.mfa_pre_auth_ttl_seconds,
+            )
+            .await?;
+            return Err(error);
+        }
+    };
+    mfa_challenges::complete_pre_auth_attempt(&state.redis, &payload.pre_auth_token, &attempt)
+        .await?;
+    let identity = identity.expect("validated identity is present");
+    let user = load_auth_user(&state, identity.user_id).await?;
+    let refresh_token = sessions::issue_mfa_refresh_family(
+        &state.db,
+        identity.user_id,
+        refresh_ttl_seconds(&state)?,
+        method,
+    )
+    .await?;
+    security_audit::record(
+        &state.db,
+        security_audit::MFA_LOGIN_COMPLETED,
+        Some(identity.user_id),
+        Some(identity.user_id),
+        serde_json::json!({ "method": method.as_str() }),
+    )
+    .await?;
+    let issued = build_auth_response(&state, user, identity, refresh_token).await?;
+    auth_response_with_cookie(&state, issued).map(IntoResponse::into_response)
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/auth/mfa",
+    tag = "auth",
+    responses((status = 200, description = "MFA account status", body = MfaStatusResponse))
+)]
+pub async fn mfa_status(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<MfaStatusResponse>, AppError> {
+    let status = mfa_accounts::account_status(&state.db, claims.sub).await?;
+    Ok(Json(MfaStatusResponse {
+        enabled: status.enabled,
+        enrollment_pending: status.enrollment_pending,
+        recovery_codes_remaining: status.recovery_codes_remaining,
+        required_for_privileged_actions: matches!(
+            claims.role.as_str(),
+            rbac::SUPER_ADMIN | rbac::ADMIN
+        ),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/mfa/enrollment",
+    tag = "auth",
+    request_body = PasswordConfirmationRequest,
+    responses((status = 200, description = "Pending TOTP enrollment", body = MfaEnrollmentResponse))
+)]
+pub async fn start_mfa_enrollment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<PasswordConfirmationRequest>,
+) -> Result<Json<MfaEnrollmentResponse>, AppError> {
+    let credentials: Option<(String, String)> = sqlx::query_as(
+        "SELECT password_hash, email::text FROM users WHERE id = $1 AND is_active = true",
+    )
+    .bind(claims.sub)
+    .fetch_optional(&state.db)
+    .await?;
+    let Some((password_hash, email)) = credentials else {
+        return Err(AppError::Unauthorized("invalid credentials".to_owned()));
+    };
+    if !password::verify_password(&payload.password, &password_hash)? {
+        return Err(AppError::Unauthorized("invalid credentials".to_owned()));
+    }
+    let enrollment = mfa_accounts::begin_enrollment(
+        &state.db,
+        claims.sub,
+        &email,
+        &state.config.mfa_issuer,
+        &state.config.mfa_encryption_key_ring,
+        state.config.mfa_enrollment_ttl_seconds,
+    )
+    .await?;
+    Ok(Json(MfaEnrollmentResponse {
+        enrollment_id: enrollment.enrollment_id,
+        manual_secret: enrollment.manual_secret,
+        provisioning_uri: enrollment.provisioning_uri,
+        qr_code_base64: enrollment.qr_code_base64,
+        expires_at: enrollment.expires_at,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/mfa/enrollment/confirm",
+    tag = "auth",
+    request_body = MfaEnrollmentConfirmationRequest,
+    responses((status = 200, description = "Enabled MFA and one-time recovery codes", body = RecoveryCodesResponse))
+)]
+pub async fn confirm_mfa_enrollment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<MfaEnrollmentConfirmationRequest>,
+) -> Result<(HeaderMap, Json<RecoveryCodesResponse>), AppError> {
+    let recovery_codes = mfa_accounts::confirm_enrollment(
+        &state.db,
+        claims.sub,
+        &payload.code,
+        &state.config.mfa_encryption_key_ring,
+    )
+    .await?;
+    let mut headers = HeaderMap::new();
+    headers.insert(SET_COOKIE, clear_refresh_cookie(&state)?);
+    Ok((
+        headers,
+        Json(RecoveryCodesResponse {
+            recovery_codes,
+            display_once: true,
+            sessions_revoked: true,
+        }),
+    ))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/mfa/recovery-codes",
+    tag = "auth",
+    responses((status = 200, description = "One-time replacement recovery codes", body = RecoveryCodesResponse))
+)]
+pub async fn regenerate_mfa_recovery_codes(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<RecoveryCodesResponse>, AppError> {
+    let recovery_codes = mfa_accounts::regenerate_recovery_codes(&state.db, claims.sub).await?;
+    Ok(Json(RecoveryCodesResponse {
+        recovery_codes,
+        display_once: true,
+        sessions_revoked: false,
+    }))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/auth/mfa",
+    tag = "auth",
+    responses((status = 200, description = "Disabled MFA and revoked sessions", body = MfaDisabledResponse))
+)]
+pub async fn disable_mfa(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<(HeaderMap, Json<MfaDisabledResponse>), AppError> {
+    mfa_accounts::disable_mfa(&state.db, claims.sub).await?;
+    let mut headers = HeaderMap::new();
+    headers.insert(SET_COOKIE, clear_refresh_cookie(&state)?);
+    Ok((
+        headers,
+        Json(MfaDisabledResponse {
+            disabled: true,
+            sessions_revoked: true,
+        }),
+    ))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/step-up/challenge",
+    tag = "auth",
+    request_body = StepUpChallengeRequest,
+    responses((status = 200, description = "Session-bound step-up challenge", body = StepUpChallengeResponse))
+)]
+pub async fn create_step_up_challenge(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<StepUpChallengeRequest>,
+) -> Result<Json<StepUpChallengeResponse>, AppError> {
+    if !mfa_accounts::is_enabled(&state.db, claims.sub).await? {
+        return Err(AppError::Forbidden("MFA enrollment is required".to_owned()));
+    }
+    mfa_challenges::enforce_rate_limit(
+        &state.redis,
+        "step-up-issue",
+        &format!("{}:{}", claims.sub, payload.scope.as_str()),
+        state.config.mfa_rate_limit_max_attempts,
+    )
+    .await?;
+    let issued = mfa_challenges::issue_step_up_challenge(
+        &state.redis,
+        &claims,
+        payload.scope,
+        state.config.mfa_step_up_ttl_seconds,
+    )
+    .await?;
+    Ok(Json(StepUpChallengeResponse {
+        challenge: issued.raw_value,
+        expires_in: state.config.mfa_step_up_ttl_seconds,
+        scope: payload.scope.as_str().to_owned(),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/step-up/verify",
+    tag = "auth",
+    request_body = StepUpVerificationRequest,
+    responses((status = 200, description = "One-time action-bound step-up grant", body = StepUpGrantResponse))
+)]
+pub async fn complete_step_up(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<StepUpVerificationRequest>,
+) -> Result<Json<StepUpGrantResponse>, AppError> {
+    let attempt = mfa_challenges::begin_step_up_attempt(&state.redis, &payload.challenge).await?;
+    let now = chrono::Utc::now().timestamp();
+    let record_valid = attempt.record.user_id == claims.sub
+        && attempt.record.session_id == claims.sid
+        && attempt.record.auth_version == claims.ver
+        && attempt.record.issued_at <= now
+        && attempt.record.expires_at >= now
+        && claims.aal == 2;
+    if !record_valid {
+        mfa_challenges::reject_step_up_attempt(
+            &state.redis,
+            &payload.challenge,
+            &attempt,
+            state.config.mfa_rate_limit_max_attempts,
+            state.config.mfa_step_up_ttl_seconds,
+        )
+        .await?;
+        return Err(AppError::Unauthorized(
+            "step-up verification failed".to_owned(),
+        ));
+    }
+    let method = match mfa_accounts::verify_enabled_mfa(
+        &state.db,
+        claims.sub,
+        payload.proof_kind.into(),
+        &payload.code,
+        &state.config.mfa_encryption_key_ring,
+    )
+    .await
+    {
+        Ok(method) => method,
+        Err(error) => {
+            mfa_challenges::reject_step_up_attempt(
+                &state.redis,
+                &payload.challenge,
+                &attempt,
+                state.config.mfa_rate_limit_max_attempts,
+                state.config.mfa_step_up_ttl_seconds,
+            )
+            .await?;
+            return Err(error);
+        }
+    };
+    mfa_challenges::complete_step_up_attempt(&state.redis, &payload.challenge, &attempt).await?;
+    let grant = mfa_challenges::issue_step_up_grant(
+        &state.redis,
+        &attempt.record,
+        state.config.mfa_step_up_ttl_seconds,
+    )
+    .await?;
+    security_audit::record(
+        &state.db,
+        security_audit::STEP_UP_COMPLETED,
+        Some(claims.sub),
+        Some(claims.sub),
+        serde_json::json!({
+            "scope": attempt.record.scope.as_str(),
+            "method": method.as_str()
+        }),
+    )
+    .await?;
+    Ok(Json(StepUpGrantResponse {
+        step_up_token: grant.raw_value,
+        expires_in: state.config.mfa_step_up_ttl_seconds,
+        scope: attempt.record.scope.as_str().to_owned(),
+    }))
 }
 
 #[utoipa::path(
@@ -517,8 +1019,13 @@ async fn build_auth_response(
     refresh_token: sessions::IssuedRefreshToken,
 ) -> Result<IssuedAuthResponse, AppError> {
     user.role = identity.role;
-    let access_token =
-        jwt::sign_access_token(user.id, &user.role, identity.auth_version, &state.config)?;
+    let access_token = jwt::sign_access_token(
+        user.id,
+        &user.role,
+        identity.auth_version,
+        &refresh_token.authentication,
+        &state.config,
+    )?;
     let organizations = load_organization_memberships(state, user.id).await?;
     let default_organization_id = default_organization_id(&organizations);
 

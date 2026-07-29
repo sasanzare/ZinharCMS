@@ -61,7 +61,8 @@ Provides login and registration UI, keeps the access token in volatile memory,
 restores authority through the `HttpOnly` refresh cookie, admits authenticated
 bootstrap state to the protected shell, lists/revokes logical sessions in
 Settings, and clears/broadcasts session state on current-session revocation or
-logout-all.
+logout-all. It also owns TOTP enrollment, password-to-MFA login transition,
+display-once recovery-code handling, and reusable Step-Up dialogs.
 
 It does not own authoritative credential verification, token validity, tenant membership, or permission enforcement. Those are backend responsibilities.
 
@@ -73,6 +74,7 @@ It does not own authoritative credential verification, token validity, tenant me
 - In-memory token transport and auth requests: `frontend/src/services/api.ts`.
 - Cross-tab refresh/logout coordination: `frontend/src/services/authSession.ts`.
 - Logout integration: `frontend/src/components/AppShell.tsx`.
+- Step-Up UI: `frontend/src/components/StepUpDialog.tsx`.
 
 Ownership is shared, which is why the boundary is `OVERLAPPING`.
 
@@ -86,8 +88,11 @@ Ownership is shared, which is why the boundary is `OVERLAPPING`.
 
 ## Internal Structure
 
-`AuthPage` switches mode, owns controlled fields, calls auth methods, and passes
-successful responses to `setSession`. `SessionBootstrap` performs coordinated
+`AuthPage` switches mode, owns controlled fields, retains pre-authentication
+only in component memory, and calls `setSession` only after AAL1 or completed
+AAL2 issuance. `SettingsPage` owns password-confirmed pending enrollment and
+display-once recovery codes. `StepUpDialog` creates and verifies an exact-scope
+challenge before invoking one pending sensitive action. `SessionBootstrap` performs coordinated
 cookie refresh. `RequireAuth` waits for a definitive bootstrap result before
 choosing `AppShell` or login redirect. The store synchronizes volatile access
 state, non-secret cached identity, and Zustand. The shell calls cookie logout,
@@ -95,7 +100,8 @@ then clears and broadcasts client state.
 
 ## State
 
-- Local: form mode, credential/profile inputs, pending state, and error.
+- Local: form mode, credential/profile inputs, pending MFA/Step-Up values,
+  display-once recovery codes, pending state, and error.
 - Global: access token, refresh token, user, organization memberships, active organization.
 - Persistent: non-secret user/membership/active-organization projections in
   `localStorage`; no token strings or session inventory.
@@ -107,6 +113,8 @@ then clears and broadcasts client state.
 Uses auth register, login, refresh, logout, current-user, session-list,
 session-revoke, and logout-all client methods. One stable invalid-access-token
 response can trigger a coordinated refresh and single replay.
+MFA users additionally use enrollment, confirmation, MFA verification,
+recovery replacement, disable, and Step-Up client methods.
 
 ## Access Control
 
@@ -127,8 +135,11 @@ Submission disables or changes the submit experience through local pending state
 
 Dedicated frontend tests cover volatile credential storage, coordinated
 bootstrap/refresh/logout, plaintext session rendering, individual/current
-session revocation, and logout-all. Backend tests still remain authoritative
-for token and revocation semantics.
+session revocation, logout-all, pre-authentication without early session
+creation, display-once enrollment state, and trusted-origin Step-Up headers.
+Live browser tests cover enrollment, TOTP/recovery login, replay denial,
+Step-Up, disable, and empty browser storage. Backend tests remain authoritative
+for cryptographic, atomic, and revocation semantics.
 
 ## Known Risks and Unknowns
 

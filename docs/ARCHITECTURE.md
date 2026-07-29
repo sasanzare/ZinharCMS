@@ -12,7 +12,8 @@ not independently deployed microservices.
 - Rust/Axum backend. It composes public, authenticated, and tenant-aware routes in
   one process.
 - PostgreSQL 16 primary database accessed through SQLx.
-- Redis 7 for Delivery API cache and organization/user rate-limit counters.
+- Redis 7 for Delivery API cache, organization/user rate limits, and hash-keyed
+  MFA pre-authentication, Step-Up, attempt-lock, and failure records.
 - Local filesystem storage under `UPLOAD_DIR` for CMS media and Marketplace
   package artifacts.
 
@@ -60,6 +61,23 @@ deactivation, sensitive identity changes, global-role changes, and logout-all
 invalidate existing tokens. Global roles remain separate from organization
 membership roles.
 
+Password authentication establishes AAL1. An enabled-MFA account receives only
+a short-lived Redis pre-authentication transaction after password success;
+TOTP or a one-time recovery code completes AAL2 and normal session issuance.
+Access tokens and logical refresh families carry session ID, AAL, AMR,
+password-authentication time, optional MFA time, and auth version. Protected
+middleware checks that claim context against the active logical family.
+
+TOTP secrets are encrypted in PostgreSQL with a dedicated AES-256-GCM key ring,
+fresh nonces, and user/enrollment/version associated data. Accepted time steps
+are stored under a row lock to prevent replay. Recovery codes use a fast
+SHA-256 lookup plus an Argon2id verifier and atomic used timestamp.
+
+Selected sensitive mutations pass through central Step-Up policy. An AAL2
+session obtains a short-lived Redis challenge, proves TOTP or recovery again,
+and receives a one-time grant bound to user, session, auth version, and exact
+scope. The grant is atomically consumed before the handler runs.
+
 Refresh tokens are random values sent only as `HttpOnly`, `SameSite=Lax`
 cookies scoped to `/api/auth`. Only hashes are stored. Each login creates a
 token family with an absolute expiry. Rotation locks and updates the family in
@@ -74,11 +92,12 @@ lock so refresh rotation and bulk revocation serialize.
 
 ## Data And Tenant Isolation
 
-The final schema is migration-authoritative through migration `0028`.
+The final schema is migration-authoritative through migration `0029`.
 
 - Core identity: users with authentication versions, roles, user roles, refresh
   token families and hashed tokens, account-bound hashed security-token
-  foundations, global security audit events, and login attempts.
+  foundations, encrypted MFA enrollment state, hash-only recovery codes, global
+  security audit events, and login attempts.
 - Core CMS: content types, entries, pages, page versions, components, media,
   settings, navigation, comments, plugins, and webhooks.
 - Organizations: memberships, invitations, domains, rate limits, subscriptions,

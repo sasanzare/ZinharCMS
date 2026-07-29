@@ -36,7 +36,8 @@ uncertainty_markers:
 
 `backend/src/main.rs` optionally loads a local `.env` file and then calls `Config::from_env`. Configuration is captured once at startup and stored in `Arc<Config>` inside `AppState`; no runtime reload mechanism was found.
 
-Required variables are `DATABASE_URL` and `JWT_KEY_RING`. The key-ring JSON must
+Required variables are `DATABASE_URL`, `JWT_KEY_RING`, and
+`MFA_ENCRYPTION_KEY_RING`. The JWT key-ring JSON must
 contain exactly one active HS256 key, unique restricted identifiers, and key
 material of at least 32 bytes; previous keys require a bounded verification
 cutoff. Optional values and defaults are parsed by explicit helper functions.
@@ -49,6 +50,7 @@ weak-secret values can stop startup.
 |---|---|---|
 | Persistence | `DATABASE_URL`, `REDIS_URL` | Database URL required; Redis defaults to local Redis |
 | Tokens | `JWT_KEY_RING`, `JWT_ACCESS_EXPIRY`, `JWT_REFRESH_EXPIRY` | Strict key ring required; expiries default in source |
+| MFA | `MFA_ENCRYPTION_KEY_RING`, `MFA_ISSUER`, `MFA_ENROLLMENT_TTL_SECONDS`, `MFA_PRE_AUTH_TTL_SECONDS`, `MFA_STEP_UP_TTL_SECONDS`, `MFA_RATE_LIMIT_MAX_ATTEMPTS` | Separate strict AES-256-GCM key ring required; bounded issuer, TTL, and attempts |
 | Media | `UPLOAD_DIR`, `MAX_UPLOAD_SIZE` | Local directory and maximum size have source defaults |
 | HTTP | `CORS_ORIGIN`, `COOKIE_SECURE`, `PORT` | Local-development-oriented defaults are present |
 | Login protection | `LOGIN_RATE_LIMIT_MAX_FAILURES`, `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Integer defaults are present |

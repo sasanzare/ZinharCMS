@@ -602,7 +602,7 @@ async fn run_upgrade_path(app_url: &str, database_name: &str) -> anyhow::Result<
     let migration_version: i64 = sqlx::query_scalar("SELECT MAX(version) FROM _sqlx_migrations")
         .fetch_one(&pool)
         .await?;
-    anyhow::ensure!(migration_version == 28);
+    anyhow::ensure!(migration_version == 29);
 
     pool.close().await;
     Ok(())

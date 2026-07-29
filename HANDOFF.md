@@ -2587,3 +2587,161 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   scheduling/retention ownership. Then review the complete Phase 5 diff and
   explicitly authorize any stage/commit/push before beginning Phase 6 with the
   highest-priority remaining inherited finding.
+
+### 2026-07-28 - Security Audit and Hardening Phase 6 completed
+
+- Verified `security/security-audit-fixes` at clean starting commit
+  `0f9fc4e9e927089cf2ebef9183237d4955c16921`; Phase 5 is committed and the
+  staging area was empty.
+- Read the Phase 6 requirements, project instructions, persistent lessons, and
+  Phase 1-5 security reports. The repository has no existing MFA, TOTP,
+  recovery-code, pre-authentication, or Step-Up implementation. The Phase 5
+  password-reset service remains an internal token foundation without a public
+  reset flow.
+- Inventoried login/register/refresh/session paths and the account, global-role,
+  organization-ownership, webhook credential, billing, and Marketplace
+  sensitive-operation surfaces.
+- Selected an assurance model of password/refresh `AAL1`, password plus TOTP or
+  recovery-code `AAL2`, and short-lived session/scope-bound `STEP_UP`.
+- Selected standards-compatible TOTP (`SHA-1`, six digits, 30-second period,
+  160-bit OS-random secret, one adjacent time step each direction) through a
+  maintained library. Accepted time steps are stored transactionally to
+  prevent replay.
+- Selected a dedicated `AES-256-GCM` MFA encryption key ring, separate from JWT
+  keys, with one active encryptor, bounded previous decryptors, unique nonces,
+  record-bound associated data, fail-closed decryption, and lazy re-encryption
+  under the active key.
+- Durable MFA state and recovery-code hashes will use PostgreSQL. Hash-keyed
+  short-lived pre-authentication challenges, Step-Up challenges/grants, and
+  distributed rate limits will use Redis and fail closed.
+- Existing `super_admin` and `admin` accounts will retain normal login and MFA
+  enrollment access, but selected privileged actions will require completed MFA
+  enrollment and recent scope-specific Step-Up instead of silently locking
+  existing accounts out.
+- Test-first evidence is recorded: the first focused MFA test failed on the
+  intentionally missing primitives/configuration, then passed after the
+  maintained `totp-rs` and RustCrypto `aes-gcm` implementation was added.
+- Added migration `0029` for durable MFA state, Argon2-verified recovery-code
+  records, accepted-TOTP replay state, and session AAL/AMR/authentication
+  context. Existing families upgrade to AAL1 with their current auth version.
+- Added fail-fast dedicated MFA encryption-key configuration, bounded
+  previous-key decryption, AES-256-GCM record-bound encryption, standard
+  TOTP provisioning/QR/manual setup, and lazy key rotation after successful
+  verification.
+- Added password-confirmed enrollment, atomic confirmation, ten one-time
+  recovery codes, exact-once recovery-code consumption, MFA disable and
+  recovery-code regeneration, session revocation on MFA state changes, and
+  expired-pending-enrollment cleanup.
+- Added Redis hash-keyed pre-auth, Step-Up challenges, one-time session/scope
+  grants, distributed attempt locks, bounded failure invalidation, and
+  per-subject rate limits. Password login no longer creates any session when
+  enabled MFA is pending.
+- Access JWTs and refresh families now carry and validate `sid`, AAL, AMR,
+  password-authentication time, MFA time, and auth version. Revoked,
+  compromised, expired, stale-version, or context-mismatched families
+  invalidate access and refresh.
+- Added centralized Step-Up policy for high-impact session, MFA,
+  organization, webhook, billing, plugin, Marketplace administration, and
+  payout mutations. Grants are one-time and bound to the authenticated user,
+  logical session, auth version, and exact scope.
+- Added frontend MFA login, enrollment QR/manual fallback, display-once
+  recovery-code acknowledgment, recovery fallback, and a reusable Step-Up
+  dialog. Pre-auth, codes, and Step-Up values remain component/process memory
+  only and are never stored in browser storage. Client-side pre-auth expiry now
+  clears the in-memory challenge, failed recovery submissions clear the code,
+  and logout clears pending MFA/Step-Up material.
+- Local disposable PostgreSQL validation passed under
+  `cms_phase6_app_20260728` (`NOSUPERUSER`, `NOBYPASSRLS`): fresh migration
+  through 29, upgrade from 28 to 29, encrypted-secret/replay/concurrent
+  recovery-code/key-rotation/session-revocation tests. Live Redis
+  single-consumer/replay/absence tests also passed. The final live Redis
+  expansion additionally passed distributed-worker TOTP/recovery bucket
+  limits, TTL, hash-key privacy, fail-closed connection failure, and cleanup.
+- Final validation after the disable-lifecycle fix passed:
+  `cargo fmt --manifest-path backend/Cargo.toml -- --check`;
+  `cargo clippy --offline --manifest-path backend/Cargo.toml --all-targets
+  --all-features -- -D warnings`; and
+  `cargo test --offline --manifest-path backend/Cargo.toml --all-features`.
+  Results were 189 unit tests, two Phase 2 integration tests, one Phase 5
+  migration test, one Phase 6 migration test, and doc tests. Final frontend
+  `lint`, `typecheck`, 53 tests in 12 files, production build, and the
+  one-approved-sink policy passed. The known non-blocking bundle-size warning
+  remains.
+- Additional focused tests passed for standard TOTP vectors, leading-zero
+  preservation, adjacent/excessive clock skew, tampered ciphertext/nonce,
+  wrong/unknown encryption keys, client pre-auth expiry, recovery input
+  clearing, enrollment-secret non-persistence, one-time recovery display, and
+  MFA-disable Step-Up. A fresh disposable live test proved that concurrent use
+  of the same accepted adjacent-step TOTP produces exactly one success.
+- Live in-app-browser validation passed registration, password-confirmed
+  pending enrollment, QR/manual fallback, one-time recovery-code display,
+  password-only pre-authentication with zero active sessions, TOTP login,
+  TOTP replay denial, recovery login, recovery reuse denial, recovery-based
+  Step-Up, scoped recovery replacement, TOTP-based disable Step-Up, session
+  invalidation, return to login, and empty local/session browser storage. The
+  production bundle was used because the development React-refresh preamble is
+  incompatible with the strict Phase 4 CSP.
+- Browser/postcondition verification discovered that disable deleted the MFA
+  row and revoked sessions but left independently keyed recovery-code hashes.
+  A live regression first failed with 10 remaining rows. Disable now deletes all
+  recovery credentials in the same transaction; the focused live test passes
+  with zero MFA/recovery rows and a revoked session.
+- Created the exact 35-section English Phase 6 report with seven English Mermaid
+  sequence diagrams and updated API, architecture, README, environment, OKF,
+  security, frontend, and operations documentation.
+- Confirmed and remediated `SEC-P06-001` (High: missing MFA for the selected
+  privileged threat model), `SEC-P06-002` (High: missing Step-Up), and
+  `SEC-P06-003` (Medium: disable left recovery hashes). No Critical, Low, or
+  Informational Phase 6 finding was confirmed. The recent-reauthentication
+  residual in `SEC-P05-002` is closed for the selected matrix; `SEC-P05-005`
+  public recovery and `SEC-P05-007` existing-role correction remain open.
+- Local and production Compose rendering passed. The report has exactly 35 H2
+  sections and seven English Mermaid sequence diagrams. Changed/untracked files
+  contain no Persian text and no production-shaped or browser-test credential
+  artifacts. `git diff --check` passed.
+- `cargo audit` was not run because the subcommand is unavailable.
+  `npm audit --omit=dev` was not run because external advisory-metadata
+  transmission was not authorized. The first production-browser tab attach was
+  retried successfully; no final product test remains failed.
+- One focused frontend assertion incorrectly required all browser storage to be
+  empty and was corrected to reject credential values while permitting benign
+  preferences. A disposable PostgreSQL setup was first blocked by the sandbox
+  and then used a stale superuser assumption; no resource was created by those
+  attempts. Production Compose also initially rejected absent required env
+  values. All three checks passed after correction with scoped, validation-only
+  inputs. The first compile of the expanded Redis test reused a moved Rust
+  `String`; it was corrected before the focused live and final full Backend
+  reruns.
+- Disposable databases `cms_phase6_fresh_20260728` and
+  `cms_phase6_upgrade_20260728` plus role `cms_phase6_app_20260728` were dropped
+  and verified absent. The follow-up database `cms_phase6_focus_20260728` and
+  role `cms_phase6_app_focus_20260728` were also dropped and verified absent.
+  Redis contains no `zinhar:mfa:*` test key. Browser-test
+  listeners on 8080/5173, tabs, the temporary TOTP helper, and its empty
+  directory were removed. Pre-existing PostgreSQL, Redis, and pgAdmin services
+  were left in their original running state.
+- **Created files:** `backend/migrations/0029_security_phase_six_mfa_step_up.sql`,
+  `backend/src/middleware/step_up.rs`, `backend/src/services/mfa.rs`,
+  `backend/src/services/mfa_accounts.rs`,
+  `backend/src/services/mfa_challenges.rs`,
+  `backend/tests/security_phase6_migration.rs`,
+  `docs/security/PHASE_06_MFA_TOTP_STEP_UP_HARDENING.md`, and
+  `frontend/src/components/StepUpDialog.tsx`.
+- **Modified files:** `.env.example`, `.github/workflows/backend-ci.yml`,
+  `HANDOFF.md`, `README.md`, backend Cargo manifests, configuration, main,
+  auth/tenant middleware, auth/OpenAPI/webhook routes, JWT/session/audit/cleanup
+  services and the Phase 2 migration test; `docker-compose.prod.yml`,
+  `docs/API.md`, `docs/ARCHITECTURE.md`, `env.example`; frontend auth/settings
+  pages, tests, API/types; and the Phase 6-related API/backend/frontend/
+  operations/security OKF documents.
+- No file is staged or committed. No push, deployment, production/staging
+  access, owner-environment migration, live key rotation, or external message
+  occurred.
+- **Exact Next Action:** the owner should back up each environment, correct the
+  application database role to `NOSUPERUSER NOBYPASSRLS`, provision independent
+  production JWT and MFA key rings through the approved secret manager, apply
+  migration 0029 in an approved non-production environment, enroll privileged
+  accounts, and review the complete Phase 6 diff. Stage/commit/push only after
+  explicit authorization. Phase 7 should define mandatory privileged
+  enrollment, administrative MFA recovery, rotation drills, alert ownership,
+  and production performance/chaos validation.

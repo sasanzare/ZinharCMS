@@ -39,7 +39,7 @@ pub struct WebhookResponse {
     pub name: String,
     pub url: String,
     pub events: Vec<String>,
-    pub secret: String,
+    pub secret: Option<String>,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -88,7 +88,14 @@ pub async fn list_webhooks(
     rbac::require_org_webhook_manager(&tenant.role)?;
     let rows = sqlx::query_as::<_, WebhookResponse>(
         r#"
-        SELECT id, name, url, events, secret, is_active, created_at, updated_at
+        SELECT id,
+               name,
+               url,
+               events,
+               NULL::text AS secret,
+               is_active,
+               created_at,
+               updated_at
         FROM webhooks
         WHERE organization_id = $1
         ORDER BY created_at DESC
@@ -123,7 +130,14 @@ pub async fn create_webhook(
         r#"
         INSERT INTO webhooks (organization_id, name, url, events, secret, is_active)
         VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, name, url, events, secret, is_active, created_at, updated_at
+        RETURNING id,
+                  name,
+                  url,
+                  events,
+                  secret,
+                  is_active,
+                  created_at,
+                  updated_at
         "#,
     )
     .bind(tenant.organization_id)
@@ -184,7 +198,14 @@ pub async fn update_webhook(
             is_active = $7,
             updated_at = now()
         WHERE id = $1 AND organization_id = $2
-        RETURNING id, name, url, events, secret, is_active, created_at, updated_at
+        RETURNING id,
+                  name,
+                  url,
+                  events,
+                  CASE WHEN $6::text IS NULL THEN NULL ELSE secret END AS secret,
+                  is_active,
+                  created_at,
+                  updated_at
         "#,
     )
     .bind(id)
@@ -225,7 +246,14 @@ pub async fn delete_webhook(
         r#"
         DELETE FROM webhooks
         WHERE id = $1 AND organization_id = $2
-        RETURNING id, name, url, events, secret, is_active, created_at, updated_at
+        RETURNING id,
+                  name,
+                  url,
+                  events,
+                  NULL::text AS secret,
+                  is_active,
+                  created_at,
+                  updated_at
         "#,
     )
     .bind(id)
@@ -318,7 +346,14 @@ async fn load_webhook_response(
     let mut db = rls::tenant_connection(&state.db, tenant).await?;
     sqlx::query_as::<_, WebhookResponse>(
         r#"
-        SELECT id, name, url, events, secret, is_active, created_at, updated_at
+        SELECT id,
+               name,
+               url,
+               events,
+               NULL::text AS secret,
+               is_active,
+               created_at,
+               updated_at
         FROM webhooks
         WHERE id = $1 AND organization_id = $2
         "#,
