@@ -10,17 +10,17 @@
 - **Repository:** ZinharCMS
 - **Current branch:** `security/security-audit-fixes`
 - **Base branch:** `main`; current branch tracks `origin/security/security-audit-fixes`
-- **Latest relevant commit:** `e37e94e2e6960a2547f33bf1ebb4225f818b3a4b docs(okf): construct Google OKF v0.2 Phase 3 staging bundle`
-- **Working tree:** Phase 4 adds the isolated staging Concepts, indexes/log update, four Phase 4 artifacts, and this handoff checkpoint; no staged paths are present
+- **Latest relevant commit:** `6f51612c5716c7d9c3365553811053fd24a03947 docs(okf): complete Google OKF v0.2 Phase 4 migration`
+- **Working tree:** Phase 5 adds the isolated staging Concepts, four index updates, staging-log update, five Phase 5 artifacts, and this handoff checkpoint; no staged paths are present
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
-- **Current phase:** Google OKF Migration Phase 4 — Architecture & Application Knowledge Migration
-- **Current subphase:** Complete the three eligible Architecture/Backend/Frontend semantic merges, validate the full isolated staging bundle, and preserve the canonical legacy boundary.
-- **Overall status:** Phase 4 starts and ends at HEAD `e37e94e2e6960a2547f33bf1ebb4225f818b3a4b` on `security/security-audit-fixes`. The working tree contains only Phase 4 migration artifacts, staging changes, and this handoff; no paths are staged. No legacy conversion/deletion, application change, dependency change, commit, push, reset, clean, stash, or history rewrite was performed.
+- **Current phase:** Google OKF Migration Phase 5 — Data, API, Security & Domain Knowledge Migration
+- **Current subphase:** Phase 5 staging construction and final verification are complete; preserve the isolated staging and canonical legacy boundary.
+- **Overall status:** Phase 5 starts from clean HEAD `6f51612c5716c7d9c3365553811053fd24a03947` on `security/security-audit-fixes`. The working tree contains only Phase 5 migration artifacts, selected staging changes, and this handoff; no paths are staged. No legacy conversion/deletion, application change, dependency change, commit, push, reset, clean, stash, or history rewrite was performed.
 
-> **Google OKF Migration Phase 4 safety override (2026-08-07):** This is the
+> **Google OKF Migration Phase 5 safety override (2026-08-07):** This is the
 > active continuation checkpoint for the migration task and supersedes older
 > OKF phase next-action text below. The existing `okf/` and `okf-bootstrap/`
-> trees remain legacy material and are untouched. The Phase 4 staging bundle is
+> trees remain legacy material and are untouched. The Phase 5 staging bundle is
 > non-canonical. Do not delete, rename, rewrite, convert, replace, cut over,
 > stage, commit, push, reset, clean, stash, or deploy without explicit owner
 > authorization.
@@ -302,6 +302,57 @@
   status matrix, ledger, and full manifest, then begin only the approved Phase
   5 Data/API/Security/Domain selection. Keep `/okf/` and `okf-bootstrap/`
   untouched and do not cut over without separate authorization.
+
+### Google OKF Migration Phase 5 Checkpoint (current)
+
+- **Status:** `COMPLETE` for the Data, API, Security, and Domain staging
+  boundary. The staging bundle remains non-canonical; Phase 6 and cutover are
+  future work.
+- **Branch:** `security/security-audit-fixes`.
+- **Starting HEAD:** `6f51612c5716c7d9c3365553811053fd24a03947`, matching the
+  origin branch at the start of Phase 5.
+- **Starting worktree:** clean, with no staged, modified, or untracked paths.
+- **Selected targets:** `TARGET-021`, `TARGET-022`, `TARGET-025`, `TARGET-031`,
+  `TARGET-032`, `TARGET-036`, `TARGET-037`, and `TARGET-040`.
+- **Out-of-scope target:** `TARGET-047` was evaluated and routed to Phase 6;
+  it was not constructed in the Data/API/Security/Domain phase.
+- **Phase 5 files created:**
+  `docs/okf-migration/PHASE_05_DATA_API_SECURITY_DOMAIN_MIGRATION.md`,
+  `PHASE_05_CONSTRUCTION_STATUS.md`, `PHASE_05_MERGE_LEDGER.md`,
+  `PHASE_05_SECURITY_DATA_VERIFICATION.md`, and
+  `PHASE_05_BUILD_MANIFEST.json`; plus eight new staging Concepts.
+- **Staging changes:** the bundle grew from 22 to 30 Concepts. It retains 13
+  indexes, one root log, 17 embedded Mermaid blocks, zero standalone `.mmd`
+  files, and 44 staging files. Four domain indexes and the root log were
+  updated; no existing Concept was modified.
+- **Traceability:** the Phase 5 status matrix has 54 unique target IDs. The
+  merge ledger covers the selected primary legacy categories and shared group
+  routing. The security/data ledger contains 15 stable verification IDs.
+- **Validation:** the staging validator passed frontmatter/type/source/link/
+  index coverage, Mermaid fence, manifest hash, status-matrix, source-path,
+  and safety checks. The manifest contains all 44 staging-file SHA-256 hashes
+  with zero mismatches. No executable tests ran because only documentation and
+  staging artifacts changed.
+- **Final verification rerun (2026-08-07):** the dependency-free OKF text
+  validator exited 0 with 30 Concepts, 13 indexes, one log, 17 Mermaid blocks,
+  44 manifest hashes, and no errors; the 54-target matrix has 54 unique IDs;
+  the Phase 5 report's staging count is reconciled to 44; and `git diff --check`
+  exited 0 with only expected LF/CRLF normalization warnings. An optional
+  PyYAML-based validator was not available in the environment, so the final
+  result uses the repository-compatible text validator and direct JSON/hash
+  checks.
+- **Safety:** `okf/`, `okf-bootstrap/`, `okf/index.yaml`, application source,
+  migrations, dependencies, CI, and runtime/configuration paths have no Phase
+  5 diff. No cutover, redirect, deletion, commit, or push was performed.
+- **Persistent lessons log:** relevant OKF, provenance, link, frontmatter,
+  manifest, and PowerShell lessons were reviewed. No new cross-project lesson
+  was added.
+- **Remaining disposition:** 11 `DEFERRED_REGENERATE`, 7
+  `BLOCKED_OWNER_DECISION`, 1 `OUT_OF_SCOPE`, and 5
+  `HISTORICAL_DEFERRED` targets remain.
+- **Exact Next Action:** preserve and review the Phase 5 artifacts, then begin
+  a separately selected Phase 6 development/documentation/operations boundary.
+  Keep the legacy trees and canonical cutover boundary unchanged.
 
 > **Security Audit Phase 4 override (2026-07-28):** This completed checkpoint
 > supersedes earlier Phase 1-3 and product-phase exact-next-action text for the
@@ -780,14 +831,12 @@ execution, and arbitrary package execution remain deferred.
 
 ## 6. Current Objective
 
-> **Google OKF Phase 4 current objective (2026-08-07):** The architecture and
-> application knowledge migration is complete for the three eligible
-> `DEFERRED_MERGE` targets: `TARGET-008`, `TARGET-012`, and `TARGET-016`.
-> Preserve the isolated staging boundary, validate/document the result, and
-> leave `/okf/`, `okf-bootstrap/`, `okf/index.yaml`, and all executable source
-> outside scope. The next authorized migration boundary is Phase 5; no
-> cutover, deletion, redirect, staging, commit, or push is authorized by this
-> checkpoint.
+> **Google OKF Phase 5 current objective (2026-08-07):** The Data, API,
+> Security, and Domain staging migration is complete for eight source-backed
+> targets. Preserve the isolated staging boundary, keep `TARGET-047` for Phase
+> 6, and leave `/okf/`, `okf-bootstrap/`, `okf/index.yaml`, and all executable
+> source outside scope. No cutover, deletion, redirect, staging, commit, or
+> push is authorized by this checkpoint.
 
 > **Security Audit Phase 1 override (2026-07-26):** The requested Phase 1
 > repository-wide audit, low-risk hardening, baseline document, and local
@@ -1165,13 +1214,13 @@ planned and authorized:
 
 ## 9. Work in Progress
 
-### Google OKF Phase 4 current work state
+### Google OKF Phase 5 current work state
 
-Phase 4 implementation and documentation validation are complete. There is no
+Phase 5 implementation and documentation validation are complete. There is no
 partially implemented product code. The uncommitted worktree contains only
-the Phase 4 migration report, matrix, ledger, manifest, three staging Concepts,
-three domain-index updates, the staging log update, and this handoff update.
-No paths are staged.
+the Phase 5 report, construction matrix, merge ledger, security/data ledger,
+manifest, eight staging Concepts, four domain-index updates, the staging log
+update, and this handoff update. No paths are staged.
 
 ### Security Audit Phase 1 active checkpoint override
 
@@ -1214,19 +1263,19 @@ and this handoff update.
 
 ## 10. Current Git and Filesystem State
 
-### Actual state at Google OKF Phase 4 checkpoint
+### Actual state at Google OKF Phase 5 checkpoint
 
-- `HEAD` is `e37e94e2e6960a2547f33bf1ebb4225f818b3a4b` on
+- `HEAD` is `6f51612c5716c7d9c3365553811053fd24a03947` on
   `security/security-audit-fixes`, tracking the matching origin branch.
-- The worktree was clean at Phase 4 start and has no staged paths now.
-- Current changed/untracked paths are limited to `HANDOFF.md`, the Phase 4
-  migration artifacts under `docs/okf-migration/`, and the three new Concepts
-  plus three index/log updates under the isolated staging root.
-- `okf/`, `okf-bootstrap/`, `okf/index.yaml`, Phase 3 artifacts, backend,
-  frontend, database, dependency, CI, and runtime paths have zero Phase 4
-  diff. No files were deleted, moved, renamed, or converted.
+- The worktree was clean at Phase 5 start and has no staged paths now.
+- Current changed/untracked paths are limited to `HANDOFF.md`, the five Phase 5
+  migration artifacts under `docs/okf-migration/`, and the eight new Concepts
+  plus four index/log updates under the isolated staging root.
+- `okf/`, `okf-bootstrap/`, `okf/index.yaml`, Phase 4 artifacts, backend,
+  frontend, database migrations, dependency, CI, and runtime/configuration paths
+  have zero Phase 5 diff. No files were deleted, moved, renamed, or converted.
 - The cross-project mistakes log was reviewed at
-  `D:\All projects\Mistakes\mistakes.md` and was not changed during Phase 4.
+  `D:\All projects\Mistakes\mistakes.md` and was not changed during Phase 5.
 
 ### Actual state at Security Audit Phase 1 checkpoint
 
@@ -1385,6 +1434,34 @@ should be created unless the user explicitly authorizes it.
 - No secrets or values from `.env` were copied into this document.
 
 ## 11. Tests and Validation
+
+### Google OKF Phase 5 validation results (2026-08-07)
+
+- The Phase 4 baseline manifest was rechecked: 31 of 36 staged file hashes
+  remained unchanged and the five changed paths were exactly the four selected
+  domain indexes plus the staging log.
+- Final staging validation confirmed 30 Concepts, 13 indexes, one log, 17
+  embedded Mermaid blocks, zero standalone `.mmd` files, zero frontmatter/type/
+  source/link/index errors, and 44 staging files.
+- `PHASE_05_BUILD_MANIFEST.json` parsed successfully and reconciled all 44
+  staging-file SHA-256 entries with zero mismatches.
+- `PHASE_05_CONSTRUCTION_STATUS.md` contains 54 unique target IDs with no
+  missing rows. Counts are 19 `BUILT_PHASE_3`, 3 `BUILT_PHASE_4`, 8
+  `BUILT_PHASE_5`, 11 `DEFERRED_REGENERATE`, 7
+  `BLOCKED_OWNER_DECISION`, 1 `OUT_OF_SCOPE`, and 5
+  `HISTORICAL_DEFERRED`.
+- The Phase 5 merge ledger covers every primary source category path and
+  records shared group routing; the security/data ledger contains 15 stable
+  `P5-VERIFY-*` entries.
+- Source-path validation confirmed every new Phase 5 provenance URL points to
+  an existing path at `6f51612c5716c7d9c3365553811053fd24a03947`. Carried
+  Phase 3/4 Concepts retain their own immutable construction provenance.
+- Legacy safety scans returned no diff for `okf/`, `okf-bootstrap/`,
+  `okf/index.yaml`, backend/frontend/migrations/dependencies/CI/runtime paths;
+  no paths are staged.
+- `git diff --check` exited 0 with only expected LF/CRLF normalization
+  warnings. No executable tests were run because Phase 5 changed only
+  documentation and staging artifacts.
 
 ### Google OKF Phase 4 validation results (2026-08-07)
 
@@ -1765,17 +1842,18 @@ should be created unless the user explicitly authorizes it.
 
 ## 15. Remaining Work
 
-### Google OKF Phase 4 current remaining work
+### Google OKF Phase 5 current remaining work
 
-1. Preserve and review the Phase 4 report, status matrix, merge ledger, and
-   full build manifest. No commit or staging is authorized by this checkpoint.
-2. Keep the 32 remaining targets explicitly deferred: 9 merge, 11 regenerate,
-   7 owner-blocked, and 5 historical.
-3. Begin Phase 5 only after a separate scope/authorization decision, selecting
-   Data, API, Security, and Domain targets without inventing owner policy or
-   production deployment facts.
-4. Keep the legacy `/okf/` and `okf-bootstrap/` trees untouched until a later
-   preservation-backed cutover decision.
+1. Preserve and review the Phase 5 report, status matrix, merge ledger,
+   security/data ledger, and full build manifest. No commit or staging is
+   authorized by this checkpoint.
+2. Keep the 23 remaining targets explicitly deferred: 11 regeneration, 7
+   owner-blocked, 1 out-of-scope Phase 6 target, and 5 historical.
+3. Resolve owner and deployment evidence before promoting public routing,
+   compatibility, retention, monitoring, storage, settlement, or ownership
+   statements.
+4. Keep the legacy `/okf/`, `okf-bootstrap/`, and `okf/index.yaml` trees
+   untouched until a later preservation-backed cutover decision.
 
 ### Security Audit Phase 1 remaining-work override
 
@@ -1886,15 +1964,14 @@ active.
 
 ## 16. Exact Next Action
 
-Review the Phase 4 report, construction status, merge ledger, and full build
-manifest; then, only under separate authorization, begin
-`Phase 5 — Data, API, Security & Domain Knowledge Migration`. Preserve all 32
-deferred targets and open NOCs, keep `/okf/`, `okf-bootstrap/`, and
+Review the Phase 5 report, construction status, merge ledger, security/data
+verification ledger, and full build manifest. Then preserve the 23 deferred or
+out-of-scope targets and open NOCs, keep `/okf/`, `okf-bootstrap/`, and
 `okf/index.yaml` untouched, and do not stage, commit, push, cut over, or delete
-legacy material.
+legacy material. The next separately authorized boundary is Phase 6.
 
-The older security and product-phase actions below are historical and
-superseded by the current Google OKF Phase 4 checkpoint.
+The older security, product-phase, and Phase 4 actions below are historical and
+superseded by the current Google OKF Phase 5 checkpoint.
 
 Have the deployment owner inventory every ZinharCMS environment for an
 administrator created by the former deterministic bootstrap path; disable or
