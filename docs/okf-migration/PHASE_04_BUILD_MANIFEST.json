@@ -1,0 +1,126 @@
+{
+  "phase": "Phase 4 - Architecture & Application Knowledge Migration",
+  "okf_version": "0.2",
+  "source_head": "e37e94e2e6960a2547f33bf1ebb4225f818b3a4b",
+  "staging_root": "docs/okf-migration/staging/google-okf-v0.2/",
+  "phase3_baseline_manifest": "docs/okf-migration/PHASE_03_BUILD_MANIFEST.json",
+  "phase3_baseline": {
+    "concepts": 19,
+    "indexes": 13,
+    "log_files": 1,
+    "embedded_mermaid_blocks": 13,
+    "standalone_mermaid_files": 0,
+    "deferred_targets": 35,
+    "manifest_file_hash_entries": 33
+  },
+  "scope": {
+    "eligible_primary_domains": ["architecture", "backend", "frontend"],
+    "selected_target_ids": ["TARGET-008", "TARGET-012", "TARGET-016"],
+    "legacy_groups": ["G002", "G003", "G008"],
+    "selection_rule": "Only DEFERRED_MERGE targets whose primary domain is Architecture, Backend, or Frontend were constructed; no adjacent-domain target was added."
+  },
+  "before": {
+    "concepts": 19,
+    "indexes": 13,
+    "log_files": 1,
+    "embedded_mermaid_blocks": 13,
+    "standalone_mermaid_files": 0,
+    "staging_files": 33
+  },
+  "created": {
+    "concepts": [
+      "architecture/integrations-and-side-effects.md",
+      "backend/persistence-services-and-configuration.md",
+      "frontend/feature-boundaries.md"
+    ],
+    "indexes": [],
+    "log_files": [],
+    "diagrams": []
+  },
+  "modified": {
+    "concepts": [],
+    "indexes": [
+      "architecture/index.md",
+      "backend/index.md",
+      "frontend/index.md"
+    ],
+    "log_files": ["log.md"]
+  },
+  "after": {
+    "concepts": 22,
+    "indexes": 13,
+    "log_files": 1,
+    "embedded_mermaid_blocks": 13,
+    "standalone_mermaid_files": 0,
+    "staging_files": 36,
+    "snapshot_mode": "full_post_phase4_staging_snapshot"
+  },
+  "target_ids": {
+    "built_phase4": ["TARGET-008", "TARGET-012", "TARGET-016"],
+    "carried_from_phase3": [
+      "TARGET-001", "TARGET-006", "TARGET-007", "TARGET-010", "TARGET-011",
+      "TARGET-014", "TARGET-015", "TARGET-018", "TARGET-020", "TARGET-027",
+      "TARGET-028", "TARGET-029", "TARGET-030", "TARGET-033", "TARGET-034",
+      "TARGET-038", "TARGET-039", "TARGET-045", "TARGET-049"
+    ],
+    "deferred_after_phase4": [
+      "TARGET-002", "TARGET-003", "TARGET-004", "TARGET-005", "TARGET-009",
+      "TARGET-013", "TARGET-017", "TARGET-019", "TARGET-021", "TARGET-022",
+      "TARGET-023", "TARGET-024", "TARGET-025", "TARGET-026", "TARGET-031",
+      "TARGET-032", "TARGET-035", "TARGET-036", "TARGET-037", "TARGET-040",
+      "TARGET-041", "TARGET-042", "TARGET-043", "TARGET-044", "TARGET-046",
+      "TARGET-047", "TARGET-048", "TARGET-050", "TARGET-051", "TARGET-052",
+      "TARGET-053", "TARGET-054"
+    ]
+  },
+  "phase_artifacts": [
+    "docs/okf-migration/PHASE_04_CONSTRUCTION_STATUS.md",
+    "docs/okf-migration/PHASE_04_MERGE_LEDGER.md",
+    "docs/okf-migration/PHASE_04_BUILD_MANIFEST.json",
+    "docs/okf-migration/PHASE_04_ARCHITECTURE_APPLICATION_MIGRATION.md"
+  ],
+  "validation_scope": {
+    "hashes_cover": "All 36 files under staging_root; this manifest is outside staging_root and is intentionally not self-hashed.",
+    "legacy_trees_modified": false,
+    "application_runtime_modified": false,
+    "cutover_performed": false
+  },
+  "file_hashes": {
+    "docs/okf-migration/staging/google-okf-v0.2/api/api-contract-overview.md": "dbdcbf2a36867f33c39f916ffc8b7d8a98b7cc8880e47a00393c99e463330699",
+    "docs/okf-migration/staging/google-okf-v0.2/api/authentication-and-session-contract.md": "ecb18a35105f8e27b8c75d9c5da20bec9d4b1016353a3c19bf1c1dac25d0012c",
+    "docs/okf-migration/staging/google-okf-v0.2/api/index.md": "9c50127ba2042a55a691fb685759393780c415cfe6ee829ea234369959ff1813",
+    "docs/okf-migration/staging/google-okf-v0.2/architecture/index.md": "c36c3fdae1c50dc3f3c84561c757eb48d435cab555b38da59909bb19236de0f8",
+    "docs/okf-migration/staging/google-okf-v0.2/architecture/integrations-and-side-effects.md": "9f07a0355ad15d552af3c240e233a8b53b8800f18ede026cf291f6cbf93f5a8a",
+    "docs/okf-migration/staging/google-okf-v0.2/architecture/runtime-and-request-boundaries.md": "be879ac6031dcb02fb2a40e57abb92c30bdccc641a3904b71d71150f62f478c9",
+    "docs/okf-migration/staging/google-okf-v0.2/architecture/system-architecture.md": "225ae95a2e6a7b99259a51c445e3fd57fbb9c2bf929daec27c65fd806bb80b0e",
+    "docs/okf-migration/staging/google-okf-v0.2/backend/backend-runtime.md": "2764404ec492da55c6105168018166470dba1a01285cc9edd2deabb94b2c712b",
+    "docs/okf-migration/staging/google-okf-v0.2/backend/index.md": "361849f7b3f7c034f0074e1cfe6ad1806bdfe66e743a7b237f22ef973035ebfe",
+    "docs/okf-migration/staging/google-okf-v0.2/backend/module-boundaries.md": "57a79d7159995183a8f3ecd4365c992cae8970b0532f74a0fc7c3ce9d7e26462",
+    "docs/okf-migration/staging/google-okf-v0.2/backend/persistence-services-and-configuration.md": "2895bc64274cf22026305797267af6e9f83e65f349a77df46fa6173e7334c4a5",
+    "docs/okf-migration/staging/google-okf-v0.2/database/index.md": "2d7d129b7e185f088104ef164556873fed0de37b54ed637e9859657db17a675d",
+    "docs/okf-migration/staging/google-okf-v0.2/decisions/index.md": "79c2d3e65467085b88ac913ac52f4602f89b16a9be4d49b2ebe2ba5a0a7f81e7",
+    "docs/okf-migration/staging/google-okf-v0.2/decisions/migration-and-architecture-decisions.md": "ddeee0df2931d41ab26b93c886d724061163d6a46acbe0748fec9fd654486487",
+    "docs/okf-migration/staging/google-okf-v0.2/development/development-and-testing.md": "3c02ca2dff87d008db799d4135e1789dfb9c2af15d68e1dca86ddb0f0d1585f8",
+    "docs/okf-migration/staging/google-okf-v0.2/development/index.md": "e0d914a955cede461f22646fb1a3006e8183a6948b1debf02358f80bb1bb9988",
+    "docs/okf-migration/staging/google-okf-v0.2/domain/content-and-editorial-workflow.md": "b17f43fa9227ae51d10fda7d498a0c3e9322bc8f27db16ba0bedd1bd8722409d",
+    "docs/okf-migration/staging/google-okf-v0.2/domain/extensibility-and-built-in-plugins.md": "4eb8fb2d89ecdd2debd25b0245ba52c004fd83a30eef8c8a6d2e44332f6bfe61",
+    "docs/okf-migration/staging/google-okf-v0.2/domain/index.md": "b47dfc3fdef6b461ba65b441c97a5f128535be52b08e5b050d593ed1129226e3",
+    "docs/okf-migration/staging/google-okf-v0.2/domain/marketplace.md": "27679c8efb7e2e81620ef858c0565aa88f67c8ee167f46bbf375b64183736281",
+    "docs/okf-migration/staging/google-okf-v0.2/domain/page-builder-and-preview.md": "08380a58f11398f2229331d1345f1d87043c60c7e5ca6b2d3c0ae5e6fa6df2c0",
+    "docs/okf-migration/staging/google-okf-v0.2/frontend/admin-application.md": "04ff7bea4c4aa7d8102f0c55a8c0cac72223839c1b34b2fc894d7f28973bb63a",
+    "docs/okf-migration/staging/google-okf-v0.2/frontend/feature-boundaries.md": "538ea1741ea4afd5aff1c74fd38a7f37f345db5c557695d9e724a507881f5d56",
+    "docs/okf-migration/staging/google-okf-v0.2/frontend/index.md": "0796022047fa851b9d7244f17e5d9e0cbec3bdda18626e36f0c299972a672a43",
+    "docs/okf-migration/staging/google-okf-v0.2/frontend/routing-and-state.md": "9b1338a2275bc731347939ac89dcdc6592d041aeeb841ef10c933105a7c2d912",
+    "docs/okf-migration/staging/google-okf-v0.2/history/index.md": "4552d1f9274b2211efaa5713d71464537d71fd1d61f969cbeae85c1e5a075c1a",
+    "docs/okf-migration/staging/google-okf-v0.2/index.md": "ace6ce4af1dda8c1beafa0d8374d286d7c29c96a5dcc849fe6dc26f24e9f1221",
+    "docs/okf-migration/staging/google-okf-v0.2/log.md": "c9784764e6b796aa929dd1334c131958430b08b29c45a39ccade7ecfe2292f78",
+    "docs/okf-migration/staging/google-okf-v0.2/operations/index.md": "97b797d11162269f7cb293973691898a3b206679505fb59dc3406d39040e4697",
+    "docs/okf-migration/staging/google-okf-v0.2/project/index.md": "f6627a73400ac549071e5cd6dce4eb0986abfecf2e43d6b2f512c75c53e988d5",
+    "docs/okf-migration/staging/google-okf-v0.2/project/project-overview.md": "ed020e002c797921c7210908f329cad4bb3d2a96e83ad38269fab919cb458131",
+    "docs/okf-migration/staging/google-okf-v0.2/security/authentication-and-sessions.md": "76cd5a3600f8fcbc99d0bd00d0bc8deb5991f009be339846d2e0f698f38584c7",
+    "docs/okf-migration/staging/google-okf-v0.2/security/authorization-and-rbac.md": "a1b074f9cd943bbb0d8d7f849bf6f7f7a0c5d50f8379dc68bcee80990ea392c3",
+    "docs/okf-migration/staging/google-okf-v0.2/security/index.md": "890753a4a94457f5e9fb0903b0b54204f84d9be0336d27629ad268875dc3e3a9",
+    "docs/okf-migration/staging/google-okf-v0.2/security/preview-security.md": "429e97b80bd4a65cb9dc0b705728c77cc6b44de1320858b4b66dd0ece7295d8e",
+    "docs/okf-migration/staging/google-okf-v0.2/security/tenant-isolation.md": "36720fd6e45c8cb17777532b8681059a6799287ef8ebe71134fd85931e9a3b19"
+  }
+}
