@@ -541,6 +541,9 @@ export type MediaResponse = {
   alt_text: string | null;
   caption: string | null;
   uploader_id: string | null;
+  visibility: "public" | "restricted";
+  verification_status: "legacy_unverified" | "verified" | "rejected";
+  lifecycle_status: "publishing" | "active" | "deletion_pending" | "failed";
   created_at: string;
   updated_at: string;
 };

@@ -311,6 +311,61 @@ pub async fn ensure_media_capacity(
     Ok(())
 }
 
+pub async fn ensure_media_capacity_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    organization_id: Uuid,
+    additional_bytes: i64,
+) -> Result<(), AppError> {
+    if additional_bytes < 0 {
+        return Err(AppError::Validation(
+            "additional media bytes must not be negative".to_owned(),
+        ));
+    }
+    sqlx::query("SELECT id FROM organizations WHERE id = $1 FOR UPDATE")
+        .bind(organization_id)
+        .fetch_one(&mut **tx)
+        .await?;
+
+    let (plan_name, media_limit_mb) = sqlx::query_as::<_, (String, i32)>(
+        r#"
+        SELECT plan.name, plan.media_limit_mb
+        FROM organization_subscriptions subscription
+        JOIN plans plan ON plan.id = subscription.plan_id
+        WHERE subscription.organization_id = $1
+          AND subscription.status IN (
+            'trialing'::organization_subscription_status,
+            'active'::organization_subscription_status,
+            'past_due'::organization_subscription_status
+          )
+        "#,
+    )
+    .bind(organization_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    if media_limit_mb < 0 {
+        return Ok(());
+    }
+
+    let used: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COALESCE(SUM(size), 0)::BIGINT
+        FROM media
+        WHERE organization_id = $1
+          AND lifecycle_status IN ('publishing', 'active', 'deletion_pending')
+        "#,
+    )
+    .bind(organization_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    let limit_bytes = i64::from(media_limit_mb).saturating_mul(BYTES_PER_MIB);
+    if used.saturating_add(additional_bytes) > limit_bytes {
+        return Err(AppError::Validation(format!(
+            "media storage quota exceeded for the {plan_name} plan"
+        )));
+    }
+    Ok(())
+}
+
 pub async fn ensure_member_capacity(
     pool: &PgPool,
     tenant: &TenantContext,

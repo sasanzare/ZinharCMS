@@ -1,0 +1,190 @@
+{
+  "audit_date": "2026-08-07",
+  "claims": {
+    "CONTRADICTED": 2,
+    "NON_FACTUAL": 5,
+    "PARTIALLY_VERIFIED": 12,
+    "STALE": 7,
+    "UNVERIFIED": 8,
+    "VERIFIED_CURRENT": 20,
+    "VERIFIED_HISTORICAL": 6,
+    "total": 60
+  },
+  "corpus": {
+    "hash_algorithm": "SHA-256",
+    "hash_input": "globally sorted relative path UTF-8 bytes, NUL separator, then file bytes",
+    "sha256": "3761cee3bc27b0abadf033c4609d04b28a644b58e5360f616343986868c581cc"
+  },
+  "diagrams": {
+    "DROP": 1,
+    "MERGE": 19,
+    "PRESERVE": 19,
+    "REGENERATE": 11,
+    "total": 50
+  },
+  "dispositions": {
+    "DELETE_LEGACY_ONLY": 14,
+    "MERGE": 117,
+    "MIGRATE": 168,
+    "PRESERVE_HISTORICAL": 19,
+    "REGENERATE": 35,
+    "REVIEW_REQUIRED_overlay_no": 278,
+    "REVIEW_REQUIRED_overlay_yes": 75
+  },
+  "frontmatter": {
+    "bootstrap_documents_without_frontmatter": 14,
+    "distinct_legacy_keys": 53,
+    "documents_with_custom_frontmatter": 339,
+    "google_type_field_present": 0
+  },
+  "git": {
+    "branch": "security/security-audit-fixes",
+    "commit_created": false,
+    "ending_head": "518f74a1b0da5c4ee37c14e2a37a716707468410",
+    "ending_modified_tracked": 23,
+    "ending_staged": 0,
+    "ending_untracked": 21,
+    "push_performed": false,
+    "starting_head": "518f74a1b0da5c4ee37c14e2a37a716707468410",
+    "starting_modified_tracked": 23,
+    "starting_staged": 0,
+    "starting_untracked": 12
+  },
+  "merge_groups": {
+    "count": 13,
+    "ids": [
+      "MERGE-GROUP-001",
+      "MERGE-GROUP-002",
+      "MERGE-GROUP-003",
+      "MERGE-GROUP-004",
+      "MERGE-GROUP-005",
+      "MERGE-GROUP-006",
+      "MERGE-GROUP-007",
+      "MERGE-GROUP-008",
+      "MERGE-GROUP-009",
+      "MERGE-GROUP-010",
+      "MERGE-GROUP-011",
+      "MERGE-GROUP-012",
+      "MERGE-GROUP-013"
+    ]
+  },
+  "owner_decisions": {
+    "open": 17,
+    "records": 18,
+    "resolved": 1,
+    "resolved_ids": [
+      "NOC-16"
+    ],
+    "unknown_labels": 15
+  },
+  "phase": "Phase 1",
+  "phase_1_files": {
+    "created": [
+      "docs/okf-migration/PHASE_01_KNOWLEDGE_PRESERVATION.md",
+      "docs/okf-migration/LEGACY_DOCUMENT_DISPOSITION_MATRIX.md",
+      "docs/okf-migration/CLAIM_VERIFICATION_LEDGER.md",
+      "docs/okf-migration/CONCEPT_CANDIDATE_MAP.md",
+      "docs/okf-migration/LEGACY_METADATA_TRANSLATION.md",
+      "docs/okf-migration/DIAGRAM_PRESERVATION_MAP.md",
+      "docs/okf-migration/OWNER_DECISION_REGISTER.md",
+      "docs/okf-migration/OWNER_QUESTION_DECISION_DEBT.md",
+      "docs/okf-migration/PHASE_01_EVIDENCE_MANIFEST.json"
+    ],
+    "modified": [
+      "HANDOFF.md"
+    ],
+    "phase_0_created_count": 5,
+    "pre_existing_modified_legacy": [
+      "okf/backend/configuration-and-state.md",
+      "okf/security/overview.md"
+    ],
+    "pre_existing_untracked_count": 7
+  },
+  "prohibited_actions": {
+    "application_code_changed": false,
+    "commit_created": false,
+    "dependencies_added": false,
+    "legacy_index_changed": false,
+    "legacy_okf_converted": false,
+    "legacy_okf_deleted": false,
+    "legacy_okf_renamed": false,
+    "push_performed": false,
+    "replacement_google_bundle_created": false
+  },
+  "report_sha256": {
+    "docs/okf-migration/CLAIM_VERIFICATION_LEDGER.md": "71c9326443ae0d8831f7fe89170bf483d9ab303c57c32e281b193509345ab943",
+    "docs/okf-migration/CONCEPT_CANDIDATE_MAP.md": "42ee8ea3f3e609768bc0df40fddd7ac450b3543036cd11dca7297b7df7fd5641",
+    "docs/okf-migration/DIAGRAM_PRESERVATION_MAP.md": "b593ceff800008ad0f9f19e6a1cd3321c7e60093c3ff299b2025ea95cff71a5e",
+    "docs/okf-migration/LEGACY_DOCUMENT_DISPOSITION_MATRIX.md": "ab153d2553bac18978798cd44ed173a70ea1e406d91d3b007a8e5c146b35a02d",
+    "docs/okf-migration/LEGACY_METADATA_TRANSLATION.md": "37adcba18cca343a3403d055f09a91bd55d19574b5ff871fe70014da61289ac5",
+    "docs/okf-migration/OWNER_DECISION_REGISTER.md": "e36b7af23509d0d93c06540330f0772280068bb3fb91f5055959709a1ec313c9",
+    "docs/okf-migration/OWNER_QUESTION_DECISION_DEBT.md": "36b1f71a88b2c404c8caf137cde591f93deb0efba4950b5dc2c41a43c860b905",
+    "docs/okf-migration/PHASE_01_KNOWLEDGE_PRESERVATION.md": "8d06f4473bcfe5f41e4b8bdca39077d7ce91848d3d71d9d4b5d6994208c0589d"
+  },
+  "repository": "ZinharCMS",
+  "scope": {
+    "legacy_roots": [
+      "okf",
+      "okf-bootstrap"
+    ],
+    "patterns": [
+      "okf/**/*.md",
+      "okf/**/*.mmd",
+      "okf/**/*.yaml",
+      "okf/**/*.yml",
+      "okf-bootstrap/**"
+    ]
+  },
+  "status": "COMPLETE",
+  "structural_artifacts": {
+    "okf/index.yaml": {
+      "bytes": 411888,
+      "legacy_format": "okf_version 0.1",
+      "lines": 8527,
+      "sha256": "a5b1bd1a42df183b4804a3a41706f1d56ab4f1a080d5f5e46e0ac41791e4f2d6"
+    }
+  },
+  "target": "Google Open Knowledge Format v0.2",
+  "tree_counts": {
+    "okf": {
+      "bytes": 2501216,
+      "files": 390,
+      "markdown": 339,
+      "mermaid": 50,
+      "other": 0,
+      "yaml": 1
+    },
+    "okf-bootstrap": {
+      "bytes": 151732,
+      "files": 14,
+      "markdown": 14,
+      "mermaid": 0,
+      "other": 0,
+      "yaml": 0
+    },
+    "total": {
+      "bytes": 2652948,
+      "markdown": 353,
+      "material_files": 404,
+      "mermaid": 50,
+      "other": 0,
+      "yaml": 1
+    }
+  },
+  "validation_expectations": {
+    "all_bootstrap_docs_in_matrix": true,
+    "all_legacy_markdown_in_matrix": true,
+    "all_mermaid_in_map": true,
+    "application_code_changed_by_phase": false,
+    "cited_paths_checked": true,
+    "controlled_vocabularies_checked": true,
+    "counts_reconciled": true,
+    "dependencies_added": false,
+    "git_diff_check": true,
+    "legacy_files_deleted": false,
+    "legacy_files_modified_by_phase": false,
+    "legacy_files_renamed": false,
+    "legacy_index_changed_by_phase": false,
+    "new_doc_links_checked": true
+  }
+}

@@ -39,10 +39,9 @@ pub async fn security_headers(request: Request<Body>, next: Next) -> Response<Bo
 }
 
 pub fn apply_security_headers(headers: &mut HeaderMap) {
-    headers.insert(
-        CONTENT_SECURITY_POLICY,
-        HeaderValue::from_static(API_CONTENT_SECURITY_POLICY),
-    );
+    headers
+        .entry(CONTENT_SECURITY_POLICY)
+        .or_insert(HeaderValue::from_static(API_CONTENT_SECURITY_POLICY));
     headers.insert(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
     headers.insert(
         REFERRER_POLICY,
@@ -105,5 +104,22 @@ mod tests {
                 .unwrap()
                 .contains("geolocation=()")
         );
+    }
+
+    #[test]
+    fn preserves_a_stricter_route_specific_content_security_policy() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            CONTENT_SECURITY_POLICY,
+            "default-src 'none'; sandbox".parse().unwrap(),
+        );
+
+        apply_security_headers(&mut headers);
+
+        assert_eq!(
+            headers[CONTENT_SECURITY_POLICY],
+            "default-src 'none'; sandbox"
+        );
+        assert_eq!(headers[X_CONTENT_TYPE_OPTIONS], "nosniff");
     }
 }

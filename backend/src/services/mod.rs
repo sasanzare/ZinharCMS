@@ -2,6 +2,8 @@ pub mod audit;
 pub mod cache;
 pub mod email;
 pub mod entry_validation;
+pub mod file_cleanup;
+pub mod file_security;
 pub mod ga_readiness;
 pub mod hardening;
 pub mod health;

@@ -53,7 +53,7 @@ ZinharCMS uses layered controls:
 | Tenant persistence | Forced RLS on documented tenant tables with explicit context | `VERIFIED` in migrations/code, not live deployment |
 | Browser response | CSP, frame, MIME-sniffing, referrer, and permissions-policy headers | `VERIFIED` in application middleware |
 | CORS | One configured origin, credential support, explicit methods and headers | `VERIFIED` in application bootstrap |
-| Input protection | Typed extractors, targeted validation, rich-text sanitization, upload/package/webhook validators | `partially_verified` |
+| Input protection | Typed extractors, targeted validation, rich-text sanitization, streaming file staging, byte-derived media policy, bounded ZIP inspection, and webhook validators | `VERIFIED` in source and local regression tests; malware scanning is abstraction-only |
 | Audit | Organization-scoped audit logs for selected mutations plus login-attempt records | `partially_verified` |
 
 ## Important Findings
@@ -67,6 +67,11 @@ ZinharCMS uses layered controls:
   `HttpOnly` cookie. Non-secret identity and organization projections may
   remain cached in `localStorage`.
 - `POTENTIAL_SECRET_EXPOSURE PSE-01`: deterministic development credentials are embedded in startup/UI source. No secret value is reproduced in OKF.
+- Media storage is split into public re-encoded images, authenticated private
+  documents, quarantine, and temporary namespaces. The application no longer
+  mounts the complete upload root as static content. Marketplace packages remain
+  non-executable quarantined artifacts until manual review records a reviewed
+  state.
 
 ## Assurance Limits
 

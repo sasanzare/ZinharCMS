@@ -5,17 +5,141 @@
 
 ## 1. Handoff Metadata
 
-- **Last updated:** 2026-07-28 (Europe/London)
+- **Last updated:** 2026-08-07 (Europe/London)
 - **Updated by:** Codex
 - **Repository:** ZinharCMS
 - **Current branch:** `security/security-audit-fixes`
 - **Base branch:** `main`; current branch tracks `origin/security/security-audit-fixes`
-- **Latest relevant commit:** `b2e34c37 fix(security): complete phase 3 browser auth and preview hardening`
-- **Working tree:** Phase 4 security changes are complete, validated, unstaged, and uncommitted; the branch was clean when Phase 4 started
+- **Latest relevant commit:** `518f74a1 security: complete phase 6 MFA, TOTP, and step-up hardening`
+- **Working tree:** Pre-existing security Phase 7 changes were dirty and uncommitted before the Google OKF Phase 0 audit; Phase 0 and Phase 1 add only migration-analysis documents and handoff checkpoints
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
-- **Current phase:** Security Audit and Hardening Phase 4
-- **Current subphase:** Rich-content, CSP, security-header, Trusted Types, editor/preview/delivery parity, browser verification, documentation, scans, and cleanup are complete.
-- **Overall status:** Phase 4 began from clean commit `b2e34c37` on `security/security-audit-fixes`. The uncommitted implementation adds parser-based backend sanitization, a single typed frontend rich-HTML boundary, strict production CSP and security headers, Trusted Types enforcement, Page Builder schema parity, safe URL handling, Preview WebSocket content sanitation, a shared malicious corpus, and regression/browser evidence. Backend fmt/Clippy/tests, frontend lint/typecheck/tests/build, Compose configuration, AST sink policy, browser CSP/Trusted Types/stored/published/preview flows, report structure, language/secret scans, and Git whitespace passed. No migration, commit, staging, push, history rewrite, or deployment was performed.
+- **Current phase:** Google OKF Migration Phase 1 — Legacy Knowledge Preservation Map and Verified Migration Inventory
+- **Current subphase:** Complete legacy document/diagram classification, claim verification, metadata/provenance translation, concept candidates, and owner decision debt; no conversion or deletion was performed.
+- **Overall status:** Phase 1 began from the Phase 0 dirty worktree at HEAD `518f74a1b0da5c4ee37c14e2a37a716707468410` on `security/security-audit-fixes`. The pre-existing security Phase 7 implementation remains untouched. Phase 0 migration reports and Phase 1 preservation artifacts are documentation-only; ending HEAD remains unchanged and no staging, commit, push, reset, clean, stash, history rewrite, dependency install, or deployment was performed.
+
+> **Google OKF Migration Phase 0 override (2026-08-07):** This is the active
+> continuation checkpoint for the migration task and supersedes older OKF
+> Phase Zero/One next-action text below. The existing `okf/` and
+> `okf-bootstrap/` trees are still legacy material. Do not delete, rename,
+> rewrite, convert, or replace them before completing the preservation analysis
+> in Phase 1. Preserve the pre-existing security worktree and all unrelated
+> user changes. Do not stage, commit, push, reset, clean, stash, or deploy
+> without explicit owner authorization.
+
+### Google OKF Migration Phase 0 Checkpoint
+
+- **Objective:** Establish an evidence-backed baseline for migrating the
+  repository's incorrect legacy OKF convention to the official Google OKF v0.2
+  specification without losing project knowledge.
+- **Status:** `COMPLETE` for the Phase 0 audit boundary. Production topology,
+  owner-policy, and target-bundle decisions remain explicitly unresolved.
+- **Branch and baseline HEAD:** `security/security-audit-fixes` at
+  `518f74a1b0da5c4ee37c14e2a37a716707468410`.
+- **Files created:** `docs/okf-migration/PHASE_00_BASELINE_AUDIT.md`,
+  `docs/okf-migration/LEGACY_OKF_INVENTORY.md`,
+  `docs/okf-migration/GOOGLE_OKF_V02_BASELINE.md`,
+  `docs/okf-migration/LEGACY_REFERENCE_MAP.md`, and
+  `docs/okf-migration/MIGRATION_RISK_REGISTER.md`.
+- **Existing file modified by this phase:** `HANDOFF.md` only. The 23 other
+  modified paths and 7 untracked paths listed in the Phase 0 report predate
+  this audit and remain user-owned.
+- **Key findings:** `okf/` contains 339 custom-frontmatter Markdown files, 50
+  Mermaid diagrams, and a 411,888-byte custom `index.yaml`; no legacy Markdown
+  file has the Google-required `type` field. `okf-bootstrap/` contains 14 plain
+  historical audit/planning reports with unique gap and owner-question
+  knowledge. Exact searches found documentation/navigation coupling but no
+  executable dependency in Rust, frontend source, scripts, manifests, Docker,
+  migrations, tests, or CI.
+- **Authoritative target:** Google’s official
+  [`okf/SPEC.md`](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md),
+  verified on 2026-08-07; it still specifies OKF v0.2.
+- **Legacy warning:** The current `okf/` tree is still legacy and is not a
+  Google OKF v0.2 bundle. Its content may still be accurate and valuable.
+- **Deletion warning:** Do not delete `okf/`, `okf-bootstrap/`,
+  `okf/index.yaml`, or legacy metadata before the Phase 1 preservation map is
+  reviewed.
+- **Worktree baseline:** Before Phase 0, 23 paths were modified, 7 were
+  untracked, and none were staged. The two pre-existing modified legacy files
+  are `okf/backend/configuration-and-state.md` and `okf/security/overview.md`.
+- **Validation performed:** Repository instructions, Git state, full legacy
+  trees, custom metadata, exact references, runtime/configuration coupling,
+  generated boundaries, and the official specification were inspected. All five
+  audit files are non-empty and were read back; 9 internal Markdown links
+  resolve with 0 broken links; 45 explicitly cited repository paths exist; the
+  executable/configuration legacy-reference search returned 0 matches; the
+  legacy diff has only the 2 pre-existing `M` paths and 0 deletes/renames; and
+  `git diff --check` passed. Git emitted only existing LF/CRLF normalization
+  warnings for dirty files.
+- **Unresolved issues:** Per-document claim verification; source/provenance
+  mapping; path-ID reconciliation; diagram treatment; bundle boundary;
+  optional index/log use; generated/verified/status mapping; and owner
+  questions in `okf-bootstrap/12-owner-questions.md` remain open.
+- **Final worktree:** HEAD remains
+  `518f74a1b0da5c4ee37c14e2a37a716707468410`; 23 modified paths and 12
+  untracked paths are present, none staged. The 5 new untracked paths are the
+  Phase 0 audit documents; the other 7 untracked and 23 modified paths predate
+  this phase.
+- **Exact Next Action:** begin `Phase 1 — Legacy OKF Inventory & Knowledge
+  Preservation Map`; inventory every legacy document and evidence relationship,
+  verify claims against current repository evidence, and produce the
+  KEEP/MIGRATE/MERGE/DELETE candidate map without deleting or converting legacy
+  files.
+
+### Google OKF Migration Phase 1 Checkpoint
+
+- **Status:** COMPLETE for the preservation-map boundary. Phase 2 target
+  architecture and bundle design has not started.
+- **Branch:** security/security-audit-fixes.
+- **Starting HEAD:** 518f74a1b0da5c4ee37c14e2a37a716707468410.
+- **Ending HEAD:** 518f74a1b0da5c4ee37c14e2a37a716707468410.
+- **Worktree at Phase 1 start:** 23 modified tracked paths, 12 untracked paths,
+  no staged paths. The 23 modified paths and 7 original untracked paths
+  predated the OKF work; the 5 Phase 0 reports were already untracked before
+  this phase.
+- **Phase 1 files created:** docs/okf-migration/PHASE_01_KNOWLEDGE_PRESERVATION.md,
+  LEGACY_DOCUMENT_DISPOSITION_MATRIX.md, CLAIM_VERIFICATION_LEDGER.md,
+  CONCEPT_CANDIDATE_MAP.md, LEGACY_METADATA_TRANSLATION.md,
+  DIAGRAM_PRESERVATION_MAP.md, OWNER_DECISION_REGISTER.md,
+  OWNER_QUESTION_DECISION_DEBT.md, and PHASE_01_EVIDENCE_MANIFEST.json.
+- **Existing file modified by Phase 1:** HANDOFF.md. It was already modified by
+  Phase 0 and remains unstaged; no other existing repository file was modified
+  by this phase.
+- **Legacy corpus:** 339 okf Markdown documents, 14 bootstrap Markdown
+  documents, 50 Mermaid diagrams, one okf/index.yaml, and 404 material files.
+- **Primary dispositions:** MIGRATE 168; MERGE 117; PRESERVE_HISTORICAL 19;
+  REGENERATE 35; DELETE_LEGACY_ONLY 14. Review-required overlay: 75.
+- **Merge groups:** 13 stable groups, with the largest being API 57, domain 44,
+  security 40, extensibility 39, database 34, backend 31, and frontend 31.
+- **Claim statuses:** VERIFIED_CURRENT 20; VERIFIED_HISTORICAL 6;
+  PARTIALLY_VERIFIED 12; STALE 7; CONTRADICTED 2; UNVERIFIED 8;
+  NON_FACTUAL 5.
+- **Diagram dispositions:** PRESERVE 19; MERGE 19; REGENERATE 11; DROP 1.
+- **Owner decisions:** 18 NOC records preserved; 17 remain open; NOC-16 is
+  resolved by the root LICENSE decision. Fifteen UNKNOWN labels remain linked
+  to the register.
+- **Highest risks:** production topology/ingress, storage durability and
+  authorization, backup/recovery, observability/on-call, legal retention,
+  public tenant routing, API compatibility, Marketplace settlement/scope,
+  and missing ownership.
+- **Preservation confirmation:** no legacy files were deleted, renamed,
+  rewritten, or converted; okf/index.yaml was not changed; no Google OKF
+  replacement bundle was created; application code and dependencies were not
+  changed; no commit or push occurred.
+- **Validation checkpoint:** complete matrix and diagram coverage, controlled
+  vocabulary, claim/diagram/disposition reconciliation, corpus hash, report
+  hashes, new-document link/path checks, legacy-diff safety checks, and
+  git diff --check are recorded in
+  docs/okf-migration/PHASE_01_EVIDENCE_MANIFEST.json.
+- **Final validation result (2026-08-07):** the deterministic Phase 1 validator
+  exited 0; `git diff --check` exited 0 with only expected line-ending warnings;
+  no paths are staged; the ending worktree is 23 modified tracked paths and 21
+  untracked paths; the legacy diff still contains only the two pre-existing
+  modified OKF files and no delete/rename summary.
+- **Recommended next phase:** Phase 2 — Google OKF v0.2 Target Architecture &
+  Bundle Design.
+- **Exact Next Action:** review the Phase 1 preservation artifacts and owner
+  decision register; then begin Phase 2 target concept hierarchy and bundle
+  design without deleting or converting legacy content.
 
 > **Security Audit Phase 4 override (2026-07-28):** This completed checkpoint
 > supersedes earlier Phase 1-3 and product-phase exact-next-action text for the
@@ -2745,3 +2869,191 @@ After each meaningful milestone, update HANDOFF.md with the files changed, work 
   explicit authorization. Phase 7 should define mandatory privileged
   enrollment, administrative MFA recovery, rotation drills, alert ownership,
   and production performance/chaos validation.
+
+### 2026-07-29 - Security Audit and Hardening Phase 7 inventory checkpoint
+
+- Verified `security/security-audit-fixes` at clean starting commit
+  `518f74a1b0da5c4ee37c14e2a37a716707468410`; Phase 6 is committed, the index
+  was empty, and no branch, commit, push, deployment, or owner environment was
+  changed.
+- Read `AGENTS.md`, this complete handoff, the Phase 7 requirements, the
+  persistent lessons, and the complete Phase 1-6 security reports before
+  implementation.
+- Inventoried repository file surfaces. Runtime uploads are limited to tenant
+  media multipart upload and creator-owned Marketplace ZIP upload. Local
+  filesystem storage under `UPLOAD_DIR` also holds generated image variants
+  and Marketplace artifacts. `avatar_url`, Marketplace screenshots, template
+  asset mappings, backup/restore documentation, and creator CLI archives are
+  references or tooling surfaces, not additional server upload handlers.
+- Confirmed the current media/package handlers buffer complete multipart file
+  parts in memory. The image decoder has no explicit dimension/allocation
+  limits, and Marketplace validation uses a custom central-directory parser.
+- Confirmed the public `ServeDir` path admits generated organization/UUID media
+  names regardless of stored media policy; PDF and text uploads therefore use
+  public unguessable URLs rather than authenticated download authorization.
+- Confirmed original bytes are written before relational commit, deletion is
+  best-effort after row deletion, there is no quarantine/cleanup reconciliation
+  model, and `ensure_media_capacity` is a read-then-check quota vulnerable to
+  concurrent over-commit.
+- Existing positive controls remain: tenant middleware and forced RLS protect
+  metadata routes; generated object names avoid direct client path selection;
+  Marketplace object keys validate slugs/version/checksum; package code is
+  never extracted or executed; install rechecks size and SHA-256; the
+  production backend runs as UID 10001 with a writable uploads volume.
+- **Exact Next Action:** add failing Phase 7 backend contract tests for central
+  upload policy, bounded streaming, path/filename handling, image limits,
+  archive containment/bomb limits, private/public response policy, atomic
+  quotas, and cleanup state; then implement migration `0030` and the central
+  file-security/storage services without weakening Phase 1-6 controls.
+
+### 2026-07-30 - Security Audit and Hardening Phase 7 implementation checkpoint
+
+- Added central, purpose-specific upload policies and disk-backed bounded
+  multipart staging. Client filenames are display metadata only; generated
+  tenant/UUID storage keys, containment checks, existing symlink/reparse-point
+  rejection, create-new publication, secure temporary permissions, stale-temp
+  cleanup, SHA-256 metadata, and explicit scanner-unavailable state now protect
+  the file lifecycle.
+- Raster media is decoded under explicit dimension/pixel/allocation limits and
+  re-encoded to WebP before public publication. PDF and UTF-8 text are
+  restricted attachments served only by authenticated tenant-scoped download;
+  PDF structure and the complete streamed text encoding are validated. SVG,
+  HTML, mismatched types, malformed images, and active content are rejected.
+- Removed broad `ServeDir` delivery. Public image lookup now requires an active,
+  verified public database record; restricted downloads apply safe disposition,
+  `nosniff`, sandbox CSP, private no-store caching, and reject Range requests.
+- Marketplace ZIP intake now streams to quarantine and uses a bounded parser
+  that rejects traversal, absolute/Windows/encoded paths, links and special
+  files, duplicate/case-colliding/non-ASCII paths, nested archives, unsupported
+  compression/encryption/ZIP64, CRC/size mismatches, excessive entries, depth,
+  expansion ratio, total output, and processing time. Package bytes are not
+  extracted or executed by the application.
+- Added migration `0030` for media/variant checksums, visibility, verification
+  and lifecycle state, Marketplace artifact state, and forced-RLS durable
+  cleanup jobs. Legacy media/packages are restricted and unverified. Quota
+  reservations now lock the tenant row and include publishing/deletion-pending
+  bytes in the same transaction; delete/publish failures use idempotent cleanup
+  jobs rather than silent best effort.
+- Frontend upload UX now has advisory file filters, limits, duplicate-submit
+  prevention, cancellation, authenticated Blob downloads, public inline
+  rendering only for verified raster media, and safe React text rendering.
+  Deployment configuration adds non-root read-only runtime controls and
+  bounded upload settings.
+- Current focused validation passed: `cargo check --offline --all-targets
+  --all-features`; all 16 Phase 7 filesystem/archive/image tests; frontend
+  typecheck; and all five focused MediaPage tests. Fresh and upgrade migration
+  tests both passed against disposable databases owned by a
+  `NOSUPERUSER/NOBYPASSRLS` role, including cross-tenant non-enumeration,
+  forced RLS, legacy classification, and concurrent quota reservation.
+  Both temporary databases and the temporary role were dropped in `finally`.
+- Docker Desktop was started for local validation; PostgreSQL and Redis project
+  services are running. No commit, stage, push, deployment, production access,
+  or owner-environment migration occurred.
+- **Exact Next Action:** run the complete backend/frontend/static/deployment
+  regression matrix, perform disposable in-app-browser upload/download and
+  cross-tenant checks, then create the exact 41-section Phase 7 report and
+  finalize this handoff with cleanup evidence and the Phase 8 recommendation.
+
+### 2026-07-30 - Security Audit and Hardening Phase 7 final checkpoint
+
+- Phase 7 source implementation and non-browser validation are complete.
+  Confirmed/remediated `SEC-P07-001` (High: public raw document/static delivery),
+  `SEC-P07-002` (High: multipart/image/archive resource exhaustion), and
+  `SEC-P07-003` (Medium: quota and file/database lifecycle races). No Critical,
+  Low, or Informational Phase 7 finding was confirmed. The earlier
+  `SEC-P01-004` closure is strengthened by removing the shared static root and
+  requiring database state for every public object.
+- Final media behavior streams to secure quarantine; validates byte type, PDF
+  structure, complete UTF-8, image decode limits, and source size; re-encodes
+  public images to checked WebP; forces PDF/text through tenant-authenticated
+  attachment delivery; rejects SVG/HTML and Range; applies safe disposition,
+  cache, `nosniff`, and sandbox CSP headers; and preserves the stricter
+  route-specific CSP through global middleware.
+- Final archive behavior streams Marketplace ZIPs to nonpublic quarantine and
+  rejects traversal, encoded/Windows/absolute paths, links/special files,
+  duplicates/case collisions/non-ASCII ambiguity, nested archives,
+  encryption/ZIP64/multidisk/unsupported compression, overlapping/mismatched
+  records, CRC/actual-size mismatch, excess entry/path/depth/ratio/expanded
+  bytes, and processing timeout. Packages remain data only and require reviewed
+  artifact state before install/update/rollback.
+- Migration `0030` adds file checksums, visibility/verification/scanner and
+  lifecycle state, variants, Marketplace artifact state, constraints/indexes,
+  and forced-RLS cleanup jobs. Legacy media/artifacts become restricted and
+  unverified. Quota reservation is locked/atomic. Deletion, publish rollback,
+  stale source/processing cleanup, and stale-publishing reconciliation are
+  bounded and idempotent; a trusted scheduled worker remains an owner action.
+- Frontend behavior now has advisory accept types, a 25 MiB UX ceiling,
+  cancellation/unmount cleanup, duplicate-submit prevention, authenticated Blob
+  downloads and URL revocation, verified-raster-only inline rendering, and safe
+  React text rendering. Production Compose has a read-only root filesystem,
+  capability drop, `no-new-privileges`, `init`, restricted tmpfs, and a
+  dedicated writable upload volume.
+- Final Backend validation passed: `cargo fmt --all -- --check`;
+  `cargo clippy --offline --all-targets --all-features -- -D warnings`; and
+  `cargo test --offline --all-features`. Results were 192 unit tests, two Phase
+  2 integration tests, one Phase 5 migration test, one Phase 6 migration test,
+  17 Phase 7 filesystem/archive/image/cleanup tests, two Phase 7 migration tests,
+  and doc tests.
+- Live Phase 7 PostgreSQL validation passed fresh and 0029-to-0030 upgrade
+  databases owned by a disposable `NOSUPERUSER NOBYPASSRLS` role. It verified
+  schema/constraints, forced RLS, two-way tenant non-enumeration, concurrent
+  near-limit quota, legacy classification, and stale-publishing reconciliation.
+- Frontend lint, typecheck, all 58 tests in 13 files, production build, and the
+  one-approved-HTML-sink policy passed. The known nonblocking bundle-size
+  warning remains. Five focused MediaPage tests passed.
+- Disposable live HTTP validation passed health, private text upload,
+  malicious-filename handling, anonymous private denial, private headers/body,
+  Range 416, SVG rejection, MIME mismatch, public image decode/re-encode and
+  headers, two-way cross-tenant IDOR denial, and zero remaining `.part` files.
+  This testing found and fixed the global-middleware CSP overwrite before final
+  validation.
+- Local and production Compose rendering, BuildKit Dockerfile policy checking,
+  and `git diff --check` passed. The exact report
+  `docs/security/PHASE_07_FILE_UPLOAD_STORAGE_HARDENING.md` has exactly 41
+  required H2 sections and seven English Mermaid diagrams.
+- Changed/untracked source was scanned without printing values: zero
+  production-shaped token/private-key matches, zero Phase 7 test-credential
+  artifacts, and no Persian text outside the explicitly allowed frontend i18n
+  file. A local deterministic development-config value surfaced during an
+  earlier diagnostic; it was not reproduced and remains tracked by
+  `POTENTIAL_SECRET_EXPOSURE PSE-01`. Rotate it if reused outside disposable
+  local development.
+- Browser verification is **unavailable/partial**, not passed: the mandatory
+  in-app Browser runtime failed before commands with an internal kernel-asset
+  path error and still failed after its documented reset/retry. Standalone
+  browser automation was not substituted. Browser cookies/storage/profile
+  inspection is also prohibited by the selected Browser skill. Unit and live
+  HTTP results are not mislabeled as browser evidence.
+- `cargo audit` is unavailable because the subcommand is not installed. A new
+  ZIP dependency could not be retrieved because registry DNS/network access
+  failed; locked cached `flate2`/`crc32fast` support the strict reader.
+  `npm audit --omit=dev` was not run because external advisory-metadata
+  transmission lacked separate authorization. No real scanner, object store,
+  signed URL, CDN, ingress, backup/restore, or owner filesystem was tested.
+- Cleanup is complete: every disposable Phase 7 database and role was dropped
+  and verified at count zero; the HTTP backend, port 18087, temporary harness,
+  test storage/log root, and browser binding were removed. Docker Desktop was
+  started only for validation and returned to its initial stopped state. No
+  commit, stage, push, deployment, production/staging access, owner migration,
+  or external message occurred.
+- **Created files:** `backend/migrations/0030_security_phase_seven_file_storage.sql`,
+  `backend/src/services/file_cleanup.rs`,
+  `backend/src/services/file_security.rs`,
+  `backend/tests/security_phase7_files.rs`,
+  `backend/tests/security_phase7_migration.rs`,
+  `docs/security/PHASE_07_FILE_UPLOAD_STORAGE_HARDENING.md`, and
+  `frontend/src/pages/MediaPage.test.tsx`.
+- **Modified files:** `.env.example`, `HANDOFF.md`, backend Cargo manifests,
+  `Dockerfile.prod`, config/security middleware, Marketplace/media routes,
+  route registration, Marketplace/media/file/quota services;
+  `docker-compose.prod.yml`, `docs/API.md`, `docs/ARCHITECTURE.md`; frontend
+  i18n/MediaPage/API/types; and OKF backend configuration/security overview.
+- **Exact Next Action:** the owner should review the complete Phase 7 diff,
+  back up database and storage, verify every application role is
+  `NOSUPERUSER NOBYPASSRLS`, test migration 0030 and legacy private-download/
+  Marketplace-review compatibility in approved non-production, provision the
+  hardened upload volume, wire and monitor a trusted cleanup/scanner worker,
+  and repeat browser/ingress/backup validation. Stage/commit/push only after
+  explicit authorization. Phase 8 should address audit logging, redaction,
+  observability, alert ownership, scheduled lifecycle workers, dependency/
+  container advisory gates, and upload/storage performance and chaos testing.

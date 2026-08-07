@@ -128,6 +128,8 @@ pub struct Config {
     pub jwt_refresh_expiry: u64,
     pub upload_dir: String,
     pub max_upload_size: u64,
+    pub max_upload_parts: u64,
+    pub max_upload_metadata_bytes: u64,
     pub cors_origin: String,
     pub cookie_secure: bool,
     pub preview_ws_allowed_origins: String,
@@ -267,6 +269,10 @@ impl Config {
                 value: "outside allowed bounds".to_owned(),
             });
         }
+        let max_upload_size = parse_u64("MAX_UPLOAD_SIZE", 52_428_800)?;
+        let max_upload_parts = parse_u64("MAX_UPLOAD_PARTS", 8)?;
+        let max_upload_metadata_bytes = parse_u64("MAX_UPLOAD_METADATA_BYTES", 8_192)?;
+        validate_file_upload_limits(max_upload_size, max_upload_parts, max_upload_metadata_bytes)?;
 
         Ok(Self {
             database_url: get("DATABASE_URL", None)?,
@@ -283,7 +289,9 @@ impl Config {
             jwt_access_expiry,
             jwt_refresh_expiry: parse_u64("JWT_REFRESH_EXPIRY", 604_800)?,
             upload_dir: get("UPLOAD_DIR", Some("./uploads"))?,
-            max_upload_size: parse_u64("MAX_UPLOAD_SIZE", 52_428_800)?,
+            max_upload_size,
+            max_upload_parts,
+            max_upload_metadata_bytes,
             preview_ws_allowed_origins: get("PREVIEW_WS_ALLOWED_ORIGINS", Some(&cors_origin))?,
             cors_origin,
             cookie_secure: parse_bool("COOKIE_SECURE", false)?,
@@ -591,6 +599,23 @@ fn parse_i64(name: &'static str, default: i64) -> Result<i64, ConfigError> {
     }
 }
 
+fn validate_file_upload_limits(
+    max_upload_size: u64,
+    max_upload_parts: u64,
+    max_upload_metadata_bytes: u64,
+) -> Result<(), ConfigError> {
+    if !(1_048_576..=52_428_800).contains(&max_upload_size)
+        || !(1..=16).contains(&max_upload_parts)
+        || !(1..=65_536).contains(&max_upload_metadata_bytes)
+    {
+        return Err(ConfigError::Invalid {
+            name: "FILE_UPLOAD_SECURITY_POLICY",
+            value: "outside allowed bounds".to_owned(),
+        });
+    }
+    Ok(())
+}
+
 fn parse_bool(name: &'static str, default: bool) -> Result<bool, ConfigError> {
     match env::var(name) {
         Ok(value) if !value.trim().is_empty() => match value.to_ascii_lowercase().as_str() {
@@ -671,6 +696,8 @@ impl Config {
             jwt_refresh_expiry: 604_800,
             upload_dir: "./uploads".to_owned(),
             max_upload_size: 52_428_800,
+            max_upload_parts: 8,
+            max_upload_metadata_bytes: 8_192,
             cors_origin: "http://localhost:5173".to_owned(),
             cookie_secure: false,
             preview_ws_allowed_origins: "http://localhost:5173".to_owned(),
@@ -757,7 +784,7 @@ mod tests {
     use super::{
         ConfigError, JwtKeyStatus, MAX_MFA_PREVIOUS_KEY_WINDOW_SECONDS, MfaEncryptionKeyStatus,
         is_placeholder_secret, parse_jwt_key_ring, parse_mfa_encryption_key_ring,
-        parse_trusted_proxy_cidrs, validate_bootstrap_admin,
+        parse_trusted_proxy_cidrs, validate_bootstrap_admin, validate_file_upload_limits,
     };
 
     #[test]
@@ -816,6 +843,17 @@ mod tests {
             parse_trusted_proxy_cidrs("10.0.0.0/99"),
             Err(ConfigError::Invalid { .. })
         ));
+    }
+
+    #[test]
+    fn file_upload_limits_reject_zero_negative_equivalents_and_unbounded_values() {
+        assert!(validate_file_upload_limits(52_428_800, 8, 8_192).is_ok());
+        assert!(validate_file_upload_limits(0, 8, 8_192).is_err());
+        assert!(validate_file_upload_limits(52_428_801, 8, 8_192).is_err());
+        assert!(validate_file_upload_limits(52_428_800, 0, 8_192).is_err());
+        assert!(validate_file_upload_limits(52_428_800, 17, 8_192).is_err());
+        assert!(validate_file_upload_limits(52_428_800, 8, 0).is_err());
+        assert!(validate_file_upload_limits(52_428_800, 8, 65_537).is_err());
     }
 
     #[test]

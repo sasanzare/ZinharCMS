@@ -54,6 +54,7 @@ weak-secret values can stop startup.
 | Media | `UPLOAD_DIR`, `MAX_UPLOAD_SIZE` | Local directory and maximum size have source defaults |
 | HTTP | `CORS_ORIGIN`, `COOKIE_SECURE`, `PORT` | Local-development-oriented defaults are present |
 | Login protection | `LOGIN_RATE_LIMIT_MAX_FAILURES`, `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Integer defaults are present |
+| File ingress | `UPLOAD_DIR`, `MAX_UPLOAD_SIZE`, `MAX_UPLOAD_PARTS`, `MAX_UPLOAD_METADATA_BYTES` | Storage root plus startup-validated request, part-count, and text-field bounds; central policy applies narrower per-category limits |
 | CMS billing | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`, `STRIPE_PORTAL_RETURN_URL`, `STRIPE_PRO_PRICE_ID`, `STRIPE_ENTERPRISE_PRICE_ID` | Credentials and price IDs are optional; browser return URLs have defaults |
 | Application links | `APP_BASE_URL` | Defaults to the local frontend URL |
 | Email | `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_WEBHOOK_URL`, `EMAIL_FAILURE_MODE` | Log-oriented defaults; webhook URL optional |

@@ -135,14 +135,30 @@ Example: `sort=created_at:desc`.
 | `POST` | `/api/media/upload` | Multipart upload with `file`, optional `alt_text`, optional `caption` |
 | `GET` | `/api/media` | List media with optional `mime_type`, `page`, `per_page` |
 | `GET` | `/api/media/{id}` | Get media and variants |
+| `GET` | `/api/media/{id}/download` | Stream an authorized private document as an attachment; Range is unsupported |
 | `PUT` | `/api/media/{id}` | Update `alt_text` and `caption` |
-| `DELETE` | `/api/media/{id}` | Delete media and variants; admin/editor |
+| `DELETE` | `/api/media/{id}` | Mark media for deletion and enqueue bounded object cleanup; admin/editor |
 
-Image uploads for `image/jpeg`, `image/png`, and `image/webp` generate:
-`thumbnail`, `small`, `medium`, and `large` WebP variants.
+The server accepts one JPEG, PNG, WebP, PDF, or plain-text file per request.
+The client filename and declared MIME type are advisory. The backend streams the
+file to private staging, enforces the configured body/part/metadata limits,
+detects the content from bytes, and generates an opaque tenant-scoped storage key.
+Raw SVG, HTML, XML, GIF, AVIF, Office containers, and other undeclared formats are
+rejected by this endpoint.
 
-Stored file bytes are served from `GET /uploads/{organization_id}/...` without auth
-or tenant middleware. Media metadata APIs remain tenant-protected.
+JPEG, PNG, and WebP sources are dimension-, pixel-, and decode-allocation-bounded,
+then decoded and re-encoded as metadata-free WebP. The normalized original and
+`thumbnail`, `small`, `medium`, and `large` variants are exposed only through
+database-authorized immutable `GET /uploads/public/...` paths. PDF and plain text
+remain restricted and are available only from the authenticated download route
+with `attachment`, `nosniff`, `no-store`, and safe filename headers. Legacy file
+rows are classified as restricted and unverified; old static upload URLs are no
+longer public.
+
+`MAX_UPLOAD_SIZE`, `MAX_UPLOAD_PARTS`, and `MAX_UPLOAD_METADATA_BYTES` are
+startup-validated deployment bounds. Central policy further limits public image
+sources to 10 MiB and private documents to 25 MiB. Range requests are deliberately
+rejected with `416`; signed URLs are not implemented.
 
 ## Component Registry
 

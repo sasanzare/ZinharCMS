@@ -184,10 +184,28 @@ The public Delivery API reads published content from the active organization who
 slug is `default`. Redis values use a 300-second TTL; Redis cache failures fall back
 to PostgreSQL. Rate-limit Redis failures do not use that fallback.
 
-Media metadata is tenant-owned, while file bytes are served by the public
-`/uploads` static route when a URL is known. Image uploads generate WebP variants.
-Filesystem and relational writes are not one atomic transaction, so partial media
-or artifact cleanup remains an operational decision.
+Media metadata and private-document bytes are tenant-owned. There is no broad
+static mount for `UPLOAD_DIR`. A typed public route resolves only active, verified
+WebP media rows; a tenant-authenticated route streams restricted PDF or plain-text
+objects as attachments. Random paths are not authorization.
+
+Multipart ingress is streamed to an application-controlled quarantine namespace.
+The centralized policy detects content from bytes, bounds files, parts, metadata,
+image dimensions, decoded allocation, archive entries, uncompressed size, path
+depth, and compression ratio, and generates storage keys without client path
+components. Raster sources are decoded and re-encoded to WebP before publication.
+SVG and HTML are rejected. Marketplace ZIP files remain quarantined data: their
+central directory is inspected from disk, unsafe paths and link/special entries
+are rejected, and packages are neither extracted into a live namespace nor
+executed.
+
+Quota reservation serializes on the organization row in the same transaction as
+the publishing metadata row. Files become visible only after filesystem
+publication and a transactional lifecycle transition. Failed publication and
+deletion create tenant-scoped, idempotent cleanup jobs; opportunistic temporary
+cleanup is bounded. PostgreSQL and filesystem changes cannot be one native atomic
+transaction, so `publishing`, `failed`, and `deletion_pending` states provide the
+reconciliation boundary.
 
 CMS webhooks use HMAC-SHA256 signatures and transient `tokio::spawn` dispatch.
 Tenant-configurable destinations pass through one reusable outbound client.

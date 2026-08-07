@@ -219,6 +219,48 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return response.json() as Promise<T>;
 }
 
+async function requestBlob(
+  path: string,
+  options: Pick<RequestOptions, "retryAuth" | "signal"> = {},
+): Promise<Blob> {
+  const requestUrl = new URL(path, `${API_BASE_URL.replace(/\/$/, "")}/`);
+  const trustedApiOrigin = requestUrl.origin === new URL(API_BASE_URL).origin;
+  const headers = new Headers();
+  if (trustedApiOrigin && accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+    if (activeOrganizationId) {
+      headers.set("X-Organization-Id", activeOrganizationId);
+    }
+  }
+  const response = await fetch(requestUrl.toString(), {
+    credentials: trustedApiOrigin ? "include" : "omit",
+    headers,
+    signal: options.signal,
+  });
+  if (!response.ok) {
+    let message = `${response.status} ${response.statusText}`;
+    let code = "request_failed";
+    try {
+      const payload = (await response.json()) as { message?: string; error?: string };
+      message = payload.message ?? payload.error ?? message;
+      code = payload.error ?? code;
+    } catch {
+      // Preserve the status text when the backend returns an empty body.
+    }
+    if (
+      trustedApiOrigin &&
+      options.retryAuth !== false &&
+      response.status === 401 &&
+      code === "access_token_invalid"
+    ) {
+      await refreshBrowserSession();
+      return requestBlob(path, { ...options, retryAuth: false });
+    }
+    throw new ApiError(response.status, message, code);
+  }
+  return response.blob();
+}
+
 async function refreshBrowserSession() {
   return coordinatedRefresh(() =>
     request<AuthResponse>("/api/auth/refresh", {
@@ -605,13 +647,24 @@ changePlan: (payload: ChangePlanRequest) =>
   media: {
     list: (params: { mime_type?: string; page?: number; per_page?: number } = {}) =>
       request<MediaListResponse>(`/api/media${query(params)}`, { auth: true }),
-    upload: (file: File, metadata: { alt_text?: string; caption?: string }) => {
+    upload: (
+      file: File,
+      metadata: { alt_text?: string; caption?: string },
+      signal?: AbortSignal,
+    ) => {
       const formData = new FormData();
       formData.append("file", file);
       if (metadata.alt_text) formData.append("alt_text", metadata.alt_text);
       if (metadata.caption) formData.append("caption", metadata.caption);
-      return request<MediaDetailResponse>("/api/media/upload", { method: "POST", auth: true, formData });
+      return request<MediaDetailResponse>("/api/media/upload", {
+        method: "POST",
+        auth: true,
+        formData,
+        signal,
+      });
     },
+    download: (id: string, signal?: AbortSignal) =>
+      requestBlob(`/api/media/${id}/download`, { signal }),
     update: (id: string, payload: { alt_text?: string; caption?: string }) =>
       request<MediaDetailResponse>(`/api/media/${id}`, { method: "PUT", auth: true, body: payload }),
     delete: (id: string) => request<MediaDetailResponse>(`/api/media/${id}`, { method: "DELETE", auth: true }),

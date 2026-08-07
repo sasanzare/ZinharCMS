@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use axum::extract::{Extension, Multipart, Path, Query, State};
 use axum::http::HeaderMap;
@@ -18,6 +19,11 @@ use crate::error::AppError;
 use crate::middleware::auth::Claims;
 use crate::middleware::tenant::TenantContext;
 use crate::routes::marketplace_runtime;
+use crate::services::file_security::{
+    ArchiveLimits, FileKind, MalwareScanOutcome, NoopMalwareScanner, SecureTempUpload,
+    UploadPurpose, cleanup_stale_temporary_files, inspect_archive, policy_for,
+    validate_detected_kind,
+};
 use crate::services::marketplace_catalog::{catalog_compatibility_report, is_catalog_compatible};
 use crate::services::marketplace_feedback::{
     REPORT_DESCRIPTION_MAX, REVIEW_BODY_MAX, validate_rating, validate_report_type,
@@ -30,9 +36,7 @@ use crate::services::marketplace_installation::{
     validate_mvp_product_type, validate_newer_version, verify_stored_artifact,
 };
 use crate::services::marketplace_manifest::MARKETPLACE_MANIFEST_SCHEMA_VERSION;
-use crate::services::marketplace_package::{
-    marketplace_package_object_key, sha256_hex, validate_package_size,
-};
+use crate::services::marketplace_package::{marketplace_package_object_key, validate_package_size};
 use crate::services::marketplace_performance::marketplace_catalog_cache_headers;
 use crate::services::marketplace_review::{
     MODERATION_EMERGENCY_BLOCK, MODERATION_SUSPEND_LISTING, MODERATION_UNPUBLISH_VERSION,
@@ -43,7 +47,7 @@ use crate::services::marketplace_submission::{
     validate_creator_profile, validate_creator_verification_status, validate_listing_for_review,
     validate_listing_review_input,
 };
-use crate::services::marketplace_validation::evaluate_marketplace_package;
+use crate::services::marketplace_validation::evaluate_marketplace_archive;
 use crate::services::{audit, quota, rbac, rls};
 use crate::state::AppState;
 
@@ -549,6 +553,7 @@ struct MarketplaceVersionGateRow {
     artifact_size_bytes: i64,
     validation_status: String,
     security_risk_level: String,
+    artifact_state: String,
 }
 
 #[derive(Debug, FromRow)]
@@ -568,6 +573,7 @@ struct InstallationCandidateRow {
     artifact_size_bytes: i64,
     validation_status: String,
     security_risk_level: String,
+    artifact_state: String,
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -693,13 +699,6 @@ struct ListingSubmissionRow {
     license: String,
     support_url: Option<String>,
     screenshots: Value,
-}
-
-#[derive(Debug)]
-struct IncomingPackageUpload {
-    filename: String,
-    content_type: String,
-    bytes: Vec<u8>,
 }
 
 pub async fn list_catalog(
@@ -2420,42 +2419,78 @@ pub async fn upload_listing_version(
     validate_listing_row_for_review(&row)?;
 
     let mut manifest: Option<Value> = None;
-    let mut upload: Option<IncomingPackageUpload> = None;
+    let mut upload = None;
+    let storage_root = PathBuf::from(&state.config.upload_dir);
+    let _ = cleanup_stale_temporary_files(
+        &storage_root,
+        Duration::from_secs(24 * 60 * 60),
+        state.config.security_cleanup_batch_size.clamp(1, 1_000) as usize,
+    )
+    .await;
+    let package_policy = policy_for(UploadPurpose::MarketplacePackage);
+    let mut part_count = 0u64;
+    let metadata_limit = state.config.max_upload_metadata_bytes as usize;
 
-    while let Some(field) = multipart
+    while let Some(mut field) = multipart
         .next_field()
         .await
         .map_err(|error| AppError::BadRequest(error.to_string()))?
     {
+        part_count += 1;
+        if part_count > state.config.max_upload_parts {
+            return Err(AppError::Validation(
+                "multipart request contains too many parts".to_owned(),
+            ));
+        }
         let name = field.name().unwrap_or_default().to_owned();
         match name.as_str() {
             "manifest" | "manifest_json" => {
-                let text = field
-                    .text()
-                    .await
-                    .map_err(|error| AppError::BadRequest(error.to_string()))?;
+                if manifest.is_some() {
+                    return Err(AppError::Validation(
+                        "exactly one manifest field is allowed".to_owned(),
+                    ));
+                }
+                let text = read_marketplace_text_field(&mut field, metadata_limit).await?;
                 manifest = Some(serde_json::from_str(&text).map_err(|error| {
                     AppError::Validation(format!("manifest JSON is invalid: {error}"))
                 })?);
             }
             "file" => {
+                if upload.is_some() {
+                    return Err(AppError::Validation(
+                        "exactly one package file is allowed".to_owned(),
+                    ));
+                }
                 let filename = field
                     .file_name()
-                    .map(sanitize_filename)
-                    .unwrap_or_else(|| "marketplace-package.zip".to_owned());
+                    .unwrap_or("marketplace-package.zip")
+                    .to_owned();
                 let content_type = field
                     .content_type()
                     .map(str::to_owned)
                     .unwrap_or_else(|| "application/octet-stream".to_owned());
-                let bytes = field
-                    .bytes()
+                let mut temp = SecureTempUpload::create(
+                    &storage_root,
+                    package_policy.max_bytes.min(state.config.max_upload_size),
+                    &filename,
+                    &content_type,
+                )
+                .await
+                .map_err(|error| AppError::Internal(error.to_string()))?;
+                while let Some(chunk) = field
+                    .chunk()
                     .await
-                    .map_err(|error| AppError::BadRequest(error.to_string()))?;
-                upload = Some(IncomingPackageUpload {
-                    filename,
-                    content_type,
-                    bytes: bytes.to_vec(),
-                });
+                    .map_err(|error| AppError::BadRequest(error.to_string()))?
+                {
+                    temp.write_chunk(&chunk)
+                        .await
+                        .map_err(|error| AppError::Validation(error.to_string()))?;
+                }
+                upload = Some(
+                    temp.finish()
+                        .await
+                        .map_err(|error| AppError::Validation(error.to_string()))?,
+                );
             }
             _ => {}
         }
@@ -2470,27 +2505,44 @@ pub async fn upload_listing_version(
     }
     validate_manifest_matches_listing(&manifest, &row)?;
     let upload = upload.ok_or_else(|| AppError::Validation("file field is required".to_owned()))?;
-    validate_package_size(upload.bytes.len() as u64)
+    validate_package_size(upload.size).map_err(|error| AppError::Validation(error.to_string()))?;
+    let prefix = upload
+        .read_prefix(8_192)
+        .await
+        .map_err(|error| AppError::Internal(error.to_string()))?;
+    let detected = validate_detected_kind(
+        UploadPurpose::MarketplacePackage,
+        &upload.declared_content_type,
+        &prefix,
+    )
+    .map_err(|error| AppError::Validation(error.to_string()))?;
+    if detected != FileKind::Zip {
+        return Err(AppError::Validation(
+            "Marketplace package content must be a ZIP archive".to_owned(),
+        ));
+    }
+    let archive_report = inspect_archive(upload.path(), ArchiveLimits::marketplace())
         .map_err(|error| AppError::Validation(error.to_string()))?;
 
     let package_version = manifest
         .get("version")
         .and_then(Value::as_str)
         .ok_or_else(|| AppError::Validation("manifest version is required".to_owned()))?;
-    let checksum = sha256_hex(&upload.bytes);
-    let object_key =
+    let checksum = upload.sha256.clone();
+    let package_key =
         marketplace_package_object_key(&row.creator_slug, &row.slug, package_version, &checksum)
             .map_err(|error| AppError::Validation(error.to_string()))?;
-    persist_package_artifact(&state, &object_key, &upload.bytes).await?;
+    let object_key = format!("quarantine/{package_key}");
 
     let organization_plan_slug = quota::load_subscription(&state.db, &tenant)
         .await?
         .plan_slug;
-    let validation_decision = evaluate_marketplace_package(
+    let validation_decision = evaluate_marketplace_archive(
         &manifest,
-        &upload.bytes,
+        &archive_report,
+        upload.size,
         &checksum,
-        &upload.filename,
+        &upload.original_filename,
         &row.product_type,
         &organization_plan_slug,
     );
@@ -2504,11 +2556,18 @@ pub async fn upload_listing_version(
 
     let storage_metadata = json!({
         "uploaded_by": claims.sub,
-        "original_filename": upload.filename.clone(),
+        "original_filename": upload.original_filename.clone(),
         "storage": "local",
         "source": "creator-portal",
         "validation_status": validation_decision.validation_status.clone(),
-        "security_risk_level": validation_decision.security_risk_level.clone()
+        "security_risk_level": validation_decision.security_risk_level.clone(),
+        "archive": {
+            "entry_count": archive_report.entries.len(),
+            "compressed_bytes": archive_report.total_compressed_bytes,
+            "uncompressed_bytes": archive_report.total_uncompressed_bytes,
+            "nested_archives_allowed": 0
+        },
+        "malware_scan_status": "unavailable"
     });
 
     let mut tx = state.db.begin().await?;
@@ -2518,9 +2577,11 @@ pub async fn upload_listing_version(
           listing_id, version, manifest_schema_version, manifest_json, artifact_object_key,
           artifact_sha256, artifact_size_bytes, artifact_file_name, artifact_content_type,
           storage_metadata, validation_status, validation_report, security_risk_level,
-          compatibility_report, status, created_by
+          compatibility_report, status, created_by, artifact_state, malware_scan_status,
+          archive_inspected_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'application/zip', $9, $10, $11, $12, $13, $14, $15,
+                'quarantined', $16, now())
         RETURNING id, listing_id, version, manifest_schema_version, manifest_json,
                   artifact_object_key, artifact_sha256, artifact_size_bytes, artifact_file_name,
                   artifact_content_type, storage_metadata, validation_status, validation_report,
@@ -2533,9 +2594,8 @@ pub async fn upload_listing_version(
     .bind(&manifest)
     .bind(&object_key)
     .bind(&checksum)
-    .bind(upload.bytes.len() as i64)
-    .bind(&upload.filename)
-    .bind(&upload.content_type)
+    .bind(upload.size as i64)
+    .bind(&upload.original_filename)
     .bind(&storage_metadata)
     .bind(&validation_decision.validation_status)
     .bind(&validation_report)
@@ -2543,6 +2603,12 @@ pub async fn upload_listing_version(
     .bind(&compatibility_report)
     .bind(&validation_decision.version_status)
     .bind(claims.sub)
+    .bind(match NoopMalwareScanner.scan_verdict(&checksum) {
+        MalwareScanOutcome::Unavailable => "unavailable",
+        MalwareScanOutcome::Clean => "clean",
+        MalwareScanOutcome::Infected => "infected",
+        MalwareScanOutcome::Error => "error",
+    })
     .fetch_one(&mut *tx)
     .await?;
 
@@ -2586,7 +2652,14 @@ pub async fn upload_listing_version(
     .execute(&mut *tx)
     .await?;
 
-    tx.commit().await?;
+    let persisted_path = upload
+        .persist(&storage_root, &object_key)
+        .await
+        .map_err(|error| AppError::Internal(error.to_string()))?;
+    if let Err(error) = tx.commit().await {
+        let _ = fs::remove_file(persisted_path).await;
+        return Err(AppError::from(error));
+    }
 
     audit::record(
         &state.db,
@@ -2779,11 +2852,27 @@ pub async fn review_submission(
     .execute(&mut *tx)
     .await?;
 
-    sqlx::query("UPDATE marketplace_versions SET status = $2, updated_at = now() WHERE id = $1")
-        .bind(context.version_id)
-        .bind(transition.version_status)
-        .execute(&mut *tx)
-        .await?;
+    sqlx::query(
+        r#"
+        UPDATE marketplace_versions
+        SET status = $2,
+            artifact_state = CASE
+              WHEN $2 = 'approved' THEN 'reviewed'
+              WHEN $2 IN ('rejected', 'blocked') THEN 'rejected'
+              ELSE artifact_state
+            END,
+            artifact_verified_at = CASE
+              WHEN $2 = 'approved' THEN now()
+              ELSE artifact_verified_at
+            END,
+            updated_at = now()
+        WHERE id = $1
+        "#,
+    )
+    .bind(context.version_id)
+    .bind(transition.version_status)
+    .execute(&mut *tx)
+    .await?;
 
     sqlx::query("UPDATE marketplace_listings SET status = $2, updated_at = now() WHERE id = $1")
         .bind(context.listing_id)
@@ -3321,7 +3410,7 @@ async fn load_install_candidate(
     listing_id: Uuid,
     version_id: Uuid,
 ) -> Result<InstallationCandidateRow, AppError> {
-    sqlx::query_as::<_, InstallationCandidateRow>(
+    let row = sqlx::query_as::<_, InstallationCandidateRow>(
         r#"
         SELECT listing.id as listing_id,
                listing.title as listing_title,
@@ -3337,7 +3426,8 @@ async fn load_install_candidate(
                version.artifact_sha256,
                version.artifact_size_bytes,
                version.validation_status,
-               version.security_risk_level
+               version.security_risk_level,
+               version.artifact_state
         FROM marketplace_listings listing
         JOIN marketplace_versions version ON version.listing_id = listing.id
         WHERE listing.id = $1 AND version.id = $2
@@ -3348,7 +3438,13 @@ async fn load_install_candidate(
     .bind(version_id)
     .fetch_optional(&mut **tx)
     .await?
-    .ok_or_else(|| AppError::NotFound("approved Marketplace version not found".to_owned()))
+    .ok_or_else(|| AppError::NotFound("approved Marketplace version not found".to_owned()))?;
+    if row.artifact_state != "reviewed" {
+        return Err(AppError::Conflict(
+            "Marketplace artifact has not completed archive review".to_owned(),
+        ));
+    }
+    Ok(row)
 }
 
 async fn load_version_gate_in_transaction(
@@ -3356,7 +3452,7 @@ async fn load_version_gate_in_transaction(
     listing_id: Uuid,
     version_id: Uuid,
 ) -> Result<MarketplaceVersionGateRow, AppError> {
-    sqlx::query_as::<_, MarketplaceVersionGateRow>(
+    let row = sqlx::query_as::<_, MarketplaceVersionGateRow>(
         r#"
         SELECT id as version_id,
                version,
@@ -3366,7 +3462,8 @@ async fn load_version_gate_in_transaction(
                artifact_sha256,
                artifact_size_bytes,
                validation_status,
-               security_risk_level
+               security_risk_level,
+               artifact_state
         FROM marketplace_versions version
         WHERE listing_id = $1 AND id = $2
         FOR SHARE OF version
@@ -3376,7 +3473,15 @@ async fn load_version_gate_in_transaction(
     .bind(version_id)
     .fetch_optional(&mut **tx)
     .await?
-    .ok_or_else(|| AppError::NotFound("Marketplace version not found for this listing".to_owned()))
+    .ok_or_else(|| {
+        AppError::NotFound("Marketplace version not found for this listing".to_owned())
+    })?;
+    if row.artifact_state != "reviewed" {
+        return Err(AppError::Conflict(
+            "Marketplace artifact has not completed archive review".to_owned(),
+        ));
+    }
+    Ok(row)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -3821,6 +3926,27 @@ fn validate_listing_payload(
     }))
 }
 
+async fn read_marketplace_text_field(
+    field: &mut axum::extract::multipart::Field<'_>,
+    limit: usize,
+) -> Result<String, AppError> {
+    let mut bytes = Vec::with_capacity(limit.min(1_024));
+    while let Some(chunk) = field
+        .chunk()
+        .await
+        .map_err(|error| AppError::BadRequest(error.to_string()))?
+    {
+        if bytes.len().saturating_add(chunk.len()) > limit {
+            return Err(AppError::Validation(
+                "multipart text field exceeds the allowed size".to_owned(),
+            ));
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    String::from_utf8(bytes)
+        .map_err(|_| AppError::Validation("multipart text field must be UTF-8".to_owned()))
+}
+
 fn validate_listing_row_for_review(row: &ListingSubmissionRow) -> Result<(), AppError> {
     let screenshots = screenshots_from_value(&row.screenshots)?;
     map_validation(validate_listing_for_review(
@@ -3883,58 +4009,14 @@ fn validate_manifest_matches_listing(
     Ok(())
 }
 
-async fn persist_package_artifact(
-    state: &AppState,
-    object_key: &str,
-    bytes: &[u8],
-) -> Result<(), AppError> {
-    let mut path = PathBuf::from(&state.config.upload_dir);
-    for segment in object_key.split('/') {
-        path.push(segment);
-    }
-
-    let parent = path
-        .parent()
-        .ok_or_else(|| AppError::Internal("package object key has no parent path".to_owned()))?;
-    fs::create_dir_all(parent)
-        .await
-        .map_err(|error| AppError::Internal(error.to_string()))?;
-    fs::write(&path, bytes)
-        .await
-        .map_err(|error| AppError::Internal(error.to_string()))?;
-    Ok(())
-}
-
-fn sanitize_filename(value: &str) -> String {
-    let sanitized: String = value
-        .chars()
-        .filter(|character| {
-            character.is_ascii_alphanumeric() || matches!(character, '.' | '-' | '_')
-        })
-        .collect();
-    if sanitized.is_empty() {
-        "marketplace-package.zip".to_owned()
-    } else {
-        sanitized
-    }
-}
-
 fn map_validation(result: Result<(), Vec<String>>) -> Result<(), AppError> {
     result.map_err(|errors| AppError::Validation(errors.join("; ")))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        sanitize_filename, screenshots_from_value, validate_install_gate, validate_rollback_gate,
-    };
+    use super::{screenshots_from_value, validate_install_gate, validate_rollback_gate};
     use serde_json::json;
-
-    #[test]
-    fn filename_sanitizer_removes_path_characters() {
-        assert_eq!(sanitize_filename("../package v1.zip"), "..packagev1.zip");
-        assert_eq!(sanitize_filename(""), "marketplace-package.zip");
-    }
 
     #[test]
     fn screenshots_must_be_json_array() {

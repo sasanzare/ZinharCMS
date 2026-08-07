@@ -2,6 +2,7 @@ use std::collections::{BTreeSet, HashSet};
 
 use serde_json::{Map, Value, json};
 
+use crate::services::file_security::ArchiveReport;
 use crate::services::marketplace_manifest::{
     MARKETPLACE_MANIFEST_SCHEMA_VERSION, is_semver, validate_marketplace_manifest,
 };
@@ -72,7 +73,56 @@ pub fn evaluate_marketplace_package(
     listing_product_type: &str,
     organization_plan_slug: &str,
 ) -> MarketplaceValidationDecision {
-    let static_report = static_validation_report(manifest, package_bytes, artifact_file_name);
+    evaluate_marketplace_entries(
+        manifest,
+        parse_zip_entries(package_bytes),
+        package_bytes.len() as u64,
+        checksum,
+        artifact_file_name,
+        listing_product_type,
+        organization_plan_slug,
+    )
+}
+
+pub fn evaluate_marketplace_archive(
+    manifest: &Value,
+    archive: &ArchiveReport,
+    artifact_size_bytes: u64,
+    checksum: &str,
+    artifact_file_name: &str,
+    listing_product_type: &str,
+    organization_plan_slug: &str,
+) -> MarketplaceValidationDecision {
+    let entries = archive
+        .entries
+        .iter()
+        .map(|entry| ZipEntry {
+            path: entry.path.clone(),
+            uncompressed_size: entry.uncompressed_bytes,
+        })
+        .collect();
+    evaluate_marketplace_entries(
+        manifest,
+        Ok(entries),
+        artifact_size_bytes,
+        checksum,
+        artifact_file_name,
+        listing_product_type,
+        organization_plan_slug,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn evaluate_marketplace_entries(
+    manifest: &Value,
+    entries: Result<Vec<ZipEntry>, String>,
+    artifact_size_bytes: u64,
+    checksum: &str,
+    artifact_file_name: &str,
+    listing_product_type: &str,
+    organization_plan_slug: &str,
+) -> MarketplaceValidationDecision {
+    let static_report = static_validation_report(manifest, &entries, artifact_file_name);
     let validation_errors = string_array(&static_report, "errors");
     let validation_warnings = string_array(&static_report, "warnings");
     let validation_status = if !validation_errors.is_empty() {
@@ -83,8 +133,11 @@ pub fn evaluate_marketplace_package(
         "passed"
     };
 
-    let entries = parse_zip_entries(package_bytes).unwrap_or_default();
-    let security_report = security_scan_report(manifest, &entries, listing_product_type);
+    let security_report = security_scan_report(
+        manifest,
+        entries.as_ref().map(Vec::as_slice).unwrap_or_default(),
+        listing_product_type,
+    );
     let security_risk_level = security_report
         .get("risk_level")
         .and_then(Value::as_str)
@@ -102,7 +155,7 @@ pub fn evaluate_marketplace_package(
         "schema_version": MARKETPLACE_MANIFEST_SCHEMA_VERSION,
         "checksum": checksum,
         "artifact_file_name": artifact_file_name,
-        "artifact_size_bytes": package_bytes.len(),
+        "artifact_size_bytes": artifact_size_bytes,
         "validation_status": validation_status,
         "security_risk_level": security_risk_level,
         "static": static_report,
@@ -122,7 +175,7 @@ pub fn evaluate_marketplace_package(
 
 fn static_validation_report(
     manifest: &Value,
-    package_bytes: &[u8],
+    parsed_entries: &Result<Vec<ZipEntry>, String>,
     artifact_file_name: &str,
 ) -> Value {
     let mut errors = Vec::new();
@@ -136,11 +189,11 @@ fn static_validation_report(
         errors.extend(error.errors);
     }
 
-    let entries = match parse_zip_entries(package_bytes) {
-        Ok(entries) => entries,
+    let entries = match parsed_entries {
+        Ok(entries) => entries.as_slice(),
         Err(error) => {
-            errors.push(error);
-            Vec::new()
+            errors.push(error.clone());
+            &[]
         }
     };
 
@@ -162,7 +215,7 @@ fn static_validation_report(
     }
 
     let mut paths = BTreeSet::new();
-    for entry in &entries {
+    for entry in entries {
         match normalize_manifest_path(&entry.path) {
             Ok(path) => {
                 if !paths.insert(path.clone()) {

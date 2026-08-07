@@ -12,7 +12,10 @@ WORKDIR /app
 RUN useradd --system --create-home --uid 10001 cms
 COPY --from=builder /app/target/release/cms-backend /app/cms-backend
 COPY --from=builder /app/migrations /app/migrations
-RUN mkdir -p /app/uploads && chown -R cms:cms /app
+RUN mkdir -p /app/uploads \
+    && chown -R cms:cms /app \
+    && chmod 0750 /app /app/uploads \
+    && chmod 0555 /app/cms-backend
 
 USER cms
 EXPOSE 8080
