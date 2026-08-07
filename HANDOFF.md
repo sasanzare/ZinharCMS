@@ -10,12 +10,12 @@
 - **Repository:** ZinharCMS
 - **Current branch:** `security/security-audit-fixes`
 - **Base branch:** `main`; current branch tracks `origin/security/security-audit-fixes`
-- **Latest relevant commit:** `1cb6f43b docs(okf): complete Google OKF v0.2 Phase 1 preservation map`
-- **Working tree:** Clean at the Phase 2 starting checkpoint; Phase 2 adds only migration-analysis documents and this handoff checkpoint
+- **Latest relevant commit:** `b58840e9c227ff9d937b482eced5331122291f82 docs(okf): complete Google OKF v0.2 Phase 2 architecture design`
+- **Working tree:** Phase 3 adds the isolated staging bundle, three Phase 3 migration artifacts, and this handoff checkpoint; no staged paths are present
 - **Current version:** `3.0.0` across root, frontend, backend, lockfile, Marketplace runtime, and dashboard release sources
-- **Current phase:** Google OKF Migration Phase 2 — Target Architecture and Bundle Design
-- **Current subphase:** Complete target hierarchy, Concept catalog, type/metadata, provenance, navigation, diagram, staging, cutover, and validation design; no target Concept was created and no legacy content was changed.
-- **Overall status:** Phase 2 started and ended at HEAD `1cb6f43be6d46bee0bf8ac8b06c833967aae6786` on `security/security-audit-fixes` with a clean worktree. Nine design artifacts were added under `docs/okf-migration/`; this handoff was updated. No staging bundle, legacy conversion/deletion, application change, dependency change, commit, push, reset, clean, stash, or history rewrite was performed.
+- **Current phase:** Google OKF Migration Phase 3 — Core Google OKF v0.2 Bundle Construction
+- **Current subphase:** Construct and validate the 19 high-confidence Concepts, 13 required indexes, one reserved root log, embedded preserved diagrams, full 54-target status matrix, and deterministic build manifest in isolated staging; leave legacy and canonical cutover untouched.
+- **Overall status:** Phase 3 starts and ends at HEAD `b58840e9c227ff9d937b482eced5331122291f82` on `security/security-audit-fixes`. The staging bundle and three Phase 3 artifacts are untracked, this handoff is modified, and no paths are staged. No legacy conversion/deletion, application change, dependency change, commit, push, reset, clean, stash, or history rewrite was performed.
 
 > **Google OKF Migration Phase 0 override (2026-08-07):** This is the active
 > continuation checkpoint for the migration task and supersedes older OKF
@@ -200,6 +200,65 @@
   authorized, construct only the catalog-approved foundational Concepts under
   the isolated staging path. Do not start cutover or resolve owner questions
   by assumption.
+
+### Google OKF Migration Phase 3 Checkpoint (current)
+
+- **Status:** `COMPLETE` for the core Google OKF v0.2 staging construction
+  boundary. Phase 4 architecture/application expansion and any canonical
+  cutover remain future work.
+- **Branch:** `security/security-audit-fixes`.
+- **Starting HEAD:** `b58840e9c227ff9d937b482eced5331122291f82`.
+- **Ending HEAD:** `b58840e9c227ff9d937b482eced5331122291f82`.
+- **Phase 3 starting worktree:** clean after the Phase 2 design checkpoint;
+  no staged, modified, or untracked paths were present before construction.
+- **Phase 3 final worktree:** four new top-level Phase 3 paths are untracked
+  (`PHASE_03_BUILD_MANIFEST.json`, `PHASE_03_CONSTRUCTION_STATUS.md`,
+  `PHASE_03_CORE_BUNDLE_CONSTRUCTION.md`, and `staging/`); this handoff is
+  modified; no staged paths are present. No unrelated path is changed.
+- **Staging contents:** `docs/okf-migration/staging/google-okf-v0.2/` contains
+  13 indexes, one root `log.md`, and 19 Concepts. The root frontmatter is only
+  `okf_version: "0.2"`; Concepts use the approved type/status/source policy
+  with zero custom frontmatter keys. No standalone `.mmd` file was created.
+- **Construction selection:** TARGET-001, TARGET-006, TARGET-007, TARGET-010,
+  TARGET-011, TARGET-014, TARGET-015, TARGET-018, TARGET-020, TARGET-027,
+  TARGET-028, TARGET-029, TARGET-030, TARGET-033, TARGET-034, TARGET-038,
+  TARGET-039, TARGET-045, and TARGET-049 are `BUILT` from current
+  repository-backed evidence. The remaining 35 catalog rows are explicitly
+  recorded as 12 `DEFERRED_MERGE`, 11 `DEFERRED_REGENERATE`, 7
+  `BLOCKED_OWNER_DECISION`, and 5 `HISTORICAL_DEFERRED`; no target is omitted.
+- **Diagram construction:** 13 Phase 1-preserved visuals are embedded in
+  their current direct owners: system/container architecture, authentication
+  and session, authorization/RBAC, tenant, content, page-builder, Marketplace
+  installation, and plugin data ownership. Merge/regenerate diagrams remain
+  deferred.
+- **Manifest:** `PHASE_03_BUILD_MANIFEST.json` records source HEAD, the staging
+  paths, 19 built target IDs, 13 embedded diagrams, 35 deferred rows, source
+  evidence, and SHA-256 hashes for all 33 staging files. The manifest itself is
+  intentionally not self-hashed.
+- **Validation performed:** JSON parse, UTF-8/whitespace scan, exact index/log/
+  Concept counts, root and Concept frontmatter policy, approved type/status
+  values, pinned source URLs, bundle-local link resolution with no parent
+  traversal, Mermaid/diagram coverage, matrix coverage and status totals,
+  manifest-to-file hash reconciliation, and `git cat-file` verification of
+  source paths at the construction HEAD all passed. `git diff --check` passed.
+- **Persistent lessons log:** Reviewed the relevant OKF, frontmatter, link,
+  manifest, and whitespace lessons. Appended one reusable note for the
+  transient duplicate-paragraph patching error caught and corrected during
+  Phase 3.
+- **Legacy and application safety:** `okf/`, `okf-bootstrap/`, and
+  `okf/index.yaml` have no Phase 3 diff. No canonical `/okf/` cutover or
+  reference redirect was made. Backend/frontend/database/CI/dependency paths
+  have no Phase 3 diff.
+- **Open issues:** 35 targets remain explicitly deferred; owner decisions
+  NOC-01 through NOC-15, NOC-17, and NOC-18 remain outside this construction.
+  The staged bundle is not canonical and must not be activated by assumption.
+- **Recommended next phase:** `Phase 4 — Architecture & Application Knowledge
+  Migration`.
+- **Exact Next Action:** review the Phase 3 manifest, status matrix, and staged
+  bundle, then expand the isolated staging root using Phase 1 MERGE and
+  REGENERATE mappings for architecture/backend/frontend/API/database/security/
+  domain/operations knowledge. Keep `/okf/` and `okf-bootstrap/` untouched and
+  do not cut over without separate authorization.
 
 > **Security Audit Phase 4 override (2026-07-28):** This completed checkpoint
 > supersedes earlier Phase 1-3 and product-phase exact-next-action text for the
