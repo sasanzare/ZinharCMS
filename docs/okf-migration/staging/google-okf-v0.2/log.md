@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-08-08
+
+* **Construction:** Added the documentation-maintenance Concept from current repository instructions, migration policies, CI boundaries, and release/operations evidence; ownership, contribution, and artifact-retention decisions remain explicit.
+
 ## 2026-08-07
 
 * **Creation:** Created the isolated Google OKF v0.2 staging root for Phase 3.

@@ -1,0 +1,32 @@
+# Phase 6 Operational Verification Ledger
+
+**Date:** 2026-08-08
+**Source HEAD:** `eb050a0010ccd721446f5d2ac4de4863679a9564`
+**Scope:** material development, testing, CI, delivery, operations, maintenance, and governance claims relevant to the Phase 6 merge boundary
+
+| ID | Claim | Evidence | Classification | Result | Notes |
+| --- | --- | --- | --- | --- | --- |
+| P6-VERIFY-001 | The repository has a persistent handoff protocol for reading instructions, inspecting Git state, preserving work, and recording the next action. | `AGENTS.md` | DOCUMENTED_POLICY | SUPPORTED | It is a tracked instruction, not an executable commit gate. |
+| P6-VERIFY-002 | `HANDOFF.md` is the recovery record for repository state, completed work, validation, risks, and next steps. | `HANDOFF.md` | DOCUMENTED_POLICY | SUPPORTED | The current file contains earlier phase checkpoints; Phase 6 updates it separately. |
+| P6-VERIFY-003 | Current source/configuration/migrations/tests take precedence over historical documentation when they conflict. | `README.md` | DOCUMENTED_POLICY | SUPPORTED | This boundary prevents legacy OKF status claims from becoming current facts. |
+| P6-VERIFY-004 | Root scripts expose local infrastructure, backend/frontend development, version, test, audit, Marketplace, and frontend build entry points. | `package.json`; `frontend/package.json` | IMPLEMENTED | SUPPORTED | The Concept for development/testing owns command detail. |
+| P6-VERIFY-005 | Backend CI provisions PostgreSQL 16 and Redis 7 and runs version, formatting, Clippy, and all-feature tests. | `.github/workflows/backend-ci.yml` | CI_ENFORCED | SUPPORTED | The workflow definition proves configured CI behavior, not a current run result. |
+| P6-VERIFY-006 | Frontend CI installs Node 24 dependencies and runs version, audit, lint, typecheck, test, and build steps. | `.github/workflows/frontend-ci.yml` | CI_ENFORCED | SUPPORTED | No OKF or HANDOFF validation step is present. |
+| P6-VERIFY-007 | Release-version consistency is checked across root/frontend manifests, lockfiles, backend metadata, Marketplace runtime, and dashboard fallback. | `scripts/check-version-consistency.mjs`; both CI workflows | CI_ENFORCED | SUPPORTED | The script is invoked by both workflows. |
+| P6-VERIFY-008 | Backend testing includes inline Rust tests and five tracked integration/migration/security Rust test files. | `backend/src/**`; `backend/tests/*.rs` | IMPLEMENTED | SUPPORTED | Several integration tests require environment-provided disposable PostgreSQL and may skip when unavailable. |
+| P6-VERIFY-009 | Frontend testing uses Vitest with JSDOM and 13 tracked component/page/security/service test files. | `frontend/vitest.config.ts`; `frontend/src/**/*.test.*` | IMPLEMENTED | SUPPORTED | No Playwright, Cypress, or browser E2E suite is tracked. |
+| P6-VERIFY-010 | Local development infrastructure is provided by Compose for PostgreSQL, Redis, and pgAdmin with health checks. | `docker-compose.yml`; `README.md` | IMPLEMENTED | SUPPORTED | This is local/reference infrastructure, not production topology. |
+| P6-VERIFY-011 | The backend applies embedded SQLx migrations during startup and exposes `/health` and `/ready` endpoints. | `backend/src/db/mod.rs`; `backend/src/routes/mod.rs`; `README.md` | IMPLEMENTED | SUPPORTED | A live endpoint or applied-production-schema result was not claimed in this documentation phase. |
+| P6-VERIFY-012 | File and security cleanup mechanisms exist, including request-triggered reconciliation and durable cleanup-job processing. | `backend/src/services/file_cleanup.rs`; `backend/src/services/file_security.rs`; migration `0030` | IMPLEMENTED | SUPPORTED | No separate scheduled worker or production cleanup owner is evidenced by the source scan. |
+| P6-VERIFY-013 | Production-like Compose definitions build backend/frontend services and use environment-bound secrets and upload volumes. | `docker-compose.prod.yml`; `backend/Dockerfile.prod`; `frontend/Dockerfile.prod` | IMPLEMENTED | SUPPORTED | These definitions do not prove a provider, promotion workflow, backup, or runtime operations. |
+| P6-VERIFY-014 | The repository does not define a production provider, deployment workflow, promotion system, automatic backup/restore process, or application metrics/alerting integration. | `README.md`; `.github/workflows/`; Docker and script inventory | DOCUMENTED_POLICY | SUPPORTED | This is an explicit limitation, not a claim that such systems cannot exist outside the repository. |
+| P6-VERIFY-015 | Release notes and the Phase 15 runbook describe source-release gates, readiness checks, support, rollback, and future deployment conditions. | `docs/V3_MARKETPLACE_RELEASE_NOTES.md`; `docs/V3_PHASE_FIFTEEN.md`; `docs/V3_MARKETPLACE_OPERATIONS_RUNBOOK.md` | DOCUMENTED_POLICY | SUPPORTED_WITH_BOUNDARY | The documents are procedural guidance; they do not prove a deployed environment or assigned owners. |
+| P6-VERIFY-016 | No repository-wide CODEOWNERS, CONTRIBUTING, CODE_OF_CONDUCT, or ownership policy is tracked. | `README.md`; `.github/` inventory | OWNER_BLOCKED | CONFIRMED_GAP | Canonical documentation owner, contribution/review rules, and support ownership remain open decisions. |
+| P6-VERIFY-017 | No tracked general-purpose OKF generator, link checker, or staleness job is present. | `scripts/` inventory; `OKF_VALIDATION_CONTRACT.md`; legacy staleness record | IMPLEMENTED | CONFIRMED_GAP | Phase-specific validation is performed manually or with dependency-free probes and is recorded in migration artifacts. |
+| P6-VERIFY-018 | The Phase 6 staging bundle remains separate from canonical `/okf/`, and legacy trees are not modified by the migration. | Phase 5/6 manifests; Git scope comparison | DOCUMENTED_POLICY | SUPPORTED | Cutover and legacy retirement require a later explicit authorization. |
+| P6-VERIFY-019 | Production storage, observability/on-call, backup/recovery, retention, custom-domain routing, and release promotion facts remain unresolved. | README limitations; owner decision register; current source/configuration evidence | UNVERIFIED | DEFERRED | No inference from local Compose, Docker, or runbook text was promoted. |
+
+The ledger distinguishes configured CI and repository mechanisms from documented
+policy and owner-blocked production facts. It does not report a successful CI,
+live database, deployment, or production smoke run unless a command result is
+recorded elsewhere in the current handoff.
